@@ -4,7 +4,7 @@ import type { Input } from '../core/input';
 import type { Lighting } from '../render/lighting';
 import { Mannequin } from './mannequin';
 
-const WALK = 3.2, RUN = 6.2, CROUCH = 1.7, AIM = 2.2, JUMP = 5.2, GRAVITY = 22;
+const WALK = 3.2, RUN = 6.2, CROUCH = 1.7, AIM = 2.2, JUMP = 5.2, GRAVITY = 22, SLIDE = 8.5;
 const RADIUS = 0.35, HALF = 0.55;
 
 export class Player {
@@ -18,6 +18,14 @@ export class Player {
   private ctrl: RAPIER.KinematicCharacterController;
   private grounded = false;
   private crouch = 0;
+  private slideT = 0;
+  private slideDir = new THREE.Vector3();
+  private exhausted = false;
+  private lastVy = 0;
+  stamina = 100;
+  sprinting = false;
+  landImpact = 0;
+  stepPhase = 0;
 
   constructor(world: RAPIER.World, lighting: Lighting, spawn: THREE.Vector3, yaw: number) {
     this.model = new Mannequin(lighting);
@@ -36,38 +44,63 @@ export class Player {
     return this.collider.handle;
   }
 
-  update(dt: number, input: Input, camYaw: number, aiming: boolean, aimPitch: number): void {
+  get airborne(): boolean {
+    return !this.grounded;
+  }
+
+  update(dt: number, input: Input, camYaw: number, aiming: boolean, aimPitch: number, firing: boolean): void {
     const f = (input.down('KeyW') ? 1 : 0) - (input.down('KeyS') ? 1 : 0);
     const s = (input.down('KeyD') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
-    const crouching = input.down('ControlLeft') || input.down('KeyC');
+    const crouchKey = input.down('ControlLeft') || input.down('KeyC');
+    if (this.stamina > 25) this.exhausted = false;
+    const canSprint = input.down('ShiftLeft') && f > 0 && !aiming && !firing && !this.exhausted;
+    if (this.sprinting && this.grounded && (input.hit('ControlLeft') || input.hit('KeyC')) && this.slideT <= 0) {
+      this.slideT = 0.75;
+      this.slideDir.set(this.vel.x, 0, this.vel.z).normalize();
+    }
+    this.slideT -= dt;
+    const sliding = this.slideT > 0;
+    const crouching = crouchKey || sliding;
+    this.sprinting = canSprint && !crouching && this.speed > 0.5;
+    this.stamina = THREE.MathUtils.clamp(this.stamina + (this.sprinting ? -18 : 14) * dt, 0, 100);
+    if (this.stamina <= 0) this.exhausted = true;
     this.crouch = THREE.MathUtils.damp(this.crouch, crouching ? 1 : 0, 12, dt);
-    const sprint = input.down('ShiftLeft') && f > 0 && !aiming && !crouching;
-    const target = aiming ? AIM : crouching ? CROUCH : sprint ? RUN : WALK;
+    const target = aiming ? AIM : crouching ? CROUCH : canSprint ? RUN : WALK;
 
     const fwd = new THREE.Vector3(-Math.sin(camYaw), 0, -Math.cos(camYaw));
     const right = new THREE.Vector3(-fwd.z, 0, fwd.x);
     const wish = fwd.multiplyScalar(f).add(right.multiplyScalar(s));
     if (wish.lengthSq() > 0) wish.normalize().multiplyScalar(target);
-    const accel = this.grounded ? 14 : 3;
+    if (sliding) wish.copy(this.slideDir).multiplyScalar(THREE.MathUtils.lerp(CROUCH, SLIDE, this.slideT / 0.75));
+    const accel = sliding ? 30 : this.grounded ? (wish.lengthSq() > 0 ? 10 : 14) : 2.5;
     this.vel.x = THREE.MathUtils.damp(this.vel.x, wish.x, accel, dt);
     this.vel.z = THREE.MathUtils.damp(this.vel.z, wish.z, accel, dt);
-    if (this.grounded && input.hit('Space') && !crouching) this.vel.y = JUMP;
+    if (this.grounded && input.hit('Space') && !crouching && this.stamina > 8) {
+      this.vel.y = JUMP;
+      this.stamina -= 8;
+    }
     this.vel.y -= GRAVITY * dt;
 
     this.ctrl.computeColliderMovement(this.collider, { x: this.vel.x * dt, y: this.vel.y * dt, z: this.vel.z * dt });
     const m = this.ctrl.computedMovement();
+    const wasGrounded = this.grounded;
     this.grounded = this.ctrl.computedGrounded();
+    if (this.grounded && !wasGrounded && this.lastVy < -4) this.landImpact = Math.min(1, (-this.lastVy - 4) / 8 + 0.25);
+    this.landImpact = Math.max(0, this.landImpact - dt * 2.5);
+    this.lastVy = this.vel.y;
     if (this.grounded && this.vel.y < 0) this.vel.y = -1;
     const p = this.body.translation();
     this.body.setNextKinematicTranslation({ x: p.x + m.x, y: p.y + m.y, z: p.z + m.z });
 
     this.speed = Math.hypot(this.vel.x, this.vel.z);
-    const faceYaw = aiming || this.speed < 0.2 ? camYaw : Math.atan2(-this.vel.x, -this.vel.z);
-    if (aiming || this.speed > 0.2) {
+    if (this.grounded) this.stepPhase += dt * this.speed * 1.9;
+    const facing = aiming || firing;
+    const faceYaw = facing || this.speed < 0.2 ? camYaw : Math.atan2(-this.vel.x, -this.vel.z);
+    if (facing || this.speed > 0.2) {
       const diff = Math.atan2(Math.sin(faceYaw - this.yaw), Math.cos(faceYaw - this.yaw));
-      this.yaw += diff * Math.min(1, dt * (aiming ? 20 : 10));
+      this.yaw += diff * Math.min(1, dt * (facing ? 22 : 10));
     }
-    this.model.animate(dt, this.speed, this.crouch, aiming ? aimPitch : 0);
+    this.model.animate(dt, this.speed, this.crouch, facing ? aimPitch : 0);
   }
 
   syncPosition(): void {

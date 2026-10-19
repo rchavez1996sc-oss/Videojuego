@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
+import { setSurface, type Surface } from './surfaces';
+
+const SURFACE: Record<string, Surface> = { adobe: 'adobe', plaster: 'adobe', stone: 'rock', none: 'rock', wood: 'wood', roof: 'tile' };
 
 export interface Opening { x: number; w: number; y: number; h: number }
 
@@ -18,12 +21,13 @@ export class Builder {
     g.applyMatrix4(this.tmp.matrix);
     if (mat !== 'none') (this.parts.get(mat) ?? this.parts.set(mat, []).get(mat)!).push(g);
     if (collide) {
-      this.world.createCollider(
+      const col = this.world.createCollider(
         RAPIER.ColliderDesc.cuboid(size[0] / 2, size[1] / 2, size[2] / 2)
           .setTranslation(pos.x, pos.y, pos.z)
           .setRotation({ x: quat.x, y: quat.y, z: quat.z, w: quat.w }),
         this.body,
       );
+      setSurface(col.handle, SURFACE[mat] ?? 'adobe');
     }
   }
 

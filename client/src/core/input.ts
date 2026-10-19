@@ -3,6 +3,7 @@ export class Input {
   mouseDX = 0;
   mouseDY = 0;
   aiming = false;
+  firing = false;
   locked = false;
   private pressed = new Set<string>();
 
@@ -13,14 +14,26 @@ export class Input {
       if (e.code === 'ControlLeft' || e.code === 'Space') e.preventDefault();
     });
     addEventListener('keyup', (e) => this.keys.delete(e.code));
-    addEventListener('blur', () => this.keys.clear());
+    addEventListener('blur', () => {
+      this.keys.clear();
+      this.firing = this.aiming = false;
+    });
     addEventListener('mousemove', (e) => {
       if (!this.locked) return;
       this.mouseDX += e.movementX;
       this.mouseDY += e.movementY;
     });
-    addEventListener('mousedown', (e) => { if (e.button === 2) this.aiming = true; });
-    addEventListener('mouseup', (e) => { if (e.button === 2) this.aiming = false; });
+    addEventListener('mousedown', (e) => {
+      if (e.button === 2) this.aiming = true;
+      if (e.button === 0 && this.locked) {
+        this.firing = true;
+        this.pressed.add('Mouse0');
+      }
+    });
+    addEventListener('mouseup', (e) => {
+      if (e.button === 2) this.aiming = false;
+      if (e.button === 0) this.firing = false;
+    });
     addEventListener('contextmenu', (e) => e.preventDefault());
     document.addEventListener('pointerlockchange', () => { this.locked = document.pointerLockElement === this.canvas; });
   }

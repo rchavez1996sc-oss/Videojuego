@@ -37,4 +37,5 @@ export interface ChapterDef {
   village: { x: number; z: number; radius: number; houses: number; church: { x: number; z: number; rot: number } };
   scatter: { rocks: number; trees: number; seed: number };
   spawn: { x: number; z: number; yaw: number };
+  range?: [number, number][];
 }

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { Lighting } from '../render/lighting';
+import { buildAK } from '../weapons/akModel';
 
 /** Placeholder soldier until the Mixamo rig arrives (Fase 1). */
 export class Mannequin {
@@ -8,11 +9,14 @@ export class Mannequin {
   private arms: THREE.Object3D[] = [];
   private torso: THREE.Object3D;
   private phase = 0;
+  readonly muzzle: THREE.Object3D;
+  readonly ejector: THREE.Object3D;
+  readonly weapon: THREE.Object3D;
 
   constructor(lighting: Lighting) {
     const std = (key: string, color: string, r = 0.85) => lighting.setup(new THREE.MeshStandardMaterial({ color, roughness: r }), key);
     const cloth = std('m-cloth', '#4b4a36'), vest = std('m-vest', '#2f3226'), skin = std('m-skin', '#a07258', 0.6);
-    const gear = std('m-gear', '#1d1e1a', 0.5), metal = std('m-metal', '#222326', 0.35);
+    const gear = std('m-gear', '#1d1e1a', 0.5);
     const part = (geo: THREE.BufferGeometry, mat: THREE.Material, parent: THREE.Object3D, pos: [number, number, number]) => {
       const m = new THREE.Mesh(geo, mat);
       m.position.set(...pos);
@@ -44,13 +48,12 @@ export class Mannequin {
       a.rotation.x = -1.1;
       this.arms.push(arm);
     }
-    const rifle = new THREE.Group();
-    rifle.position.set(0.12, 0.42, 0.34);
-    this.torso.add(rifle);
-    part(new THREE.BoxGeometry(0.06, 0.09, 0.62), metal, rifle, [0, 0, 0.1]);
-    part(new THREE.CylinderGeometry(0.014, 0.014, 0.3, 8).rotateX(Math.PI / 2), metal, rifle, [0, 0.015, 0.55]);
-    part(new THREE.BoxGeometry(0.05, 0.16, 0.07), metal, rifle, [0, -0.1, 0.12]).rotation.x = 0.3;
-    part(new THREE.BoxGeometry(0.05, 0.08, 0.25), std('m-stock', '#3d2f22', 0.7), rifle, [0, -0.02, -0.28]);
+    const ak = buildAK(lighting);
+    ak.group.position.set(0.13, 0.43, 0.3);
+    this.torso.add(ak.group);
+    this.muzzle = ak.muzzle;
+    this.ejector = ak.ejector;
+    this.weapon = ak.group;
   }
 
   animate(dt: number, speed: number, crouch: number, aimPitch: number): void {

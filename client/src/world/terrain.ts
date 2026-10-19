@@ -5,6 +5,7 @@ import type { BiomeDef } from '../data/types';
 import type { Lighting } from '../render/lighting';
 import { rock, soil } from '../render/textures';
 import * as S from './terrainShader';
+import { setSurface } from './surfaces';
 
 const CHUNK = 32;
 const LOD_STEPS = [1, 2, 4];
@@ -63,10 +64,11 @@ export class Terrain {
       }
     }
     const body = world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
-    world.createCollider(
+    const col = world.createCollider(
       RAPIER.ColliderDesc.heightfield(hf.n - 1, hf.n - 1, hf.rapierHeights(), { x: hf.size, y: 1, z: hf.size }),
       body,
     );
+    setSurface(col.handle, 'dirt');
   }
 
   update(cam: THREE.Vector3): void {

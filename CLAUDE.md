@@ -15,4 +15,5 @@ TPS de mundo abierto para PC en navegador, calidad visual gama media (referencia
 
 ## Estado
 - Fase 1 (base técnica + look): hecha salvo personaje Mixamo (soldado provisional en `entities/mannequin.ts`).
-- Fase 1.5 (optimización): terreno por chunks con LOD, rocas de menor detalle, pasto recortado (~10M → ~2,5M tris/frame). Siguiente: Fase 2.
+- Fase 1.5 (optimización): terreno por chunks con LOD, rocas de menor detalle, pasto recortado (~10M → ~2,5M tris/frame).
+- Fase 2 (combate): AKM data-driven (`data/weapons.json`), balística por raycast cámara→cañón, retroceso con patrón, dispersión, recarga, modos auto/semi, trazadoras, fogonazo, casquillos, decals y partículas por superficie (`world/surfaces.ts`), audio sintetizado con reverb de valle, HUD, blancos de práctica (`world/range.ts`), estamina/deslizamiento/aterrizaje, resolución dinámica. Siguiente: Mixamo (Fase 2.5) o Fase 3 (IA enemiga).

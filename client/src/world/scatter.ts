@@ -7,6 +7,7 @@ import type { Heightfield } from './heightfield';
 import type { Lighting } from '../render/lighting';
 import { rock } from '../render/textures';
 import { treeParts } from './trees';
+import { setSurface } from './surfaces';
 
 function rockGeometry(seed: number, detail: number): THREE.BufferGeometry {
   const n3 = createNoise3D(mulberry32(seed));
@@ -84,7 +85,7 @@ export function buildScatter(hf: Heightfield, lighting: Lighting, world: RAPIER.
     q.setFromEuler(e);
     const mx = new THREE.Matrix4().compose(new THREE.Vector3(p.x, p.y - s * 0.12, p.z), q, new THREE.Vector3(s, s * (0.8 + p.s * 0.4), s));
     buckets[Math.floor(p.s * 997) % 3][s > 1.2 ? 'big' : 'small'].push(mx);
-    if (s > 0.7) world.createCollider(RAPIER.ColliderDesc.ball(s * 0.8).setTranslation(p.x, p.y + s * 0.1, p.z), body);
+    if (s > 0.7) setSurface(world.createCollider(RAPIER.ColliderDesc.ball(s * 0.8).setTranslation(p.x, p.y + s * 0.1, p.z), body).handle, 'rock');
   }
   variants.forEach((g, i) => {
     group.add(instanced(g.big, rockMat, buckets[i].big));
@@ -100,7 +101,7 @@ export function buildScatter(hf: Heightfield, lighting: Lighting, world: RAPIER.
     const s = 0.8 + p.s * 0.6;
     q.setFromEuler(e.set(0, p.r, 0));
     trunkM[v].push(new THREE.Matrix4().compose(new THREE.Vector3(p.x, p.y - 0.2, p.z), q, new THREE.Vector3(s, s, s)));
-    world.createCollider(RAPIER.ColliderDesc.cylinder(2, 0.25 * s).setTranslation(p.x, p.y + 2, p.z), body);
+    setSurface(world.createCollider(RAPIER.ColliderDesc.cylinder(2, 0.25 * s).setTranslation(p.x, p.y + 2, p.z), body).handle, 'wood');
   }
   parts.forEach((part, i) => {
     if (!trunkM[i].length) return;

@@ -13,6 +13,14 @@ import { Grass } from './world/grass';
 import { buildScatter } from './world/scatter';
 import { buildVillage } from './world/village';
 import { Player } from './entities/player';
+import weapons from './data/weapons.json';
+import type { WeaponDef } from './weapons/types';
+import { Combat } from './weapons/combat';
+import { Mixer } from './audio/mixer';
+import { Sfx } from './audio/sfx';
+import { ShootingRange } from './world/range';
+import { Hud } from './ui/hud';
+import { DynamicResolution } from './render/dynamicRes';
 
 const status = document.getElementById('status')!;
 const overlay = document.getElementById('overlay')!;
@@ -48,6 +56,19 @@ async function boot(): Promise<void> {
   scene.add(player.model.root);
   const input = new Input(canvas);
   const tpc = new ThirdPersonCamera(camera, world, ch.spawn.yaw);
+  const mixer = new Mixer();
+  const sfx = new Sfx(mixer);
+  const hud = new Hud();
+  const combat = new Combat(weapons.ak as WeaponDef, world, player, tpc, sfx, lighting, hf);
+  scene.add(combat.group);
+  const range = new ShootingRange(hf, lighting, world, ch.spawn, ch.range ?? [], (h) => {
+    combat.sparkBurst(h.point, h.normal);
+    sfx.steelPing(h.point.distanceTo(camera.position));
+    sfx.hitmarker(h.kill);
+    hud.hitmarker(h.kill, h.headshot);
+  });
+  scene.add(range.group);
+  const dynRes = new DynamicResolution(renderer);
   world.step();
 
   let freeCam = false;
@@ -65,12 +86,24 @@ async function boot(): Promise<void> {
       if (shotMode) frame(1 / 60);
     },
     follow() { freeCam = false; },
+    /** Runs `n` frames in follow mode, firing every `every` frames (screenshot tests). */
+    simulate(n: number, every: number, pitch = -0.02) {
+      freeCam = false;
+      tpc.pitch = pitch;
+      for (let i = 0; i < n; i++) {
+        if (every && i % every === 0) combat.debugShoot();
+        frame(1 / 60);
+      }
+    },
     info: () => ({ calls: renderer.gl.info.render.calls, tris: renderer.gl.info.render.triangles }),
     ready: true,
   };
 
   status.textContent = 'Clic para jugar';
-  overlay.addEventListener('click', () => input.lock());
+  overlay.addEventListener('click', () => {
+    mixer.resume();
+    input.lock();
+  });
   document.addEventListener('pointerlockchange', () => overlay.classList.toggle('hidden', document.pointerLockElement === canvas));
 
   const clock = new THREE.Clock();
@@ -80,12 +113,28 @@ async function boot(): Promise<void> {
     const t = clock.elapsedTime;
     renderer.gl.info.reset();
     if (!freeCam) {
-      player.update(dt, input, tpc.yaw, input.aiming, tpc.pitch);
+      player.update(dt, input, tpc.yaw, input.aiming, tpc.pitch, input.firing);
       world.timestep = dt;
       world.step();
       player.syncPosition();
+      const moveK = Math.min(player.speed / 6, 1);
+      tpc.bob = Math.sin(player.stepPhase * Math.PI) * 0.035 * moveK * (input.aiming ? 0.3 : 1);
+      tpc.dip = player.landImpact * 0.3;
+      tpc.fovBoost = THREE.MathUtils.damp(tpc.fovBoost, player.sprinting ? 7 : 0, 6, dt);
       tpc.update(dt, input, player.position, player.crouchAmount, player.collisionHandle);
+      camera.updateMatrixWorld();
+      player.model.root.updateMatrixWorld(true);
+      combat.update(dt, input, input.aiming, player.airborne);
     }
+    range.update(dt);
+    const g = combat.gun;
+    const cone = THREE.MathUtils.degToRad(g.coneDeg(input.aiming, player.speed, player.airborne));
+    hud.update(dt, {
+      spreadPx: (Math.tan(cone) / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) * innerHeight * 0.5,
+      ammo: g.ammo, mag: g.def.magazine, reserve: g.reserve, mode: g.mode, weapon: g.def.name,
+      hp: 100, stamina: player.stamina, reload: g.reloadProgress, aiming: input.aiming,
+    });
+    if (!shotMode) dynRes.update(dt);
     camera.updateMatrixWorld();
     grass.update(t, camera.position);
     terrain.update(camera.position);

@@ -41,6 +41,11 @@ export class Renderer {
     addEventListener('resize', () => this.resize(camera));
   }
 
+  setScale(scale: number): void {
+    this.gl.setPixelRatio(preset.pixelRatio * scale);
+    this.composer.setSize(innerWidth, innerHeight, false);
+  }
+
   private resize(camera: THREE.PerspectiveCamera): void {
     const w = innerWidth, h = innerHeight;
     this.gl.setSize(w, h, false);

@@ -13,3 +13,40 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0d0d0c; c
 #overlay .keys { font-family: ui-monospace, monospace; font-size: 12px; color: var(--dim); position: absolute; bottom: 32px; }
 #stats { position: fixed; top: 8px; left: 8px; font: 12px ui-monospace, monospace; color: var(--dim); pointer-events: none; }
 body.shot #overlay, body.shot #stats { display: none; }
+
+#hud { position: fixed; inset: 0; pointer-events: none; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; color: var(--fg); }
+#hud .crosshair { position: absolute; left: 50%; top: 50%; }
+#hud .crosshair i { position: absolute; background: rgba(240, 236, 226, 0.92); box-shadow: 0 0 2px rgba(0, 0, 0, 0.8); transition: transform 0.05s linear; }
+#hud .crosshair .t, #hud .crosshair .b { width: 2px; height: 10px; }
+#hud .crosshair .l, #hud .crosshair .r { width: 10px; height: 2px; }
+#hud .crosshair b { position: absolute; width: 2px; height: 2px; transform: translate(-50%, -50%); background: rgba(240, 236, 226, 0.9); }
+#hud .hitmarker { position: absolute; left: 50%; top: 50%; opacity: 0; }
+#hud .hitmarker i { position: absolute; width: 12px; height: 2px; background: #fff; box-shadow: 0 0 3px rgba(0, 0, 0, 0.9); }
+#hud .hitmarker i:nth-child(1) { transform: translate(5px, 5px) rotate(45deg); }
+#hud .hitmarker i:nth-child(2) { transform: translate(-17px, 5px) rotate(-45deg); }
+#hud .hitmarker i:nth-child(3) { transform: translate(5px, -7px) rotate(-45deg); }
+#hud .hitmarker i:nth-child(4) { transform: translate(-17px, -7px) rotate(45deg); }
+#hud .hitmarker.kill i { background: #e0452b; width: 16px; }
+#hud .hitmarker.pop { animation: hm-pop 0.12s ease-out; }
+@keyframes hm-pop { from { transform: scale(1.5); } to { transform: scale(1); } }
+#hud .toast { position: absolute; left: 50%; top: 58%; transform: translateX(-50%); font-size: 22px; font-weight: 700; letter-spacing: 0.18em; color: #f2d48a; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8); opacity: 0; white-space: nowrap; }
+#hud .toast.pop { animation: toast-pop 0.25s ease-out; }
+@keyframes toast-pop { from { transform: translateX(-50%) scale(1.3); } to { transform: translateX(-50%) scale(1); } }
+#hud .reload { position: absolute; left: 50%; top: calc(50% + 40px); transform: translateX(-50%); text-align: center; font: 12px ui-monospace, monospace; letter-spacing: 0.2em; opacity: 0; transition: opacity 0.15s; }
+#hud .reload.on { opacity: 0.9; }
+#hud .reload .bar { width: 90px; height: 2px; background: rgba(255, 255, 255, 0.2); margin-top: 4px; }
+#hud .reload .bar div { height: 100%; background: var(--accent); }
+#hud .vitals { position: absolute; left: 32px; bottom: 32px; width: 240px; }
+#hud .label { font: 11px ui-monospace, monospace; letter-spacing: 0.25em; color: var(--dim); margin-bottom: 4px; }
+#hud .meter { height: 8px; background: rgba(0, 0, 0, 0.45); clip-path: polygon(0 0, 100% 0, 97% 100%, 0 100%); }
+#hud .meter div { height: 100%; transition: width 0.15s; }
+#hud .hp div { background: linear-gradient(90deg, #d8d2c2, #f1ece0); }
+#hud .stamina { height: 3px; margin-top: 4px; transition: opacity 0.3s; }
+#hud .stamina.hidden { opacity: 0; }
+#hud .stamina div { background: #c9a24b; transition: none; }
+#hud .ammo { position: absolute; right: 36px; bottom: 28px; text-align: right; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6); }
+#hud .ammo .weapon { font: 12px ui-monospace, monospace; letter-spacing: 0.3em; color: var(--dim); }
+#hud .ammo .mag { font-size: 54px; font-weight: 700; line-height: 1; }
+#hud .ammo .mag.low { color: #e0452b; }
+#hud .ammo .res { font-size: 22px; color: var(--dim); margin-left: 6px; }
+#hud .ammo .mode { font: 11px ui-monospace, monospace; letter-spacing: 0.3em; color: var(--accent); }
