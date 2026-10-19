@@ -21,7 +21,7 @@ try {
   for (const i of [0, 1, 2, 3]) {
     await page.evaluate((v) => window.__game.setView(v), i);
     await page.screenshot({ path: `shots/view${i}.png`, timeout: 300000 });
-    console.log(`shots/view${i}.png`);
+    console.log(`shots/view${i}.png`, JSON.stringify(await page.evaluate(() => window.__game.info())));
   }
 } finally {
   await browser.close();

@@ -14,4 +14,5 @@ TPS de mundo abierto para PC en navegador, calidad visual gama media (referencia
 - Cierre de fase: `npm run build` sin errores + `npm run shot` (capturas en `client/shots/`) + checklist.
 
 ## Estado
-- Fase 1 (base técnica + look): hecha salvo personaje Mixamo (soldado provisional en `entities/mannequin.ts`). Siguiente: integrar Mixamo cuando esté en `assets_src/`, luego Fase 2.
+- Fase 1 (base técnica + look): hecha salvo personaje Mixamo (soldado provisional en `entities/mannequin.ts`).
+- Fase 1.5 (optimización): terreno por chunks con LOD, rocas de menor detalle, pasto recortado (~10M → ~2,5M tris/frame). Siguiente: Fase 2.

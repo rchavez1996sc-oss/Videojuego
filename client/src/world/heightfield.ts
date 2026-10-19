@@ -108,8 +108,7 @@ export class Heightfield {
     return lerp(a, b, tz);
   }
 
-  normalAt(x: number, z: number): [number, number, number] {
-    const e = this.step;
+  normalAt(x: number, z: number, e = this.step): [number, number, number] {
     const dx = this.heightAt(x + e, z) - this.heightAt(x - e, z);
     const dz = this.heightAt(x, z + e) - this.heightAt(x, z - e);
     const len = Math.hypot(dx, 2 * e, dz);

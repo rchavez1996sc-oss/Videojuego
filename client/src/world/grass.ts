@@ -6,11 +6,11 @@ import { heightTexture, maskTexture } from './terrain';
 import { mulberry32 } from '../core/rng';
 import { NOISE_GLSL } from '../render/glsl';
 
-const TILE = 60;
+const TILE = 50;
 const f = (v: number) => v.toFixed(1);
 
 function bladeGeometry(): THREE.BufferGeometry {
-  const segs = 4, pos: number[] = [], uv: number[] = [], idx: number[] = [];
+  const segs = 3, pos: number[] = [], uv: number[] = [], idx: number[] = [];
   const blades: [number, number, number, number][] = [[0, 0, 0, 1], [0.07, 0.04, 1.9, 0.8], [-0.05, 0.06, 4.1, 0.9], [0.02, -0.07, 5.3, 0.7]];
   for (const [ox, oz, rot, hs] of blades) {
     const base = pos.length / 3, c = Math.cos(rot), s = Math.sin(rot);

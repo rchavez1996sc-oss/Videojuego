@@ -8,9 +8,9 @@ import type { Lighting } from '../render/lighting';
 import { rock } from '../render/textures';
 import { treeParts } from './trees';
 
-function rockGeometry(seed: number): THREE.BufferGeometry {
+function rockGeometry(seed: number, detail: number): THREE.BufferGeometry {
   const n3 = createNoise3D(mulberry32(seed));
-  const g = mergeVertices(new THREE.IcosahedronGeometry(1, 5).deleteAttribute('normal').deleteAttribute('uv'));
+  const g = mergeVertices(new THREE.IcosahedronGeometry(1, detail).deleteAttribute('normal').deleteAttribute('uv'));
   const p = g.attributes.position as THREE.BufferAttribute;
   const v = new THREE.Vector3();
   const colors = new Float32Array(p.count * 3);
@@ -52,10 +52,11 @@ function place(hf: Heightfield, count: number, rand: () => number, accept: (x: n
   return out;
 }
 
-function instanced(geo: THREE.BufferGeometry, mat: THREE.Material, items: THREE.Matrix4[]): THREE.InstancedMesh {
+function instanced(geo: THREE.BufferGeometry, mat: THREE.Material, items: THREE.Matrix4[], shadow = true): THREE.InstancedMesh {
   const m = new THREE.InstancedMesh(geo, mat, items.length);
   items.forEach((mx, i) => m.setMatrixAt(i, mx));
-  m.castShadow = m.receiveShadow = true;
+  m.castShadow = shadow;
+  m.receiveShadow = true;
   m.computeBoundingSphere();
   return m;
 }
@@ -72,8 +73,8 @@ export function buildScatter(hf: Heightfield, lighting: Lighting, world: RAPIER.
     map: rockTex.map, normalMap: rockTex.normalMap, vertexColors: true, roughness: 0.88, color: '#b5ab9f',
   }), 'rock');
   const rocks = place(hf, opts.rocks, rand, (x, z, slope) => clear(x, z) && (slope > 0.12 || noise.fbm(x, z, 1 / 60, 2) > 0.25));
-  const variants = [rockGeometry(1), rockGeometry(2), rockGeometry(3)];
-  const buckets: THREE.Matrix4[][] = [[], [], []];
+  const variants = [1, 2, 3].map((seed) => ({ big: rockGeometry(seed, 3), small: rockGeometry(seed, 1) }));
+  const buckets = variants.map(() => ({ big: [] as THREE.Matrix4[], small: [] as THREE.Matrix4[] }));
   const q = new THREE.Quaternion(), e = new THREE.Euler();
   for (const p of rocks) {
     const big = p.s > 0.93;
@@ -82,10 +83,13 @@ export function buildScatter(hf: Heightfield, lighting: Lighting, world: RAPIER.
     e.set(tilt[2] * 0.6, p.r, -tilt[0] * 0.6);
     q.setFromEuler(e);
     const mx = new THREE.Matrix4().compose(new THREE.Vector3(p.x, p.y - s * 0.12, p.z), q, new THREE.Vector3(s, s * (0.8 + p.s * 0.4), s));
-    buckets[Math.floor(p.s * 997) % 3].push(mx);
+    buckets[Math.floor(p.s * 997) % 3][s > 1.2 ? 'big' : 'small'].push(mx);
     if (s > 0.7) world.createCollider(RAPIER.ColliderDesc.ball(s * 0.8).setTranslation(p.x, p.y + s * 0.1, p.z), body);
   }
-  variants.forEach((g, i) => group.add(instanced(g, rockMat, buckets[i])));
+  variants.forEach((g, i) => {
+    group.add(instanced(g.big, rockMat, buckets[i].big));
+    group.add(instanced(g.small, rockMat, buckets[i].small, false));
+  });
 
   const parts = treeParts(lighting);
   const trees = place(hf, opts.trees, rand, (x, z, slope) =>

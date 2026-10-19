@@ -8,7 +8,7 @@ import { preset, shotMode } from './core/settings';
 import { Renderer } from './render/renderer';
 import { Lighting } from './render/lighting';
 import { Heightfield } from './world/heightfield';
-import { buildTerrain } from './world/terrain';
+import { Terrain } from './world/terrain';
 import { Grass } from './world/grass';
 import { buildScatter } from './world/scatter';
 import { buildVillage } from './world/village';
@@ -32,7 +32,8 @@ async function boot(): Promise<void> {
 
   await step('Generando terreno…');
   const hf = new Heightfield(ch.terrain);
-  scene.add(buildTerrain(hf, ch.biome, lighting, world));
+  const terrain = new Terrain(hf, ch.biome, lighting, world);
+  scene.add(terrain.group);
   await step('Construyendo la aldea…');
   const village = buildVillage(hf, ch, lighting, world);
   scene.add(village.group);
@@ -64,6 +65,7 @@ async function boot(): Promise<void> {
       if (shotMode) frame(1 / 60);
     },
     follow() { freeCam = false; },
+    info: () => ({ calls: renderer.gl.info.render.calls, tris: renderer.gl.info.render.triangles }),
     ready: true,
   };
 
@@ -73,8 +75,10 @@ async function boot(): Promise<void> {
 
   const clock = new THREE.Clock();
   let frames = 0, acc = 0;
+  renderer.gl.info.autoReset = false;
   const frame = (dt: number) => {
     const t = clock.elapsedTime;
+    renderer.gl.info.reset();
     if (!freeCam) {
       player.update(dt, input, tpc.yaw, input.aiming, tpc.pitch);
       world.timestep = dt;
@@ -84,6 +88,7 @@ async function boot(): Promise<void> {
     }
     camera.updateMatrixWorld();
     grass.update(t, camera.position);
+    terrain.update(camera.position);
     lighting.update();
     renderer.render(dt);
     input.endFrame();
