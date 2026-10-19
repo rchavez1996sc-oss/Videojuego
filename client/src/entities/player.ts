@@ -93,7 +93,7 @@ export class Player {
     this.body.setNextKinematicTranslation({ x: p.x + m.x, y: p.y + m.y, z: p.z + m.z });
 
     this.speed = Math.hypot(this.vel.x, this.vel.z);
-    if (this.grounded) this.stepPhase += dt * this.speed * 1.9;
+    if (this.grounded) this.stepPhase += (dt * this.speed) / (0.7 + this.speed * 0.22);
     const facing = aiming || firing;
     const faceYaw = facing || this.speed < 0.2 ? camYaw : Math.atan2(-this.vel.x, -this.vel.z);
     if (facing || this.speed > 0.2) {

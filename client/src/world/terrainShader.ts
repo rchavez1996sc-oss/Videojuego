@@ -36,11 +36,11 @@ float slope = 1.0 - wn.y;
 float camDist = length(vWPos - cameraPosition);
 float n1 = tq_fbm(vWPos.xz * 0.03);
 float n2 = tq_fbm(vWPos.xz * 0.35);
-float n3 = tq_noise(vWPos.xz * 3.1) * (1.0 - smoothstep(12.0, 35.0, camDist));
+float n3 = tq_noise(vWPos.xz * 3.1) * (1.0 - smoothstep(4.0, 18.0, camDist));
 
 vec3 soilA = texture2D(uSoil, vWPos.xz * 0.33).rgb;
 vec3 soilB = texture2D(uSoil, vWPos.xz * 0.047).rgb;
-vec3 soilC = mix(soilA, soilB, smoothstep(5.0, 28.0, camDist));
+vec3 soilC = mix(soilA, soilB, smoothstep(3.0, 18.0, camDist));
 vec3 rockC = triplanar(uRock, vWPos, wn, 0.11) * mix(vec3(1.0), triplanar(uRock, vWPos, wn, 0.013) * 1.6, 0.5);
 
 float dryness = smoothstep(-0.25, 0.45, n1 + vWPos.y * 0.008);
@@ -69,5 +69,5 @@ float roughnessFactor = tRough;
 `;
 
 export const TERRAIN_FRAG_NORMAL = /* glsl */ `
-normal = tq_perturb(-vViewPosition, normal, vec2(dFdx(tBump), dFdy(tBump)) * 1.6);
+normal = tq_perturb(-vViewPosition, normal, vec2(dFdx(tBump), dFdy(tBump)) * 0.8);
 `;

@@ -4,7 +4,7 @@ import chapter from './data/chapters/ch01.json';
 import type { ChapterDef } from './data/types';
 import { Input } from './core/input';
 import { ThirdPersonCamera } from './core/camera';
-import { preset, shotMode } from './core/settings';
+import { preset, quality, shotMode, gpuName } from './core/settings';
 import { Renderer } from './render/renderer';
 import { Lighting } from './render/lighting';
 import { Heightfield } from './world/heightfield';
@@ -106,9 +106,7 @@ async function boot(): Promise<void> {
   });
   document.addEventListener('pointerlockchange', () => overlay.classList.toggle('hidden', document.pointerLockElement === canvas));
 
-  const ctx = renderer.gl.getContext();
-  const dbg = ctx.getExtension('WEBGL_debug_renderer_info');
-  const gpu = String(dbg ? ctx.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : ctx.getParameter(ctx.RENDERER)).replace(/^ANGLE \((.*)\)$/, '$1').slice(0, 70);
+  const gpu = gpuName.replace(/^ANGLE \((.*)\)$/, '$1').slice(0, 60);
   const clock = new THREE.Clock();
   let frames = 0, acc = 0;
   renderer.gl.info.autoReset = false;
@@ -121,7 +119,7 @@ async function boot(): Promise<void> {
       world.step();
       player.syncPosition();
       const moveK = Math.min(player.speed / 6, 1);
-      tpc.bob = Math.sin(player.stepPhase * Math.PI) * 0.035 * moveK * (input.aiming ? 0.3 : 1);
+      tpc.bob = THREE.MathUtils.damp(tpc.bob, Math.cos(player.stepPhase * Math.PI * 2) * (0.006 + 0.01 * moveK) * moveK * (input.aiming ? 0.2 : 1), 12, dt);
       tpc.dip = player.landImpact * 0.3;
       tpc.fovBoost = THREE.MathUtils.damp(tpc.fovBoost, player.sprinting ? 7 : 0, 6, dt);
       tpc.update(dt, input, player.position, player.crouchAmount, player.collisionHandle);
@@ -147,7 +145,7 @@ async function boot(): Promise<void> {
     frames++;
     acc += dt;
     if (acc > 0.5) {
-      stats.textContent = `${Math.round(frames / acc)} fps · res ${Math.round(dynRes.scale * 100)}% · ${renderer.gl.info.render.calls} draws · ${(renderer.gl.info.render.triangles / 1e6).toFixed(2)}M tris · ${gpu}`;
+      stats.textContent = `${Math.round(frames / acc)} fps · ${quality} · res ${Math.round(dynRes.scale * 100)}% · ${renderer.gl.info.render.calls} draws · ${(renderer.gl.info.render.triangles / 1e6).toFixed(2)}M tris · ${gpu}`;
       frames = acc = 0;
     }
   };

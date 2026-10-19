@@ -7,7 +7,7 @@ export class DynamicResolution {
   private frames = 0;
   private good = 0;
 
-  constructor(private renderer: Renderer, private min = 0.6, private target = 57) {}
+  constructor(private renderer: Renderer, private min = 0.7, private target = 57) {}
 
   update(dt: number): void {
     this.acc += dt;
