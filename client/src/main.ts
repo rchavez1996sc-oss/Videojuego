@@ -20,6 +20,7 @@ import { Mixer } from './audio/mixer';
 import { Sfx } from './audio/sfx';
 import { ShootingRange } from './world/range';
 import { buildStructures } from './world/structures';
+import { surfaceOf } from './world/surfaces';
 import { Hud } from './ui/hud';
 import { DynamicResolution } from './render/dynamicRes';
 
@@ -70,7 +71,7 @@ async function boot(): Promise<void> {
   });
   scene.add(range.group);
   scene.add(buildStructures(hf, lighting, world, ch.spawn, ch.structures ?? []));
-  player.onMantle = () => sfx.footstep(1.3);
+  player.onMantle = () => sfx.footstep(1.3, 'rock');
   const dynRes = new DynamicResolution(renderer);
   world.step();
 
@@ -112,6 +113,14 @@ async function boot(): Promise<void> {
 
   const gpu = gpuName.replace(/^ANGLE \((.*)\)$/, '$1').slice(0, 60);
   let lastStep = 0, landed = false;
+  const groundUnder = (): 'grass' | 'dirt' | 'rock' | 'wood' => {
+    const p = player.position;
+    const hit = world.castRay(new RAPIER.Ray({ x: p.x, y: p.y + 0.3, z: p.z }, { x: 0, y: -1, z: 0 }), 0.8, true, undefined, undefined, undefined, undefined, (c) => c.handle !== player.collisionHandle);
+    const surf = hit ? surfaceOf(hit.collider.handle) : 'dirt';
+    if (surf === 'dirt') return hf.maskAt(p.x, p.z, 1) > 0.3 ? 'grass' : 'dirt';
+    if (surf === 'wood') return 'wood';
+    return surf === 'rock' || surf === 'metal' || surf === 'tile' ? 'rock' : 'dirt';
+  };
   const clock = new THREE.Clock();
   let frames = 0, acc = 0;
   renderer.gl.info.autoReset = false;
@@ -129,9 +138,9 @@ async function boot(): Promise<void> {
       tpc.bob = THREE.MathUtils.damp(tpc.bob, (stepWave - 0.6) * amp - (player.sprinting ? 0.05 : moveK * 0.02), 25, dt);
       tpc.sway = THREE.MathUtils.damp(tpc.sway, Math.sin(player.stepPhase * Math.PI) * amp * 0.5, 20, dt);
       const step = Math.floor(player.stepPhase);
-      if (step !== lastStep && player.speed > 0.8 && !player.airborne) sfx.footstep(Math.min(1, player.speed / 6) * (player.crouchAmount > 0.5 ? 0.4 : 1));
+      if (step !== lastStep && player.speed > 0.8 && !player.airborne) sfx.footstep(Math.min(1, player.speed / 6) * (player.crouchAmount > 0.5 ? 0.4 : 1), groundUnder());
       lastStep = step;
-      if (player.landImpact > 0.6 && !landed) sfx.footstep(1.6);
+      if (player.landImpact > 0.6 && !landed) sfx.footstep(1.6, groundUnder());
       landed = player.landImpact > 0.6;
       tpc.dip = player.landImpact * 0.3;
       tpc.fovBoost = THREE.MathUtils.damp(tpc.fovBoost, player.sprinting ? 7 : 0, 6, dt);
