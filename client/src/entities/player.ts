@@ -107,6 +107,7 @@ export class Player {
     const p = this.body.translation();
     this.position.set(p.x, p.y - HALF - RADIUS, p.z);
     this.model.root.position.copy(this.position);
+    this.model.root.position.y -= 0.03 + Math.min(this.speed / 6, 1) * 0.03;
     this.model.root.rotation.y = this.yaw + Math.PI;
   }
 

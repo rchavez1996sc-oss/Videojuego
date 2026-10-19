@@ -122,7 +122,7 @@ async function boot(): Promise<void> {
       const moveK = Math.min(player.speed / 6, 1);
       const amp = (0.012 + 0.02 * moveK) * moveK * (input.aiming ? 0.3 : 1);
       const stepWave = Math.abs(Math.sin(player.stepPhase * Math.PI));
-      tpc.bob = THREE.MathUtils.damp(tpc.bob, (stepWave - 0.6) * amp, 25, dt);
+      tpc.bob = THREE.MathUtils.damp(tpc.bob, (stepWave - 0.6) * amp - (player.sprinting ? 0.05 : moveK * 0.02), 25, dt);
       tpc.sway = THREE.MathUtils.damp(tpc.sway, Math.sin(player.stepPhase * Math.PI) * amp * 0.5, 20, dt);
       const step = Math.floor(player.stepPhase);
       if (step !== lastStep && player.speed > 0.8 && !player.airborne) sfx.footstep(Math.min(1, player.speed / 6) * (player.crouchAmount > 0.5 ? 0.4 : 1));
@@ -146,7 +146,7 @@ async function boot(): Promise<void> {
     });
     if (!shotMode) dynRes.update(dt);
     camera.updateMatrixWorld();
-    grass.update(t, camera.position);
+    grass.update(t, camera.position, player.position);
     terrain.update(camera.position);
     lighting.update();
     renderer.render(dt);

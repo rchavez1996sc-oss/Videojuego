@@ -54,6 +54,7 @@ export class Grass {
     this.uniforms = {
       uTime: { value: 0 },
       uCam: { value: new THREE.Vector2() },
+      uPlayer: { value: new THREE.Vector3(0, -999, 0) },
       uHeight: { value: heightTexture(hf) },
       uMask: { value: maskTexture(hf) },
       uN: { value: hf.n },
@@ -70,6 +71,7 @@ export class Grass {
           attribute vec4 aBlade;
           uniform float uTime, uN, uSize, uBladeH;
           uniform vec2 uCam;
+          uniform vec3 uPlayer;
           uniform sampler2D uHeight, uMask;
           uniform vec3 uBase, uTip;
           varying vec3 vGrassCol;
@@ -99,7 +101,12 @@ export class Grass {
           transformed.x += sway * 0.32 * bh;
           transformed.z += sway * 0.12 * bh + (aBlade.w - 0.5) * 0.2 * position.y * bh;
           transformed.xz += wp;
-          transformed.y += hAt(wp) - 0.02;`);
+          float gy = hAt(wp);
+          vec2 away = wp - uPlayer.xz;
+          float near = (1.0 - smoothstep(0.15, 0.85, length(away))) * step(uPlayer.y - gy, 0.6);
+          transformed.xz += normalize(away + 0.0001) * near * 0.3 * position.y * bh;
+          transformed.y *= 1.0 - near * 0.65;
+          transformed.y += gy - 0.02;`);
       sh.fragmentShader = sh.fragmentShader
         .replace('#include <common>', '#include <common>\nvarying vec3 vGrassCol;')
         .replace('#include <map_fragment>', 'diffuseColor.rgb = vGrassCol;');
@@ -109,7 +116,8 @@ export class Grass {
     this.mesh.receiveShadow = true;
   }
 
-  update(t: number, cam: THREE.Vector3): void {
+  update(t: number, cam: THREE.Vector3, player: THREE.Vector3): void {
+    (this.uniforms.uPlayer.value as THREE.Vector3).copy(player);
     this.uniforms.uTime.value = t;
     (this.uniforms.uCam.value as THREE.Vector2).set(cam.x, cam.z);
   }
