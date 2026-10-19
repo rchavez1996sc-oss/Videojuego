@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { setSurface, type Surface } from './surfaces';
 
-const SURFACE: Record<string, Surface> = { adobe: 'adobe', plaster: 'adobe', stone: 'rock', none: 'rock', wood: 'wood', roof: 'tile' };
+const SURFACE: Record<string, Surface> = { adobe: 'adobe', plaster: 'adobe', stone: 'rock', none: 'rock', wood: 'wood', crate: 'wood', roof: 'tile' };
 
 export interface Opening { x: number; w: number; y: number; h: number }
 

@@ -19,6 +19,7 @@ import { Combat } from './weapons/combat';
 import { Mixer } from './audio/mixer';
 import { Sfx } from './audio/sfx';
 import { ShootingRange } from './world/range';
+import { buildStructures } from './world/structures';
 import { Hud } from './ui/hud';
 import { DynamicResolution } from './render/dynamicRes';
 
@@ -68,6 +69,8 @@ async function boot(): Promise<void> {
     hud.hitmarker(h.kill, h.headshot);
   });
   scene.add(range.group);
+  scene.add(buildStructures(hf, lighting, world, ch.spawn, ch.structures ?? []));
+  player.onMantle = () => sfx.footstep(1.3);
   const dynRes = new DynamicResolution(renderer);
   world.step();
 
@@ -77,6 +80,7 @@ async function boot(): Promise<void> {
     [-60, 38, 90, 15, 2, -20],
     [44, 1.7, 13.5, 0, 3, 2],
     [-117.6, 1.9, -31.8, -120.5, 1.1, -35.5],
+    [-131, 4, -30, -118, 1.5, -24],
   ];
   (window as unknown as { __game: object }).__game = {
     setView(i: number) {

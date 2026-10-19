@@ -131,5 +131,17 @@
       80,
       -2
     ]
+  ],
+  "structures": [
+    {
+      "type": "watchpost",
+      "forward": 5,
+      "lateral": -13
+    },
+    {
+      "type": "crates",
+      "forward": 4,
+      "lateral": 7
+    }
   ]
 }

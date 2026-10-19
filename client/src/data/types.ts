@@ -38,4 +38,5 @@ export interface ChapterDef {
   scatter: { rocks: number; trees: number; seed: number };
   spawn: { x: number; z: number; yaw: number };
   range?: [number, number][];
+  structures?: import('../world/structures').StructureDef[];
 }

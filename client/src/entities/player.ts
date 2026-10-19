@@ -3,8 +3,9 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import type { Input } from '../core/input';
 import type { Lighting } from '../render/lighting';
 import { Mannequin } from './mannequin';
+import { findLedge, mantlePath, type Ledge } from './mantle';
 
-const WALK = 3.2, RUN = 6.2, CROUCH = 1.7, AIM = 2.2, JUMP = 5.2, GRAVITY = 22, SLIDE = 8.5;
+const WALK = 3.2, RUN = 6.2, CROUCH = 1.7, AIM = 2.2, JUMP = 6.0, GRAVITY = 22, SLIDE = 8.5;
 const RADIUS = 0.35, HALF = 0.55;
 
 export class Player {
@@ -26,8 +27,10 @@ export class Player {
   sprinting = false;
   landImpact = 0;
   stepPhase = 0;
+  onMantle: (vault: boolean) => void = () => {};
+  private mantle: { ledge: Ledge; start: THREE.Vector3; t: number; dur: number } | null = null;
 
-  constructor(world: RAPIER.World, lighting: Lighting, spawn: THREE.Vector3, yaw: number) {
+  constructor(private world: RAPIER.World, lighting: Lighting, spawn: THREE.Vector3, yaw: number) {
     this.model = new Mannequin(lighting);
     this.yaw = yaw;
     this.body = world.createRigidBody(RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(spawn.x, spawn.y + HALF + RADIUS + 0.2, spawn.z));
@@ -48,7 +51,37 @@ export class Player {
     return !this.grounded;
   }
 
+  get mantling(): boolean {
+    return this.mantle !== null;
+  }
+
+  private updateMantle(dt: number): void {
+    const m = this.mantle!;
+    m.t = Math.min(1, m.t + dt / m.dur);
+    const feet = mantlePath(m.start, m.ledge, m.t);
+    this.body.setNextKinematicTranslation({ x: feet.x, y: feet.y + HALF + RADIUS, z: feet.z });
+    this.crouch = THREE.MathUtils.damp(this.crouch, m.t < 0.7 ? 0.6 : 0, 10, dt);
+    this.speed = 0;
+    this.model.animate(dt, 2, this.crouch, 0);
+    if (m.t >= 1) {
+      this.mantle = null;
+      this.vel.set(0, -1, 0);
+      this.onMantle(m.ledge.vault);
+    }
+  }
+
   update(dt: number, input: Input, camYaw: number, aiming: boolean, aimPitch: number, firing: boolean): void {
+    if (this.mantle) return this.updateMantle(dt);
+    if (input.hit('Space')) {
+      const moveYaw = this.speed > 0.5 ? Math.atan2(-this.vel.x, -this.vel.z) : camYaw;
+      const ledge = findLedge(this.world, this.position, moveYaw, this.collider.handle);
+      if (ledge && (this.grounded || ledge.height < 1.6)) {
+        this.yaw = moveYaw;
+        this.mantle = { ledge, start: this.position.clone(), t: 0, dur: ledge.vault ? 0.55 : 0.35 + ledge.height * 0.22 };
+        this.onMantle(ledge.vault);
+        return this.updateMantle(dt);
+      }
+    }
     const f = (input.down('KeyW') ? 1 : 0) - (input.down('KeyS') ? 1 : 0);
     const s = (input.down('KeyD') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
     const crouchKey = input.down('ControlLeft') || input.down('KeyC');

@@ -19,14 +19,14 @@ try {
   page.on('pageerror', (e) => console.error('[page]', e.message));
   await page.goto(`http://localhost:${port}/?shot&q=${quality}`);
   await page.waitForFunction(() => window.__game?.ready, null, { timeout: 180000 });
-  for (const i of only === 'combat' ? [] : [0, 1, 2, 3]) {
+  for (const i of only === 'combat' ? [] : [0, 1, 2, 3, 4]) {
     await page.evaluate((v) => window.__game.setView(v), i);
     await page.screenshot({ path: `shots/view${i}.png`, timeout: 300000 });
     console.log(`shots/view${i}.png`, JSON.stringify(await page.evaluate(() => window.__game.info())));
   }
   await page.evaluate(() => window.__game.simulate(21, 4, -0.32));
-  await page.screenshot({ path: 'shots/view4.png', timeout: 300000 });
-  console.log('shots/view4.png', JSON.stringify(await page.evaluate(() => window.__game.info())));
+  await page.screenshot({ path: 'shots/combat.png', timeout: 300000 });
+  console.log('shots/combat.png', JSON.stringify(await page.evaluate(() => window.__game.info())));
 } finally {
   await browser.close();
   server.kill();
