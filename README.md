@@ -2,7 +2,7 @@
 
 Shooter en tercera persona de mundo abierto para navegador (Three.js + Rapier).
 
-- **Jugar:** https://rchavez1996sc-oss.github.io/videojuego/ (se publica solo en cada push a `main`).
+- **Jugar:** https://rchavez1996sc-oss.github.io/Videojuego/ (se publica solo en cada push a `main`).
 - **Diseño completo:** [`docs/GDD.md`](docs/GDD.md) · **Reglas del proyecto:** [`CLAUDE.md`](CLAUDE.md)
 
 ## Controles
