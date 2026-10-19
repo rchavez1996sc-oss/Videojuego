@@ -1,0 +1,60 @@
+{
+  "rifleman": {
+    "hp": 100,
+    "damage": 7,
+    "rpm": 520,
+    "burst": [
+      3,
+      6
+    ],
+    "burstPause": [
+      0.7,
+      1.6
+    ],
+    "spread": 1.8,
+    "spreadPerMeter": 0.01,
+    "reaction": 0.85,
+    "sight": 140,
+    "fov": 120,
+    "hearing": 170,
+    "walk": 1.7,
+    "run": 4.3,
+    "preferredRange": 28,
+    "palette": {
+      "id": "gno",
+      "cloth": "#3e4650",
+      "vest": "#23282e",
+      "skin": "#8f6650",
+      "helmet": "#2c3238"
+    }
+  },
+  "marksman": {
+    "hp": 80,
+    "damage": 18,
+    "rpm": 70,
+    "burst": [
+      1,
+      1
+    ],
+    "burstPause": [
+      1.8,
+      3.0
+    ],
+    "spread": 0.35,
+    "spreadPerMeter": 0.002,
+    "reaction": 1.6,
+    "sight": 240,
+    "fov": 100,
+    "hearing": 200,
+    "walk": 0,
+    "run": 0,
+    "preferredRange": 80,
+    "palette": {
+      "id": "gno-m",
+      "cloth": "#4a4a3e",
+      "vest": "#2a2a22",
+      "skin": "#8f6650",
+      "helmet": "#3a3a2e"
+    }
+  }
+}

@@ -3,7 +3,7 @@ import type { Mixer } from './mixer';
 export class Sfx {
   constructor(private m: Mixer) {}
 
-  private filtered(t: number, type: BiquadFilterType, freq: number, q: number, peak: number, attack: number, decay: number, send = 0): void {
+  private filtered(t: number, type: BiquadFilterType, freq: number, q: number, peak: number, attack: number, decay: number, send = 0, dest: AudioNode = this.m.sfx): void {
     const { ctx } = this.m;
     const src = this.m.noise();
     const f = ctx.createBiquadFilter();
@@ -11,7 +11,7 @@ export class Sfx {
     f.frequency.value = freq;
     f.Q.value = q;
     const g = this.m.env(t, peak, attack, decay);
-    src.connect(f).connect(g).connect(this.m.sfx);
+    src.connect(f).connect(g).connect(dest);
     if (send) {
       const s = ctx.createGain();
       s.gain.value = send;
@@ -21,14 +21,14 @@ export class Sfx {
     src.stop(t + attack + decay + 0.05);
   }
 
-  private tone(t: number, type: OscillatorType, f0: number, f1: number, peak: number, decay: number, send = 0): void {
+  private tone(t: number, type: OscillatorType, f0: number, f1: number, peak: number, decay: number, send = 0, dest: AudioNode = this.m.sfx): void {
     const { ctx } = this.m;
     const o = ctx.createOscillator();
     o.type = type;
     o.frequency.setValueAtTime(f0, t);
     o.frequency.exponentialRampToValueAtTime(f1, t + decay);
     const g = this.m.env(t, peak, 0.002, decay);
-    o.connect(g).connect(this.m.sfx);
+    o.connect(g).connect(dest);
     if (send) {
       const s = ctx.createGain();
       s.gain.value = send;
@@ -45,6 +45,47 @@ export class Sfx {
     this.filtered(t + 0.004, 'highpass', 5500, 0.5, 0.35, 0.001, 0.03);
     this.tone(t, 'sine', 140 * v, 38, 1.3, 0.18, 0.4);
     this.filtered(t + 0.05, 'bandpass', 3800, 4, 0.12, 0.001, 0.02);
+  }
+
+  /** Enemy gunshot: delayed by distance, dulled, quieter and panned towards its side. */
+  distantShot(distance: number, pan: number, heavy = false): void {
+    const { ctx } = this.m;
+    const t = ctx.currentTime + distance / 343, v = 0.9 + Math.random() * 0.2;
+    const near = 1 / (1 + distance / 22);
+    const panner = ctx.createStereoPanner();
+    panner.pan.value = Math.max(-1, Math.min(1, pan)) * 0.8;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = Math.max(700, 9000 * near + 400);
+    const bus = ctx.createGain();
+    bus.gain.value = 0.25 + near * 0.9;
+    lp.connect(panner).connect(bus).connect(this.m.sfx);
+    const send = 0.4 + (1 - near) * 1.2;
+    this.filtered(t, 'bandpass', 2200 * v, 0.7, 1.1, 0.001, 0.07, send, lp);
+    this.filtered(t, 'lowpass', (heavy ? 500 : 650) * v, 0.8, heavy ? 1.8 : 1.3, 0.002, heavy ? 0.35 : 0.22, send, lp);
+    this.tone(t, 'sine', (heavy ? 110 : 130) * v, 38, 1.0, 0.18, send * 0.5, lp);
+    setTimeout(() => bus.disconnect(), (distance / 343 + 1.5) * 1000);
+  }
+
+  whiz(pan: number): void {
+    const { ctx } = this.m, t = ctx.currentTime;
+    const panner = ctx.createStereoPanner();
+    panner.pan.value = Math.max(-1, Math.min(1, pan));
+    panner.connect(this.m.sfx);
+    const src = this.m.noise(), f = ctx.createBiquadFilter(), g = this.m.env(t, 0.35, 0.01, 0.12);
+    f.type = 'bandpass';
+    f.Q.value = 8;
+    f.frequency.setValueAtTime(5200, t);
+    f.frequency.exponentialRampToValueAtTime(1800, t + 0.13);
+    src.connect(f).connect(g).connect(panner);
+    src.start(t);
+    src.stop(t + 0.2);
+  }
+
+  hurt(): void {
+    const t = this.m.ctx.currentTime;
+    this.tone(t, 'sine', 90, 50, 0.5, 0.15);
+    this.filtered(t, 'lowpass', 400, 1, 0.4, 0.002, 0.12);
   }
 
   dryFire(): void {

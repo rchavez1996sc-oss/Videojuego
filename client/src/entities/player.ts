@@ -24,6 +24,8 @@ export class Player {
   private exhausted = false;
   private lastVy = 0;
   stamina = 100;
+  hp = 100;
+  private sinceHit = 99;
   sprinting = false;
   landImpact = 0;
   stepPhase = 0;
@@ -49,6 +51,27 @@ export class Player {
 
   get airborne(): boolean {
     return !this.grounded;
+  }
+
+  hurt(amount: number): void {
+    this.hp = Math.max(0, this.hp - amount);
+    this.sinceHit = 0;
+  }
+
+  /** Regenerates after 6 s without damage (until medkits exist). */
+  regen(dt: number): void {
+    this.sinceHit += dt;
+    if (this.hp > 0 && this.sinceHit > 6) this.hp = Math.min(100, this.hp + 9 * dt);
+  }
+
+  respawn(feet: THREE.Vector3, yaw: number): void {
+    this.body.setTranslation({ x: feet.x, y: feet.y + HALF + RADIUS + 0.2, z: feet.z }, true);
+    this.vel.set(0, 0, 0);
+    this.hp = 100;
+    this.stamina = 100;
+    this.yaw = yaw;
+    this.mantle = null;
+    this.syncPosition();
   }
 
   get mantling(): boolean {

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { setSurface, type Surface } from './surfaces';
+import { cover } from '../ai/cover';
 
 const SURFACE: Record<string, Surface> = { adobe: 'adobe', plaster: 'adobe', stone: 'rock', none: 'rock', wood: 'wood', crate: 'wood', roof: 'tile' };
 
@@ -28,6 +29,7 @@ export class Builder {
         this.body,
       );
       setSurface(col.handle, SURFACE[mat] ?? 'adobe');
+      if (mat !== 'roof') cover.addBox(pos, size, quat);
     }
   }
 

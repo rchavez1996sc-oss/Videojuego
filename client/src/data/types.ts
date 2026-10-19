@@ -37,6 +37,9 @@ export interface ChapterDef {
   village: { x: number; z: number; radius: number; houses: number; church: { x: number; z: number; rot: number } };
   scatter: { rocks: number; trees: number; seed: number };
   spawn: { x: number; z: number; yaw: number };
+  /** Facing used to lay out the practice range and test structures around the spawn. */
+  rangeYaw?: number;
   range?: [number, number][];
+  enemies?: { type: string; x: number; z: number; y?: number; patrol?: [number, number][] }[];
   structures?: import('../world/structures').StructureDef[];
 }

@@ -8,6 +8,7 @@ import type { Lighting } from '../render/lighting';
 import { rock } from '../render/textures';
 import { treeParts } from './trees';
 import { setSurface } from './surfaces';
+import { cover } from '../ai/cover';
 
 function rockGeometry(seed: number, detail: number): THREE.BufferGeometry {
   const n3 = createNoise3D(mulberry32(seed));
@@ -85,6 +86,7 @@ export function buildScatter(hf: Heightfield, lighting: Lighting, world: RAPIER.
     q.setFromEuler(e);
     const mx = new THREE.Matrix4().compose(new THREE.Vector3(p.x, p.y - s * 0.12, p.z), q, new THREE.Vector3(s, s * (0.8 + p.s * 0.4), s));
     buckets[Math.floor(p.s * 997) % 3][s > 1.2 ? 'big' : 'small'].push(mx);
+    if (s > 1.3) cover.addRound(new THREE.Vector3(p.x, p.y, p.z), s * 0.8);
     if (s > 0.7) setSurface(world.createCollider(RAPIER.ColliderDesc.ball(s * 0.8).setTranslation(p.x, p.y + s * 0.1, p.z), body).handle, 'rock');
   }
   variants.forEach((g, i) => {

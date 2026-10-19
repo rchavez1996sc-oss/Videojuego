@@ -21,6 +21,7 @@ export class Combat {
   readonly group = new THREE.Group();
   readonly gun: Gun;
   onHitConfirmed: (e: HitEvent) => void = () => {};
+  onShot: (from: THREE.Vector3) => void = () => {};
   private dust = new Particles(1500, false);
   private sparks = new Particles(400, true);
   private decals: Decals;
@@ -91,6 +92,7 @@ export class Combat {
     if (this.shots++ % def.tracerEvery === 0) this.tracers.fire(muzzle, end);
     this.shells.eject(this.player.model.ejector, right);
     this.sfx.rifleShot();
+    this.onShot(muzzle);
     const [kUp, kSide] = this.gun.recoil(aiming);
     this.cam.kick(kUp, kSide, aiming ? 0.012 : 0.02);
     if (this.gun.ammo === 0 && this.gun.startReload()) this.sfx.reload(true);
@@ -128,6 +130,17 @@ export class Combat {
       }
     }
     this.sfx.impact(surface, point.distanceTo(this.cam.camera.position));
+  }
+
+  tracer(from: THREE.Vector3, to: THREE.Vector3): void {
+    this.tracers.fire(from, to);
+  }
+
+  bloodPuff(point: THREE.Vector3): void {
+    for (let i = 0; i < 9; i++) {
+      this.tmp.set((Math.random() - 0.5) * 1.4, Math.random() * 0.9, (Math.random() - 0.5) * 1.4);
+      this.dust.emit({ pos: point.clone(), vel: this.tmp.clone(), color: new THREE.Color(0.32 + Math.random() * 0.1, 0.03, 0.02), size: 0.08 + Math.random() * 0.1, grow: 0.5, life: 0.45 + Math.random() * 0.3, gravity: 2.5, drag: 3, alpha: 0.75 });
+    }
   }
 
   /** Small burst used by targets and later by enemies. */

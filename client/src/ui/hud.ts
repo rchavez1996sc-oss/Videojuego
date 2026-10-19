@@ -10,6 +10,7 @@ export class Hud {
   private stamina: HTMLElement;
   private reload: HTMLElement;
   private toast: HTMLElement;
+  private counter: HTMLElement;
   private cache = new Map<string, string>();
   private hitT = 0;
   private toastT = 0;
@@ -21,6 +22,7 @@ export class Hud {
       <div class="hitmarker"><i></i><i></i><i></i><i></i></div>
       <div class="reload"><span>RECARGANDO</span><div class="bar"><div></div></div></div>
       <div class="toast"></div>
+      <div class="counter">ENEMIGOS<b>0</b></div>
       <div class="vitals">
         <div class="label">SALUD</div><div class="meter hp"><div></div></div>
         <div class="meter stamina"><div></div></div>
@@ -38,6 +40,7 @@ export class Hud {
     this.stamina = q('.stamina div');
     this.reload = q('.reload');
     this.toast = q('.toast');
+    this.counter = q('.counter b');
   }
 
   private set(key: string, value: string, apply: () => void): void {
@@ -83,13 +86,17 @@ export class Hud {
     this.set('toastO', toastO, () => (this.toast.style.opacity = toastO));
   }
 
-  hitmarker(kill: boolean, headshot: boolean): void {
+  set enemies(n: number) {
+    this.set('enemies', String(n), () => (this.counter.textContent = String(n)));
+  }
+
+  hitmarker(kill: boolean, headshot: boolean, killLabel = 'BLANCO DERRIBADO  +100'): void {
     this.hitT = kill ? 0.45 : 0.22;
     this.hit.classList.toggle('kill', kill);
     this.hit.classList.remove('pop');
     void this.hit.offsetWidth;
     this.hit.classList.add('pop');
-    if (headshot || kill) this.showToast(headshot ? (kill ? 'HEADSHOT  +150' : 'HEADSHOT') : 'BLANCO DERRIBADO  +100');
+    if (headshot || kill) this.showToast(headshot ? (kill ? 'HEADSHOT  +150' : 'HEADSHOT') : killLabel);
   }
 
   showToast(text: string): void {

@@ -23,6 +23,10 @@ import { buildStructures } from './world/structures';
 import { surfaceOf } from './world/surfaces';
 import { Hud } from './ui/hud';
 import { DynamicResolution } from './render/dynamicRes';
+import enemyDefs from './data/enemies.json';
+import type { EnemyDef } from './entities/enemy';
+import { Enemies } from './systems/enemies';
+import { DamageFx } from './ui/damage';
 
 const status = document.getElementById('status')!;
 const overlay = document.getElementById('overlay')!;
@@ -63,16 +67,37 @@ async function boot(): Promise<void> {
   const hud = new Hud();
   const combat = new Combat(weapons.ak as WeaponDef, world, player, tpc, sfx, lighting, hf);
   scene.add(combat.group);
-  const range = new ShootingRange(hf, lighting, world, ch.spawn, ch.range ?? [], (h) => {
+  const rangeOrigin = { ...ch.spawn, yaw: ch.rangeYaw ?? ch.spawn.yaw };
+  const range = new ShootingRange(hf, lighting, world, rangeOrigin, ch.range ?? [], (h) => {
     combat.sparkBurst(h.point, h.normal);
     sfx.steelPing(h.point.distanceTo(camera.position));
     sfx.hitmarker(h.kill);
     hud.hitmarker(h.kill, h.headshot);
   });
   scene.add(range.group);
-  scene.add(buildStructures(hf, lighting, world, ch.spawn, ch.structures ?? []));
+  scene.add(buildStructures(hf, lighting, world, rangeOrigin, ch.structures ?? []));
   player.onMantle = () => sfx.footstep(1.3, 'rock');
   const dynRes = new DynamicResolution(renderer);
+  const damageFx = new DamageFx();
+  const enemies = new Enemies(enemyDefs as unknown as Record<string, EnemyDef>, ch.enemies ?? [], world, hf, lighting, player, combat, sfx, camera);
+  scene.add(enemies.group);
+  combat.onShot = (p) => enemies.hearShot(p);
+  let deadT = 0, skipRender = false;
+  enemies.onPlayerHit = (dmg, from) => {
+    if (deadT > 0) return;
+    player.hurt(dmg);
+    sfx.hurt();
+    const to = from.clone().sub(camera.position).setY(0).normalize();
+    const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).setY(0).normalize();
+    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion).setY(0).normalize();
+    damageFx.hit(Math.atan2(to.dot(right), to.dot(fwd)), dmg);
+    tpc.kick(0.006, (Math.random() - 0.5) * 0.008, 0.03);
+  };
+  enemies.onEnemyHit = (kill, headshot) => {
+    sfx.hitmarker(kill);
+    hud.hitmarker(kill, headshot, 'BAJA  +100');
+    if (kill && enemies.aliveCount === 0) setTimeout(() => hud.showToast('ZONA DESPEJADA'), 1200);
+  };
   world.step();
 
   let freeCam = false;
@@ -92,6 +117,25 @@ async function boot(): Promise<void> {
     },
     follow() { freeCam = false; },
     /** Runs `n` frames in follow mode, firing every `every` frames (screenshot tests). */
+    /** Logic-only run for AI tests: teleports the player, steps `seconds` without rendering, reports state. */
+    aiTest(x: number, z: number, seconds: number, fire: boolean) {
+      freeCam = false;
+      skipRender = true;
+      player.respawn(new THREE.Vector3(x, hf.heightAt(x, z), z), Math.atan2(x, z));
+      tpc.yaw = Math.atan2(x, z);
+      const log: string[] = [];
+      let shots = 0;
+      for (let i = 0; i < seconds * 20; i++) {
+        if (fire && i % 10 === 0) {
+          combat.debugShoot();
+          shots++;
+        }
+        frame(1 / 20);
+        if (i % 40 === 39) log.push(`t=${((i + 1) / 20).toFixed(0)}s hp=${player.hp.toFixed(0)} ` + enemies.list.map((e) => `${e.id}:${e.state[0]}${e.cover ? 'C' : ''}${e.crouched ? 'v' : ''}${e.canSee ? '*' : ''}`).join(' '));
+      }
+      skipRender = false;
+      return log.join('\n');
+    },
     simulate(n: number, every: number, pitch = -0.02) {
       freeCam = false;
       tpc.pitch = pitch;
@@ -128,7 +172,23 @@ async function boot(): Promise<void> {
     const t = clock.elapsedTime;
     renderer.gl.info.reset();
     if (!freeCam) {
-      player.update(dt, input, tpc.yaw, input.aiming, tpc.pitch, input.firing);
+      if (deadT > 0) {
+        deadT -= dt;
+        if (deadT <= 0) {
+          damageFx.dead = false;
+          player.respawn(new THREE.Vector3(ch.spawn.x, hf.heightAt(ch.spawn.x, ch.spawn.z), ch.spawn.z), ch.spawn.yaw);
+          tpc.yaw = ch.spawn.yaw;
+          for (const e of enemies.list) if (e.alive && e.awareness > 0.5) e.awareness = 0.5;
+        }
+      } else {
+        player.update(dt, input, tpc.yaw, input.aiming, tpc.pitch, input.firing);
+        player.regen(dt);
+        if (player.hp <= 0) {
+          deadT = 4;
+          damageFx.dead = true;
+        }
+      }
+      enemies.update(dt);
       world.timestep = dt;
       world.step();
       player.syncPosition();
@@ -147,22 +207,25 @@ async function boot(): Promise<void> {
       tpc.update(dt, input, player.position, player.crouchAmount, player.collisionHandle);
       camera.updateMatrixWorld();
       player.model.root.updateMatrixWorld(true);
-      combat.update(dt, input, input.aiming, player.airborne);
+      if (deadT <= 0) combat.update(dt, input, input.aiming, player.airborne);
     }
+    enemies.sync();
+    damageFx.update(dt, player.hp / 100);
+    hud.enemies = enemies.aliveCount;
     range.update(dt);
     const g = combat.gun;
     const cone = THREE.MathUtils.degToRad(g.coneDeg(input.aiming, player.speed, player.airborne));
     hud.update(dt, {
       spreadPx: (Math.tan(cone) / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) * innerHeight * 0.5,
       ammo: g.ammo, mag: g.def.magazine, reserve: g.reserve, mode: g.mode, weapon: g.def.name,
-      hp: 100, stamina: player.stamina, reload: g.reloadProgress, aiming: input.aiming,
+      hp: player.hp, stamina: player.stamina, reload: g.reloadProgress, aiming: input.aiming,
     });
     if (!shotMode) dynRes.update(dt);
     camera.updateMatrixWorld();
     grass.update(t, camera.position, player.position);
     terrain.update(camera.position);
     lighting.update();
-    renderer.render(dt);
+    if (!skipRender) renderer.render(dt);
     input.endFrame();
     frames++;
     acc += dt;
