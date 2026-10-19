@@ -11,8 +11,8 @@ export interface QualityPreset {
 
 export const PRESETS: Record<Quality, QualityPreset> = {
   low: { pixelRatio: 0.75, shadowMapSize: 1024, cascades: 2, shadowFar: 160, grassBlades: 20000, ao: false },
-  medium: { pixelRatio: 1, shadowMapSize: 2048, cascades: 3, shadowFar: 260, grassBlades: 40000, ao: true },
-  high: { pixelRatio: 1, shadowMapSize: 2048, cascades: 4, shadowFar: 380, grassBlades: 60000, ao: true },
+  medium: { pixelRatio: 1, shadowMapSize: 2048, cascades: 2, shadowFar: 200, grassBlades: 40000, ao: true },
+  high: { pixelRatio: 1, shadowMapSize: 2048, cascades: 3, shadowFar: 300, grassBlades: 60000, ao: true },
   ultra: { pixelRatio: Math.min(window.devicePixelRatio, 2), shadowMapSize: 4096, cascades: 4, shadowFar: 500, grassBlades: 100000, ao: true },
 };
 

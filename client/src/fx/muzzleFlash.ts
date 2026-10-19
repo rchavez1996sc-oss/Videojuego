@@ -27,7 +27,6 @@ function flashTexture(): THREE.CanvasTexture {
 
 export class MuzzleFlash {
   readonly group = new THREE.Group();
-  readonly light = new THREE.PointLight('#ffb366', 0, 9, 2);
   private planes: THREE.Mesh[] = [];
   private t = 0;
 
@@ -38,7 +37,7 @@ export class MuzzleFlash {
     const side2 = side1.clone();
     side2.rotation.z = Math.PI / 2;
     this.planes = [front, side1, side2];
-    this.group.add(...this.planes, this.light);
+    this.group.add(...this.planes);
     this.group.visible = false;
   }
 
@@ -48,7 +47,6 @@ export class MuzzleFlash {
     this.group.rotateZ(Math.random() * Math.PI);
     this.group.scale.setScalar(0.8 + Math.random() * 0.5);
     this.group.visible = true;
-    this.light.intensity = 10;
     this.t = 0.05;
   }
 
@@ -57,7 +55,6 @@ export class MuzzleFlash {
     this.t -= dt;
     if (this.t <= 0) {
       this.group.visible = false;
-      this.light.intensity = 0;
     }
   }
 }

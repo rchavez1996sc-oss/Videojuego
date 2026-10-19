@@ -106,6 +106,9 @@ async function boot(): Promise<void> {
   });
   document.addEventListener('pointerlockchange', () => overlay.classList.toggle('hidden', document.pointerLockElement === canvas));
 
+  const ctx = renderer.gl.getContext();
+  const dbg = ctx.getExtension('WEBGL_debug_renderer_info');
+  const gpu = String(dbg ? ctx.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : ctx.getParameter(ctx.RENDERER)).replace(/^ANGLE \((.*)\)$/, '$1').slice(0, 70);
   const clock = new THREE.Clock();
   let frames = 0, acc = 0;
   renderer.gl.info.autoReset = false;
@@ -144,7 +147,7 @@ async function boot(): Promise<void> {
     frames++;
     acc += dt;
     if (acc > 0.5) {
-      stats.textContent = `${Math.round(frames / acc)} fps · ${renderer.gl.info.render.calls} draws · ${(renderer.gl.info.render.triangles / 1e6).toFixed(2)}M tris`;
+      stats.textContent = `${Math.round(frames / acc)} fps · res ${Math.round(dynRes.scale * 100)}% · ${renderer.gl.info.render.calls} draws · ${(renderer.gl.info.render.triangles / 1e6).toFixed(2)}M tris · ${gpu}`;
       frames = acc = 0;
     }
   };

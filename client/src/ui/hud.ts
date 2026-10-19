@@ -10,6 +10,7 @@ export class Hud {
   private stamina: HTMLElement;
   private reload: HTMLElement;
   private toast: HTMLElement;
+  private cache = new Map<string, string>();
   private hitT = 0;
   private toastT = 0;
 
@@ -39,30 +40,47 @@ export class Hud {
     this.toast = q('.toast');
   }
 
+  private set(key: string, value: string, apply: () => void): void {
+    if (this.cache.get(key) === value) return;
+    this.cache.set(key, value);
+    apply();
+  }
+
   set visible(v: boolean) {
     this.root.style.display = v ? '' : 'none';
   }
 
   update(dt: number, s: { spreadPx: number; ammo: number; mag: number; reserve: number; mode: string; weapon: string; hp: number; stamina: number; reload: number; aiming: boolean }): void {
-    const gap = 5 + s.spreadPx;
-    this.cross[0].style.transform = `translate(-50%, ${-gap - 10}px)`;
-    this.cross[1].style.transform = `translate(-50%, ${gap}px)`;
-    this.cross[2].style.transform = `translate(${-gap - 10}px, -50%)`;
-    this.cross[3].style.transform = `translate(${gap}px, -50%)`;
-    this.ammo.textContent = String(s.ammo);
-    this.ammo.classList.toggle('low', s.ammo <= s.mag * 0.2);
-    this.reserve.textContent = `/ ${s.reserve}`;
-    this.mode.textContent = s.mode === 'auto' ? 'AUTO' : 'SEMI';
-    this.weapon.textContent = s.weapon;
-    this.hp.style.width = `${s.hp}%`;
-    this.stamina.style.width = `${s.stamina}%`;
-    this.stamina.parentElement!.classList.toggle('hidden', s.stamina >= 99.5);
-    this.reload.classList.toggle('on', s.reload > 0);
-    (this.reload.querySelector('.bar div') as HTMLElement).style.width = `${s.reload * 100}%`;
+    const gap = Math.round(5 + s.spreadPx);
+    this.set('gap', String(gap), () => {
+      this.cross[0].style.transform = `translate(-50%, ${-gap - 10}px)`;
+      this.cross[1].style.transform = `translate(-50%, ${gap}px)`;
+      this.cross[2].style.transform = `translate(${-gap - 10}px, -50%)`;
+      this.cross[3].style.transform = `translate(${gap}px, -50%)`;
+    });
+    this.set('ammo', `${s.ammo}/${s.reserve}`, () => {
+      this.ammo.textContent = String(s.ammo);
+      this.ammo.classList.toggle('low', s.ammo <= s.mag * 0.2);
+      this.reserve.textContent = `/ ${s.reserve}`;
+    });
+    this.set('mode', s.mode + s.weapon, () => {
+      this.mode.textContent = s.mode === 'auto' ? 'AUTO' : 'SEMI';
+      this.weapon.textContent = s.weapon;
+    });
+    this.set('hp', s.hp.toFixed(0), () => (this.hp.style.width = `${s.hp}%`));
+    this.set('st', s.stamina.toFixed(0), () => {
+      this.stamina.style.width = `${s.stamina}%`;
+      this.stamina.parentElement!.classList.toggle('hidden', s.stamina >= 99.5);
+    });
+    this.set('rl', s.reload.toFixed(2), () => {
+      this.reload.classList.toggle('on', s.reload > 0);
+      (this.reload.querySelector('.bar div') as HTMLElement).style.width = `${s.reload * 100}%`;
+    });
     this.hitT = Math.max(0, this.hitT - dt);
-    this.hit.style.opacity = String(Math.min(1, this.hitT * 5));
     this.toastT = Math.max(0, this.toastT - dt);
-    this.toast.style.opacity = String(Math.min(1, this.toastT * 3));
+    const hitO = Math.min(1, this.hitT * 5).toFixed(2), toastO = Math.min(1, this.toastT * 3).toFixed(2);
+    this.set('hitO', hitO, () => (this.hit.style.opacity = hitO));
+    this.set('toastO', toastO, () => (this.toast.style.opacity = toastO));
   }
 
   hitmarker(kill: boolean, headshot: boolean): void {

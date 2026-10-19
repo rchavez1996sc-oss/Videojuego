@@ -7,9 +7,9 @@ import { rock, soil } from '../render/textures';
 import * as S from './terrainShader';
 import { setSurface } from './surfaces';
 
-const CHUNK = 32;
+const CHUNK = 64;
 const LOD_STEPS = [1, 2, 4];
-const LOD_DIST = [120, 300];
+const LOD_DIST = [150, 340];
 
 /** Grid patch from cell (cx, cz) with `step` cells per quad, plus a skirt to hide LOD cracks. */
 function chunkGeometry(hf: Heightfield, cx: number, cz: number, step: number): THREE.BufferGeometry {
