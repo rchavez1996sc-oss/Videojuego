@@ -1,0 +1,43 @@
+{
+  "id": "ch01",
+  "title": "Ceniza",
+  "terrain": {
+    "size": 1024,
+    "playable": 560,
+    "resolution": 513,
+    "seed": 1931,
+    "rolling": 7,
+    "hillHeight": 42,
+    "mountainHeight": 210,
+    "valleyWidth": 38,
+    "road": [[-300, -90], [-170, -45], [-60, -8], [0, 0], [70, 22], [170, 70], [300, 120]],
+    "flatten": [{ "x": 0, "z": 0, "r": 85 }, { "x": -175, "z": -60, "r": 30 }]
+  },
+  "biome": {
+    "sunElevation": 11,
+    "sunAzimuth": 118,
+    "turbidity": 5.5,
+    "rayleigh": 1.6,
+    "mieCoefficient": 0.006,
+    "mieDirectionalG": 0.82,
+    "exposure": 1.0,
+    "sunColor": "#ffd9b0",
+    "sunIntensity": 3.4,
+    "ambient": 0.35,
+    "fogColor": "#b9b2a6",
+    "fogDensity": 0.0021,
+    "colors": {
+      "grassLush": "#55602c",
+      "grassDry": "#8f8248",
+      "dirt": "#6e5a43",
+      "road": "#7d6a52",
+      "rock": "#6b6560",
+      "snow": "#e9ecef"
+    },
+    "snowLine": 150,
+    "grass": { "height": 0.55, "colorBase": "#38431a", "colorTip": "#9a8c4c" }
+  },
+  "village": { "x": 0, "z": 0, "radius": 72, "houses": 34, "church": { "x": 18, "z": -30, "rot": 0.35 } },
+  "scatter": { "rocks": 1400, "trees": 420, "seed": 77 },
+  "spawn": { "x": -120, "z": -35, "yaw": 1.9 }
+}
