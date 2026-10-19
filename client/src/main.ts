@@ -107,6 +107,7 @@ async function boot(): Promise<void> {
   document.addEventListener('pointerlockchange', () => overlay.classList.toggle('hidden', document.pointerLockElement === canvas));
 
   const gpu = gpuName.replace(/^ANGLE \((.*)\)$/, '$1').slice(0, 60);
+  let lastStep = 0, landed = false;
   const clock = new THREE.Clock();
   let frames = 0, acc = 0;
   renderer.gl.info.autoReset = false;
@@ -119,7 +120,15 @@ async function boot(): Promise<void> {
       world.step();
       player.syncPosition();
       const moveK = Math.min(player.speed / 6, 1);
-      tpc.bob = THREE.MathUtils.damp(tpc.bob, Math.cos(player.stepPhase * Math.PI * 2) * (0.006 + 0.01 * moveK) * moveK * (input.aiming ? 0.2 : 1), 12, dt);
+      const amp = (0.012 + 0.02 * moveK) * moveK * (input.aiming ? 0.3 : 1);
+      const stepWave = Math.abs(Math.sin(player.stepPhase * Math.PI));
+      tpc.bob = THREE.MathUtils.damp(tpc.bob, (stepWave - 0.6) * amp, 25, dt);
+      tpc.sway = THREE.MathUtils.damp(tpc.sway, Math.sin(player.stepPhase * Math.PI) * amp * 0.5, 20, dt);
+      const step = Math.floor(player.stepPhase);
+      if (step !== lastStep && player.speed > 0.8 && !player.airborne) sfx.footstep(Math.min(1, player.speed / 6) * (player.crouchAmount > 0.5 ? 0.4 : 1));
+      lastStep = step;
+      if (player.landImpact > 0.6 && !landed) sfx.footstep(1.6);
+      landed = player.landImpact > 0.6;
       tpc.dip = player.landImpact * 0.3;
       tpc.fovBoost = THREE.MathUtils.damp(tpc.fovBoost, player.sprinting ? 7 : 0, 6, dt);
       tpc.update(dt, input, player.position, player.crouchAmount, player.collisionHandle);

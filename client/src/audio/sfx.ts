@@ -65,6 +65,12 @@ export class Sfx {
     }
   }
 
+  footstep(intensity: number): void {
+    const t = this.m.ctx.currentTime, v = 0.85 + Math.random() * 0.3;
+    this.filtered(t, 'lowpass', 520 * v, 0.9, 0.22 * intensity, 0.004, 0.09);
+    this.filtered(t + 0.01, 'bandpass', 2600 * v, 1.2, 0.07 * intensity, 0.002, 0.07);
+  }
+
   shellBounce(): void {
     const t = this.m.ctx.currentTime, f = 4200 + Math.random() * 1800;
     this.tone(t, 'sine', f, f * 0.98, 0.05, 0.12);

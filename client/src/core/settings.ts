@@ -29,6 +29,6 @@ function detectGpu(): string {
 export const gpuName = detectGpu();
 const integrated = /intel|uhd|iris|basic render|swiftshader|llvmpipe|mali|adreno|powervr/i.test(gpuName) && !/arc/i.test(gpuName);
 const params = new URLSearchParams(location.search);
-export const quality: Quality = (params.get('q') as Quality) ?? (integrated ? 'low' : 'high');
+export const quality: Quality = (params.get('q') as Quality) ?? (integrated ? 'medium' : 'high');
 export const preset = PRESETS[quality] ?? PRESETS.high;
 export const shotMode = params.has('shot');

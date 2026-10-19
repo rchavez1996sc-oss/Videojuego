@@ -16,6 +16,7 @@ export class ThirdPersonCamera {
   private recoilY = 0;
   private shake = 0;
   bob = 0;
+  sway = 0;
   dip = 0;
   fovBoost = 0;
 
@@ -37,7 +38,7 @@ export class ThirdPersonCamera {
     const rot = new THREE.Euler(this.pitch, this.yaw, 0, 'YXZ');
     const back = new THREE.Vector3(0, 0, 1).applyEuler(rot);
     const side = new THREE.Vector3(1, 0, 0).applyEuler(rot);
-    const origin = this.pivot.clone().addScaledVector(side, this.shoulderX);
+    const origin = this.pivot.clone().addScaledVector(side, this.shoulderX + this.sway);
     const ray = new RAPIER.Ray(origin, back);
     const hit = this.world.castRay(ray, wantDist + 0.3, true, undefined, undefined, undefined, undefined, (c) => c.handle !== excludeCollider);
     const allowed = hit ? Math.max(0.4, hit.timeOfImpact - 0.3) : wantDist;
