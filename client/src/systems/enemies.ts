@@ -26,6 +26,8 @@ export class Enemies {
   private ctx: AIContext;
   private time = 0;
   private attackers = new Set<number>();
+  private intelT = 8;
+  private intelHold = 0;
 
   constructor(defs: Record<string, EnemyDef>, spawns: SpawnDef[], private world: RAPIER.World, private hf: Heightfield, lighting: Lighting, private player: Player, private combat: Combat, private sfx: Sfx, private camera: THREE.PerspectiveCamera) {
     spawns.forEach((s, i) => {
@@ -72,6 +74,26 @@ export class Enemies {
     return this.list.filter((e) => e.alive).length;
   }
 
+  /** Silences radio reports for a while (used right after the player respawns). */
+  suppressIntel(seconds: number): void {
+    this.intelHold = seconds;
+  }
+
+  /** Squad radio: sightings are shared instantly; every few seconds hunters also get a rough fix on the player. */
+  private shareIntel(dt: number): void {
+    this.intelHold -= dt;
+    this.intelT -= dt;
+    const spotted = this.list.some((e) => e.alive && e.canSee && e.state === 'combat');
+    const periodic = this.intelT <= 0 && this.intelHold <= 0;
+    if (!spotted && !periodic) return;
+    if (periodic) this.intelT = 8;
+    for (const e of this.list) {
+      if (!e.alive || !(e.engaged || e.state === 'alert') || e.canSee || e.position.distanceTo(this.player.position) > 160) continue;
+      const noise = spotted ? 2 : 10;
+      e.lastKnown.copy(this.player.position).add(new THREE.Vector3((Math.random() - 0.5) * noise, 0, (Math.random() - 0.5) * noise));
+    }
+  }
+
   /** Player gunshot: everyone in earshot learns roughly where it came from. */
   hearShot(at: THREE.Vector3): void {
     for (const e of this.list) {
@@ -79,6 +101,7 @@ export class Enemies {
       const d = e.position.distanceTo(at);
       if (d > e.def.hearing) continue;
       e.awareness = Math.max(e.awareness, d < 70 ? 1 : 0.6);
+      e.engaged = true;
       const err = d * 0.12;
       e.lastKnown.copy(at).add(new THREE.Vector3((Math.random() - 0.5) * err, 0, (Math.random() - 0.5) * err));
     }
@@ -174,6 +197,7 @@ export class Enemies {
     c.playerChest.copy(this.player.position).setY(this.player.position.y + 1.3 - this.player.crouchAmount * 0.45);
     const grass = this.hf.maskAt(this.player.position.x, this.player.position.z, 1);
     c.playerConcealment = this.player.crouchAmount > 0.5 ? (grass > 0.5 ? 0.35 : 0.6) : 1;
+    this.shareIntel(dt);
     this.attackers.clear();
     this.list
       .filter((e) => e.alive && e.state === 'combat' && e.canSee)

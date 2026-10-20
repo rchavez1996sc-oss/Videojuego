@@ -8,16 +8,17 @@ import type { Heightfield } from '../world/heightfield';
 import { surfaceOf } from '../world/surfaces';
 
 /** Directions/distances of nearby enemies (and bystanders, as neutral marks) relative to the camera heading. */
-export function gatherThreats(enemies: Enemies, civilians: Civilians | null, player: THREE.Vector3, camera: THREE.Camera): Threat[] {
+export function gatherThreats(enemies: Enemies, civilians: Civilians | null, supplies: THREE.Vector3[], player: THREE.Vector3, camera: THREE.Camera): Threat[] {
   const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).setY(0).normalize();
   const right = new THREE.Vector3(-fwd.z, 0, fwd.x);
   const out: Threat[] = [];
-  const push = (p: THREE.Vector3, aware: boolean, neutral: boolean) => {
+  const push = (p: THREE.Vector3, aware: boolean, neutral: boolean, supply = false) => {
     const d = p.clone().sub(player).setY(0), dist = d.length();
-    if (dist < 130) out.push({ angle: Math.atan2(d.dot(right), d.dot(fwd)), dist, aware, neutral });
+    if (dist < 130) out.push({ angle: Math.atan2(d.dot(right), d.dot(fwd)), dist, aware, neutral, supply });
   };
   for (const e of enemies.list) if (e.alive) push(e.position, e.state !== 'patrol', false);
   for (const p of civilians?.present ?? []) push(p, false, true);
+  for (const p of supplies) push(p, false, false, true);
   return out;
 }
 

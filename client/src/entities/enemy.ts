@@ -23,6 +23,8 @@ export class Enemy {
   state: EnemyState = 'patrol';
   yaw = 0;
   awareness = 0;
+  /** Has been in combat with the player at least once: hunts instead of going back to patrol. */
+  engaged = false;
   lastKnown = new THREE.Vector3();
   lastSeenT = -99;
   canSee = false;

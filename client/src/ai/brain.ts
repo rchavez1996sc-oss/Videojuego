@@ -48,15 +48,16 @@ function setState(e: Enemy, s: Enemy['state'], ctx: AIContext): void {
   e.state = s;
   e.stateT = 0;
   if (s === 'combat') {
+    e.engaged = true;
     e.burstLeft = 0;
     e.pauseT = e.def.reaction * difficulty.value.reaction * rand(0.7, 1.3);
     ctx.alertNearby(e);
   }
 }
 
-function pickCover(e: Enemy, ctx: AIContext, preferred: number, radius = 30): boolean {
+function pickCover(e: Enemy, ctx: AIContext, preferred: number, radius = 30, anchor = e.position): boolean {
   const threat = e.lastKnown.clone().setY(e.lastKnown.y + 1.3);
-  for (const c of ctx.cover.candidates(e.position, threat, radius, preferred, e.id)) {
+  for (const c of ctx.cover.candidates(anchor, threat, radius, preferred, e.id)) {
     const spot = c.pos.clone().setY(ctx.groundY(c.pos.x, c.pos.z));
     if (!ctx.blocked(spot.clone().setY(spot.y + 1.0), threat, e.handle)) continue;
     if (e.cover) e.cover.owner = -1;
@@ -89,8 +90,24 @@ function thinkCombat(e: Enemy, ctx: AIContext): void {
     e.moveTarget = e.lastKnown.clone().addScaledVector(away, e.def.preferredRange).add(side);
     e.running = true;
   }
-  if (unseen > 6 && !e.moveTarget && Math.random() < 0.25) pickCover(e, ctx, 12, 40);
-  if (unseen > 14) setState(e, 'alert', ctx);
+  if (unseen > 3.5 && !e.moveTarget) hunt(e, ctx);
+}
+
+/** Closes in on the last known position cover-to-cover, sometimes swinging wide to flank; searches around it on arrival. */
+function hunt(e: Enemy, ctx: AIContext): void {
+  const toPlayer = e.lastKnown.clone().sub(e.position).setY(0);
+  const dist = toPlayer.length();
+  if (dist < 6) {
+    e.moveTarget = e.lastKnown.clone().add(new THREE.Vector3(rand(-14, 14), 0, rand(-14, 14)));
+    e.running = false;
+    return;
+  }
+  const side = new THREE.Vector3(-toPlayer.z, 0, toPlayer.x).normalize().multiplyScalar(Math.random() < 0.5 ? -1 : 1);
+  const flank = Math.random() < 0.35;
+  const anchor = flank ? e.lastKnown.clone().addScaledVector(side, Math.min(25, dist * 0.6)) : e.position.clone().addScaledVector(toPlayer.normalize(), Math.min(20, dist * 0.5));
+  if (pickCover(e, ctx, flank ? 16 : 12, 22, anchor)) return;
+  e.moveTarget = anchor.add(new THREE.Vector3(rand(-3, 3), 0, rand(-3, 3)));
+  e.running = true;
 }
 
 export function think(e: Enemy, ctx: AIContext, dt: number): void {
@@ -106,11 +123,17 @@ export function think(e: Enemy, ctx: AIContext, dt: number): void {
   if (e.state === 'combat') thinkCombat(e, ctx);
   else if (e.state === 'alert') {
     e.crouched = false;
+    if (e.moveTarget && e.moveTarget.distanceTo(e.lastKnown) > 20) e.moveTarget = null;
     if (!e.isStatic && !e.moveTarget && e.position.distanceTo(e.lastKnown) > 3) {
       e.moveTarget = e.lastKnown.clone().add(new THREE.Vector3(rand(-4, 4), 0, rand(-4, 4)));
       e.running = e.awareness > 0.7;
     }
-    if (e.stateT > 18) {
+    if (!e.isStatic && !e.moveTarget && e.position.distanceTo(e.lastKnown) <= 3) {
+      e.moveTarget = e.lastKnown.clone().add(new THREE.Vector3(rand(-12, 12), 0, rand(-12, 12)));
+      e.running = false;
+    }
+    if (e.engaged && e.stateT > 4) setState(e, 'combat', ctx);
+    else if (!e.engaged && e.stateT > 25) {
       e.awareness = 0.2;
       setState(e, 'patrol', ctx);
     }

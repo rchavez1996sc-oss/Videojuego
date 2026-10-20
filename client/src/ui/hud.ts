@@ -12,6 +12,7 @@ export class Hud {
   private toast: HTMLElement;
   private counter: HTMLElement;
   private nades: HTMLElement;
+  private civ: HTMLElement;
   private zoom: HTMLElement;
   private cache = new Map<string, string>();
   private hitT = 0;
@@ -24,7 +25,7 @@ export class Hud {
       <div class="hitmarker"><i></i><i></i><i></i><i></i></div>
       <div class="reload"><span>RECARGANDO</span><div class="bar"><div></div></div></div>
       <div class="toast"></div>
-      <div class="counter">ENEMIGOS<b>0</b></div>
+      <div class="counter">ENEMIGOS<b>0</b><span class="civ"></span></div>
       <div class="vitals">
         <div class="label">SALUD</div><div class="meter hp"><div></div><i class="cap"></i></div>
         <div class="meter stamina"><div></div></div>
@@ -45,6 +46,7 @@ export class Hud {
     this.toast = q('.toast');
     this.counter = q('.counter b');
     this.nades = q('.nades');
+    this.civ = q('.counter .civ');
     this.zoom = q('.zoom');
   }
 
@@ -100,6 +102,11 @@ export class Hud {
 
   set enemies(n: number) {
     this.set('enemies', String(n), () => (this.counter.textContent = String(n)));
+  }
+
+  set civilians(v: { count: number; limit: number }) {
+    this.civ.textContent = v.count ? `BAJAS CIVILES ${v.count}/${v.limit}` : '';
+    this.civ.classList.toggle('warn', v.count >= v.limit - 1);
   }
 
   hitmarker(kill: boolean, headshot: boolean, killLabel = 'BLANCO DERRIBADO  +100'): void {

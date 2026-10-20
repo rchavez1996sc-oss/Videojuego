@@ -49,6 +49,7 @@ export interface ChapterDef {
   rangeYaw?: number;
   range?: [number, number][];
   medkits?: [number, number][];
+  ammo?: [number, number][];
   enemies?: { type: string; x: number; z: number; y?: number; patrol?: [number, number][] }[];
   structures?: import('../world/structures').StructureDef[];
 }

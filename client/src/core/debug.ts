@@ -45,18 +45,20 @@ export function installDebug(c: DebugContext): void {
       c.setFreeCam(false);
     },
     /** Logic-only run: teleports the player, steps `seconds` without rendering, reports AI state every 2 s. */
-    aiTest(x: number, z: number, seconds: number, fire: boolean) {
+    aiTest(x: number, z: number, seconds: number, fire: boolean | number) {
       c.setFreeCam(false);
       c.setSkipRender(true);
       c.player.respawn(new THREE.Vector3(x, c.hf.heightAt(x, z), z), Math.atan2(x, z));
       c.tpc.yaw = Math.atan2(x, z);
       const log: string[] = [];
       for (let i = 0; i < seconds * 20; i++) {
-        if (fire && i % 10 === 0) c.combat.debugShoot();
+        if (fire && i % 10 === 0 && (fire === true || i < fire * 20)) c.combat.debugShoot();
         c.frame(1 / 20);
         if (i % 40 === 39) {
           const states = c.enemies.list.map((e) => `${e.id}:${e.state[0]}${e.cover ? 'C' : ''}${e.crouched ? 'v' : ''}${e.canSee ? '*' : ''}`).join(' ');
-          log.push(`t=${((i + 1) / 20).toFixed(0)}s hp=${c.player.hp.toFixed(0)} pos=${c.player.position.x.toFixed(0)},${c.player.position.z.toFixed(0)} ${states} ${c.extraLog?.() ?? ''}`);
+          const engaged = c.enemies.list.filter((e) => e.alive && e.engaged);
+          const avg = engaged.length ? engaged.reduce((a, e) => a + e.position.distanceTo(c.player.position), 0) / engaged.length : 0;
+          log.push(`t=${((i + 1) / 20).toFixed(0)}s hp=${c.player.hp.toFixed(0)} engaged=${engaged.length} avgDist=${avg.toFixed(0)} ${states}`);
         }
       }
       c.setSkipRender(false);

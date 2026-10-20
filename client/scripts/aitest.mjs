@@ -10,7 +10,7 @@ try {
   await page.goto('http://localhost:4174/?shot&q=low');
   await page.waitForFunction(() => window.__game?.ready, null, { timeout: 180000 });
   const [x, z, secs, fire] = process.argv.slice(2);
-  console.log(await page.evaluate(([x, z, s, f]) => window.__game.aiTest(+x, +z, +s, f === '1'), [x ?? '-70', z ?? '-10', secs ?? '20', fire ?? '1']));
+  console.log(await page.evaluate(([x, z, s, f]) => window.__game.aiTest(+x, +z, +s, f === '1' ? true : f === '0' ? false : +f), [x ?? '-70', z ?? '-10', secs ?? '20', fire ?? '1']));
   if (process.argv[6]) {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.evaluate(() => window.__game.simulate(2, 0, -0.05));

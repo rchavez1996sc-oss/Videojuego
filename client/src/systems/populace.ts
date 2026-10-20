@@ -10,11 +10,18 @@ import type { Mixer } from '../audio/mixer';
 import type { Sfx } from '../audio/sfx';
 import type { Combat } from '../weapons/combat';
 import type { Hud } from '../ui/hud';
+import { difficulty } from '../core/difficulty';
 
 /** Pedestrians plus city life (traffic, strays, birds, ambience) and the shared "something scary happened" alarm. */
 export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world: RAPIER.World; hf: Heightfield; lighting: Lighting; mixer: Mixer; sfx: Sfx; combat: Combat; hud: Hud; camera: THREE.Camera; scene: THREE.Scene }) {
   const civilians = barrio && ch.civilians ? new Civilians(barrio.graph, d.hf, d.lighting, d.world, ch.civilians.count, ch.civilians.seed, d.camera) : null;
   const life = barrio && ch.life ? new CityLife(ch.life, d.world, d.hf, barrio, d.lighting, d.mixer, d.camera) : null;
+  const state = { casualties: 0, onFail: () => {} };
+  const casualty = () => {
+    state.casualties++;
+    d.hud.civilians = { count: state.casualties, limit: difficulty.value.civilianLimit };
+    if (state.casualties >= difficulty.value.civilianLimit) state.onFail();
+  };
   const alarm = (p: THREE.Vector3, r: number) => {
     civilians?.alarm(p, r);
     life?.alarm(p, r);
@@ -24,6 +31,7 @@ export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world
     civilians.onHurt = () => {
       d.hud.showToast('CIVIL HERIDO   −200');
       d.sfx.hurt();
+      casualty();
     };
   }
   if (life) {
@@ -34,7 +42,8 @@ export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world
     tr.onDisabled = (p) => {
       d.hud.showToast('VEHÍCULO CIVIL   −150');
       alarm(p, 80);
+      casualty();
     };
   }
-  return { civilians, life, alarm };
+  return { civilians, life, alarm, state };
 }

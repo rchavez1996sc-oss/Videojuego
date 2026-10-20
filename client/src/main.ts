@@ -27,16 +27,17 @@ import enemyDefs from './data/enemies.json';
 import type { EnemyDef } from './entities/enemy';
 import { Enemies } from './systems/enemies';
 import { DamageFx } from './ui/damage';
-import { Pickups } from './systems/pickups';
+import { Pickups, collectSupplies } from './systems/pickups';
 import { findRespawn } from './systems/respawn';
 import { Grenades } from './weapons/grenades';
 import { detonate, BLAST_RADIUS } from './weapons/explosion';
 import { ThreatGrid } from './ui/threatGrid';
-import { DIFFICULTIES, difficulty, type DifficultyId } from './core/difficulty';
 import { installDebug } from './core/debug';
 import { buildBarrio } from './world/barrio';
 import { buildFarCity } from './world/farCity';
 import { createPopulace } from './systems/populace';
+import { showMissionFailed } from './ui/missionFail';
+import { setupStartMenu } from './ui/startMenu';
 import { gatherThreats, surfaceUnder } from './systems/sensing';
 
 const CHAPTERS: Record<string, unknown> = { '1': ch01, '2': ch02 };
@@ -106,7 +107,12 @@ async function boot(): Promise<void> {
   const damageFx = new DamageFx();
   const enemies = new Enemies(enemyDefs as unknown as Record<string, EnemyDef>, ch.enemies ?? [], world, hf, lighting, player, combat, sfx, camera);
   scene.add(enemies.group);
-  const { civilians, life, alarm } = createPopulace(ch, barrio, { world, hf, lighting, mixer, sfx, combat, hud, camera, scene });
+  const { civilians, life, alarm, state: populace } = createPopulace(ch, barrio, { world, hf, lighting, mixer, sfx, combat, hud, camera, scene });
+  let failed = false;
+  populace.onFail = () => {
+    failed = true;
+    showMissionFailed('El FLS no dispara contra su propio pueblo. Demasiadas bajas civiles: la gente del barrio ya no confía en ustedes.');
+  };
   combat.onShot = (p) => {
     enemies.hearShot(p);
     alarm(p, 90);
@@ -124,7 +130,7 @@ async function boot(): Promise<void> {
     damageFx.hit(Math.atan2(to.dot(right), to.dot(fwd)), dmg);
     tpc.kick(0.006, (Math.random() - 0.5) * 0.008, 0.03);
   };
-  const pickups = new Pickups(lighting, hf, ch.medkits ?? []);
+  const pickups = new Pickups(lighting, hf, ch.medkits ?? [], ch.ammo ?? []);
   scene.add(pickups.group);
   const threatGrid = new ThreatGrid();
   const grenades = new Grenades(world, hf, lighting, () => player.collisionHandle);
@@ -142,7 +148,11 @@ async function boot(): Promise<void> {
     life?.explosion(at, BLAST_RADIUS);
   };
   enemies.onEnemyHit = (kill, headshot, at) => {
-    if (kill && Math.random() < 0.15) pickups.spawn(at);
+    const roll = Math.random();
+    if (kill) {
+      if (roll < 0.2) pickups.spawn(at, 'medkit');
+      else if (roll < 0.5) pickups.spawn(at, 'ammo');
+    }
     sfx.hitmarker(kill);
     hud.hitmarker(kill, headshot, 'BAJA  +100');
     if (kill && enemies.aliveCount === 0) setTimeout(() => hud.showToast('ZONA DESPEJADA'), 1200);
@@ -175,24 +185,8 @@ async function boot(): Promise<void> {
     },
   });
 
-  status.textContent = 'Elige la dificultad · clic en cualquier parte para jugar';
-  const diffBox = overlay.querySelector('.difficulty') as HTMLElement;
-  const renderDiff = () => {
-    diffBox.innerHTML = '';
-    for (const [id, d] of Object.entries(DIFFICULTIES)) {
-      const b = document.createElement('button');
-      b.textContent = d.label;
-      b.classList.toggle('on', id === difficulty.id);
-      b.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        difficulty.set(id as DifficultyId);
-        renderDiff();
-      });
-      diffBox.appendChild(b);
-    }
-  };
-  renderDiff();
-  overlay.addEventListener('click', () => {
+  setupStartMenu(overlay, status, () => {
+    if (failed) return;
     mixer.resume();
     input.lock();
   });
@@ -218,6 +212,7 @@ async function boot(): Promise<void> {
           tpc.yaw = spot.yaw;
           tpc.pitch = -0.1;
           shieldT = 3;
+          enemies.suppressIntel(15);
           for (const e of enemies.list) {
             if (!e.alive || e.state === 'patrol') continue;
             e.state = 'alert';
@@ -263,13 +258,8 @@ async function boot(): Promise<void> {
       grenades.update(dt);
     }
     enemies.sync();
-    if (pickups.update(dt, player.position, player.hp < 99.5 && deadT <= 0)) {
-      player.heal();
-      grenades.count = Math.min(grenades.count + 1, 5);
-      sfx.pickup();
-      hud.showToast('+ BOTIQUÍN   + GRANADA');
-    }
-    const threats = gatherThreats(enemies, civilians, player.position, camera);
+    collectSupplies(dt, pickups, { player, gun: combat.gun, grenades, sfx, hud, alive: deadT <= 0 });
+    const threats = gatherThreats(enemies, civilians, pickups.positions, player.position, camera);
     threatGrid.update(dt, threats);
     damageFx.update(dt, player.hp / 100);
     hud.enemies = enemies.aliveCount;
@@ -295,7 +285,7 @@ async function boot(): Promise<void> {
       frames = acc = 0;
     }
   };
-  if (!shotMode) renderer.gl.setAnimationLoop(() => frame(Math.min(clock.getDelta(), 1 / 20)));
+  if (!shotMode) renderer.gl.setAnimationLoop(() => !failed && frame(Math.min(clock.getDelta(), 1 / 20)));
 }
 
 boot().catch((e) => {

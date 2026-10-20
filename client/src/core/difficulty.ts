@@ -1,7 +1,7 @@
 import table from '../data/difficulty.json';
 
 export type DifficultyId = keyof typeof table;
-export interface Difficulty { label: string; damage: number; attackers: number; reaction: number; spread: number; regenDelay: number }
+export interface Difficulty { label: string; damage: number; attackers: number; reaction: number; spread: number; regenDelay: number; civilianLimit: number }
 
 export const DIFFICULTIES = table as Record<DifficultyId, Difficulty>;
 

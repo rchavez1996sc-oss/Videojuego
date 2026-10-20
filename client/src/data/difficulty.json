@@ -1,5 +1,29 @@
 {
-  "recluta": { "label": "RECLUTA", "damage": 1.45, "attackers": 2, "reaction": 1.15, "spread": 1.1, "regenDelay": 5 },
-  "veterano": { "label": "VETERANO", "damage": 2.1, "attackers": 3, "reaction": 0.9, "spread": 0.95, "regenDelay": 6 },
-  "guerrillero": { "label": "GUERRILLERO", "damage": 2.8, "attackers": 4, "reaction": 0.7, "spread": 0.8, "regenDelay": 8 }
+  "recluta": {
+    "label": "RECLUTA",
+    "damage": 1.45,
+    "attackers": 2,
+    "reaction": 1.15,
+    "spread": 1.1,
+    "regenDelay": 5,
+    "civilianLimit": 6
+  },
+  "veterano": {
+    "label": "VETERANO",
+    "damage": 2.1,
+    "attackers": 3,
+    "reaction": 0.9,
+    "spread": 0.95,
+    "regenDelay": 6,
+    "civilianLimit": 4
+  },
+  "guerrillero": {
+    "label": "GUERRILLERO",
+    "damage": 2.8,
+    "attackers": 4,
+    "reaction": 0.7,
+    "spread": 0.8,
+    "regenDelay": 8,
+    "civilianLimit": 3
+  }
 }

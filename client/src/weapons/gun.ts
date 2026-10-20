@@ -22,6 +22,14 @@ export class Gun {
     return this.reloading > 0 ? 1 - this.reloading / this.reloadTotal : 0;
   }
 
+  get reserveMax(): number {
+    return this.def.reserve + this.def.magazine * 2;
+  }
+
+  addAmmo(rounds: number): void {
+    this.reserve = Math.min(this.reserveMax, this.reserve + rounds);
+  }
+
   toggleMode(): void {
     const i = this.def.modes.indexOf(this.mode);
     this.mode = this.def.modes[(i + 1) % this.def.modes.length];

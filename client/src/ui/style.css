@@ -81,3 +81,10 @@ body.shot #overlay, body.shot #stats { display: none; }
 
 #hud .ammo .nades { font: 11px ui-monospace, monospace; letter-spacing: 0.2em; color: var(--dim); margin-top: 4px; }
 #hud .zoom { position: absolute; left: calc(50% + 28px); top: calc(50% + 18px); font: 700 13px ui-monospace, monospace; color: rgba(240, 236, 226, 0.85); opacity: 0; transition: opacity 0.15s; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); }
+#hud .counter .civ { display: block; margin-top: 6px; color: #e8c08a; }
+#hud .counter .civ.warn { color: #e0452b; }
+#fail { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: rgba(12, 6, 4, 0.82); font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; color: #f0e2d6; z-index: 10; }
+#fail.on { display: flex; }
+#fail h2 { font-size: 60px; letter-spacing: 0.3em; color: #e0452b; }
+#fail p { font: 15px ui-monospace, monospace; letter-spacing: 0.12em; color: rgba(240, 226, 214, 0.8); max-width: 640px; text-align: center; line-height: 1.6; }
+#fail button { margin-top: 12px; font: 600 16px 'Barlow Condensed', sans-serif; letter-spacing: 0.25em; padding: 12px 26px; background: #f0e2d6; color: #120a06; border: 0; cursor: pointer; }
