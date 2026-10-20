@@ -49,6 +49,9 @@ export class Enemy {
   private crouchK = 0;
   private stuckT = 0;
   private detour: THREE.Vector3 | null = null;
+  private progT = 0;
+  private progD = Infinity;
+  private progGoal: THREE.Vector3 | null = null;
   private lastPos = new THREE.Vector3();
   private fallDir = new THREE.Vector3();
   private fallT = 0;
@@ -118,6 +121,7 @@ export class Enemy {
     const p = this.body.translation();
     this.body.setNextKinematicTranslation({ x: p.x + m.x, y: p.y + m.y, z: p.z + m.z });
 
+    this.unstick(dt);
     this.stuckT += dt;
     if (this.stuckT > 0.8) {
       if (wish.lengthSq() > 0.5 && this.position.distanceTo(this.lastPos) < 0.3) {
@@ -129,6 +133,27 @@ export class Enemy {
     }
     const speed = Math.hypot(this.vel.x, this.vel.z);
     this.model.animate(dt, speed, this.crouchK, aimPitch);
+  }
+
+  /** Drops the current waypoint when a few seconds of walking haven't brought it any closer. */
+  private unstick(dt: number): void {
+    const goal = this.path[0] ?? this.moveTarget;
+    if (!goal || this.isStatic) return;
+    if (goal !== this.progGoal) {
+      this.progGoal = goal;
+      this.progD = Infinity;
+      this.progT = 0;
+    }
+    this.progT += dt;
+    if (this.progT < 3) return;
+    const d = Math.hypot(goal.x - this.position.x, goal.z - this.position.z);
+    if (d > this.progD - 1.5) {
+      this.detour = null;
+      if (this.path.length) this.path.shift();
+      else this.moveTarget = null;
+      this.progD = Infinity;
+    } else this.progD = d;
+    this.progT = 0;
   }
 
   faceTowards(p: THREE.Vector3, dt: number, rate = 8): void {

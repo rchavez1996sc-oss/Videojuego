@@ -59,11 +59,17 @@ export function installDebug(c: DebugContext): void {
           const states = c.enemies.list.map((e) => `${e.id}:${e.state[0]}${e.cover ? 'C' : ''}${e.crouched ? 'v' : ''}${e.canSee ? '*' : ''}`).join(' ');
           const engaged = c.enemies.list.filter((e) => e.alive && e.engaged);
           const avg = engaged.length ? engaged.reduce((a, e) => a + e.position.distanceTo(c.player.position), 0) / engaged.length : 0;
-          log.push(`t=${((i + 1) / 20).toFixed(0)}s hp=${c.player.hp.toFixed(0)} engaged=${engaged.length} avgDist=${avg.toFixed(0)} inside=${c.enemies.insideCount} ${states}`);
+          const detail = c.enemies.aliveCount <= 5 ? c.enemies.list.filter((e) => e.alive).map((e) => `\n   ${e.id} ${e.state} @${fmt(e.position)} →${e.moveTarget ? fmt(e.moveTarget) : '-'} path=${e.path.length} lk=${fmt(e.lastKnown)} run=${e.running}`).join('') : '';
+          log.push(`t=${((i + 1) / 20).toFixed(0)}s hp=${c.player.hp.toFixed(0)} engaged=${engaged.length} avgDist=${avg.toFixed(0)} inside=${c.enemies.insideCount} ${states}${detail}`);
         }
       }
       c.setSkipRender(false);
       return log.join('\n');
+    },
+    /** Kills all but the `keep` enemies farthest from the player (tests the last-stand hunt). */
+    thin(keep: number) {
+      const far = [...c.enemies.list].sort((a, b) => b.position.distanceTo(c.player.position) - a.position.distanceTo(c.player.position));
+      for (const e of far.slice(keep)) if (e.alive && e.damage(1e6)) e.die(new THREE.Vector3(0, 0, 1));
     },
     /** Throws a grenade from 15 m west of a point and runs until it explodes. */
     grenadeTest(tx: number, tz: number) {

@@ -169,7 +169,7 @@ export class Player {
     const sliding = this.slideT > 0;
     const crouching = crouchKey || sliding;
     this.sprinting = canSprint && !crouching && this.speed > 0.5;
-    this.stamina = THREE.MathUtils.clamp(this.stamina + (this.sprinting ? -18 : 14) * dt, 0, 100);
+    this.stamina = THREE.MathUtils.clamp(this.stamina + (this.sprinting ? -8.5 : 14) * dt, 0, 100);
     if (this.stamina <= 0) this.exhausted = true;
     this.crouch = THREE.MathUtils.damp(this.crouch, crouching ? 1 : 0, 12, dt);
     const target = aiming ? AIM : crouching ? CROUCH : canSprint ? RUN : WALK;

@@ -135,8 +135,8 @@
         4
       ]
     ],
-    "mototaxis": 26,
-    "cars": 70,
+    "mototaxis": 40,
+    "cars": 100,
     "billboardEvery": 46,
     "hillLetters": [
       [
@@ -265,30 +265,10 @@
       ]
     },
     {
-      "type": "rifleman",
-      "x": 30,
-      "z": 150
-    },
-    {
       "type": "marksman",
       "x": 11,
       "z": 20,
       "y": 10.85
-    },
-    {
-      "type": "rifleman",
-      "x": -229.5,
-      "z": 50.5,
-      "patrol": [
-        [
-          -229.5,
-          50.5
-        ],
-        [
-          -178.5,
-          50.5
-        ]
-      ]
     },
     {
       "type": "rifleman",
@@ -357,16 +337,6 @@
     },
     {
       "type": "rifleman",
-      "x": 178.5,
-      "z": -93.5
-    },
-    {
-      "type": "rifleman",
-      "x": 229.5,
-      "z": 50.5
-    },
-    {
-      "type": "rifleman",
       "x": 229.5,
       "z": -9.4
     },
@@ -374,11 +344,6 @@
       "type": "rifleman",
       "x": 60,
       "z": 130
-    },
-    {
-      "type": "rifleman",
-      "x": -150,
-      "z": -140
     }
   ],
   "medkits": [
@@ -396,7 +361,7 @@
     ]
   ],
   "civilians": {
-    "count": 26,
+    "count": 55,
     "seed": 5
   },
   "views": [
@@ -458,9 +423,9 @@
     "avenueHalf": 13
   },
   "life": {
-    "traffic": 10,
-    "dogs": 8,
-    "birds": 14
+    "traffic": 18,
+    "dogs": 12,
+    "birds": 18
   },
   "ammo": [
     [

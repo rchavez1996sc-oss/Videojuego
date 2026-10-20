@@ -108,6 +108,10 @@ function hunt(e: Enemy, ctx: AIContext): void {
     goTo(e, ctx, e.lastKnown.clone().add(new THREE.Vector3(rand(-14, 14), 0, rand(-14, 14))), false);
     return;
   }
+  if (dist > 60) {
+    goTo(e, ctx, e.position.clone().addScaledVector(toPlayer.normalize(), Math.min(70, dist - 35)), true);
+    return;
+  }
   const side = new THREE.Vector3(-toPlayer.z, 0, toPlayer.x).normalize().multiplyScalar(Math.random() < 0.5 ? -1 : 1);
   const flank = Math.random() < 0.35;
   const anchor = flank ? e.lastKnown.clone().addScaledVector(side, Math.min(25, dist * 0.6)) : e.position.clone().addScaledVector(toPlayer.normalize(), Math.min(32, dist * 0.6));

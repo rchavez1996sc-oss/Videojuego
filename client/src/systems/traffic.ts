@@ -154,6 +154,7 @@ export class Traffic {
       }
       const y = this.hf.heightAt(v.x, v.z);
       const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), v.yaw);
+      v.group.visible = Math.hypot(v.x - camera.x, v.z - camera.z) < 150;
       v.group.position.set(v.x, y, v.z);
       v.group.quaternion.copy(q);
       v.body.setNextKinematicTranslation({ x: v.x, y, z: v.z });

@@ -38,6 +38,7 @@ export class Civilians {
     for (let i = 0; i < count; i++) {
       const pal: Palette = { id: `civ${i % 9}`, cloth: pick(PANTS), vest: pick(SHIRTS), skin: pick(SKIN), helmet: pick(HAIR) };
       const model = new Mannequin(lighting, pal, false);
+      model.far = true;
       const node = Math.floor(rand() * graph.nodes.length);
       const target = pick(this.neighbors[node]);
       const t = rand();

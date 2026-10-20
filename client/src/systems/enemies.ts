@@ -94,6 +94,11 @@ export class Enemies {
     return this.list.filter((e) => e.alive).length;
   }
 
+  /** Last few survivors: they all hunt the player and show up on the radar wherever they are. */
+  get lastStand(): boolean {
+    return this.aliveCount <= Math.max(4, Math.ceil(this.list.length * 0.25));
+  }
+
   /** Silences radio reports for a while (used right after the player respawns). */
   suppressIntel(seconds: number): void {
     this.intelHold = seconds;
@@ -106,9 +111,14 @@ export class Enemies {
     const spotted = this.list.some((e) => e.alive && e.canSee && e.state === 'combat');
     const periodic = this.intelT <= 0 && this.intelHold <= 0;
     if (!spotted && !periodic) return;
-    if (periodic) this.intelT = 8;
+    const last = this.lastStand;
+    if (periodic) this.intelT = last ? 5 : 8;
     for (const e of this.list) {
-      if (!e.alive || !(e.engaged || e.state === 'alert') || e.canSee || e.position.distanceTo(this.player.position) > 160) continue;
+      if (last && e.alive && periodic && !e.isStatic) {
+        e.engaged = true;
+        e.awareness = Math.max(e.awareness, 0.75);
+      }
+      if (!e.alive || !(e.engaged || e.state === 'alert') || e.canSee || (!last && e.position.distanceTo(this.player.position) > 160)) continue;
       const noise = spotted ? 2 : 10;
       e.lastKnown.copy(this.player.position).add(new THREE.Vector3((Math.random() - 0.5) * noise, 0, (Math.random() - 0.5) * noise));
     }
