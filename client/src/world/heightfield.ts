@@ -59,7 +59,8 @@ export class Heightfield {
           const t = smoothstep(f.r, f.r * 0.55, Math.hypot(x - f.x, z - f.z));
           h = lerp(h, flatTargets[i] + noise.fbm(x, z, 1 / 40, 2) * 0.6, t);
         });
-        h -= (1 - smoothstep(2.5, 7, dRoad)) * 0.35;
+        const rwh = (this.def.roadWidth ?? 6.4) / 2;
+        h -= (1 - smoothstep(rwh - 0.7, rwh + 3.8, dRoad)) * 0.35;
         const k = zi * n + xi;
         this.heights[k] = h;
         this.roadDist[k] = dRoad;
@@ -75,7 +76,8 @@ export class Heightfield {
         const x = -half + xi * step, z = -half + zi * step;
         const k = zi * n + xi;
         const edgeNoise = noise.fbm(x, z, 1 / 6, 2) * 1.6;
-        const road = 1 - smoothstep(2.2, 4.2, this.roadDist[k] + edgeNoise);
+        const rw = (def.roadWidth ?? 6.4) / 2;
+        const road = 1 - smoothstep(rw - 1, rw + 1, this.roadDist[k] + edgeNoise * (rw > 4 ? 0.3 : 1));
         let packed = 0;
         for (const f of def.flatten) {
           packed = Math.max(packed, smoothstep(f.r * 0.85, f.r * 0.35, Math.hypot(x - f.x, z - f.z) + edgeNoise * 6));

@@ -1,0 +1,319 @@
+{
+  "id": "ch01",
+  "number": 1,
+  "title": "Ceniza",
+  "terrain": {
+    "size": 1024,
+    "playable": 560,
+    "resolution": 513,
+    "seed": 1980,
+    "rolling": 1.0,
+    "hillHeight": 95,
+    "mountainHeight": 230,
+    "valleyWidth": 104,
+    "road": [
+      [
+        -420,
+        0
+      ],
+      [
+        420,
+        0
+      ]
+    ],
+    "roadWidth": 16,
+    "flatten": []
+  },
+  "biome": {
+    "sunElevation": 40,
+    "sunAzimuth": 200,
+    "turbidity": 10,
+    "rayleigh": 0.55,
+    "mieCoefficient": 0.03,
+    "mieDirectionalG": 0.7,
+    "exposure": 1.05,
+    "sunColor": "#f1ebe0",
+    "sunIntensity": 1.6,
+    "ambient": 0.8,
+    "fogColor": "#bcb8af",
+    "fogDensity": 0.0042,
+    "colors": {
+      "grassLush": "#8a7d5e",
+      "grassDry": "#9d8d6c",
+      "dirt": "#8e7d64",
+      "road": "#4a4843",
+      "rock": "#7d756a",
+      "snow": "#e9ecef"
+    },
+    "snowLine": 9999,
+    "grass": {
+      "height": 0.32,
+      "colorBase": "#5e5a3a",
+      "colorTip": "#9b9068",
+      "density": 0.16
+    }
+  },
+  "barrio": {
+    "seed": 51,
+    "x0": -214,
+    "cols": 8,
+    "blockW": 42,
+    "blockD": 34,
+    "street": 9,
+    "gap": 12,
+    "hills": {
+      "zMin": 116,
+      "zMax": 235,
+      "count": 140,
+      "xMax": 255
+    },
+    "stairs": [
+      [
+        -90,
+        102,
+        190
+      ],
+      [
+        30,
+        102,
+        200
+      ],
+      [
+        140,
+        -102,
+        -190
+      ],
+      [
+        -170,
+        -102,
+        -180
+      ]
+    ],
+    "landmark": {
+      "x": 11,
+      "z": 12,
+      "w": 12,
+      "d": 15,
+      "floors": 4,
+      "facing": 3.141592653589793
+    },
+    "barricades": [
+      [
+        -150,
+        -4.6,
+        1.5708,
+        6
+      ],
+      [
+        -150,
+        4.6,
+        1.5708,
+        6
+      ],
+      [
+        36.5,
+        50.5,
+        0,
+        5
+      ],
+      [
+        -65.5,
+        -50.5,
+        0,
+        5
+      ],
+      [
+        138.5,
+        9.4,
+        0,
+        4
+      ]
+    ],
+    "mototaxis": 16
+  },
+  "scatter": {
+    "rocks": 600,
+    "trees": 20,
+    "seed": 77
+  },
+  "spawn": {
+    "x": -252,
+    "z": -4,
+    "yaw": -1.5708
+  },
+  "enemies": [
+    {
+      "type": "rifleman",
+      "x": -146,
+      "z": -2
+    },
+    {
+      "type": "rifleman",
+      "x": -146,
+      "z": 3
+    },
+    {
+      "type": "rifleman",
+      "x": -142,
+      "z": 7
+    },
+    {
+      "type": "rifleman",
+      "x": -60,
+      "z": 4,
+      "patrol": [
+        [
+          -60,
+          4
+        ],
+        [
+          60,
+          4
+        ],
+        [
+          100,
+          -4
+        ]
+      ]
+    },
+    {
+      "type": "rifleman",
+      "x": -14.5,
+      "z": 20,
+      "patrol": [
+        [
+          -14.5,
+          20
+        ],
+        [
+          -14.5,
+          90
+        ],
+        [
+          36.5,
+          90
+        ]
+      ]
+    },
+    {
+      "type": "rifleman",
+      "x": 36.5,
+      "z": 54
+    },
+    {
+      "type": "rifleman",
+      "x": 87.5,
+      "z": -46
+    },
+    {
+      "type": "rifleman",
+      "x": -65.5,
+      "z": -90,
+      "patrol": [
+        [
+          -65.5,
+          -90
+        ],
+        [
+          -14.5,
+          -93
+        ],
+        [
+          -14.5,
+          -20
+        ]
+      ]
+    },
+    {
+      "type": "rifleman",
+      "x": 138.5,
+      "z": 14
+    },
+    {
+      "type": "rifleman",
+      "x": -116.5,
+      "z": 50.5,
+      "patrol": [
+        [
+          -116.5,
+          50.5
+        ],
+        [
+          -65.5,
+          50.5
+        ]
+      ]
+    },
+    {
+      "type": "rifleman",
+      "x": 30,
+      "z": 150
+    },
+    {
+      "type": "marksman",
+      "x": 11,
+      "z": 20,
+      "y": 10.85
+    }
+  ],
+  "medkits": [
+    [
+      -116.5,
+      70
+    ],
+    [
+      87.5,
+      -30
+    ],
+    [
+      -14.5,
+      -93
+    ]
+  ],
+  "civilians": {
+    "count": 26,
+    "seed": 5
+  },
+  "views": [
+    [
+      -250,
+      1.8,
+      -4,
+      -150,
+      3,
+      0
+    ],
+    [
+      -40,
+      60,
+      -150,
+      20,
+      0,
+      30
+    ],
+    [
+      -20,
+      1.7,
+      9.4,
+      60,
+      3,
+      9
+    ],
+    [
+      -14.5,
+      1.8,
+      30,
+      -14.5,
+      3,
+      90
+    ],
+    [
+      -90,
+      30,
+      70,
+      -90,
+      20,
+      180
+    ]
+  ]
+}

@@ -9,7 +9,7 @@ export class DamageFx {
     this.vignette.id = 'pain';
     this.arcs.id = 'hit-arcs';
     this.death.id = 'death';
-    this.death.innerHTML = '<h2>HAS CAÍDO</h2><p>Reagrupando en el punto de inicio…</p>';
+    this.death.innerHTML = '<h2>HAS CAÍDO</h2><p>Reagrupando en una posición segura…</p>';
     document.body.append(this.vignette, this.arcs, this.death);
   }
 

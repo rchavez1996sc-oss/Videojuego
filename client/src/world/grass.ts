@@ -60,6 +60,7 @@ export class Grass {
       uN: { value: hf.n },
       uSize: { value: hf.size },
       uBladeH: { value: biome.grass.height },
+      uDensity: { value: biome.grass.density ?? 1 },
       uBase: { value: new THREE.Color(biome.grass.colorBase) },
       uTip: { value: new THREE.Color(biome.grass.colorTip) },
     };
@@ -69,7 +70,7 @@ export class Grass {
       sh.vertexShader = sh.vertexShader
         .replace('#include <common>', `#include <common>
           attribute vec4 aBlade;
-          uniform float uTime, uN, uSize, uBladeH;
+          uniform float uTime, uN, uSize, uBladeH, uDensity;
           uniform vec2 uCam;
           uniform vec3 uPlayer;
           uniform sampler2D uHeight, uMask;
@@ -87,7 +88,7 @@ export class Grass {
           vec2 wp = uCam + mod(aBlade.xy - uCam + ${f(TILE / 2)}, ${f(TILE)}) - ${f(TILE / 2)};
           vec4 msk = texture(uMask, wp / uSize + 0.5);
           float dist = length(wp - uCam);
-          float keep = smoothstep(aBlade.w - 0.15, aBlade.w + 0.15, msk.g * 1.1) * (1.0 - smoothstep(${f(TILE * 0.3)}, ${f(TILE * 0.48)}, dist));
+          float keep = smoothstep(aBlade.w - 0.15, aBlade.w + 0.15, msk.g * 1.1 * uDensity) * (1.0 - smoothstep(${f(TILE * 0.3)}, ${f(TILE * 0.48)}, dist));
           float grp = 0.6 + 0.6 * tq_noise(wp * 0.15);
           float bh = uBladeH * (0.55 + aBlade.w * 0.7) * grp * keep * (0.5 + 0.5 * msk.g);
           float bs = sin(aBlade.z), bc = cos(aBlade.z);

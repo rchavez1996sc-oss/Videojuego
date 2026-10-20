@@ -21,7 +21,7 @@ export class Mannequin {
   readonly head: THREE.Object3D;
   readonly hips: THREE.Group;
 
-  constructor(lighting: Lighting, pal: Palette = PLAYER_PALETTE) {
+  constructor(lighting: Lighting, pal: Palette = PLAYER_PALETTE, private armed = true) {
     const std = (key: string, color: string, r = 0.85) => lighting.setup(new THREE.MeshStandardMaterial({ color, roughness: r }), `${key}-${pal.id}`);
     const cloth = std('m-cloth', pal.cloth), vest = std('m-vest', pal.vest), skin = std('m-skin', pal.skin, 0.6);
     const gear = std('m-gear', '#1d1e1a', 0.5), helmet = std('m-helmet', pal.helmet, 0.7);
@@ -56,16 +56,19 @@ export class Mannequin {
       arm.position.set(s * 0.27, 0.58, 0);
       this.torso.add(arm);
       const a = part(new THREE.CapsuleGeometry(0.06, 0.48, 4, 8), cloth, arm, [0, -0.2, 0.12]);
-      a.rotation.x = -1.1;
+      a.rotation.x = armed ? -1.1 : 0;
+      if (!armed) a.position.set(0, -0.28, 0);
       this.arms.push(arm);
     }
-    const ak = buildAK(lighting);
-    ak.group.position.set(0.13, 0.43, 0.3);
-    this.torso.add(ak.group);
-    this.muzzle = ak.muzzle;
-    this.ejector = ak.ejector;
-    this.weapon = ak.group;
-    mergeRig(this.root, new Set([hips, this.torso, ak.group, ...this.legs, ...this.arms]), lighting.setup(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8 }), 'm-baked'));
+    const ak = armed ? buildAK(lighting) : null;
+    if (ak) {
+      ak.group.position.set(0.13, 0.43, 0.3);
+      this.torso.add(ak.group);
+    }
+    this.muzzle = ak?.muzzle ?? new THREE.Object3D();
+    this.ejector = ak?.ejector ?? new THREE.Object3D();
+    this.weapon = ak?.group ?? new THREE.Group();
+    mergeRig(this.root, new Set([hips, this.torso, this.weapon, ...this.legs, ...this.arms]), lighting.setup(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8 }), 'm-baked'));
   }
 
   set castShadow(v: boolean) {
@@ -78,7 +81,7 @@ export class Mannequin {
     this.phase += dt * (2 + speed * 1.6);
     const amp = Math.min(speed / 5, 1) * 0.7;
     this.legs.forEach((l, i) => (l.rotation.x = Math.sin(this.phase + i * Math.PI) * amp));
-    this.arms.forEach((a, i) => (a.rotation.x = -0.2 + Math.sin(this.phase + i * Math.PI) * amp * 0.15));
+    this.arms.forEach((a, i) => (a.rotation.x = this.armed ? -0.2 + Math.sin(this.phase + i * Math.PI) * amp * 0.15 : -Math.sin(this.phase + i * Math.PI) * amp * 0.9));
     this.torso.rotation.x = THREE.MathUtils.lerp(this.torso.rotation.x, -aimPitch * 0.5 + crouch * 0.35, 0.2);
     this.root.children[0].position.y = 0.95 - crouch * 0.35 + Math.abs(Math.sin(this.phase)) * amp * 0.05;
   }

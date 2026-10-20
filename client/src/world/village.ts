@@ -74,7 +74,7 @@ function church(b: Builder, x: number, z: number, y: number, rot: number): void 
   b.box('stone', [w + 1, sink + 0.6, d + 1], at(0, -sink / 2 + 0.3, 0), q, false);
 }
 
-function buildPircas(b: Builder, hf: Heightfield, rand: () => number, v: ChapterDef['village'], footprints: Footprint[]): void {
+function buildPircas(b: Builder, hf: Heightfield, rand: () => number, v: NonNullable<ChapterDef['village']>, footprints: Footprint[]): void {
   for (let n = 0, tries = 0; n < 26 && tries < 400; tries++) {
     const a = rand() * Math.PI * 2, dist = v.radius * (0.6 + rand() * 1.6);
     let x = v.x + Math.cos(a) * dist, z = v.z + Math.sin(a) * dist;
@@ -100,11 +100,10 @@ function buildPircas(b: Builder, hf: Heightfield, rand: () => number, v: Chapter
   }
 }
 
-export function buildVillage(hf: Heightfield, ch: ChapterDef, lighting: Lighting, world: RAPIER.World): { group: THREE.Group; footprints: Footprint[] } {
+export function buildVillage(hf: Heightfield, v: NonNullable<ChapterDef['village']>, terrain: ChapterDef['terrain'], lighting: Lighting, world: RAPIER.World): { group: THREE.Group; footprints: Footprint[] } {
   const body = world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
   const b = new Builder(world, body);
-  const rand = mulberry32(ch.terrain.seed + 7);
-  const v = ch.village;
+  const rand = mulberry32(terrain.seed + 7);
   const footprints: Footprint[] = [{ x: v.church.x, z: v.church.z, r: 16 }];
   church(b, v.church.x, v.church.z, hf.heightAt(v.church.x, v.church.z), v.church.rot);
   const tryHouse = (x: number, z: number, faceX: number, faceZ: number, row: number): boolean => {
@@ -117,7 +116,7 @@ export function buildVillage(hf: Heightfield, ch: ChapterDef, lighting: Lighting
     footprints.push({ x, z, r });
     return true;
   };
-  const road = ch.terrain.road;
+  const road = terrain.road;
   let placed = 0;
   for (let i = 0; i < road.length - 1 && placed < v.houses; i++) {
     const [ax, az] = road[i], [bx, bz] = road[i + 1];

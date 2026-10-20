@@ -53,6 +53,7 @@ export function buildStructures(hf: Heightfield, lighting: Lighting, world: RAPI
   const st = rock(), wd = wood();
   const std = (key: string, p: THREE.MeshStandardMaterialParameters) => lighting.setup(new THREE.MeshStandardMaterial(p), key);
   const group = new THREE.Group();
+  if (!defs.length) return group;
   group.add(...b.build({
     stone: std('stone', { map: st.map, normalMap: st.normalMap, roughness: 0.9, color: '#a39a90' }),
     wood: std('wood', { map: wd.map, normalMap: wd.normalMap, roughness: 0.9 }),

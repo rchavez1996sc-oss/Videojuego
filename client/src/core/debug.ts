@@ -1,0 +1,96 @@
+import * as THREE from 'three';
+import type { ThirdPersonCamera } from './camera';
+import type { Heightfield } from '../world/heightfield';
+import type { Player } from '../entities/player';
+import type { Combat } from '../weapons/combat';
+import type { Enemies } from '../systems/enemies';
+import type { Grenades } from '../weapons/grenades';
+import type { Renderer } from '../render/renderer';
+
+export interface DebugContext {
+  views: [number, number, number, number, number, number][];
+  tpc: ThirdPersonCamera;
+  hf: Heightfield;
+  player: Player;
+  combat: Combat;
+  enemies: Enemies;
+  grenades: Grenades;
+  renderer: Renderer;
+  shotMode: boolean;
+  frame: (dt: number) => void;
+  setFreeCam: (v: boolean) => void;
+  setSkipRender: (v: boolean) => void;
+  throwGrenade: () => void;
+  extraLog?: () => string;
+}
+
+/** `window.__game`: hooks used by the Playwright screenshot / AI / grenade scripts. */
+export function installDebug(c: DebugContext): void {
+  const fmt = (v: THREE.Vector3) => `${v.x.toFixed(1)},${v.y.toFixed(1)},${v.z.toFixed(1)}`;
+  (window as unknown as { __game: object }).__game = {
+    setView(i: number) {
+      c.setFreeCam(true);
+      const [x, dy, z, lx, ldy, lz] = c.views[i];
+      c.tpc.place(new THREE.Vector3(x, c.hf.heightAt(x, z) + dy, z), new THREE.Vector3(lx, c.hf.heightAt(lx, lz) + ldy, lz));
+      if (c.shotMode) c.frame(1 / 60);
+    },
+    views: () => c.views.length,
+    follow() {
+      c.setFreeCam(false);
+    },
+    /** Logic-only run: teleports the player, steps `seconds` without rendering, reports AI state every 2 s. */
+    aiTest(x: number, z: number, seconds: number, fire: boolean) {
+      c.setFreeCam(false);
+      c.setSkipRender(true);
+      c.player.respawn(new THREE.Vector3(x, c.hf.heightAt(x, z), z), Math.atan2(x, z));
+      c.tpc.yaw = Math.atan2(x, z);
+      const log: string[] = [];
+      for (let i = 0; i < seconds * 20; i++) {
+        if (fire && i % 10 === 0) c.combat.debugShoot();
+        c.frame(1 / 20);
+        if (i % 40 === 39) {
+          const states = c.enemies.list.map((e) => `${e.id}:${e.state[0]}${e.cover ? 'C' : ''}${e.crouched ? 'v' : ''}${e.canSee ? '*' : ''}`).join(' ');
+          log.push(`t=${((i + 1) / 20).toFixed(0)}s hp=${c.player.hp.toFixed(0)} pos=${c.player.position.x.toFixed(0)},${c.player.position.z.toFixed(0)} ${states} ${c.extraLog?.() ?? ''}`);
+        }
+      }
+      c.setSkipRender(false);
+      return log.join('\n');
+    },
+    /** Throws a grenade from 15 m west of a point and runs until it explodes. */
+    grenadeTest(tx: number, tz: number) {
+      c.setFreeCam(false);
+      c.setSkipRender(true);
+      const from = new THREE.Vector3(tx - 15, 0, tz);
+      from.y = c.hf.heightAt(from.x, from.z);
+      c.player.respawn(from, Math.PI / 2 + Math.PI);
+      c.tpc.yaw = -Math.PI / 2;
+      c.tpc.pitch = -0.12;
+      for (let i = 0; i < 3; i++) c.frame(1 / 30);
+      let where: THREE.Vector3 | null = null;
+      const prev = c.grenades.onExplode;
+      c.grenades.onExplode = (at) => {
+        where = at;
+        prev(at);
+      };
+      const before = c.enemies.list.map((e) => e.hp);
+      c.throwGrenade();
+      for (let n = 0; !where && n < 200; n++) c.frame(1 / 30);
+      for (let i = 0; i < 4; i++) c.frame(1 / 30);
+      c.grenades.onExplode = prev;
+      c.setSkipRender(false);
+      const hits = c.enemies.list.map((e, i) => (e.hp !== before[i] ? `${i}: ${before[i]}→${Math.max(0, e.hp).toFixed(0)} ${e.state} @${fmt(e.position)}` : '')).filter(Boolean);
+      return `${hits.join(' | ')} · boom @ ${where ? fmt(where) : '-'} · player hp ${c.player.hp.toFixed(0)}`;
+    },
+    /** Runs `n` frames in follow mode, firing every `every` frames (screenshot tests). */
+    simulate(n: number, every: number, pitch = -0.02) {
+      c.setFreeCam(false);
+      c.tpc.pitch = pitch;
+      for (let i = 0; i < n; i++) {
+        if (every && i % every === 0) c.combat.debugShoot();
+        c.frame(1 / 60);
+      }
+    },
+    info: () => ({ calls: c.renderer.gl.info.render.calls, tris: c.renderer.gl.info.render.triangles }),
+    ready: true,
+  };
+}

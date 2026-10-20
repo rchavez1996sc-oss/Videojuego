@@ -3,7 +3,10 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { setSurface, type Surface } from './surfaces';
 import { cover } from '../ai/cover';
 
-const SURFACE: Record<string, Surface> = { adobe: 'adobe', plaster: 'adobe', stone: 'rock', none: 'rock', wood: 'wood', crate: 'wood', roof: 'tile' };
+const SURFACE: Record<string, Surface> = {
+  adobe: 'adobe', plaster: 'adobe', stone: 'rock', none: 'rock', wood: 'wood', crate: 'wood', roof: 'tile',
+  brick: 'adobe', concrete: 'rock', calamina: 'metal', estera: 'wood', door: 'metal', shutter: 'metal', sandbag: 'dirt', moto: 'metal',
+};
 
 export interface Opening { x: number; w: number; y: number; h: number }
 
@@ -28,9 +31,17 @@ export class Builder {
           .setRotation({ x: quat.x, y: quat.y, z: quat.z, w: quat.w }),
         this.body,
       );
-      setSurface(col.handle, SURFACE[mat] ?? 'adobe');
+      setSurface(col.handle, SURFACE[mat] ?? (mat.startsWith('paint') ? 'adobe' : 'rock'));
       if (mat !== 'roof') cover.addBox(pos, size, quat);
     }
+  }
+
+  /** Arbitrary geometry already shaped in local space, placed with `matrix`; optional box collider. */
+  geometry(mat: string, geo: THREE.BufferGeometry, matrix: THREE.Matrix4, collider?: { size: [number, number, number]; pos: THREE.Vector3; quat: THREE.Quaternion }): void {
+    const g = (geo.index ? geo.toNonIndexed() : geo.clone()).applyMatrix4(matrix);
+    g.setIndex([...Array(g.attributes.position.count).keys()]);
+    (this.parts.get(mat) ?? this.parts.set(mat, []).get(mat)!).push(g);
+    if (collider) this.box('none', collider.size, collider.pos, collider.quat, true);
   }
 
   /** Triangular gable of base `base` and height `h`, extruded `thick` along local X (rotY=0) or Z (alongZ). */

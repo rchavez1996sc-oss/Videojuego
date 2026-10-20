@@ -50,27 +50,28 @@ TPS táctico en campos de batalla abiertos de **mínimo 500 × 500 m** por nivel
 
 **Presupuesto de rendimiento**: 60 fps en GPU media (GTX 1660 / RTX 3050) a 1080p. Ajustes Bajo/Medio/Alto/Ultra (sombras, SSAO, densidad de pasto, distancia, resolución de render escalable). Medir con `stats-gl` y un modo benchmark.
 
-## 3. Historia (ficticia, 10 capítulos)
+## 3. Historia (ambientada en el Perú, facciones ficticias, 10 capítulos)
 
-**Contexto:** República de **Valdoria**, 2031. El general **Aurelio Castañeda** da un golpe de Estado, disuelve el congreso y entrega la sierra a la minera extranjera **Ferrum Andes**. Su brazo armado: la **Guardia Nacional de Orden (GNO)** y los mercenarios de **Blackridge Security**.
-**Protagonista:** **Lucía "Ceniza" Morales**, exsargento que desertó tras la masacre de su pueblo. Funda el **Frente de Liberación de la Sierra (FLS)**.
-**Compañeros:** *Tomás "Profe" Ibarra* (maestro, estratega, voz de radio), *Nena Quispe* (francotiradora, 19 años), *Padre Elías* (cura y médico), *Rocco* (mecánico, ex-GNO).
-**Tema:** el precio de la libertad. A partir de la mitad, el FLS se divide entre justicia y venganza; la guerra también corrompe a los propios.
+**Contexto:** Perú, 2031 (ucronía). El general **Aurelio Castañeda** da un golpe de Estado, disuelve el Congreso y entrega la sierra a la minera extranjera **Ferrum Andes**. Su brazo armado: la **Guardia Nacional de Orden (GNO)** y los mercenarios de **Blackridge Security**. Todas las facciones, personajes y lugares concretos son ficticios; no se usan grupos armados reales.
+**Protagonista:** **Lucía "Ceniza" Morales**, exsargento nacida en un cono de Lima, que deserta tras ver a la GNO disparar contra su barrio. Funda el **Frente de Liberación de la Sierra (FLS)**.
+**Compañeros:** *Tomás "Profe" Ibarra* (profesor de colegio nacional, estratega), *Nena Quispe* (francotiradora ayacuchana, 19 años), *Padre Elías* (párroco y médico), *Rocco* (mecánico, ex-GNO).
+**Tema:** el precio de la libertad. A partir de la mitad, el FLS se divide entre justicia y venganza.
 
-| # | Capítulo | Mapa / bioma (≥500×500 m) | Objetivo | Giro | Interiores recorribles |
-|---|---|---|---|---|---|
-| 1 | **Ceniza** | Aldea andina abandonada al amanecer, adobe, iglesia, cuartel | Escapar con supervivientes, asaltar el cuartel | Nace el FLS | Iglesia, cuartel, 4–5 casas |
-| 2 | **La Ruta del Polvo** | Salar y cañones al mediodía, gasolinera, motel | Emboscar convoy, robar un jeep | Rocco deserta y se une | Gasolinera, motel (2 pisos), taller |
-| 3 | **Montaña Negra** | Montaña nevada en tormenta, campamento minero, teleférico | Sabotear la mina | Fosas comunes en la mina | Túneles de mina, barracas, sala de control |
-| 4 | **El Museo** | Ciudad colonial de noche, plazas, calles empedradas | Robar archivos de la masacre | La prensa internacional se entera | **Museo Nacional completo (3 pisos)**, cafés, azoteas |
-| 5 | **Río Rojo** | Selva ribereña con lluvia, puente colgante, aserradero | Defender un pueblo aliado (oleadas) | Muere el Padre Elías | Aserradero, casas sobre pilotes, escuela |
-| 6 | **Puerto Libertad** | Puerto industrial al atardecer, contenedores, grúas, barco | Capturar cargamento de Blackridge | Un aliado vende posiciones | Almacenes, oficinas, interior del barco |
-| 7 | **La Universidad** | Campus con barricadas, humo, día nublado | Romper el cerco, evacuar civiles | Apoyo popular masivo | Biblioteca, aulas, gimnasio, rectoría |
-| 8 | **Base Cóndor** | Base aérea en meseta, noche con reflectores | Destruir helicópteros de ataque | Nena y Profe se enfrentan: venganza vs justicia | Hangares, torre de control, búnker |
-| 9 | **La Represa** | Represa entre montañas, amanecer con niebla | Evitar que Castañeda inunde el valle | **Decisión moral**: volar la represa o desactivar las cargas | Central hidroeléctrica, galerías internas |
-| 10 | **Palacio de Invierno** | Capital nocturna, avenidas, barricadas en llamas | Asalto final, capturar a Castañeda | Final A (juicio público) / Final B (ejecución: el FLS se vuelve lo que combatía) | **Palacio presidencial completo**, edificios de la avenida |
+| # | Capítulo | Mapa / bioma (≥500×500 m) | Objetivo | Giro |
+|---|---|---|---|---|
+| 1 | **Ceniza** | Cono de Lima: A.H. ficticio "Nueva Esperanza", avenida, manzanas de ladrillo, cerros con escaleras, cielo gris | Romper el retén de la GNO y sacar a los vecinos | Nace el FLS |
+| 2 | **La Ruta del Polvo** | Pampa costera y quebradas (estilo Nazca), grifo en ruinas | Emboscar convoy, robar camioneta | Rocco deserta |
+| 3 | **Montaña Negra** | Puna nevada, campamento minero, teleférico | Sabotear la mina | Fosas comunes |
+| 4 | **El Museo** | Centro de Lima de noche, casonas, Museo Nacional (ficticio) | Robar archivos | La prensa internacional se entera |
+| 5 | **Río Rojo** | Selva amazónica con lluvia, aserradero | Defender un pueblo aliado | Muere el Padre Elías |
+| 6 | **Puerto Libertad** | Puerto industrial (estilo Callao), contenedores | Capturar cargamento | Traición |
+| 7 | **La Universidad** | Campus tomado por estudiantes (estilo universidad pública limeña) | Romper el cerco | Apoyo popular |
+| 8 | **Base Cóndor** | Base aérea en el altiplano, de noche | Destruir helicópteros | Nena vs Profe |
+| 9 | **La Represa** | Represa andina entre cerros | Evitar la inundación del valle | Decisión moral (finales A/B) |
+| 10 | **Palacio de Invierno** | Lima nocturna, barricadas, palacio presidencial (ficticio) | Asalto final | Final A / Final B |
 
-Narrativa: briefing con mesa táctica 3D y voz en off (texto), radio en misión con subtítulos y retrato, cinemáticas en motor (cámara con splines + animaciones) al inicio y final de cada capítulo. Datos en `src/data/story.json`.
+La aldea andina construida en la Fase 1 queda como mapa de la sierra (`?ch=2`).
+**Civiles:** los mapas urbanos tienen transeúntes que huyen al oír disparos; herir civiles penaliza.
 
 ## 4. Mundo y mapas
 - Mapas **500×500 m mínimo**, streaming por chunks de 64 m, LOD de 3 niveles, frustum + occlusion culling (por portales en interiores).

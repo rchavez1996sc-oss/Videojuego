@@ -21,6 +21,7 @@ export class Enemies {
   readonly list: Enemy[] = [];
   onPlayerHit: (damage: number, from: THREE.Vector3) => void = () => {};
   onEnemyHit: (kill: boolean, headshot: boolean, at: THREE.Vector3) => void = () => {};
+  onEnemyShot: (at: THREE.Vector3) => void = () => {};
   private bars = new HealthBars();
   private ctx: AIContext;
   private time = 0;
@@ -135,6 +136,7 @@ export class Enemies {
   private fire(e: Enemy): void {
     const muzzle = e.model.muzzle.getWorldPosition(new THREE.Vector3());
     e.flash.fire(e.model.muzzle);
+    this.onEnemyShot(muzzle);
     const dist = muzzle.distanceTo(this.ctx.playerChest);
     const moving = this.player.speed > 3 ? 1.2 : this.player.speed > 0.5 ? 0.5 : 0;
     const settle = 1 + 1.6 * Math.max(0, 1 - e.stateT / 3.5);

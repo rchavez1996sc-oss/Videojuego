@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
-import chapter from './data/chapters/ch01.json';
+import ch01 from './data/chapters/ch01_lima.json';
+import ch02 from './data/chapters/ch02_aldea.json';
 import type { ChapterDef } from './data/types';
 import { Input } from './core/input';
 import { ThirdPersonCamera } from './core/camera';
@@ -20,7 +21,6 @@ import { Mixer } from './audio/mixer';
 import { Sfx } from './audio/sfx';
 import { ShootingRange } from './world/range';
 import { buildStructures } from './world/structures';
-import { surfaceOf } from './world/surfaces';
 import { Hud } from './ui/hud';
 import { DynamicResolution } from './render/dynamicRes';
 import enemyDefs from './data/enemies.json';
@@ -30,8 +30,14 @@ import { DamageFx } from './ui/damage';
 import { Pickups } from './systems/pickups';
 import { findRespawn } from './systems/respawn';
 import { Grenades } from './weapons/grenades';
-import { ThreatGrid, type Threat } from './ui/threatGrid';
+import { ThreatGrid } from './ui/threatGrid';
 import { DIFFICULTIES, difficulty, type DifficultyId } from './core/difficulty';
+import { installDebug } from './core/debug';
+import { buildBarrio } from './world/barrio';
+import { Civilians } from './systems/civilians';
+import { gatherThreats, surfaceUnder } from './systems/sensing';
+
+const CHAPTERS: Record<string, unknown> = { '1': ch01, '2': ch02 };
 
 const status = document.getElementById('status')!;
 const overlay = document.getElementById('overlay')!;
@@ -40,7 +46,8 @@ const step = (msg: string) => new Promise<void>((r) => { status.textContent = ms
 
 async function boot(): Promise<void> {
   if (shotMode) document.body.classList.add('shot');
-  const ch = chapter as unknown as ChapterDef;
+  const ch = (CHAPTERS[new URLSearchParams(location.search).get('ch') ?? '1'] ?? ch01) as ChapterDef;
+  document.querySelector('#overlay .sub')!.textContent = `Capítulo ${ch.number ?? 1} — ${ch.title}`;
   await RAPIER.init();
   const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
   const canvas = document.getElementById('game') as HTMLCanvasElement;
@@ -53,11 +60,20 @@ async function boot(): Promise<void> {
   const hf = new Heightfield(ch.terrain);
   const terrain = new Terrain(hf, ch.biome, lighting, world);
   scene.add(terrain.group);
-  await step('Construyendo la aldea…');
-  const village = buildVillage(hf, ch, lighting, world);
-  scene.add(village.group);
-  await step('Sembrando el valle…');
-  const nearBuilding = (x: number, z: number) => village.footprints.some((f) => Math.hypot(f.x - x, f.z - z) < f.r + 2);
+  await step('Levantando las construcciones…');
+  const blockers: ((x: number, z: number) => boolean)[] = [];
+  if (ch.village) {
+    const village = buildVillage(hf, ch.village, ch.terrain, lighting, world);
+    scene.add(village.group);
+    blockers.push((x, z) => village.footprints.some((f) => Math.hypot(f.x - x, f.z - z) < f.r + 2));
+  }
+  const barrio = ch.barrio ? buildBarrio(hf, ch.barrio, lighting, world) : null;
+  if (barrio) {
+    scene.add(barrio.group);
+    blockers.push(barrio.blocked);
+  }
+  await step('Poblando el paisaje…');
+  const nearBuilding = (x: number, z: number) => blockers.some((f) => f(x, z));
   scene.add(buildScatter(hf, lighting, world, ch.scatter, nearBuilding));
   const grass = new Grass(hf, ch.biome, lighting, preset.grassBlades);
   scene.add(grass.mesh);
@@ -86,7 +102,13 @@ async function boot(): Promise<void> {
   const damageFx = new DamageFx();
   const enemies = new Enemies(enemyDefs as unknown as Record<string, EnemyDef>, ch.enemies ?? [], world, hf, lighting, player, combat, sfx, camera);
   scene.add(enemies.group);
-  combat.onShot = (p) => enemies.hearShot(p);
+  const civilians = barrio && ch.civilians ? new Civilians(barrio.graph, hf, lighting, world, ch.civilians.count, ch.civilians.seed, camera) : null;
+  if (civilians) scene.add(civilians.group);
+  combat.onShot = (p) => {
+    enemies.hearShot(p);
+    civilians?.alarm(p, 90);
+  };
+  enemies.onEnemyShot = (p) => civilians?.alarm(p, 60);
   let deadT = 0, skipRender = false, shieldT = 0;
   const deathPos = new THREE.Vector3();
   enemies.onPlayerHit = (dmg, from) => {
@@ -118,6 +140,7 @@ async function boot(): Promise<void> {
     tpc.kick(0.01 * Math.max(0, 1 - dist / 40), 0, Math.max(0, 0.5 - dist / 60));
     enemies.hearShot(at);
     enemies.explosion(at, 8, 160);
+    civilians?.explosion(at, 8);
     const chest = player.position.clone().setY(player.position.y + 1.0);
     const d = chest.distanceTo(at);
     if (d < 8 && deadT <= 0) {
@@ -132,87 +155,21 @@ async function boot(): Promise<void> {
     hud.hitmarker(kill, headshot, 'BAJA  +100');
     if (kill && enemies.aliveCount === 0) setTimeout(() => hud.showToast('ZONA DESPEJADA'), 1200);
   };
+  if (civilians) civilians.onHurt = () => {
+    hud.showToast('CIVIL HERIDO   −200');
+    sfx.hurt();
+  };
   world.step();
 
   let freeCam = false;
-  const views: [number, number, number, number, number, number][] = [
-    [-128, 2.2, -28, 0, 3, 10],
-    [-60, 38, 90, 15, 2, -20],
-    [44, 1.7, 13.5, 0, 3, 2],
-    [-117.6, 1.9, -31.8, -120.5, 1.1, -35.5],
-    [-131, 4, -30, -118, 1.5, -24],
-  ];
-  (window as unknown as { __game: object }).__game = {
-    setView(i: number) {
-      freeCam = true;
-      const [x, dy, z, lx, ldy, lz] = views[i];
-      tpc.place(new THREE.Vector3(x, hf.heightAt(x, z) + dy, z), new THREE.Vector3(lx, hf.heightAt(lx, lz) + ldy, lz));
-      if (shotMode) frame(1 / 60);
-    },
-    follow() { freeCam = false; },
-    /** Runs `n` frames in follow mode, firing every `every` frames (screenshot tests). */
-    /** Logic-only run for AI tests: teleports the player, steps `seconds` without rendering, reports state. */
-    aiTest(x: number, z: number, seconds: number, fire: boolean) {
-      freeCam = false;
-      skipRender = true;
-      player.respawn(new THREE.Vector3(x, hf.heightAt(x, z), z), Math.atan2(x, z));
-      tpc.yaw = Math.atan2(x, z);
-      const log: string[] = [];
-      let shots = 0;
-      for (let i = 0; i < seconds * 20; i++) {
-        if (fire && i % 10 === 0) {
-          combat.debugShoot();
-          shots++;
-        }
-        frame(1 / 20);
-        if (i % 40 === 39) log.push(`t=${((i + 1) / 20).toFixed(0)}s hp=${player.hp.toFixed(0)} pos=${player.position.x.toFixed(0)},${player.position.z.toFixed(0)} ` + enemies.list.map((e) => `${e.id}:${e.state[0]}${e.cover ? 'C' : ''}${e.crouched ? 'v' : ''}${e.canSee ? '*' : ''}`).join(' '));
-      }
-      skipRender = false;
-      return log.join('\n');
-    },
-    /** Throws a grenade at a world point from 15 m away and runs until shortly after it explodes. */
-    grenadeTest(tx: number, tz: number) {
-      freeCam = false;
-      skipRender = true;
-      const from = new THREE.Vector3(tx - 15, 0, tz);
-      from.y = hf.heightAt(from.x, from.z);
-      player.respawn(from, Math.PI / 2 + Math.PI);
-      tpc.yaw = -Math.PI / 2;
-      tpc.pitch = -0.12;
-      for (let i = 0; i < 3; i++) frame(1 / 30);
-      let exploded = false, where = '';
-      const prev = grenades.onExplode;
-      grenades.onExplode = (at) => {
-        exploded = true;
-        where = `${at.x.toFixed(1)},${at.y.toFixed(1)},${at.z.toFixed(1)}`;
-        prev(at);
-      };
-      const before = enemies.list.map((e) => e.hp);
-      const fwd0 = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-      throwGrenade();
-      const trace: string[] = [`fwd ${fwd0.x.toFixed(2)},${fwd0.y.toFixed(2)},${fwd0.z.toFixed(2)} feet ${player.position.y.toFixed(2)} ground ${hf.heightAt(player.position.x, player.position.z).toFixed(2)}`];
-      let n = 0;
-      while (!exploded && n++ < 200) {
-        frame(1 / 30);
-        const g = grenades.group.children[0];
-        if (g && n % 6 === 0) trace.push(`${g.position.x.toFixed(1)},${g.position.y.toFixed(1)},${g.position.z.toFixed(1)} gnd ${hf.heightAt(g.position.x, g.position.z).toFixed(1)}`);
-      }
-      console.log(trace.join(' | '));
-      for (let i = 0; i < 4; i++) frame(1 / 30);
-      skipRender = false;
-      return enemies.list.map((e, i) => (e.hp !== before[i] ? `${i}: ${before[i]}→${Math.max(0, e.hp).toFixed(0)} ${e.state} @${e.position.x.toFixed(1)},${e.position.y.toFixed(1)},${e.position.z.toFixed(1)}` : '')).filter(Boolean).join(' | ') + ` · boom @ ${where} · player ${player.position.x.toFixed(1)},${player.position.z.toFixed(1)} hp ${player.hp.toFixed(0)}`;
-    },
-    simulate(n: number, every: number, pitch = -0.02) {
-      freeCam = false;
-      tpc.pitch = pitch;
-      for (let i = 0; i < n; i++) {
-        if (every && i % every === 0) combat.debugShoot();
-        frame(1 / 60);
-      }
-    },
-    info: () => ({ calls: renderer.gl.info.render.calls, tris: renderer.gl.info.render.triangles }),
-    ready: true,
-  };
+  installDebug({
+    extraLog: () => (civilians ? `civ:${civilians.list.map((c) => c.mood[0]).join('')}` : ''),
+    views: ch.views ?? [], tpc, hf, player, combat, enemies, grenades, renderer, shotMode,
+    frame: (dt) => frame(dt),
+    setFreeCam: (v) => (freeCam = v),
+    setSkipRender: (v) => (skipRender = v),
+    throwGrenade,
+  });
 
   status.textContent = 'Elige la dificultad · clic en cualquier parte para jugar';
   const diffBox = overlay.querySelector('.difficulty') as HTMLElement;
@@ -239,14 +196,7 @@ async function boot(): Promise<void> {
 
   const gpu = gpuName.replace(/^ANGLE \((.*)\)$/, '$1').slice(0, 60);
   let lastStep = 0, landed = false;
-  const groundUnder = (): 'grass' | 'dirt' | 'rock' | 'wood' => {
-    const p = player.position;
-    const hit = world.castRay(new RAPIER.Ray({ x: p.x, y: p.y + 0.3, z: p.z }, { x: 0, y: -1, z: 0 }), 0.8, true, undefined, undefined, undefined, undefined, (c) => c.handle !== player.collisionHandle);
-    const surf = hit ? surfaceOf(hit.collider.handle) : 'dirt';
-    if (surf === 'dirt') return hf.maskAt(p.x, p.z, 1) > 0.3 ? 'grass' : 'dirt';
-    if (surf === 'wood') return 'wood';
-    return surf === 'rock' || surf === 'metal' || surf === 'tile' ? 'rock' : 'dirt';
-  };
+  const groundUnder = () => surfaceUnder(world, hf, player);
   const clock = new THREE.Clock();
   let frames = 0, acc = 0;
   renderer.gl.info.autoReset = false;
@@ -284,6 +234,7 @@ async function boot(): Promise<void> {
         }
       }
       enemies.update(dt);
+      civilians?.update(dt, player.position);
       world.timestep = dt;
       world.step();
       player.syncPosition();
@@ -313,16 +264,7 @@ async function boot(): Promise<void> {
       sfx.pickup();
       hud.showToast('+ BOTIQUÍN   + GRANADA');
     }
-    const camFwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).setY(0).normalize();
-    const camRight = new THREE.Vector3(-camFwd.z, 0, camFwd.x);
-    const threats: Threat[] = [];
-    for (const e of enemies.list) {
-      if (!e.alive) continue;
-      const d = e.position.clone().sub(player.position).setY(0);
-      const dist = d.length();
-      if (dist > 130) continue;
-      threats.push({ angle: Math.atan2(d.dot(camRight), d.dot(camFwd)), dist, aware: e.state !== 'patrol' });
-    }
+    const threats = gatherThreats(enemies, civilians, player.position, camera);
     threatGrid.update(dt, threats);
     damageFx.update(dt, player.hp / 100);
     hud.enemies = enemies.aliveCount;
