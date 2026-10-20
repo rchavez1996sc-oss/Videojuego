@@ -197,7 +197,9 @@ export class Enemies {
   sync(): void {
     for (const e of this.list) {
       e.sync();
-      const near = e.position.distanceToSquared(this.camera.position) < 60 * 60;
+      const camD = e.position.distanceToSquared(this.camera.position);
+      e.model.far = camD > 25 * 25 && e.alive;
+      const near = camD < 60 * 60;
       if (near !== e.shadowed) e.model.castShadow = e.shadowed = near;
       const top = e.position.clone().setY(e.position.y + 2.05 - (e.crouched ? 0.5 : 0));
       this.bars.update(e.id, top, e.hp / e.def.hp, e.alive ? e.shownT : 0, this.camera);

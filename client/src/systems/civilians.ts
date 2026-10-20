@@ -152,8 +152,9 @@ export class Civilians {
       }
       c.body.setNextKinematicTranslation({ x: c.pos.x, y: c.pos.y + 0.9, z: c.pos.z });
       const camD = c.pos.distanceToSquared(this.camera.position);
-      c.model.root.visible = camD < 140 * 140;
-      const near = camD < 45 * 45;
+      c.model.root.visible = camD < 85 * 85;
+      c.model.far = camD > 25 * 25;
+      const near = camD < 30 * 30;
       if (near !== c.shadowed) c.model.castShadow = c.shadowed = near;
       c.model.root.position.copy(c.pos).setY(c.pos.y - 0.03);
       c.model.root.rotation.set(0, c.yaw + Math.PI, 0);

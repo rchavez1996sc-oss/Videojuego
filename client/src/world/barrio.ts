@@ -6,7 +6,8 @@ import type { Heightfield } from './heightfield';
 import type { Lighting } from '../render/lighting';
 import { Builder } from './buildingKit';
 import { cityHouse, hillHouse, PAINTS, type Lot } from './houses';
-import { powerLine, cable, mototaxi, sandbags, stairway, SignAtlas } from './urbanProps';
+import { powerLine, cable, mototaxi, sandbags, stairway, car, billboard, type CarKind } from './urbanProps';
+import { SignAtlas } from './signs';
 import { brick, concrete, plaster, corrugated, estera } from '../render/urbanTextures';
 import { rock, wood } from '../render/textures';
 
@@ -18,6 +19,9 @@ export interface BarrioDef {
   landmark: { x: number; z: number; w: number; d: number; floors: number; facing: number };
   barricades: [number, number, number, number][];
   mototaxis: number;
+  cars: number;
+  billboardEvery: number;
+  hillLetters: [number, number, number][];
 }
 
 export interface StreetGraph { nodes: THREE.Vector3[]; edges: [number, number][]; exits: number[] }
@@ -53,6 +57,15 @@ function materials(lighting: Lighting, atlas: SignAtlas): Record<string, THREE.M
     moto0: std('moto0', { color: '#b3221d', roughness: 0.35, metalness: 0.3 }),
     moto1: std('moto1', { color: '#1f5fa8', roughness: 0.35, metalness: 0.3 }),
     moto2: std('moto2', { color: '#d4a21c', roughness: 0.35, metalness: 0.3 }),
+    stripe: std('stripe', { color: '#b8261b', roughness: 0.5 }),
+    checker: std('checker', { color: '#111111', roughness: 0.5 }),
+    light: std('light', { color: '#f4efe0', roughness: 0.2, emissive: '#3a3628' }),
+    car0: std('car0', { color: '#c9c6bf', roughness: 0.3, metalness: 0.4 }),
+    car1: std('car1', { color: '#2a2c30', roughness: 0.3, metalness: 0.4 }),
+    car2: std('car2', { color: '#7a1d1a', roughness: 0.35, metalness: 0.4 }),
+    car3: std('car3', { color: '#e2c22e', roughness: 0.35, metalness: 0.3 }),
+    car4: std('car4', { color: '#2b4c7a', roughness: 0.35, metalness: 0.4 }),
+    car5: std('car5', { color: '#eeeeea', roughness: 0.35, metalness: 0.3 }),
     signs: std('signs', { map: atlas.texture, transparent: true, alphaTest: 0.1, roughness: 0.85, polygonOffset: true, polygonOffsetFactor: -2 }),
   };
   PAINTS.forEach((k, i) => (m[k] = std(k, { map: pl.map, normalMap: pl.normalMap, roughness: 0.9, color: PAINT_COLORS[i] })));
@@ -139,9 +152,51 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
     mototaxi(b, new THREE.Vector3(x, hf.heightAt(x, z), z), onAvenue ? Math.PI / 2 + (rand() < 0.5 ? 0 : Math.PI) : rand() < 0.5 ? 0 : Math.PI, `moto${i % 3}`);
   }
 
+  const kinds: CarKind[] = ['sedan', 'sedan', 'tico', 'tico', 'wagon', 'pickup', 'combi'];
+  const midZ = def.gap + def.blockD + def.street / 2;
+  for (let i = 0; i < def.cars; i++) {
+    const kind = kinds[Math.floor(rand() * kinds.length)];
+    const paint = kind === 'tico' ? 'car3' : kind === 'combi' ? 'car5' : `car${Math.floor(rand() * 6)}`;
+    const r = rand();
+    let x: number, z: number, yaw: number;
+    if (r < 0.45) {
+      x = def.x0 + rand() * (xEnd - def.x0);
+      z = (rand() < 0.5 ? -1 : 1) * 6.9;
+      yaw = Math.PI / 2 + (z > 0 ? Math.PI : 0);
+    } else if (r < 0.75) {
+      x = crossX[Math.floor(rand() * crossX.length)] + (rand() < 0.5 ? -3.2 : 3.2);
+      z = (rand() < 0.5 ? 1 : -1) * (def.gap + 4 + rand() * (def.blockD * 2 + def.street - 8));
+      yaw = rand() < 0.5 ? 0 : Math.PI;
+    } else {
+      x = def.x0 + rand() * (xEnd - def.x0);
+      z = (rand() < 0.5 ? 1 : -1) * (midZ + (rand() < 0.5 ? -3.2 : 3.2));
+      yaw = Math.PI / 2 + (rand() < 0.5 ? 0 : Math.PI);
+    }
+    if (crossX.some((cx) => Math.abs(cx - x) < 6) && Math.abs(Math.abs(z) - 6.9) < 1) continue;
+    car(b, new THREE.Vector3(x, hf.heightAt(x, z), z), yaw + (rand() - 0.5) * 0.06, paint, kind);
+  }
+  for (let x = def.x0 + 20, k = 0; x < xEnd - 10; x += def.billboardEvery, k++) {
+    const side = k % 2 ? 1 : -1;
+    if (crossX.some((cx) => Math.abs(cx - x) < 8)) continue;
+    const bb = billboard(b, hf, x, side * 10.6, side > 0 ? Math.PI : 0);
+    atlas.add(bb.pos, bb.q, 8, 'poster', rand);
+  }
+  for (const [x, z, w] of def.hillLetters) {
+    const a = Math.atan2(hf.heightAt(x, z + 4) - hf.heightAt(x, z - 4), 8) * Math.sign(z);
+    const X = new THREE.Vector3(-Math.sign(z), 0, 0), Y = new THREE.Vector3(0, Math.sin(a), Math.cos(a) * Math.sign(z));
+    const Z = new THREE.Vector3().crossVectors(X, Y);
+    const q = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(X, Y, Z));
+    atlas.add(new THREE.Vector3(x, hf.heightAt(x, z) + 3.5, z), q, w, 'hill', rand);
+  }
+
   const group = new THREE.Group();
   const mats = materials(lighting, atlas);
-  group.add(...b.build(mats, 0.5));
+  const pl = plaster();
+  group.add(...b.build(mats, 0.5, [
+    { material: lighting.setup(new THREE.MeshStandardMaterial({ map: pl.map, normalMap: pl.normalMap, roughness: 0.9, vertexColors: true }), 'paint-baked'), keys: PAINTS },
+    { material: lighting.setup(new THREE.MeshStandardMaterial({ roughness: 0.45, metalness: 0.35, vertexColors: true }), 'plain-baked'),
+      keys: ['car0', 'car1', 'car2', 'car3', 'car4', 'car5', 'moto0', 'moto1', 'moto2', 'tankBlack', 'tankBlue', 'stripe', 'checker', 'canopy', 'seat', 'tire', 'bars', 'rebar', 'cable', 'paintYellow', 'light', 'glass'] },
+  ]));
   if (atlas.geometries.length) {
     const signs = new THREE.Mesh(mergeGeometries(atlas.geometries), mats.signs);
     signs.receiveShadow = true;

@@ -19,7 +19,8 @@ try {
   page.on('pageerror', (e) => console.error('[page]', e.message));
   await page.goto(`http://localhost:${port}/?shot&q=${quality}`);
   await page.waitForFunction(() => window.__game?.ready, null, { timeout: 180000 });
-  for (const i of only === 'combat' ? [] : [0, 1, 2, 3, 4]) {
+  const nViews = await page.evaluate(() => window.__game.views());
+  for (const i of only === 'combat' ? [] : [...Array(nViews).keys()]) {
     await page.evaluate((v) => window.__game.setView(v), i);
     await page.screenshot({ path: `shots/view${i}.png`, timeout: 300000 });
     console.log(`shots/view${i}.png`, JSON.stringify(await page.evaluate(() => window.__game.info())));

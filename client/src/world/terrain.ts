@@ -69,6 +69,10 @@ export class Terrain {
       body,
     );
     setSurface(col.handle, 'dirt');
+    const edge = hf.def.playable / 2;
+    for (const [x, z, hx, hz] of [[edge, 0, 1, edge], [-edge, 0, 1, edge], [0, edge, edge, 1], [0, -edge, edge, 1]]) {
+      world.createCollider(RAPIER.ColliderDesc.cuboid(hx, 300, hz).setTranslation(x, 0, z), body);
+    }
   }
 
   update(cam: THREE.Vector3): void {

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { Lighting } from '../render/lighting';
 import { buildAK } from '../weapons/akModel';
-import { mergeRig } from '../render/merge';
+import { mergeRig, bakeLod } from '../render/merge';
 
 export interface Palette { id: string; cloth: string; vest: string; skin: string; helmet: string }
 
@@ -20,6 +20,7 @@ export class Mannequin {
 
   readonly head: THREE.Object3D;
   readonly hips: THREE.Group;
+  private lod: THREE.Mesh;
 
   constructor(lighting: Lighting, pal: Palette = PLAYER_PALETTE, private armed = true) {
     const std = (key: string, color: string, r = 0.85) => lighting.setup(new THREE.MeshStandardMaterial({ color, roughness: r }), `${key}-${pal.id}`);
@@ -68,7 +69,18 @@ export class Mannequin {
     this.muzzle = ak?.muzzle ?? new THREE.Object3D();
     this.ejector = ak?.ejector ?? new THREE.Object3D();
     this.weapon = ak?.group ?? new THREE.Group();
-    mergeRig(this.root, new Set([hips, this.torso, this.weapon, ...this.legs, ...this.arms]), lighting.setup(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8 }), 'm-baked'));
+    const baked = lighting.setup(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8 }), 'm-baked');
+    mergeRig(this.root, new Set([hips, this.torso, this.weapon, ...this.legs, ...this.arms]), baked);
+    this.lod = bakeLod(this.root, baked);
+    this.lod.visible = false;
+    this.root.add(this.lod);
+  }
+
+  /** Far away: draw the single pre-merged mesh instead of the animated parts. */
+  set far(v: boolean) {
+    if (v === this.lod.visible) return;
+    this.lod.visible = v;
+    this.hips.visible = !v;
   }
 
   set castShadow(v: boolean) {

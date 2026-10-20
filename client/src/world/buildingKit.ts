@@ -76,9 +76,35 @@ export class Builder {
     if (cursor < len / 2) this.box(mat, [len / 2 - cursor, height, thick], local((cursor + len / 2) / 2, height / 2), q);
   }
 
-  build(materials: Record<string, THREE.Material>, uvScale = 0.4): THREE.Mesh[] {
+  /**
+   * Merges everything per material. Keys listed in a bake group are folded into that group's single
+   * vertex-coloured material (colour taken from the key's own material), cutting draw calls.
+   */
+  build(materials: Record<string, THREE.Material>, uvScale = 0.4, bake: { material: THREE.Material; keys: string[] }[] = []): THREE.Mesh[] {
     const out: THREE.Mesh[] = [];
-    for (const [key, geos] of this.parts) {
+    const parts = new Map(this.parts);
+    for (const group of bake) {
+      const geos: THREE.BufferGeometry[] = [];
+      for (const key of group.keys) {
+        const list = parts.get(key);
+        if (!list) continue;
+        const col = (materials[key] as THREE.MeshStandardMaterial).color;
+        for (const g of list) {
+          const n = g.attributes.position.count, arr = new Float32Array(n * 3);
+          for (let i = 0; i < n; i++) arr.set([col.r, col.g, col.b], i * 3);
+          g.setAttribute('color', new THREE.BufferAttribute(arr, 3));
+          geos.push(g);
+        }
+        parts.delete(key);
+      }
+      if (!geos.length) continue;
+      const merged = mergeBoxes(geos);
+      boxProjectUV(merged, uvScale);
+      const m = new THREE.Mesh(merged, group.material);
+      m.castShadow = m.receiveShadow = true;
+      out.push(m);
+    }
+    for (const [key, geos] of parts) {
       const merged = mergeBoxes(geos);
       boxProjectUV(merged, uvScale);
       const m = new THREE.Mesh(merged, materials[key]);
@@ -93,10 +119,12 @@ function mergeBoxes(geos: THREE.BufferGeometry[]): THREE.BufferGeometry {
   let count = 0, icount = 0;
   for (const g of geos) { count += g.attributes.position.count; icount += g.index!.count; }
   const pos = new Float32Array(count * 3), nor = new Float32Array(count * 3), idx = new Uint32Array(icount);
+  const col = geos[0].attributes.color ? new Float32Array(count * 3) : null;
   let vo = 0, io = 0;
   for (const g of geos) {
     pos.set(g.attributes.position.array as Float32Array, vo * 3);
     nor.set(g.attributes.normal.array as Float32Array, vo * 3);
+    if (col) col.set(g.attributes.color.array as Float32Array, vo * 3);
     const gi = g.index!.array;
     for (let i = 0; i < gi.length; i++) idx[io + i] = gi[i] + vo;
     vo += g.attributes.position.count;
@@ -106,6 +134,7 @@ function mergeBoxes(geos: THREE.BufferGeometry[]): THREE.BufferGeometry {
   const m = new THREE.BufferGeometry();
   m.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   m.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  if (col) m.setAttribute('color', new THREE.BufferAttribute(col, 3));
   m.setIndex(new THREE.BufferAttribute(idx, 1));
   m.computeBoundingSphere();
   return m;

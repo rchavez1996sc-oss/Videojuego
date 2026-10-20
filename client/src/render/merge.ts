@@ -47,3 +47,25 @@ export function mergeRig(root: THREE.Object3D, bones: Set<THREE.Object3D>, share
     }
   }
 }
+
+/** Whole rig in its current pose as one vertex-coloured mesh (for distance LOD). */
+export function bakeLod(root: THREE.Object3D, material: THREE.Material): THREE.Mesh {
+  root.updateMatrixWorld(true);
+  const inv = new THREE.Matrix4().copy(root.matrixWorld).invert();
+  const geos: THREE.BufferGeometry[] = [];
+  root.traverse((o) => {
+    if (!(o instanceof THREE.Mesh)) return;
+    const g = (o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone()).applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld));
+    if (!g.attributes.color) {
+      const col = (o.material as THREE.MeshStandardMaterial).color ?? new THREE.Color(0.3, 0.3, 0.3);
+      const n = g.attributes.position.count, arr = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) arr.set([col.r, col.g, col.b], i * 3);
+      g.setAttribute('color', new THREE.BufferAttribute(arr, 3));
+    }
+    for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'color'].includes(k)) g.deleteAttribute(k);
+    geos.push(g);
+  });
+  const mesh = new THREE.Mesh(mergeGeometries(geos), material);
+  mesh.castShadow = true;
+  return mesh;
+}

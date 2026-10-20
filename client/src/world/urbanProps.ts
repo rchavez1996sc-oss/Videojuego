@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import type { Builder } from './buildingKit';
 import type { Heightfield } from './heightfield';
-import { signTexture } from '../render/urbanTextures';
 
 const UP = new THREE.Vector3(0, 1, 0);
 
@@ -80,43 +79,49 @@ export function stairway(b: Builder, hf: Heightfield, x: number, z0: number, z1:
   }
 }
 
-const SIGNS: [string, string | null, string][] = [
-  ['BODEGA DON LUCHO', '#f2f0e6', '#1f4d8f'], ['SE ALQUILA CUARTO', null, '#1c1c1c'], ['LIBRERÍA EL ESTUDIANTE', '#f5d24a', '#1c1c1c'],
-  ['FERRETERÍA', '#c3362b', '#ffffff'], ['POLLERÍA', '#e8b13a', '#7a1f12'], ['CABINAS INTERNET', '#2f6ea8', '#ffffff'],
-  ['LA SIERRA NO SE VENDE', null, '#a3241c'], ['FUERA LA JUNTA', null, '#16161a'], ['AGUA PARA TODOS', null, '#1e4f9c'],
-  ['FLS VIVE', null, '#a3241c'], ['SE VENDE ESTE TERRENO', null, '#1c1c1c'], ['TAPICERÍA', '#e6e1d3', '#2b2b2b'],
-  ['NI JUNTA NI MINERA', null, '#16161a'], ['MENÚ S/ 8', '#ffffff', '#b8261b'], ['VULCANIZADORA', '#202020', '#f2c230'], ['ABARROTES', '#d7e3c7', '#2f5c25'],
-];
+export type CarKind = 'sedan' | 'tico' | 'wagon' | 'pickup' | 'combi';
 
-/** One atlas texture for every painted sign so all of them merge into a single draw call. */
-export class SignAtlas {
-  readonly texture: THREE.CanvasTexture;
-  private geos: THREE.BufferGeometry[] = [];
+const CAR_DIMS: Record<CarKind, { l: number; w: number; body: number; cabin: number; cabinL: number; cabinZ: number }> = {
+  sedan: { l: 4.3, w: 1.7, body: 0.65, cabin: 0.55, cabinL: 2.2, cabinZ: -0.15 },
+  tico: { l: 3.3, w: 1.5, body: 0.6, cabin: 0.6, cabinL: 1.9, cabinZ: -0.2 },
+  wagon: { l: 4.5, w: 1.72, body: 0.68, cabin: 0.58, cabinL: 3.0, cabinZ: -0.55 },
+  pickup: { l: 5.0, w: 1.78, body: 0.75, cabin: 0.65, cabinL: 1.6, cabinZ: 0.6 },
+  combi: { l: 4.8, w: 1.8, body: 1.0, cabin: 0.85, cabinL: 4.4, cabinZ: -0.15 },
+};
 
-  constructor() {
-    const c = document.createElement('canvas');
-    c.width = 1024;
-    c.height = 1024;
-    const ctx = c.getContext('2d')!;
-    SIGNS.forEach(([text, bg, fg], i) => ctx.drawImage(signTexture(text, bg, fg, 512, 128), (i % 2) * 512, Math.floor(i / 2) * 128));
-    this.texture = new THREE.CanvasTexture(c);
-    this.texture.colorSpace = THREE.SRGBColorSpace;
-    this.texture.anisotropy = 8;
+/** Parked car built from boxes: body, glazed cabin, bumpers, lights and wheels; full-size box collider for cover. */
+export function car(b: Builder, pos: THREE.Vector3, yaw: number, paint: string, kind: CarKind): void {
+  const d = CAR_DIMS[kind];
+  const q = new THREE.Quaternion().setFromAxisAngle(UP, yaw);
+  const at = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z).applyQuaternion(q).add(pos);
+  const y0 = 0.3;
+  b.box(paint, [d.w, d.body, d.l], at(0, y0 + d.body / 2, 0), q, false);
+  b.box('glass', [d.w - 0.12, d.cabin, d.cabinL], at(0, y0 + d.body + d.cabin / 2, d.cabinZ), q, false);
+  b.box(paint, [d.w - 0.08, 0.07, d.cabinL - 0.15], at(0, y0 + d.body + d.cabin, d.cabinZ), q, false);
+  for (const s of [1, -1]) b.box(paint, [0.07, d.cabin, 0.12], at(s * (d.w / 2 - 0.08), y0 + d.body + d.cabin / 2, d.cabinZ + d.cabinL / 2 - 0.08), q, false);
+  if (kind === 'pickup') for (const s of [1, -1]) b.box(paint, [0.08, 0.4, 2.0], at(s * (d.w / 2 - 0.04), y0 + d.body + 0.2, -1.4), q, false);
+  if (kind === 'combi') b.box('stripe', [d.w + 0.01, 0.18, d.l - 0.4], at(0, y0 + d.body * 0.55, 0), q, false);
+  if (kind === 'tico') b.box('checker', [0.5, 0.15, 0.25], at(0, y0 + d.body + d.cabin + 0.1, d.cabinZ), q, false);
+  for (const s of [1, -1]) {
+    b.box('tire', [d.w + 0.02, 0.18, 0.12], at(0, y0 + 0.12, s * (d.l / 2 + 0.02)), q, false);
+    for (const x of [-1, 1]) b.box('light', [0.28, 0.12, 0.04], at(x * (d.w / 2 - 0.25), y0 + d.body - 0.15, s * (d.l / 2 + 0.03)), q, false);
   }
-
-  /** `kind`: 'shop' picks a business name, 'graffiti' a slogan. */
-  add(pos: THREE.Vector3, q: THREE.Quaternion, w: number, kind: 'shop' | 'graffiti', rand: () => number): void {
-    const pool = SIGNS.map((s, i) => [s, i] as const).filter(([s]) => (kind === 'shop') === (s[1] !== null) || (kind === 'graffiti' && s[0] === 'SE ALQUILA CUARTO'));
-    const [, i] = pool[Math.floor(rand() * pool.length)];
-    const g = new THREE.PlaneGeometry(w, w / 4);
-    const u0 = (i % 2) * 0.5, v0 = 1 - (Math.floor(i / 2) + 1) / 8;
-    const uv = g.attributes.uv as THREE.BufferAttribute;
-    for (let k = 0; k < uv.count; k++) uv.setXY(k, u0 + uv.getX(k) * 0.5, v0 + uv.getY(k) / 8);
-    g.applyMatrix4(new THREE.Matrix4().compose(pos, q, new THREE.Vector3(1, 1, 1)));
-    this.geos.push(g);
+  for (const [x, z] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) {
+    b.geometry('tire', new THREE.CylinderGeometry(0.31, 0.31, 0.2, 14).rotateZ(Math.PI / 2), new THREE.Matrix4().compose(at(x * (d.w / 2 - 0.12), 0.31, z * (d.l / 2 - 0.75)), q, new THREE.Vector3(1, 1, 1)));
   }
+  b.box('none', [d.w, y0 + d.body + d.cabin, d.l], at(0, (y0 + d.body + d.cabin) / 2, 0), q, true);
+}
 
-  get geometries(): THREE.BufferGeometry[] {
-    return this.geos;
+/** Two-post billboard; returns the panel centre and orientation so the caller can paint a poster on it. */
+export function billboard(b: Builder, hf: Heightfield, x: number, z: number, yaw: number): { pos: THREE.Vector3; q: THREE.Quaternion } {
+  const q = new THREE.Quaternion().setFromAxisAngle(UP, yaw);
+  const y = hf.heightAt(x, z);
+  const at = (lx: number, ly: number, lz: number) => new THREE.Vector3(lx, ly, lz).applyQuaternion(q).add(new THREE.Vector3(x, y, z));
+  for (const s of [-1, 1]) {
+    b.geometry('bars', new THREE.CylinderGeometry(0.1, 0.12, 6, 8), new THREE.Matrix4().compose(at(s * 2.6, 3, -0.15), q, new THREE.Vector3(1, 1, 1)),
+      { size: [0.25, 6, 0.25], pos: at(s * 2.6, 3, -0.15), quat: q });
   }
+  b.box('bars', [8.3, 2.3, 0.12], at(0, 5.1, -0.1), q);
+  b.box('bars', [8.3, 0.08, 0.6], at(0, 3.9, 0.15), q, false);
+  return { pos: at(0, 5.1, -0.02), q };
 }

@@ -34,6 +34,7 @@ import { ThreatGrid } from './ui/threatGrid';
 import { DIFFICULTIES, difficulty, type DifficultyId } from './core/difficulty';
 import { installDebug } from './core/debug';
 import { buildBarrio } from './world/barrio';
+import { buildFarCity } from './world/farCity';
 import { Civilians } from './systems/civilians';
 import { gatherThreats, surfaceUnder } from './systems/sensing';
 
@@ -72,6 +73,8 @@ async function boot(): Promise<void> {
     scene.add(barrio.group);
     blockers.push(barrio.blocked);
   }
+  if (ch.farCity) scene.add(buildFarCity(hf, ch.farCity, lighting));
+  if (shotMode) (window as unknown as { __scene: THREE.Scene }).__scene = scene;
   await step('Poblando el paisaje…');
   const nearBuilding = (x: number, z: number) => blockers.some((f) => f(x, z));
   scene.add(buildScatter(hf, lighting, world, ch.scatter, nearBuilding));
