@@ -24,7 +24,7 @@ export class Hud {
       <div class="toast"></div>
       <div class="counter">ENEMIGOS<b>0</b></div>
       <div class="vitals">
-        <div class="label">SALUD</div><div class="meter hp"><div></div></div>
+        <div class="label">SALUD</div><div class="meter hp"><div></div><i class="cap"></i></div>
         <div class="meter stamina"><div></div></div>
       </div>
       <div class="ammo"><div class="weapon"></div><div class="count"><span class="mag">30</span><span class="res">/ 150</span></div><div class="mode"></div></div>`;
@@ -53,7 +53,7 @@ export class Hud {
     this.root.style.display = v ? '' : 'none';
   }
 
-  update(dt: number, s: { spreadPx: number; ammo: number; mag: number; reserve: number; mode: string; weapon: string; hp: number; stamina: number; reload: number; aiming: boolean }): void {
+  update(dt: number, s: { spreadPx: number; ammo: number; mag: number; reserve: number; mode: string; weapon: string; hp: number; cap: number; stamina: number; reload: number; aiming: boolean }): void {
     const gap = Math.round(5 + s.spreadPx);
     this.set('gap', String(gap), () => {
       this.cross[0].style.transform = `translate(-50%, ${-gap - 10}px)`;
@@ -71,6 +71,7 @@ export class Hud {
       this.weapon.textContent = s.weapon;
     });
     this.set('hp', s.hp.toFixed(0), () => (this.hp.style.width = `${s.hp}%`));
+    this.set('cap', String(s.cap), () => this.hp.parentElement!.classList.toggle('capped', s.cap < 100));
     this.set('st', s.stamina.toFixed(0), () => {
       this.stamina.style.width = `${s.stamina}%`;
       this.stamina.parentElement!.classList.toggle('hidden', s.stamina >= 99.5);

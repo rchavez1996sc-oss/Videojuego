@@ -10,6 +10,7 @@ import type { Player } from '../entities/player';
 import type { Combat } from '../weapons/combat';
 import type { Sfx } from '../audio/sfx';
 import { HealthBars } from '../ui/healthbars';
+import { difficulty } from '../core/difficulty';
 
 export interface SpawnDef { type: string; x: number; z: number; y?: number; patrol?: [number, number][] }
 
@@ -19,7 +20,7 @@ export class Enemies {
   readonly group = new THREE.Group();
   readonly list: Enemy[] = [];
   onPlayerHit: (damage: number, from: THREE.Vector3) => void = () => {};
-  onEnemyHit: (kill: boolean, headshot: boolean) => void = () => {};
+  onEnemyHit: (kill: boolean, headshot: boolean, at: THREE.Vector3) => void = () => {};
   private bars = new HealthBars();
   private ctx: AIContext;
   private time = 0;
@@ -91,7 +92,7 @@ export class Enemies {
     e.lastSeenT = this.time;
     this.combat.bloodPuff(point);
     if (kill) e.die(point.clone().sub(this.player.position).setY(0).normalize());
-    this.onEnemyHit(kill, headshot);
+    this.onEnemyHit(kill, headshot, e.position.clone());
   }
 
   private fire(e: Enemy): void {
@@ -100,7 +101,7 @@ export class Enemies {
     const dist = muzzle.distanceTo(this.ctx.playerChest);
     const moving = this.player.speed > 3 ? 1.2 : this.player.speed > 0.5 ? 0.5 : 0;
     const settle = 1 + 1.6 * Math.max(0, 1 - e.stateT / 3.5);
-    const cone = THREE.MathUtils.degToRad((e.def.spread + dist * e.def.spreadPerMeter * 10 + moving) * settle);
+    const cone = THREE.MathUtils.degToRad((e.def.spread + dist * e.def.spreadPerMeter * 10 + moving) * settle * difficulty.value.spread);
     const aimPoint = this.ctx.playerChest.clone();
     if (!this.attackers.has(e.id)) {
       const off = new THREE.Vector3(Math.random() - 0.5, Math.random() * 0.6 - 0.2, Math.random() - 0.5).normalize().multiplyScalar(1.6 + Math.random() * 2.5);
@@ -118,7 +119,7 @@ export class Enemies {
     const pan = muzzle.clone().sub(cam).normalize().dot(right);
     this.sfx.distantShot(muzzle.distanceTo(cam), pan, e.def.rpm < 100);
     if (hit?.collider.handle === this.player.collisionHandle) {
-      this.onPlayerHit(e.def.damage, muzzle);
+      this.onPlayerHit(e.def.damage * difficulty.value.damage * (0.85 + Math.random() * 0.3), muzzle);
       return;
     }
     const closest = cam.clone().sub(muzzle).dot(dir);
@@ -138,7 +139,7 @@ export class Enemies {
     this.list
       .filter((e) => e.alive && e.state === 'combat' && e.canSee)
       .sort((a, b) => a.position.distanceToSquared(c.playerFeet) - b.position.distanceToSquared(c.playerFeet))
-      .slice(0, 3)
+      .slice(0, difficulty.value.attackers)
       .forEach((e) => this.attackers.add(e.id));
     for (const e of this.list) {
       e.flash.update(dt);

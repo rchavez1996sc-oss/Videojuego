@@ -40,6 +40,7 @@ export interface ChapterDef {
   /** Facing used to lay out the practice range and test structures around the spawn. */
   rangeYaw?: number;
   range?: [number, number][];
+  medkits?: [number, number][];
   enemies?: { type: string; x: number; z: number; y?: number; patrol?: [number, number][] }[];
   structures?: import('../world/structures').StructureDef[];
 }

@@ -82,6 +82,13 @@ export class Sfx {
     src.stop(t + 0.2);
   }
 
+  pickup(): void {
+    const t = this.m.ctx.currentTime;
+    this.filtered(t, 'bandpass', 900, 2, 0.25, 0.005, 0.08);
+    this.tone(t + 0.05, 'sine', 660, 660, 0.12, 0.12);
+    this.tone(t + 0.13, 'sine', 990, 990, 0.12, 0.18);
+  }
+
   hurt(): void {
     const t = this.m.ctx.currentTime;
     this.tone(t, 'sine', 90, 50, 0.5, 0.15);

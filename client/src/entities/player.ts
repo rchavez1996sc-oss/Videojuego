@@ -4,6 +4,7 @@ import type { Input } from '../core/input';
 import type { Lighting } from '../render/lighting';
 import { Mannequin } from './mannequin';
 import { findLedge, mantlePath, type Ledge } from './mantle';
+import { difficulty } from '../core/difficulty';
 
 const WALK = 3.2, RUN = 6.2, CROUCH = 1.7, AIM = 2.2, JUMP = 6.0, GRAVITY = 22, SLIDE = 8.5;
 const RADIUS = 0.35, HALF = 0.55;
@@ -25,6 +26,8 @@ export class Player {
   private lastVy = 0;
   stamina = 100;
   hp = 100;
+  /** Regeneration ceiling: drops to 50 once health falls below half, restored by medkits. */
+  regenCap = 100;
   private sinceHit = 99;
   sprinting = false;
   landImpact = 0;
@@ -56,18 +59,25 @@ export class Player {
   hurt(amount: number): void {
     this.hp = Math.max(0, this.hp - amount);
     this.sinceHit = 0;
+    if (this.hp < 50) this.regenCap = 50;
   }
 
-  /** Regenerates after 6 s without damage (until medkits exist). */
+  heal(): void {
+    this.hp = 100;
+    this.regenCap = 100;
+  }
+
+  /** Regenerates after the difficulty's delay without damage, up to `regenCap`. */
   regen(dt: number): void {
     this.sinceHit += dt;
-    if (this.hp > 0 && this.sinceHit > 6) this.hp = Math.min(100, this.hp + 9 * dt);
+    if (this.hp > 0 && this.sinceHit > difficulty.value.regenDelay && this.hp < this.regenCap) this.hp = Math.min(this.regenCap, this.hp + 9 * dt);
   }
 
   respawn(feet: THREE.Vector3, yaw: number): void {
     this.body.setTranslation({ x: feet.x, y: feet.y + HALF + RADIUS + 0.2, z: feet.z }, true);
     this.vel.set(0, 0, 0);
     this.hp = 100;
+    this.regenCap = 100;
     this.stamina = 100;
     this.yaw = yaw;
     this.mantle = null;

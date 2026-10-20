@@ -27,6 +27,9 @@ import enemyDefs from './data/enemies.json';
 import type { EnemyDef } from './entities/enemy';
 import { Enemies } from './systems/enemies';
 import { DamageFx } from './ui/damage';
+import { Pickups } from './systems/pickups';
+import { ThreatGrid, type Threat } from './ui/threatGrid';
+import { DIFFICULTIES, difficulty, type DifficultyId } from './core/difficulty';
 
 const status = document.getElementById('status')!;
 const overlay = document.getElementById('overlay')!;
@@ -93,7 +96,11 @@ async function boot(): Promise<void> {
     damageFx.hit(Math.atan2(to.dot(right), to.dot(fwd)), dmg);
     tpc.kick(0.006, (Math.random() - 0.5) * 0.008, 0.03);
   };
-  enemies.onEnemyHit = (kill, headshot) => {
+  const pickups = new Pickups(lighting, hf, ch.medkits ?? []);
+  scene.add(pickups.group);
+  const threatGrid = new ThreatGrid();
+  enemies.onEnemyHit = (kill, headshot, at) => {
+    if (kill && Math.random() < 0.15) pickups.spawn(at);
     sfx.hitmarker(kill);
     hud.hitmarker(kill, headshot, 'BAJA  +100');
     if (kill && enemies.aliveCount === 0) setTimeout(() => hud.showToast('ZONA DESPEJADA'), 1200);
@@ -148,7 +155,23 @@ async function boot(): Promise<void> {
     ready: true,
   };
 
-  status.textContent = 'Clic para jugar';
+  status.textContent = 'Elige la dificultad · clic en cualquier parte para jugar';
+  const diffBox = overlay.querySelector('.difficulty') as HTMLElement;
+  const renderDiff = () => {
+    diffBox.innerHTML = '';
+    for (const [id, d] of Object.entries(DIFFICULTIES)) {
+      const b = document.createElement('button');
+      b.textContent = d.label;
+      b.classList.toggle('on', id === difficulty.id);
+      b.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        difficulty.set(id as DifficultyId);
+        renderDiff();
+      });
+      diffBox.appendChild(b);
+    }
+  };
+  renderDiff();
   overlay.addEventListener('click', () => {
     mixer.resume();
     input.lock();
@@ -210,6 +233,22 @@ async function boot(): Promise<void> {
       if (deadT <= 0) combat.update(dt, input, input.aiming, player.airborne);
     }
     enemies.sync();
+    if (pickups.update(dt, player.position, player.hp < 99.5 && deadT <= 0)) {
+      player.heal();
+      sfx.pickup();
+      hud.showToast('+ BOTIQUÍN');
+    }
+    const camFwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).setY(0).normalize();
+    const camRight = new THREE.Vector3(-camFwd.z, 0, camFwd.x);
+    const threats: Threat[] = [];
+    for (const e of enemies.list) {
+      if (!e.alive) continue;
+      const d = e.position.clone().sub(player.position).setY(0);
+      const dist = d.length();
+      if (dist > 130) continue;
+      threats.push({ angle: Math.atan2(d.dot(camRight), d.dot(camFwd)), dist, aware: e.state !== 'patrol' });
+    }
+    threatGrid.update(dt, threats);
     damageFx.update(dt, player.hp / 100);
     hud.enemies = enemies.aliveCount;
     range.update(dt);
@@ -218,7 +257,7 @@ async function boot(): Promise<void> {
     hud.update(dt, {
       spreadPx: (Math.tan(cone) / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) * innerHeight * 0.5,
       ammo: g.ammo, mag: g.def.magazine, reserve: g.reserve, mode: g.mode, weapon: g.def.name,
-      hp: player.hp, stamina: player.stamina, reload: g.reloadProgress, aiming: input.aiming,
+      hp: player.hp, cap: player.regenCap, stamina: player.stamina, reload: g.reloadProgress, aiming: input.aiming,
     });
     if (!shotMode) dynRes.update(dt);
     camera.updateMatrixWorld();

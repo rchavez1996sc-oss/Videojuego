@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { Enemy } from '../entities/enemy';
 import type { CoverIndex } from './cover';
+import { difficulty } from '../core/difficulty';
 
 export interface AIContext {
   time: number;
@@ -35,7 +36,7 @@ function perceive(e: Enemy, ctx: AIContext): void {
   if (!ctx.sees(eye(e), ctx.playerChest, e.handle)) return;
   e.canSee = true;
   const vis = ctx.playerConcealment * Math.max(0.15, 1 - dist / e.def.sight);
-  e.awareness += dist < 10 ? 1 : (THINK * vis * 2.2) / e.def.reaction;
+  e.awareness += dist < 10 ? 1 : (THINK * vis * 2.2) / (e.def.reaction * difficulty.value.reaction);
   if (e.awareness >= 0.6) {
     e.lastKnown.copy(ctx.playerFeet);
     e.lastSeenT = ctx.time;
@@ -48,7 +49,7 @@ function setState(e: Enemy, s: Enemy['state'], ctx: AIContext): void {
   e.stateT = 0;
   if (s === 'combat') {
     e.burstLeft = 0;
-    e.pauseT = e.def.reaction * rand(0.7, 1.3);
+    e.pauseT = e.def.reaction * difficulty.value.reaction * rand(0.7, 1.3);
     ctx.alertNearby(e);
   }
 }
