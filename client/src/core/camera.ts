@@ -3,6 +3,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import type { Input } from './input';
 
 const SENS = 0.0022;
+const ZOOMS = [1, 2, 4];
 
 export class ThirdPersonCamera {
   yaw: number;
@@ -19,19 +20,28 @@ export class ThirdPersonCamera {
   sway = 0;
   dip = 0;
   fovBoost = 0;
+  zoomIndex = 0;
+  private zoomT = 1;
+  private baseDist = 3.3;
 
   constructor(readonly camera: THREE.PerspectiveCamera, private world: RAPIER.World, yaw: number) {
     this.yaw = yaw;
   }
 
   update(dt: number, input: Input, target: THREE.Vector3, crouch: number, excludeCollider: number): void {
-    this.yaw -= input.mouseDX * SENS * (input.aiming ? 0.55 : 1);
-    this.pitch = THREE.MathUtils.clamp(this.pitch - input.mouseDY * SENS * (input.aiming ? 0.55 : 1), -1.2, 0.9);
+    if (input.wheel) {
+      if (input.aiming) this.zoomIndex = THREE.MathUtils.clamp(this.zoomIndex - input.wheel, 0, ZOOMS.length - 1);
+      else this.baseDist = THREE.MathUtils.clamp(this.baseDist + input.wheel * 0.4, 2.2, 5.2);
+    }
+    this.zoomT = THREE.MathUtils.damp(this.zoomT, input.aiming ? ZOOMS[this.zoomIndex] : 1, 12, dt);
+    const sens = SENS * (input.aiming ? 0.55 : 1) / this.zoomT;
+    this.yaw -= input.mouseDX * sens;
+    this.pitch = THREE.MathUtils.clamp(this.pitch - input.mouseDY * sens, -1.2, 0.9);
     if (input.hit('KeyQ')) this.shoulder *= -1;
     this.aimT = THREE.MathUtils.damp(this.aimT, input.aiming ? 1 : 0, 14, dt);
     this.shoulderX = THREE.MathUtils.damp(this.shoulderX, this.shoulder * THREE.MathUtils.lerp(0.8, 0.62, this.aimT), 10, dt);
-    const wantDist = THREE.MathUtils.lerp(3.3, 1.6, this.aimT);
-    this.camera.fov = THREE.MathUtils.lerp(68, 50, this.aimT) + this.fovBoost;
+    const wantDist = THREE.MathUtils.lerp(this.baseDist, 1.6, this.aimT);
+    this.camera.fov = THREE.MathUtils.lerp(68, 50 / this.zoomT, this.aimT) + this.fovBoost;
     this.camera.updateProjectionMatrix();
 
     this.pivot.copy(target).add(new THREE.Vector3(0, 1.78 - crouch * 0.5 + this.bob - this.dip, 0));
@@ -49,6 +59,10 @@ export class ThirdPersonCamera {
       this.camera.position.add(new THREE.Vector3((Math.random() - 0.5) * this.shake, (Math.random() - 0.5) * this.shake, 0).applyQuaternion(this.camera.quaternion));
       this.shake *= Math.exp(-dt * 18);
     }
+  }
+
+  get zoom(): number {
+    return this.zoomT;
   }
 
   kick(up: number, side: number, shake: number): void {

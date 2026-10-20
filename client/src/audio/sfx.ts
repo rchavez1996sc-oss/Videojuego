@@ -82,6 +82,27 @@ export class Sfx {
     src.stop(t + 0.2);
   }
 
+  explosion(distance: number, pan: number): void {
+    const { ctx } = this.m;
+    const t = ctx.currentTime + distance / 343, near = 1 / (1 + distance / 30);
+    const panner = ctx.createStereoPanner();
+    panner.pan.value = Math.max(-1, Math.min(1, pan)) * 0.7;
+    const bus = ctx.createGain();
+    bus.gain.value = 0.4 + near * 1.1;
+    panner.connect(bus).connect(this.m.sfx);
+    this.filtered(t, 'lowpass', 240, 0.7, 2.2, 0.004, 1.1, 1.4, panner);
+    this.filtered(t, 'lowpass', 1600 * near + 500, 0.6, 1.4, 0.002, 0.45, 1.0, panner);
+    this.tone(t, 'sine', 70, 28, 2.0, 0.7, 0.6, panner);
+    this.filtered(t + 0.25, 'bandpass', 3500, 1.5, 0.12 * near, 0.05, 1.4, 0, panner);
+    setTimeout(() => bus.disconnect(), (distance / 343 + 3) * 1000);
+  }
+
+  grenadePin(): void {
+    const t = this.m.ctx.currentTime;
+    this.filtered(t, 'bandpass', 4200, 6, 0.25, 0.001, 0.04);
+    this.filtered(t + 0.18, 'bandpass', 1300, 3, 0.2, 0.002, 0.08);
+  }
+
   pickup(): void {
     const t = this.m.ctx.currentTime;
     this.filtered(t, 'bandpass', 900, 2, 0.25, 0.005, 0.08);

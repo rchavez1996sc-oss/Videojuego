@@ -4,6 +4,8 @@ export class Input {
   mouseDY = 0;
   aiming = false;
   firing = false;
+  /** Wheel notches this frame: negative = scroll up. */
+  wheel = 0;
   locked = false;
   private pressed = new Set<string>();
 
@@ -35,6 +37,9 @@ export class Input {
       if (e.button === 0) this.firing = false;
     });
     addEventListener('contextmenu', (e) => e.preventDefault());
+    addEventListener('wheel', (e) => {
+      if (this.locked) this.wheel += Math.sign(e.deltaY);
+    }, { passive: true });
     document.addEventListener('pointerlockchange', () => { this.locked = document.pointerLockElement === this.canvas; });
   }
 
@@ -53,6 +58,7 @@ export class Input {
 
   endFrame(): void {
     this.mouseDX = this.mouseDY = 0;
+    this.wheel = 0;
     this.pressed.clear();
   }
 }

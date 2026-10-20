@@ -29,6 +29,7 @@ import { Enemies } from './systems/enemies';
 import { DamageFx } from './ui/damage';
 import { Pickups } from './systems/pickups';
 import { findRespawn } from './systems/respawn';
+import { Grenades } from './weapons/grenades';
 import { ThreatGrid, type Threat } from './ui/threatGrid';
 import { DIFFICULTIES, difficulty, type DifficultyId } from './core/difficulty';
 
@@ -101,6 +102,30 @@ async function boot(): Promise<void> {
   const pickups = new Pickups(lighting, hf, ch.medkits ?? []);
   scene.add(pickups.group);
   const threatGrid = new ThreatGrid();
+  const grenades = new Grenades(world, hf, lighting, () => player.collisionHandle);
+  scene.add(grenades.group);
+  grenades.onSettled = (at) => enemies.fleeFrom(at);
+  const throwGrenade = () => {
+    const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+    const from = player.position.clone().setY(player.position.y + 1.55).addScaledVector(fwd.clone().setY(0).normalize(), 0.55);
+    if (grenades.throw(from, fwd, new THREE.Vector3())) sfx.grenadePin();
+  };
+  grenades.onExplode = (at) => {
+    combat.explosionFx(at);
+    const cam = camera.position, right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+    const dist = at.distanceTo(cam);
+    sfx.explosion(dist, at.clone().sub(cam).normalize().dot(right));
+    tpc.kick(0.01 * Math.max(0, 1 - dist / 40), 0, Math.max(0, 0.5 - dist / 60));
+    enemies.hearShot(at);
+    enemies.explosion(at, 8, 160);
+    const chest = player.position.clone().setY(player.position.y + 1.0);
+    const d = chest.distanceTo(at);
+    if (d < 8 && deadT <= 0) {
+      const dir = chest.clone().sub(at), len = dir.length();
+      const block = world.castRay(new RAPIER.Ray(at.clone().setY(at.y + 0.3), dir.divideScalar(len)), len, true, undefined, undefined, undefined, undefined, (c) => c.handle !== player.collisionHandle && c.isEnabled());
+      if (!block || block.timeOfImpact > len - 0.5) enemies.onPlayerHit(130 * Math.pow(1 - d / 8, 1.2), at);
+    }
+  };
   enemies.onEnemyHit = (kill, headshot, at) => {
     if (kill && Math.random() < 0.15) pickups.spawn(at);
     sfx.hitmarker(kill);
@@ -144,6 +169,38 @@ async function boot(): Promise<void> {
       }
       skipRender = false;
       return log.join('\n');
+    },
+    /** Throws a grenade at a world point from 15 m away and runs until shortly after it explodes. */
+    grenadeTest(tx: number, tz: number) {
+      freeCam = false;
+      skipRender = true;
+      const from = new THREE.Vector3(tx - 15, 0, tz);
+      from.y = hf.heightAt(from.x, from.z);
+      player.respawn(from, Math.PI / 2 + Math.PI);
+      tpc.yaw = -Math.PI / 2;
+      tpc.pitch = -0.12;
+      for (let i = 0; i < 3; i++) frame(1 / 30);
+      let exploded = false, where = '';
+      const prev = grenades.onExplode;
+      grenades.onExplode = (at) => {
+        exploded = true;
+        where = `${at.x.toFixed(1)},${at.y.toFixed(1)},${at.z.toFixed(1)}`;
+        prev(at);
+      };
+      const before = enemies.list.map((e) => e.hp);
+      const fwd0 = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+      throwGrenade();
+      const trace: string[] = [`fwd ${fwd0.x.toFixed(2)},${fwd0.y.toFixed(2)},${fwd0.z.toFixed(2)} feet ${player.position.y.toFixed(2)} ground ${hf.heightAt(player.position.x, player.position.z).toFixed(2)}`];
+      let n = 0;
+      while (!exploded && n++ < 200) {
+        frame(1 / 30);
+        const g = grenades.group.children[0];
+        if (g && n % 6 === 0) trace.push(`${g.position.x.toFixed(1)},${g.position.y.toFixed(1)},${g.position.z.toFixed(1)} gnd ${hf.heightAt(g.position.x, g.position.z).toFixed(1)}`);
+      }
+      console.log(trace.join(' | '));
+      for (let i = 0; i < 4; i++) frame(1 / 30);
+      skipRender = false;
+      return enemies.list.map((e, i) => (e.hp !== before[i] ? `${i}: ${before[i]}→${Math.max(0, e.hp).toFixed(0)} ${e.state} @${e.position.x.toFixed(1)},${e.position.y.toFixed(1)},${e.position.z.toFixed(1)}` : '')).filter(Boolean).join(' | ') + ` · boom @ ${where} · player ${player.position.x.toFixed(1)},${player.position.z.toFixed(1)} hp ${player.hp.toFixed(0)}`;
     },
     simulate(n: number, every: number, pitch = -0.02) {
       freeCam = false;
@@ -246,12 +303,15 @@ async function boot(): Promise<void> {
       camera.updateMatrixWorld();
       player.model.root.updateMatrixWorld(true);
       if (deadT <= 0) combat.update(dt, input, input.aiming, player.airborne);
+      if (deadT <= 0 && input.hit('KeyG')) throwGrenade();
+      grenades.update(dt);
     }
     enemies.sync();
     if (pickups.update(dt, player.position, player.hp < 99.5 && deadT <= 0)) {
       player.heal();
+      grenades.count = Math.min(grenades.count + 1, 5);
       sfx.pickup();
-      hud.showToast('+ BOTIQUÍN');
+      hud.showToast('+ BOTIQUÍN   + GRANADA');
     }
     const camFwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).setY(0).normalize();
     const camRight = new THREE.Vector3(-camFwd.z, 0, camFwd.x);
@@ -272,7 +332,7 @@ async function boot(): Promise<void> {
     hud.update(dt, {
       spreadPx: (Math.tan(cone) / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) * innerHeight * 0.5,
       ammo: g.ammo, mag: g.def.magazine, reserve: g.reserve, mode: g.mode, weapon: g.def.name,
-      hp: player.hp, cap: player.regenCap, stamina: player.stamina, reload: g.reloadProgress, aiming: input.aiming,
+      hp: player.hp, cap: player.regenCap, grenades: grenades.count, zoom: tpc.zoom, stamina: player.stamina, reload: g.reloadProgress, aiming: input.aiming,
     });
     if (!shotMode) dynRes.update(dt);
     camera.updateMatrixWorld();

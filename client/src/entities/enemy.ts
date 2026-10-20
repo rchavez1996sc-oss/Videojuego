@@ -46,10 +46,12 @@ export class Enemy {
   private stuckT = 0;
   private detour: THREE.Vector3 | null = null;
   private lastPos = new THREE.Vector3();
-  private corpse: RAPIER.RigidBody | null = null;
+  private fallDir = new THREE.Vector3();
+  private fallT = 0;
+  private fallSide = 0;
   private colliderCrouched = false;
 
-  constructor(readonly id: number, readonly def: EnemyDef, private world: RAPIER.World, lighting: Lighting, spawn: THREE.Vector3, readonly patrol: THREE.Vector3[], readonly isStatic: boolean) {
+  constructor(readonly id: number, readonly def: EnemyDef, world: RAPIER.World, lighting: Lighting, spawn: THREE.Vector3, readonly patrol: THREE.Vector3[], readonly isStatic: boolean) {
     this.hp = def.hp;
     this.model = new Mannequin(lighting, def.palette);
     this.body = world.createRigidBody(RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(spawn.x, spawn.y + HALF + RADIUS + 0.05, spawn.z));
@@ -82,7 +84,7 @@ export class Enemy {
   }
 
   update(dt: number, aimPitch: number): void {
-    if (this.corpse) return this.syncCorpse();
+    if (this.state === 'dead') return this.syncCorpse(dt);
     this.crouchK = THREE.MathUtils.damp(this.crouchK, this.crouched ? 1 : 0, 8, dt);
     if (this.crouched !== this.colliderCrouched) {
       this.colliderCrouched = this.crouched;
@@ -135,7 +137,7 @@ export class Enemy {
   }
 
   sync(): void {
-    if (this.corpse) return;
+    if (this.state === 'dead') return;
     const p = this.body.translation();
     this.position.set(p.x, p.y - HALF - RADIUS, p.z);
     this.model.root.position.copy(this.position);
@@ -154,24 +156,20 @@ export class Enemy {
     this.state = 'dead';
     if (this.cover) this.cover.owner = -1;
     this.collider.setEnabled(false);
-    const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, this.yaw + Math.PI, 0));
-    this.corpse = this.world.createRigidBody(
-      RAPIER.RigidBodyDesc.dynamic()
-        .setTranslation(this.position.x, this.position.y + 0.9, this.position.z)
-        .setRotation({ x: q.x, y: q.y, z: q.z, w: q.w })
-        .setLinvel(dir.x * 2.5, 0.6, dir.z * 2.5)
-        .setAngvel({ x: dir.z * 3 + (Math.random() - 0.5), y: (Math.random() - 0.5) * 2, z: -dir.x * 3 })
-        .setLinearDamping(0.4)
-        .setAngularDamping(1.2),
-    );
-    this.world.createCollider(RAPIER.ColliderDesc.capsule(0.6, 0.28).setFriction(1.2).setDensity(1.5), this.corpse);
+    const flat = dir.clone().setY(0);
+    this.fallDir = flat.lengthSq() > 0.01 ? flat.normalize() : new THREE.Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
+    this.fallT = 0;
+    this.fallSide = (Math.random() - 0.5) * 0.6;
   }
 
-  private syncCorpse(): void {
-    const b = this.corpse!, t = b.translation(), r = b.rotation();
-    const q = new THREE.Quaternion(r.x, r.y, r.z, r.w);
+  /** Falls toward the hit direction around the feet, then lies on the ground. */
+  private syncCorpse(dt: number): void {
+    this.fallT = Math.min(1, this.fallT + dt / 0.75);
+    const k = this.fallT * this.fallT;
+    const axis = new THREE.Vector3(0, 1, 0).cross(this.fallDir).normalize();
+    const q = new THREE.Quaternion().setFromAxisAngle(axis, k * Math.PI * 0.49).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(0, this.yaw + Math.PI + this.fallSide, 0)));
     this.model.root.quaternion.copy(q);
-    this.model.root.position.set(t.x, t.y, t.z).add(new THREE.Vector3(0, -0.9, 0).applyQuaternion(q));
-    this.model.animate(0, 0, 0, 0);
+    this.model.root.position.copy(this.position).addScaledVector(this.fallDir, k * 0.35).setY(this.position.y + k * 0.18);
+    this.model.animate(dt, 0, 0, 0);
   }
 }

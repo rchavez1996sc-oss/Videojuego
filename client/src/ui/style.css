@@ -78,3 +78,6 @@ body.shot #overlay, body.shot #stats { display: none; }
 #overlay .difficulty button.on { color: #0d0d0c; background: var(--fg); border-color: var(--fg); }
 #overlay .difficulty button:hover:not(.on) { color: var(--fg); border-color: var(--fg); }
 #overlay .hint { font: 12px ui-monospace, monospace; color: var(--dim); letter-spacing: 0.1em; }
+
+#hud .ammo .nades { font: 11px ui-monospace, monospace; letter-spacing: 0.2em; color: var(--dim); margin-top: 4px; }
+#hud .zoom { position: absolute; left: calc(50% + 28px); top: calc(50% + 18px); font: 700 13px ui-monospace, monospace; color: rgba(240, 236, 226, 0.85); opacity: 0; transition: opacity 0.15s; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); }

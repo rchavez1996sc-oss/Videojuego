@@ -95,6 +95,43 @@ export class Enemies {
     this.onEnemyHit(kill, headshot, e.position.clone());
   }
 
+  /** Area damage with line-of-sight check; returns how many enemies died. */
+  explosion(at: THREE.Vector3, radius: number, maxDamage: number): number {
+    let kills = 0;
+    for (const e of this.list) {
+      if (!e.alive) continue;
+      const chest = e.position.clone().setY(e.position.y + 1.0);
+      const d = chest.distanceTo(at);
+      if (d > radius || this.ctx.blocked(at.clone().setY(at.y + 0.3), chest, e.handle)) continue;
+      const dmg = maxDamage * Math.pow(1 - d / radius, 1.2);
+      e.awareness = 1;
+      e.lastKnown.copy(this.player.position);
+      e.shownT = 3;
+      if (e.damage(dmg)) {
+        e.die(chest.clone().sub(at).setY(0.4).normalize().multiplyScalar(2.5));
+        kills++;
+        this.onEnemyHit(true, false, e.position.clone());
+      } else this.onEnemyHit(false, false, e.position.clone());
+    }
+    return kills;
+  }
+
+  /** Some enemies who notice a live grenade nearby sprint away from it after a short reaction delay. */
+  fleeFrom(at: THREE.Vector3): void {
+    for (const e of this.list) {
+      if (!e.alive || e.isStatic || e.position.distanceTo(at) > 8 || Math.random() > 0.6) continue;
+      setTimeout(() => {
+        if (!e.alive) return;
+        const away = e.position.clone().sub(at).setY(0).normalize();
+        e.moveTarget = e.position.clone().addScaledVector(away, 9);
+        e.running = true;
+        e.crouched = false;
+        if (e.cover) e.cover.owner = -1;
+        e.cover = null;
+      }, 500 + Math.random() * 700);
+    }
+  }
+
   private fire(e: Enemy): void {
     const muzzle = e.model.muzzle.getWorldPosition(new THREE.Vector3());
     e.flash.fire(e.model.muzzle);
