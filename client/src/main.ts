@@ -30,12 +30,14 @@ import { DamageFx } from './ui/damage';
 import { Pickups } from './systems/pickups';
 import { findRespawn } from './systems/respawn';
 import { Grenades } from './weapons/grenades';
+import { detonate, BLAST_RADIUS } from './weapons/explosion';
 import { ThreatGrid } from './ui/threatGrid';
 import { DIFFICULTIES, difficulty, type DifficultyId } from './core/difficulty';
 import { installDebug } from './core/debug';
 import { buildBarrio } from './world/barrio';
 import { buildFarCity } from './world/farCity';
 import { Civilians } from './systems/civilians';
+import { CityLife } from './systems/cityLife';
 import { gatherThreats, surfaceUnder } from './systems/sensing';
 
 const CHAPTERS: Record<string, unknown> = { '1': ch01, '2': ch02 };
@@ -107,11 +109,17 @@ async function boot(): Promise<void> {
   scene.add(enemies.group);
   const civilians = barrio && ch.civilians ? new Civilians(barrio.graph, hf, lighting, world, ch.civilians.count, ch.civilians.seed, camera) : null;
   if (civilians) scene.add(civilians.group);
+  const life = barrio && ch.life ? new CityLife(ch.life, world, hf, barrio, lighting, mixer, camera) : null;
+  if (life) scene.add(life.group);
+  const alarm = (p: THREE.Vector3, r: number) => {
+    civilians?.alarm(p, r);
+    life?.alarm(p, r);
+  };
   combat.onShot = (p) => {
     enemies.hearShot(p);
-    civilians?.alarm(p, 90);
+    alarm(p, 90);
   };
-  enemies.onEnemyShot = (p) => civilians?.alarm(p, 60);
+  enemies.onEnemyShot = (p) => alarm(p, 60);
   let deadT = 0, skipRender = false, shieldT = 0;
   const deathPos = new THREE.Vector3();
   enemies.onPlayerHit = (dmg, from) => {
@@ -136,21 +144,9 @@ async function boot(): Promise<void> {
     if (grenades.throw(from, fwd, new THREE.Vector3())) sfx.grenadePin();
   };
   grenades.onExplode = (at) => {
-    combat.explosionFx(at);
-    const cam = camera.position, right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
-    const dist = at.distanceTo(cam);
-    sfx.explosion(dist, at.clone().sub(cam).normalize().dot(right));
-    tpc.kick(0.01 * Math.max(0, 1 - dist / 40), 0, Math.max(0, 0.5 - dist / 60));
-    enemies.hearShot(at);
-    enemies.explosion(at, 8, 160);
-    civilians?.explosion(at, 8);
-    const chest = player.position.clone().setY(player.position.y + 1.0);
-    const d = chest.distanceTo(at);
-    if (d < 8 && deadT <= 0) {
-      const dir = chest.clone().sub(at), len = dir.length();
-      const block = world.castRay(new RAPIER.Ray(at.clone().setY(at.y + 0.3), dir.divideScalar(len)), len, true, undefined, undefined, undefined, undefined, (c) => c.handle !== player.collisionHandle && c.isEnabled());
-      if (!block || block.timeOfImpact > len - 0.5) enemies.onPlayerHit(130 * Math.pow(1 - d / 8, 1.2), at);
-    }
+    detonate(at, { combat, sfx, tpc, enemies, player, world, playerAlive: deadT <= 0 });
+    civilians?.explosion(at, BLAST_RADIUS);
+    life?.alarm(at, 150);
   };
   enemies.onEnemyHit = (kill, headshot, at) => {
     if (kill && Math.random() < 0.15) pickups.spawn(at);
@@ -238,6 +234,7 @@ async function boot(): Promise<void> {
       }
       enemies.update(dt);
       civilians?.update(dt, player.position);
+      life?.update(dt, player.position, enemies.list.some((e) => e.alive && e.state === 'combat'));
       world.timestep = dt;
       world.step();
       player.syncPosition();

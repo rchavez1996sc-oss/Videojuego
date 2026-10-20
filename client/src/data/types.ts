@@ -41,6 +41,7 @@ export interface ChapterDef {
   village?: { x: number; z: number; radius: number; houses: number; church: { x: number; z: number; rot: number } };
   barrio?: import('../world/barrio').BarrioDef;
   farCity?: import('../world/farCity').FarCityDef;
+  life?: import('../systems/cityLife').LifeDef;
   civilians?: { count: number; seed: number };
   scatter: { rocks: number; trees: number; seed: number };
   spawn: { x: number; z: number; yaw: number };

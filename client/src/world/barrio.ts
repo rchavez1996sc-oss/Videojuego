@@ -8,6 +8,7 @@ import { Builder } from './buildingKit';
 import { cityHouse, hillHouse, PAINTS, type Lot } from './houses';
 import { powerLine, cable, mototaxi, sandbags, stairway, car, billboard, type CarKind } from './urbanProps';
 import { SignAtlas } from './signs';
+import { STREET_COLORS, stall, trashPile, roadMarkings } from './streetLife';
 import { brick, concrete, plaster, corrugated, estera } from '../render/urbanTextures';
 import { rock, wood } from '../render/textures';
 
@@ -26,7 +27,13 @@ export interface BarrioDef {
 
 export interface StreetGraph { nodes: THREE.Vector3[]; edges: [number, number][]; exits: number[] }
 
-export interface Barrio { group: THREE.Group; graph: StreetGraph; blocked: (x: number, z: number) => boolean }
+export interface Barrio {
+  group: THREE.Group;
+  graph: StreetGraph;
+  blocked: (x: number, z: number) => boolean;
+  materials: Record<string, THREE.Material>;
+  bake: { material: THREE.Material; keys: string[] }[];
+}
 
 const PAINT_COLORS = ['#9fc3d6', '#e3c46a', '#d9a3a0', '#9cc29a', '#e6dac0', '#d99a63'];
 
@@ -69,6 +76,7 @@ function materials(lighting: Lighting, atlas: SignAtlas): Record<string, THREE.M
     signs: std('signs', { map: atlas.texture, transparent: true, alphaTest: 0.1, roughness: 0.85, polygonOffset: true, polygonOffsetFactor: -2 }),
   };
   PAINTS.forEach((k, i) => (m[k] = std(k, { map: pl.map, normalMap: pl.normalMap, roughness: 0.9, color: PAINT_COLORS[i] })));
+  for (const [k, c] of Object.entries(STREET_COLORS)) m[k] = std(k, { color: c, roughness: 0.7 });
   return m;
 }
 
@@ -99,7 +107,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
           const worldSide = x === bx0 ? -1 : x + w >= bx1 - 0.01 ? 1 : 0;
           x += w;
           if (inLandmark(cx, frontZ, 2)) continue;
-          const lot: Lot = { x: cx, z: frontZ, y: hf.heightAt(cx, frontZ), facing, w, d: (z1 - z0) / 2 };
+          const lot: Lot = { x: cx, z: frontZ, y: hf.heightAt(cx, frontZ), facing, w, d: (z1 - z0) / 2 - 0.04 };
           cityHouse(b, lot, rand, sign, facing === 0 ? worldSide : -worldSide);
           if (rand() < 0.18) {
             const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), facing);
@@ -189,20 +197,33 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
     atlas.add(new THREE.Vector3(x, hf.heightAt(x, z) + 3.5, z), q, w, 'hill', rand);
   }
 
+  roadMarkings(b, hf, def.x0 - 10, xEnd + 10, crossX, 8);
+  for (let x = def.x0 + 8; x < xEnd - 8; x += 18 + rand() * 20) {
+    if (crossX.some((cx) => Math.abs(cx - x) < 6) || rand() < 0.35) continue;
+    const s = rand() < 0.5 ? 1 : -1;
+    stall(b, new THREE.Vector3(x, hf.heightAt(x, s * 9.3) + 0.15, s * 9.3), s > 0 ? Math.PI : 0, rand);
+  }
+  for (let i = 0; i < 90; i++) {
+    const x = crossX[Math.floor(rand() * crossX.length)] + (rand() < 0.5 ? -1 : 1) * (3.6 + rand() * 0.6);
+    const z = (rand() < 0.5 ? 1 : -1) * (def.gap + rand() * (def.blockD * 2 + def.street));
+    trashPile(b, new THREE.Vector3(x, hf.heightAt(x, z), z), rand);
+  }
+
   const group = new THREE.Group();
   const mats = materials(lighting, atlas);
   const pl = plaster();
-  group.add(...b.build(mats, 0.5, [
+  const bake = [
     { material: lighting.setup(new THREE.MeshStandardMaterial({ map: pl.map, normalMap: pl.normalMap, roughness: 0.9, vertexColors: true }), 'paint-baked'), keys: PAINTS },
     { material: lighting.setup(new THREE.MeshStandardMaterial({ roughness: 0.45, metalness: 0.35, vertexColors: true }), 'plain-baked'),
-      keys: ['car0', 'car1', 'car2', 'car3', 'car4', 'car5', 'moto0', 'moto1', 'moto2', 'tankBlack', 'tankBlue', 'stripe', 'checker', 'canopy', 'seat', 'tire', 'bars', 'rebar', 'cable', 'paintYellow', 'light', 'glass'] },
-  ]));
+      keys: ['car0', 'car1', 'car2', 'car3', 'car4', 'car5', 'moto0', 'moto1', 'moto2', 'tankBlack', 'tankBlue', 'stripe', 'checker', 'canopy', 'seat', 'tire', 'bars', 'rebar', 'cable', 'paintYellow', 'light', 'glass', ...Object.keys(STREET_COLORS)] },
+  ];
+  group.add(...b.build(mats, 0.5, bake));
   if (atlas.geometries.length) {
     const signs = new THREE.Mesh(mergeGeometries(atlas.geometries), mats.signs);
     signs.receiveShadow = true;
     group.add(signs);
   }
-  return { group, graph: streetGraph(def, crossX, hf), blocked: (x, z) => Math.abs(z) < def.gap + 2 * def.blockD + def.street + 6 || hillSpots.some((h) => Math.hypot(h.x - x, h.z - z) < h.r + 1.5) };
+  return { group, materials: mats, bake, graph: streetGraph(def, crossX, hf), blocked: (x, z) => Math.abs(z) < def.gap + 2 * def.blockD + def.street + 6 || hillSpots.some((h) => Math.hypot(h.x - x, h.z - z) < h.r + 1.5) };
 }
 
 function streetGraph(def: BarrioDef, crossX: number[], hf: Heightfield): StreetGraph {

@@ -15,7 +15,8 @@ export class Builder {
   private parts = new Map<string, THREE.BufferGeometry[]>();
   private tmp = new THREE.Object3D();
 
-  constructor(private world: RAPIER.World, private body: RAPIER.RigidBody) {}
+  /** Pass `null` world/body to build visual-only meshes (e.g. moving vehicles) without static colliders. */
+  constructor(private world: RAPIER.World | null, private body: RAPIER.RigidBody | null) {}
 
   box(mat: string, size: [number, number, number], pos: THREE.Vector3, quat: THREE.Quaternion, collide = true): void {
     const g = new THREE.BoxGeometry(...size);
@@ -24,7 +25,7 @@ export class Builder {
     this.tmp.updateMatrix();
     g.applyMatrix4(this.tmp.matrix);
     if (mat !== 'none') (this.parts.get(mat) ?? this.parts.set(mat, []).get(mat)!).push(g);
-    if (collide) {
+    if (collide && this.world && this.body) {
       const col = this.world.createCollider(
         RAPIER.ColliderDesc.cuboid(size[0] / 2, size[1] / 2, size[2] / 2)
           .setTranslation(pos.x, pos.y, pos.z)
@@ -70,7 +71,7 @@ export class Builder {
       if (o.y > 0) this.box(mat, [o.w, o.y, thick], local(o.x, o.y / 2), q);
       const top = o.y + o.h;
       if (top < height) this.box(mat, [o.w, height - top, thick], local(o.x, (top + height) / 2), q);
-      this.box('wood', [o.w + 0.25, 0.18, thick + 0.08], local(o.x, top + 0.09), q, false);
+      this.box('wood', [o.w + 0.25, 0.18, thick + 0.07], local(o.x, top + 0.095), q, false);
       cursor = r;
     }
     if (cursor < len / 2) this.box(mat, [len / 2 - cursor, height, thick], local((cursor + len / 2) / 2, height / 2), q);

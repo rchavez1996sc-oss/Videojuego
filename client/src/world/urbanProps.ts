@@ -13,6 +13,9 @@ export function powerLine(b: Builder, hf: Heightfield, points: THREE.Vector3[], 
     b.geometry('pole', new THREE.CylinderGeometry(0.11, 0.15, h, 8), new THREE.Matrix4().makeTranslation(p.x, y + h / 2 - 0.2, p.z),
       { size: [0.28, h, 0.28], pos: new THREE.Vector3(p.x, y + h / 2, p.z), quat: new THREE.Quaternion() });
     b.box('pole', [1.4, 0.1, 0.1], new THREE.Vector3(p.x, y + h - 0.6, p.z), new THREE.Quaternion().setFromAxisAngle(UP, rand() * 0.2 + Math.PI / 2), false);
+    const arm = -Math.sign(p.z || 1);
+    b.box('bars', [0.06, 0.06, 1.6], new THREE.Vector3(p.x, y + h - 1.6, p.z + arm * 0.8), new THREE.Quaternion(), false);
+    b.box('lampHead', [0.3, 0.12, 0.55], new THREE.Vector3(p.x, y + h - 1.68, p.z + arm * 1.55), new THREE.Quaternion(), false);
     tops.push(new THREE.Vector3(p.x, y + h - 0.55, p.z));
   }
   for (let i = 0; i < tops.length - 1; i++) {
