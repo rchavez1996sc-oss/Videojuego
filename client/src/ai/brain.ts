@@ -15,6 +15,15 @@ export interface AIContext {
   groundY(x: number, z: number): number;
   cover: CoverIndex;
   alertNearby(e: Enemy): void;
+  /** Street corners leading to `to` when the straight walk is blocked; empty if the way is clear. */
+  route(from: THREE.Vector3, to: THREE.Vector3, self: number): THREE.Vector3[];
+}
+
+/** Sets a destination, routing along the streets when buildings are in the way. */
+export function goTo(e: Enemy, ctx: AIContext, to: THREE.Vector3, run: boolean): void {
+  e.moveTarget = to;
+  e.running = run;
+  e.path = ctx.route(e.position, to, e.handle);
 }
 
 const THINK = 0.2;
@@ -63,8 +72,7 @@ function pickCover(e: Enemy, ctx: AIContext, preferred: number, radius = 30, anc
     if (e.cover) e.cover.owner = -1;
     c.owner = e.id;
     e.cover = c;
-    e.moveTarget = spot;
-    e.running = true;
+    goTo(e, ctx, spot, true);
     return true;
   }
   return false;
@@ -87,10 +95,9 @@ function thinkCombat(e: Enemy, ctx: AIContext): void {
   if (!e.moveTarget && coverCompromised(e, ctx) && !pickCover(e, ctx, e.def.preferredRange)) {
     const away = e.position.clone().sub(e.lastKnown).setY(0).normalize();
     const side = new THREE.Vector3(-away.z, 0, away.x).multiplyScalar(Math.random() < 0.5 ? -6 : 6);
-    e.moveTarget = e.lastKnown.clone().addScaledVector(away, e.def.preferredRange).add(side);
-    e.running = true;
+    goTo(e, ctx, e.lastKnown.clone().addScaledVector(away, e.def.preferredRange).add(side), true);
   }
-  if (unseen > 3.5 && !e.moveTarget) hunt(e, ctx);
+  if (unseen > 2.5 && !e.moveTarget) hunt(e, ctx);
 }
 
 /** Closes in on the last known position cover-to-cover, sometimes swinging wide to flank; searches around it on arrival. */
@@ -98,16 +105,14 @@ function hunt(e: Enemy, ctx: AIContext): void {
   const toPlayer = e.lastKnown.clone().sub(e.position).setY(0);
   const dist = toPlayer.length();
   if (dist < 6) {
-    e.moveTarget = e.lastKnown.clone().add(new THREE.Vector3(rand(-14, 14), 0, rand(-14, 14)));
-    e.running = false;
+    goTo(e, ctx, e.lastKnown.clone().add(new THREE.Vector3(rand(-14, 14), 0, rand(-14, 14))), false);
     return;
   }
   const side = new THREE.Vector3(-toPlayer.z, 0, toPlayer.x).normalize().multiplyScalar(Math.random() < 0.5 ? -1 : 1);
   const flank = Math.random() < 0.35;
-  const anchor = flank ? e.lastKnown.clone().addScaledVector(side, Math.min(25, dist * 0.6)) : e.position.clone().addScaledVector(toPlayer.normalize(), Math.min(20, dist * 0.5));
+  const anchor = flank ? e.lastKnown.clone().addScaledVector(side, Math.min(25, dist * 0.6)) : e.position.clone().addScaledVector(toPlayer.normalize(), Math.min(32, dist * 0.6));
   if (pickCover(e, ctx, flank ? 16 : 12, 22, anchor)) return;
-  e.moveTarget = anchor.add(new THREE.Vector3(rand(-3, 3), 0, rand(-3, 3)));
-  e.running = true;
+  goTo(e, ctx, anchor.add(new THREE.Vector3(rand(-3, 3), 0, rand(-3, 3))), true);
 }
 
 export function think(e: Enemy, ctx: AIContext, dt: number): void {
@@ -123,14 +128,15 @@ export function think(e: Enemy, ctx: AIContext, dt: number): void {
   if (e.state === 'combat') thinkCombat(e, ctx);
   else if (e.state === 'alert') {
     e.crouched = false;
-    if (e.moveTarget && e.moveTarget.distanceTo(e.lastKnown) > 20) e.moveTarget = null;
+    if (e.moveTarget && e.moveTarget.distanceTo(e.lastKnown) > 20) {
+      e.moveTarget = null;
+      e.path = [];
+    }
     if (!e.isStatic && !e.moveTarget && e.position.distanceTo(e.lastKnown) > 3) {
-      e.moveTarget = e.lastKnown.clone().add(new THREE.Vector3(rand(-4, 4), 0, rand(-4, 4)));
-      e.running = e.awareness > 0.7;
+      goTo(e, ctx, e.lastKnown.clone().add(new THREE.Vector3(rand(-4, 4), 0, rand(-4, 4))), e.awareness > 0.7);
     }
     if (!e.isStatic && !e.moveTarget && e.position.distanceTo(e.lastKnown) <= 3) {
-      e.moveTarget = e.lastKnown.clone().add(new THREE.Vector3(rand(-12, 12), 0, rand(-12, 12)));
-      e.running = false;
+      goTo(e, ctx, e.lastKnown.clone().add(new THREE.Vector3(rand(-12, 12), 0, rand(-12, 12))), false);
     }
     if (e.engaged && e.stateT > 4) setState(e, 'combat', ctx);
     else if (!e.engaged && e.stateT > 25) {
@@ -139,8 +145,7 @@ export function think(e: Enemy, ctx: AIContext, dt: number): void {
     }
   } else if (e.patrol.length > 1 && !e.moveTarget) {
     e.patrolIndex = (e.patrolIndex + 1) % e.patrol.length;
-    e.moveTarget = e.patrol[e.patrolIndex].clone();
-    e.running = false;
+    goTo(e, ctx, e.patrol[e.patrolIndex].clone(), false);
   }
 }
 

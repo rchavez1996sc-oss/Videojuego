@@ -35,6 +35,8 @@ import { ThreatGrid } from './ui/threatGrid';
 import { installDebug } from './core/debug';
 import { buildBarrio } from './world/barrio';
 import { buildFarCity } from './world/farCity';
+import { StreetNav } from './ai/nav';
+import { cover } from './ai/cover';
 import { createPopulace } from './systems/populace';
 import { showMissionFailed } from './ui/missionFail';
 import { setupStartMenu } from './ui/startMenu';
@@ -105,7 +107,9 @@ async function boot(): Promise<void> {
   player.onMantle = () => sfx.footstep(1.3, 'rock');
   const dynRes = new DynamicResolution(renderer);
   const damageFx = new DamageFx();
-  const enemies = new Enemies(enemyDefs as unknown as Record<string, EnemyDef>, ch.enemies ?? [], world, hf, lighting, player, combat, sfx, camera);
+  const nav = barrio ? new StreetNav(barrio.graph) : null;
+  world.step();
+  const enemies = new Enemies(enemyDefs as unknown as Record<string, EnemyDef>, ch.enemies ?? [], world, hf, lighting, player, combat, sfx, camera, nav);
   scene.add(enemies.group);
   const { civilians, life, alarm, state: populace } = createPopulace(ch, barrio, { world, hf, lighting, mixer, sfx, combat, hud, camera, scene });
   let failed = false;
@@ -158,6 +162,7 @@ async function boot(): Promise<void> {
     if (kill && enemies.aliveCount === 0) setTimeout(() => hud.showToast('ZONA DESPEJADA'), 1200);
   };
   world.step();
+  cover.prune(world, (x, z) => hf.heightAt(x, z));
 
   let freeCam = false;
   installDebug({
@@ -167,22 +172,7 @@ async function boot(): Promise<void> {
     setFreeCam: (v) => (freeCam = v),
     setSkipRender: (v) => (skipRender = v),
     throwGrenade,
-    hooks: {
-      vehicleTest: () => {
-        const tr = life?.trafficEvents;
-        if (!tr) return 'no traffic';
-        freeCam = false;
-        skipRender = true;
-        const hit = tr.debugDisableNearest(player.position);
-        const log = [`disabled ${hit}`];
-        for (let i = 0; i < 60; i++) {
-          frame(1 / 20);
-          if (i % 20 === 19) log.push(tr.debugStates);
-        }
-        skipRender = false;
-        return log.join('\n');
-      },
-    },
+    traffic: () => life?.trafficEvents,
   });
 
   setupStartMenu(overlay, status, () => {
@@ -220,6 +210,7 @@ async function boot(): Promise<void> {
             e.awareness = 0.5;
             e.lastKnown.copy(deathPos);
             e.moveTarget = null;
+            e.path = [];
           }
         }
       } else {

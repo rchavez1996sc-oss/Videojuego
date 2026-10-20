@@ -5,6 +5,7 @@ import type { Lighting } from '../render/lighting';
 import { Mannequin } from './mannequin';
 import { findLedge, mantlePath, type Ledge } from './mantle';
 import { difficulty } from '../core/difficulty';
+import { ladderAt, type Ladder } from '../world/ladders';
 
 const WALK = 3.2, RUN = 6.2, CROUCH = 1.7, AIM = 2.2, JUMP = 6.0, GRAVITY = 22, SLIDE = 8.5;
 const RADIUS = 0.35, HALF = 0.55;
@@ -34,6 +35,7 @@ export class Player {
   stepPhase = 0;
   onMantle: (vault: boolean) => void = () => {};
   private mantle: { ledge: Ledge; start: THREE.Vector3; t: number; dur: number } | null = null;
+  private ladder: Ladder | null = null;
 
   constructor(private world: RAPIER.World, lighting: Lighting, spawn: THREE.Vector3, yaw: number) {
     this.model = new Mannequin(lighting);
@@ -103,8 +105,47 @@ export class Player {
     }
   }
 
+  get climbing(): boolean {
+    return this.ladder !== null;
+  }
+
+  /** On a ladder: W/S move up/down, Space lets go; reaching the top steps onto the roof. */
+  private updateLadder(dt: number, input: Input): void {
+    const l = this.ladder!;
+    const dir = (input.down('KeyW') ? 1 : 0) - (input.down('KeyS') ? 1 : 0);
+    let y = this.position.y + dir * 2.4 * dt;
+    let x = l.base.x + l.normal.x * 0.45, z = l.base.z + l.normal.z * 0.45;
+    this.vel.set(0, 0, 0);
+    this.speed = Math.abs(dir) * 1.2;
+    this.stepPhase += dt * Math.abs(dir) * 1.6;
+    if (y >= l.top + 0.05) {
+      x = l.base.x - l.normal.x * 0.9;
+      z = l.base.z - l.normal.z * 0.9;
+      y = l.top + 0.08;
+      this.ladder = null;
+      this.onMantle(false);
+    } else if (input.hit('Space') || (dir < 0 && y <= l.base.y)) {
+      this.ladder = null;
+      x += l.normal.x * 0.4;
+      z += l.normal.z * 0.4;
+      y = Math.max(y, l.base.y);
+    }
+    this.yaw = Math.atan2(l.normal.x, l.normal.z);
+    this.body.setNextKinematicTranslation({ x, y: y + HALF + RADIUS, z });
+    this.model.animate(dt, this.speed, 0, 0);
+  }
+
   update(dt: number, input: Input, camYaw: number, aiming: boolean, aimPitch: number, firing: boolean): void {
     if (this.mantle) return this.updateMantle(dt);
+    if (this.ladder) return this.updateLadder(dt, input);
+    if (input.down('KeyW')) {
+      const l = ladderAt(this.position);
+      const facing = new THREE.Vector3(-Math.sin(camYaw), 0, -Math.cos(camYaw));
+      if (l && facing.dot(l.normal) < -0.3) {
+        this.ladder = l;
+        return this.updateLadder(dt, input);
+      }
+    }
     if (input.hit('Space')) {
       const moveYaw = this.speed > 0.5 ? Math.atan2(-this.vel.x, -this.vel.z) : camYaw;
       const ledge = findLedge(this.world, this.position, moveYaw, this.collider.handle);

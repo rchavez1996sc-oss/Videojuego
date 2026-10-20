@@ -62,6 +62,7 @@ export function cityHouse(b: Builder, lot: Lot, rand: () => number, sign: (at: T
       if (o.y <= base + 0.01) {
         const metal = o.w > 2 ? 'shutter' : 'door';
         b.box(metal, [o.w, o.h, 0.06], at(o.x, y0 + o.y + o.h / 2, -0.12), q, false);
+        b.box('none', [o.w, o.h, T], at(o.x, y0 + o.y + o.h / 2, -T / 2), q, true);
         if (o.w > 2 && rand() < 0.7) sign(at(o.x, y0 + o.y + o.h + 0.35, 0.03), q, o.w + 0.6);
         if (o.w > 2 && rand() < 0.6) sidewalkChairs(b, at(o.x, 0, 1.4), q, rand);
       } else windowBars(b, at, q, o.x, y0 + o.y, 0, o.w, o.h, rand() < 0.6 ? CLOTHES[Math.floor(rand() * CLOTHES.length)] : undefined);
@@ -98,6 +99,7 @@ export function hillHouse(b: Builder, lot: Lot, rand: () => number, baseLow: num
   b.wall(mat, w, h, 0.15, at(0, 0.15, -d + 0.08), lot.facing + Math.PI);
   for (const s of [1, -1]) b.wall(mat, d - 0.3, h, 0.15, at(s * (w / 2 - 0.08), 0.15, -d / 2), lot.facing + s * Math.PI / 2);
   b.box('door', [0.9, 1.95, 0.04], at(-w / 4, 1.1, -0.1), q, false);
+  b.box('none', [0.9, 1.95, 0.15], at(-w / 4, 1.1, -0.08), q, true);
   const roofQ = q.clone().multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -0.08));
   b.box('calamina', [w + 0.4, 0.05, d + 0.5], at(0, h + 0.33, -d / 2), roofQ);
   for (let i = 0; i < 3; i++) b.box('stone', [0.25, 0.25, 0.25], at((rand() - 0.5) * w, h + 0.4, -rand() * d), q, false);

@@ -6,6 +6,7 @@ import type { Combat } from '../weapons/combat';
 import type { Enemies } from '../systems/enemies';
 import type { Grenades } from '../weapons/grenades';
 import type { Renderer } from '../render/renderer';
+import type { Traffic } from '../systems/traffic';
 
 export interface DebugContext {
   views: [number, number, number, number, number, number][];
@@ -22,7 +23,7 @@ export interface DebugContext {
   setSkipRender: (v: boolean) => void;
   throwGrenade: () => void;
   extraLog?: () => string;
-  hooks?: Record<string, (...args: never[]) => unknown>;
+  traffic?: () => Traffic | undefined;
 }
 
 /** `window.__game`: hooks used by the Playwright screenshot / AI / grenade scripts. */
@@ -58,7 +59,7 @@ export function installDebug(c: DebugContext): void {
           const states = c.enemies.list.map((e) => `${e.id}:${e.state[0]}${e.cover ? 'C' : ''}${e.crouched ? 'v' : ''}${e.canSee ? '*' : ''}`).join(' ');
           const engaged = c.enemies.list.filter((e) => e.alive && e.engaged);
           const avg = engaged.length ? engaged.reduce((a, e) => a + e.position.distanceTo(c.player.position), 0) / engaged.length : 0;
-          log.push(`t=${((i + 1) / 20).toFixed(0)}s hp=${c.player.hp.toFixed(0)} engaged=${engaged.length} avgDist=${avg.toFixed(0)} ${states}`);
+          log.push(`t=${((i + 1) / 20).toFixed(0)}s hp=${c.player.hp.toFixed(0)} engaged=${engaged.length} avgDist=${avg.toFixed(0)} inside=${c.enemies.insideCount} ${states}`);
         }
       }
       c.setSkipRender(false);
@@ -99,7 +100,20 @@ export function installDebug(c: DebugContext): void {
       }
     },
     info: () => ({ calls: c.renderer.gl.info.render.calls, tris: c.renderer.gl.info.render.triangles }),
-    ...c.hooks,
+    /** Disables the nearest moving vehicle and logs every vehicle's state for 3 s. */
+    vehicleTest() {
+      const tr = c.traffic?.();
+      if (!tr) return 'no traffic';
+      c.setFreeCam(false);
+      c.setSkipRender(true);
+      const log = [`disabled ${tr.debugDisableNearest(c.player.position)}`];
+      for (let i = 0; i < 60; i++) {
+        c.frame(1 / 20);
+        if (i % 20 === 19) log.push(tr.debugStates);
+      }
+      c.setSkipRender(false);
+      return log.join('\n');
+    },
     ready: true,
   };
 }

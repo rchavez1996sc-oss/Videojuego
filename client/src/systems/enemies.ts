@@ -10,6 +10,7 @@ import type { Player } from '../entities/player';
 import type { Combat } from '../weapons/combat';
 import type { Sfx } from '../audio/sfx';
 import { HealthBars } from '../ui/healthbars';
+import type { StreetNav } from '../ai/nav';
 import { difficulty } from '../core/difficulty';
 
 export interface SpawnDef { type: string; x: number; z: number; y?: number; patrol?: [number, number][] }
@@ -29,12 +30,17 @@ export class Enemies {
   private intelT = 8;
   private intelHold = 0;
 
-  constructor(defs: Record<string, EnemyDef>, spawns: SpawnDef[], private world: RAPIER.World, private hf: Heightfield, lighting: Lighting, private player: Player, private combat: Combat, private sfx: Sfx, private camera: THREE.PerspectiveCamera) {
+  constructor(defs: Record<string, EnemyDef>, spawns: SpawnDef[], private world: RAPIER.World, private hf: Heightfield, lighting: Lighting, private player: Player, private combat: Combat, private sfx: Sfx, private camera: THREE.PerspectiveCamera, nav: StreetNav | null = null) {
     spawns.forEach((s, i) => {
       const def = defs[s.type];
-      const y = s.y !== undefined ? hf.heightAt(s.x, s.z) + s.y : hf.heightAt(s.x, s.z);
+      const spot = new THREE.Vector3(s.x, hf.heightAt(s.x, s.z), s.z);
+      if (s.y === undefined && nav && world.castRay(new RAPIER.Ray({ x: spot.x, y: spot.y + 0.6, z: spot.z }, { x: 0, y: 1, z: 0 }), 40, true)) {
+        const n = nav.route(spot, spot)[0];
+        spot.set(n.x, hf.heightAt(n.x, n.z), n.z);
+      }
+      const y = s.y !== undefined ? spot.y + s.y : spot.y;
       const patrol = (s.patrol ?? []).map(([x, z]) => new THREE.Vector3(x, hf.heightAt(x, z), z));
-      const e = new Enemy(i, def, world, lighting, new THREE.Vector3(s.x, y, s.z), patrol, s.y !== undefined);
+      const e = new Enemy(i, def, world, lighting, new THREE.Vector3(spot.x, y, spot.z), patrol, s.y !== undefined);
       this.list.push(e);
       this.group.add(e.model.root, e.flash.group);
       onHit(e.handle, (dmg, p) => this.hit(e, dmg, new THREE.Vector3(p.x, p.y, p.z)));
@@ -59,6 +65,15 @@ export class Enemies {
         return !!r.hit && r.hit.collider.handle !== player.collisionHandle && r.hit.timeOfImpact < r.len - 0.5;
       },
       groundY: (x, z) => hf.heightAt(x, z),
+      route: (from, to, self) => {
+        if (!nav) return [];
+        const a = from.clone().setY(from.y + 0.8), b = to.clone().setY(to.y + 0.8);
+        const r = ray(a, b, self);
+        if (!r.hit || r.hit.collider.handle === player.collisionHandle || r.hit.timeOfImpact > r.len - 0.5) return [];
+        const path = nav.route(from, to);
+        if (path.length > 1 && path[0].distanceTo(to) > from.distanceTo(to) + 5) path.shift();
+        return path;
+      },
       cover,
       alertNearby: (src) => {
         for (const o of this.list) {
@@ -68,6 +83,11 @@ export class Enemies {
         }
       },
     };
+  }
+
+  /** Test helper: living non-static enemies standing under a roof (i.e. inside a building). */
+  get insideCount(): number {
+    return this.list.filter((e) => e.alive && !e.isStatic && this.world.castRay(new RAPIER.Ray({ x: e.position.x, y: e.position.y + 0.6, z: e.position.z }, { x: 0, y: 1, z: 0 }), 40, true, undefined, undefined, undefined, undefined, (c) => c.handle !== e.handle)).length;
   }
 
   get aliveCount(): number {
@@ -148,6 +168,7 @@ export class Enemies {
         if (!e.alive) return;
         const away = e.position.clone().sub(at).setY(0).normalize();
         e.moveTarget = e.position.clone().addScaledVector(away, 9);
+        e.path = [];
         e.running = true;
         e.crouched = false;
         if (e.cover) e.cover.owner = -1;

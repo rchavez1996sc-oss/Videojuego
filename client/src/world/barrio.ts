@@ -8,6 +8,7 @@ import { Builder } from './buildingKit';
 import { cityHouse, hillHouse, PAINTS, type Lot } from './houses';
 import { powerLine, cable, mototaxi, sandbags, stairway, car, billboard, type CarKind } from './urbanProps';
 import { SignAtlas } from './signs';
+import { buildLadder } from './ladders';
 import { STREET_COLORS, stall, trashPile, roadMarkings } from './streetLife';
 import { brick, concrete, plaster, corrugated, estera } from '../render/urbanTextures';
 import { rock, wood } from '../render/textures';
@@ -86,7 +87,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
   const atlas = new SignAtlas();
   const pitch = def.blockW + def.street;
   const lm = def.landmark;
-  const inLandmark = (x: number, z: number, r: number) => Math.abs(x - lm.x) < lm.w / 2 + r && Math.abs(z - lm.z) < lm.d + r && Math.sign(z) === Math.sign(lm.z);
+  const inLandmark = (x0: number, x1: number, z: number) => x1 > lm.x - lm.w / 2 - 1.6 && x0 < lm.x + lm.w / 2 + 1.6 && Math.abs(z - lm.z) < lm.d + 2 && Math.sign(z) === Math.sign(lm.z);
   const sign = (at: THREE.Vector3, q: THREE.Quaternion, w: number) => atlas.add(at, q, w, 'shop', rand);
 
   const rowsZ: [number, number][] = [];
@@ -106,7 +107,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
           const cx = x + w / 2;
           const worldSide = x === bx0 ? -1 : x + w >= bx1 - 0.01 ? 1 : 0;
           x += w;
-          if (inLandmark(cx, frontZ, 2)) continue;
+          if (inLandmark(cx - w / 2, cx + w / 2, frontZ)) continue;
           const lot: Lot = { x: cx, z: frontZ, y: hf.heightAt(cx, frontZ), facing, w, d: (z1 - z0) / 2 - 0.04 };
           cityHouse(b, lot, rand, sign, facing === 0 ? worldSide : -worldSide);
           if (rand() < 0.18) {
@@ -118,6 +119,8 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
     }
   }
   cityHouse(b, { x: lm.x, z: lm.z, y: hf.heightAt(lm.x, lm.z), facing: lm.facing, w: lm.w, d: lm.d, floors: lm.floors }, rand, sign);
+  const back = Math.sign(lm.z) || 1, lx = lm.x - lm.w / 2 - 0.3, lz = lm.z + back * 2.5;
+  buildLadder(b, new THREE.Vector3(lx, hf.heightAt(lx, lz), lz), hf.heightAt(lm.x, lm.z) + lm.floors * 2.7, new THREE.Vector3(-1, 0, 0));
 
   const xEnd = def.x0 + def.cols * pitch - def.street;
   for (const s of [1, -1]) {

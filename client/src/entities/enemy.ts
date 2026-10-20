@@ -30,6 +30,8 @@ export class Enemy {
   canSee = false;
   cover: CoverPoint | null = null;
   moveTarget: THREE.Vector3 | null = null;
+  /** Street corners to walk through before heading for `moveTarget`. */
+  path: THREE.Vector3[] = [];
   running = false;
   crouched = false;
   burstLeft = 0;
@@ -93,13 +95,14 @@ export class Enemy {
       this.collider.setHalfHeight(this.crouched ? HALF - 0.28 : HALF);
       this.collider.setTranslationWrtParent({ x: 0, y: this.crouched ? -0.28 : 0, z: 0 });
     }
-    const target = this.detour ?? this.moveTarget;
+    const target = this.detour ?? this.path[0] ?? this.moveTarget;
     const wish = new THREE.Vector3();
     if (target && !this.isStatic) {
       wish.set(target.x - this.position.x, 0, target.z - this.position.z);
       const d = wish.length();
       if (d < 0.4) {
         if (this.detour) this.detour = null;
+        else if (this.path.length) this.path.shift();
         else this.moveTarget = null;
         wish.set(0, 0, 0);
       } else {

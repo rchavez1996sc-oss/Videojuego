@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import RAPIER from '@dimforge/rapier3d-compat';
 
 export interface CoverPoint { pos: THREE.Vector3; normal: THREE.Vector3; owner: number }
 
@@ -39,11 +40,49 @@ export class CoverIndex {
     }
   }
 
+  /**
+   * Drops spots that are unusable: under a roof (inside a house), inside solid geometry,
+   * or with no clear standing room. Call once the world is fully built.
+   */
+  prune(world: RAPIER.World, groundY: (x: number, z: number) => number): void {
+    const up = { x: 0, y: 1, z: 0 }, origin = { x: 0, y: 0, z: 0 };
+    const keep = this.points.filter((c) => {
+      origin.x = c.pos.x;
+      origin.y = groundY(c.pos.x, c.pos.z) + 0.9;
+      origin.z = c.pos.z;
+      return !world.castRay(new RAPIER.Ray(origin, up), 40, true);
+    });
+    this.points.length = 0;
+    this.points.push(...keep);
+    this.grid.clear();
+    for (const c of this.points) {
+      const k = this.key(c.pos.x, c.pos.z);
+      (this.grid.get(k) ?? this.grid.set(k, []).get(k)!).push(c);
+    }
+  }
+
+  private grid = new Map<string, CoverPoint[]>();
+  private static CELL = 16;
+
+  private key(x: number, z: number): string {
+    return `${Math.floor(x / CoverIndex.CELL)},${Math.floor(z / CoverIndex.CELL)}`;
+  }
+
+  /** Points in grid cells overlapping a square of half-size `r` (all points before `prune` built the grid). */
+  private near(x: number, z: number, r: number): CoverPoint[] {
+    if (!this.grid.size) return this.points;
+    const out: CoverPoint[] = [], C = CoverIndex.CELL;
+    for (let gx = Math.floor((x - r) / C); gx <= Math.floor((x + r) / C); gx++) {
+      for (let gz = Math.floor((z - r) / C); gz <= Math.floor((z + r) / C); gz++) out.push(...(this.grid.get(`${gx},${gz}`) ?? []));
+    }
+    return out;
+  }
+
   /** Candidates near `from` whose obstacle sits between the spot and `threat`, best first. */
   candidates(from: THREE.Vector3, threat: THREE.Vector3, radius: number, preferred: number, self: number): CoverPoint[] {
     const out: { c: CoverPoint; score: number }[] = [];
     const toThreat = new THREE.Vector3();
-    for (const c of this.points) {
+    for (const c of this.near(from.x, from.z, radius)) {
       if (c.owner !== -1 && c.owner !== self) continue;
       const dE = Math.hypot(c.pos.x - from.x, c.pos.z - from.z);
       if (dE > radius) continue;

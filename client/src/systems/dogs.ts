@@ -4,7 +4,7 @@ import type { Heightfield } from '../world/heightfield';
 import type { Lighting } from '../render/lighting';
 import type { StreetGraph } from '../world/barrio';
 
-interface Dog { root: THREE.Group; legs: THREE.Object3D[]; tail: THREE.Object3D; pos: THREE.Vector3; target: THREE.Vector3; yaw: number; speed: number; idle: number; phase: number; panic: number; gone: boolean }
+interface Dog { node: number; queue: THREE.Vector3[]; root: THREE.Group; legs: THREE.Object3D[]; tail: THREE.Object3D; pos: THREE.Vector3; target: THREE.Vector3; yaw: number; speed: number; idle: number; phase: number; panic: number; gone: boolean }
 
 const COATS = ['#5b4630', '#2a2622', '#b59a72', '#8a6a48', '#e3dccd', '#3d3128'];
 
@@ -21,8 +21,14 @@ export class Dogs {
   private dogs: Dog[] = [];
   onBark: (at: THREE.Vector3) => void = () => {};
   private barkT = 4;
+  private neighbors: number[][];
 
   constructor(private graph: StreetGraph, private hf: Heightfield, lighting: Lighting, count: number) {
+    this.neighbors = graph.nodes.map(() => []);
+    for (const [a, b] of graph.edges) {
+      this.neighbors[a].push(b);
+      this.neighbors[b].push(a);
+    }
     const mat = lighting.setup(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 }), 'dog');
     for (let i = 0; i < count; i++) {
       const coat = new THREE.Color(COATS[i % COATS.length]), dark = coat.clone().multiplyScalar(0.6);
@@ -50,8 +56,9 @@ export class Dogs {
       tail.rotation.x = -0.9;
       root.add(tail);
       this.group.add(root);
-      const pos = graph.nodes[(i * 7) % graph.nodes.length].clone().add(new THREE.Vector3(Math.random() * 6 - 3, 0, Math.random() * 6 - 3));
-      this.dogs.push({ root, legs, tail, pos, target: pos.clone(), yaw: 0, speed: 0, idle: Math.random() * 4, phase: 0, panic: 0, gone: false });
+      const node = (i * 7) % graph.nodes.length;
+      const pos = graph.nodes[node].clone().add(new THREE.Vector3(Math.random() * 2 - 1, 0, Math.random() * 2 - 1));
+      this.dogs.push({ node, queue: [], root, legs, tail, pos, target: pos.clone(), yaw: 0, speed: 0, idle: Math.random() * 4, phase: 0, panic: 0, gone: false });
     }
   }
 
@@ -59,7 +66,9 @@ export class Dogs {
     for (const d of this.dogs) {
       if (d.gone || d.pos.distanceTo(at) > radius) continue;
       d.panic = 6;
-      d.target = d.pos.clone().add(d.pos.clone().sub(at).setY(0).normalize().multiplyScalar(60));
+      d.target = this.graph.nodes[d.node].clone();
+      d.node = this.neighbors[d.node].reduce((best, n) => (this.graph.nodes[n].distanceTo(at) > this.graph.nodes[best].distanceTo(at) ? n : best), this.neighbors[d.node][0]);
+      d.queue = [this.graph.nodes[d.node].clone()];
     }
   }
 
@@ -76,12 +85,27 @@ export class Dogs {
           continue;
         }
       }
+      if (dist < 0.5 && d.queue.length) {
+        d.target = d.queue.shift()!;
+        d.idle = 0;
+        continue;
+      }
+      if (d.panic > 0 && dist < 0.5) {
+        const away = this.neighbors[d.node];
+        d.node = away[Math.floor(Math.random() * away.length)];
+        d.target = this.graph.nodes[d.node].clone();
+      }
       if (dist < 0.5 || (d.panic <= 0 && d.idle > 0)) {
         d.idle -= dt;
         d.speed = THREE.MathUtils.damp(d.speed, 0, 6, dt);
         if (d.idle <= 0 && dist < 0.5) {
-          const n = this.graph.nodes[Math.floor(Math.random() * this.graph.nodes.length)];
-          d.target = d.pos.clone().lerp(n, Math.min(1, 14 / Math.max(1, d.pos.distanceTo(n)))).add(new THREE.Vector3(Math.random() * 4 - 2, 0, Math.random() * 4 - 2));
+          const opts = this.neighbors[d.node];
+          const next = opts[Math.floor(Math.random() * opts.length)];
+          const t = 0.25 + Math.random() * 0.75;
+          const corner = this.graph.nodes[d.node].clone();
+          d.queue = [this.graph.nodes[d.node].clone().lerp(this.graph.nodes[next], t).add(new THREE.Vector3(Math.random() * 1.6 - 0.8, 0, Math.random() * 1.6 - 0.8))];
+          d.target = corner;
+          if (t > 0.6) d.node = next;
           d.idle = 2 + Math.random() * 6;
         }
       } else {
