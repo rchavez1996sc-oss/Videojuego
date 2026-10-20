@@ -28,6 +28,7 @@ import type { EnemyDef } from './entities/enemy';
 import { Enemies } from './systems/enemies';
 import { DamageFx } from './ui/damage';
 import { Pickups } from './systems/pickups';
+import { findRespawn } from './systems/respawn';
 import { ThreatGrid, type Threat } from './ui/threatGrid';
 import { DIFFICULTIES, difficulty, type DifficultyId } from './core/difficulty';
 
@@ -85,10 +86,11 @@ async function boot(): Promise<void> {
   const enemies = new Enemies(enemyDefs as unknown as Record<string, EnemyDef>, ch.enemies ?? [], world, hf, lighting, player, combat, sfx, camera);
   scene.add(enemies.group);
   combat.onShot = (p) => enemies.hearShot(p);
-  let deadT = 0, skipRender = false;
+  let deadT = 0, skipRender = false, shieldT = 0;
+  const deathPos = new THREE.Vector3();
   enemies.onPlayerHit = (dmg, from) => {
     if (deadT > 0) return;
-    player.hurt(dmg);
+    player.hurt(shieldT > 0 ? dmg * 0.15 : dmg);
     sfx.hurt();
     const to = from.clone().sub(camera.position).setY(0).normalize();
     const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).setY(0).normalize();
@@ -138,7 +140,7 @@ async function boot(): Promise<void> {
           shots++;
         }
         frame(1 / 20);
-        if (i % 40 === 39) log.push(`t=${((i + 1) / 20).toFixed(0)}s hp=${player.hp.toFixed(0)} ` + enemies.list.map((e) => `${e.id}:${e.state[0]}${e.cover ? 'C' : ''}${e.crouched ? 'v' : ''}${e.canSee ? '*' : ''}`).join(' '));
+        if (i % 40 === 39) log.push(`t=${((i + 1) / 20).toFixed(0)}s hp=${player.hp.toFixed(0)} pos=${player.position.x.toFixed(0)},${player.position.z.toFixed(0)} ` + enemies.list.map((e) => `${e.id}:${e.state[0]}${e.cover ? 'C' : ''}${e.crouched ? 'v' : ''}${e.canSee ? '*' : ''}`).join(' '));
       }
       skipRender = false;
       return log.join('\n');
@@ -199,15 +201,28 @@ async function boot(): Promise<void> {
         deadT -= dt;
         if (deadT <= 0) {
           damageFx.dead = false;
-          player.respawn(new THREE.Vector3(ch.spawn.x, hf.heightAt(ch.spawn.x, ch.spawn.z), ch.spawn.z), ch.spawn.yaw);
-          tpc.yaw = ch.spawn.yaw;
-          for (const e of enemies.list) if (e.alive && e.awareness > 0.5) e.awareness = 0.5;
+          const fallback = new THREE.Vector3(ch.spawn.x, hf.heightAt(ch.spawn.x, ch.spawn.z), ch.spawn.z);
+          const spot = findRespawn(world, hf, enemies.list, deathPos, fallback);
+          player.respawn(spot.pos, spot.yaw);
+          tpc.yaw = spot.yaw;
+          tpc.pitch = -0.1;
+          shieldT = 3;
+          for (const e of enemies.list) {
+            if (!e.alive || e.state === 'patrol') continue;
+            e.state = 'alert';
+            e.stateT = 0;
+            e.awareness = 0.5;
+            e.lastKnown.copy(deathPos);
+            e.moveTarget = null;
+          }
         }
       } else {
         player.update(dt, input, tpc.yaw, input.aiming, tpc.pitch, input.firing);
         player.regen(dt);
+        shieldT = Math.max(0, shieldT - dt);
         if (player.hp <= 0) {
           deadT = 4;
+          deathPos.copy(player.position);
           damageFx.dead = true;
         }
       }
