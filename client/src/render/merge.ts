@@ -54,7 +54,7 @@ export function bakeLod(root: THREE.Object3D, material: THREE.Material): THREE.M
   const inv = new THREE.Matrix4().copy(root.matrixWorld).invert();
   const geos: THREE.BufferGeometry[] = [];
   root.traverse((o) => {
-    if (!(o instanceof THREE.Mesh)) return;
+    if (!(o instanceof THREE.Mesh) || !o.visible) return;
     const g = (o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone()).applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld));
     if (!g.attributes.color) {
       const col = (o.material as THREE.MeshStandardMaterial).color ?? new THREE.Color(0.3, 0.3, 0.3);

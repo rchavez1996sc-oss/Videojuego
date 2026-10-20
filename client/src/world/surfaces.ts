@@ -1,7 +1,9 @@
 export type Surface = 'dirt' | 'rock' | 'wood' | 'adobe' | 'tile' | 'metal';
 
 const byCollider = new Map<number, Surface>();
-const handlers = new Map<number, (damage: number, point: { x: number; y: number; z: number }) => void>();
+/** Handlers return `false` when the bullet's normal impact effects should still play. */
+type HitFn = (damage: number, point: { x: number; y: number; z: number }) => boolean | void;
+const handlers = new Map<number, HitFn>();
 
 export function setSurface(handle: number, s: Surface): void {
   byCollider.set(handle, s);
@@ -12,7 +14,7 @@ export function surfaceOf(handle: number): Surface {
 }
 
 /** Lets gameplay objects (targets, later enemies/vehicles) receive bullet hits by collider. */
-export function onHit(handle: number, fn: (damage: number, point: { x: number; y: number; z: number }) => void): void {
+export function onHit(handle: number, fn: HitFn): void {
   handlers.set(handle, fn);
 }
 

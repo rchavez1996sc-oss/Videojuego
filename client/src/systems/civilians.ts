@@ -15,10 +15,10 @@ interface Civilian {
   speed: number; timer: number; panicT: number; fallDir: THREE.Vector3; fallT: number; shadowed: boolean;
 }
 
-const SHIRTS = ['#b8342b', '#2f5e9e', '#e0c24a', '#3f7a3c', '#d9d4c7', '#6b3c7a', '#1e1e22', '#c46a2c', '#7aa7c7'];
-const PANTS = ['#2b3442', '#1c1c1e', '#4a4038', '#5a5e66', '#3a2f28'];
-const SKIN = ['#8a5a3c', '#a06a48', '#7a4e33', '#b07a55', '#69442d'];
-const HAIR = ['#141210', '#1f1a16', '#2a2420', '#4a4a4a'];
+export const SHIRTS = ['#b8342b', '#2f5e9e', '#e0c24a', '#3f7a3c', '#d9d4c7', '#6b3c7a', '#1e1e22', '#c46a2c', '#7aa7c7'];
+export const PANTS = ['#2b3442', '#1c1c1e', '#4a4038', '#5a5e66', '#3a2f28'];
+export const SKIN = ['#8a5a3c', '#a06a48', '#7a4e33', '#b07a55', '#69442d'];
+export const HAIR = ['#141210', '#1f1a16', '#2a2420', '#4a4a4a'];
 
 /** Unarmed passers-by who wander the street graph and flee (then vanish) when shooting starts. */
 export class Civilians {

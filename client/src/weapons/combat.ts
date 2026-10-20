@@ -103,10 +103,7 @@ export class Combat {
     const travelled = muzzle.distanceTo(end);
     const falloff = travelled <= def.falloffStart ? 1 : THREE.MathUtils.lerp(1, def.falloffMin, Math.min(1, (travelled - def.falloffStart) / (def.range - def.falloffStart)));
     const handler = hitHandler(handle);
-    if (handler) {
-      handler(def.damage * falloff, end);
-      return;
-    }
+    if (handler && handler(def.damage * falloff, end) !== false) return;
     this.impact(end, normal, surfaceOf(handle), toAim);
   }
 
@@ -153,6 +150,12 @@ export class Combat {
       const shade = 0.25 + Math.random() * 0.25;
       this.dust.emit({ pos: at.clone().setY(at.y + 0.6), vel: this.tmp.clone(), color: new THREE.Color(shade, shade * 0.92, shade * 0.85), size: 1.2 + Math.random(), grow: 2.2, life: 3 + Math.random() * 2.5, gravity: -0.15, drag: 1.2, alpha: 0.6 });
     }
+  }
+
+  smokePuff(at: THREE.Vector3): void {
+    const shade = 0.12 + Math.random() * 0.12;
+    this.tmp.set((Math.random() - 0.5) * 0.6, 1.2 + Math.random(), (Math.random() - 0.5) * 0.6);
+    this.dust.emit({ pos: at.clone(), vel: this.tmp.clone(), color: new THREE.Color(shade, shade, shade * 1.05), size: 0.6 + Math.random() * 0.4, grow: 1.6, life: 2.5 + Math.random() * 1.5, gravity: -0.4, drag: 0.8, alpha: 0.5 });
   }
 
   tracer(from: THREE.Vector3, to: THREE.Vector3): void {

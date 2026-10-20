@@ -97,6 +97,13 @@ export class Sfx {
     setTimeout(() => bus.disconnect(), (distance / 343 + 3) * 1000);
   }
 
+  crash(distance: number): void {
+    const t = this.m.ctx.currentTime + distance / 343, vol = Math.max(0.1, 1 - distance / 120);
+    this.filtered(t, 'lowpass', 300, 0.8, 1.1 * vol, 0.004, 0.35, 0.5);
+    this.filtered(t + 0.02, 'bandpass', 1800, 2, 0.5 * vol, 0.002, 0.25, 0.4);
+    this.filtered(t + 0.18, 'bandpass', 3200, 4, 0.2 * vol, 0.002, 0.4, 0.3);
+  }
+
   grenadePin(): void {
     const t = this.m.ctx.currentTime;
     this.filtered(t, 'bandpass', 4200, 6, 0.25, 0.001, 0.04);

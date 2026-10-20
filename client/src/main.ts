@@ -36,8 +36,7 @@ import { DIFFICULTIES, difficulty, type DifficultyId } from './core/difficulty';
 import { installDebug } from './core/debug';
 import { buildBarrio } from './world/barrio';
 import { buildFarCity } from './world/farCity';
-import { Civilians } from './systems/civilians';
-import { CityLife } from './systems/cityLife';
+import { createPopulace } from './systems/populace';
 import { gatherThreats, surfaceUnder } from './systems/sensing';
 
 const CHAPTERS: Record<string, unknown> = { '1': ch01, '2': ch02 };
@@ -107,14 +106,7 @@ async function boot(): Promise<void> {
   const damageFx = new DamageFx();
   const enemies = new Enemies(enemyDefs as unknown as Record<string, EnemyDef>, ch.enemies ?? [], world, hf, lighting, player, combat, sfx, camera);
   scene.add(enemies.group);
-  const civilians = barrio && ch.civilians ? new Civilians(barrio.graph, hf, lighting, world, ch.civilians.count, ch.civilians.seed, camera) : null;
-  if (civilians) scene.add(civilians.group);
-  const life = barrio && ch.life ? new CityLife(ch.life, world, hf, barrio, lighting, mixer, camera) : null;
-  if (life) scene.add(life.group);
-  const alarm = (p: THREE.Vector3, r: number) => {
-    civilians?.alarm(p, r);
-    life?.alarm(p, r);
-  };
+  const { civilians, life, alarm } = createPopulace(ch, barrio, { world, hf, lighting, mixer, sfx, combat, hud, camera, scene });
   combat.onShot = (p) => {
     enemies.hearShot(p);
     alarm(p, 90);
@@ -147,16 +139,13 @@ async function boot(): Promise<void> {
     detonate(at, { combat, sfx, tpc, enemies, player, world, playerAlive: deadT <= 0 });
     civilians?.explosion(at, BLAST_RADIUS);
     life?.alarm(at, 150);
+    life?.explosion(at, BLAST_RADIUS);
   };
   enemies.onEnemyHit = (kill, headshot, at) => {
     if (kill && Math.random() < 0.15) pickups.spawn(at);
     sfx.hitmarker(kill);
     hud.hitmarker(kill, headshot, 'BAJA  +100');
     if (kill && enemies.aliveCount === 0) setTimeout(() => hud.showToast('ZONA DESPEJADA'), 1200);
-  };
-  if (civilians) civilians.onHurt = () => {
-    hud.showToast('CIVIL HERIDO   −200');
-    sfx.hurt();
   };
   world.step();
 
@@ -168,6 +157,22 @@ async function boot(): Promise<void> {
     setFreeCam: (v) => (freeCam = v),
     setSkipRender: (v) => (skipRender = v),
     throwGrenade,
+    hooks: {
+      vehicleTest: () => {
+        const tr = life?.trafficEvents;
+        if (!tr) return 'no traffic';
+        freeCam = false;
+        skipRender = true;
+        const hit = tr.debugDisableNearest(player.position);
+        const log = [`disabled ${hit}`];
+        for (let i = 0; i < 60; i++) {
+          frame(1 / 20);
+          if (i % 20 === 19) log.push(tr.debugStates);
+        }
+        skipRender = false;
+        return log.join('\n');
+      },
+    },
   });
 
   status.textContent = 'Elige la dificultad · clic en cualquier parte para jugar';

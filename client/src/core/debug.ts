@@ -22,6 +22,7 @@ export interface DebugContext {
   setSkipRender: (v: boolean) => void;
   throwGrenade: () => void;
   extraLog?: () => string;
+  hooks?: Record<string, (...args: never[]) => unknown>;
 }
 
 /** `window.__game`: hooks used by the Playwright screenshot / AI / grenade scripts. */
@@ -35,6 +36,11 @@ export function installDebug(c: DebugContext): void {
       if (c.shotMode) c.frame(1 / 60);
     },
     views: () => c.views.length,
+    look(x: number, y: number, z: number, lx: number, ly: number, lz: number) {
+      c.setFreeCam(true);
+      c.tpc.place(new THREE.Vector3(x, y, z), new THREE.Vector3(lx, ly, lz));
+      c.frame(1 / 60);
+    },
     follow() {
       c.setFreeCam(false);
     },
@@ -91,6 +97,7 @@ export function installDebug(c: DebugContext): void {
       }
     },
     info: () => ({ calls: c.renderer.gl.info.render.calls, tris: c.renderer.gl.info.render.triangles }),
+    ...c.hooks,
     ready: true,
   };
 }

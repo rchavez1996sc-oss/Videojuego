@@ -76,6 +76,13 @@ export class Mannequin {
     this.root.add(this.lod);
   }
 
+  /** Seated pose (legs and arms forward) baked into one static mesh, for drivers and passengers. */
+  seatedMesh(material: THREE.Material): THREE.Mesh {
+    this.legs.forEach((l) => (l.rotation.x = -1.45));
+    this.arms.forEach((a, i) => (a.rotation.x = -0.9 - i * 0.1));
+    return bakeLod(this.root, material);
+  }
+
   /** Far away: draw the single pre-merged mesh instead of the animated parts. */
   set far(v: boolean) {
     if (v === this.lod.visible) return;

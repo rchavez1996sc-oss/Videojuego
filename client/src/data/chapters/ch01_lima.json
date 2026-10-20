@@ -355,10 +355,6 @@
   "life": {
     "traffic": 10,
     "dogs": 8,
-    "birds": 14,
-    "radio": [
-      -210,
-      12.5
-    ]
+    "birds": 14
   }
 }
