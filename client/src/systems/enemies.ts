@@ -152,7 +152,7 @@ export class Enemies {
   private hit(e: Enemy, dmg: number, point: THREE.Vector3): void {
     if (!e.alive) return;
     const headshot = point.y - e.position.y > e.headY;
-    const kill = e.damage(dmg * (headshot ? 2.5 : 1));
+    const kill = e.damage(dmg * (headshot ? 2.5 : 1), point);
     e.awareness = 1;
     e.lastKnown.copy(this.player.position);
     e.lastSeenT = this.time;
@@ -168,7 +168,7 @@ export class Enemies {
   /** A squad member's round: no hitmarker for the player; returns true on a kill. */
   allyHit(e: Enemy, dmg: number, point: THREE.Vector3, from: THREE.Vector3): boolean {
     if (!e.alive) return false;
-    const kill = e.damage(dmg * (point.y - e.position.y > e.headY ? 2.5 : 1));
+    const kill = e.damage(dmg * (point.y - e.position.y > e.headY ? 2.5 : 1), point);
     e.awareness = 1;
     e.lastKnown.copy(from);
     this.combat.bloodPuff(point);

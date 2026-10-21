@@ -173,16 +173,24 @@ export class Sfx {
     this.filtered(t, 'bandpass', 3200, 6, 0.4, 0.001, 0.03);
   }
 
+  /** AK reload: catch, mag out, pouch, mag in with a slap and, from empty, the charging handle racked back and slammed home. */
   reload(empty: boolean): void {
     const t = this.m.ctx.currentTime;
-    const click = (dt: number, f: number, p: number) => this.filtered(t + dt, 'bandpass', f, 5, p, 0.001, 0.05);
-    click(0.35, 1800, 0.5);
-    click(0.42, 900, 0.4);
-    click(1.45, 2200, 0.6);
-    click(1.5, 1100, 0.5);
+    const clack = (dt: number, f: number, p: number, body = 0) => {
+      this.filtered(t + dt, 'bandpass', f, 3, p, 0.001, 0.06, 0.15);
+      this.filtered(t + dt, 'bandpass', f * 2.3, 5, p * 0.6, 0.001, 0.035);
+      if (body) this.tone(t + dt, 'triangle', 170, 90, body, 0.12);
+    };
+    clack(0.25, 2100, 1.8, 0.4);
+    this.filtered(t + 0.3, 'bandpass', 2400, 1.2, 0.45, 0.05, 0.25);
+    this.filtered(t + 0.75, 'bandpass', 900, 0.8, 0.35, 0.08, 0.3);
+    this.filtered(t + 1.25, 'bandpass', 3000, 1.4, 0.4, 0.05, 0.14);
+    clack(1.42, 1400, 2.4, 1.0);
+    this.filtered(t + 1.55, 'lowpass', 480, 1, 1.1, 0.002, 0.09);
     if (empty) {
-      click(2.25, 2600, 0.6);
-      click(2.38, 1500, 0.7);
+      clack(1.9, 2300, 2.0, 0.3);
+      this.filtered(t + 1.93, 'bandpass', 3600, 1.6, 0.4, 0.02, 0.1);
+      clack(2.12, 1200, 2.6, 1.1);
     }
   }
 

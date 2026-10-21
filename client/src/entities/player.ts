@@ -3,6 +3,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import type { Input } from '../core/input';
 import type { Lighting } from '../render/lighting';
 import { Rig, type Outfit } from './rig';
+import { pickDeath, DEATHS } from './deathFall';
 import { findLedge, mantlePath, stepLedge, fallDamage, CLIMBS, type Climb, type Ledge } from './mantle';
 import { difficulty } from '../core/difficulty';
 import { ladderAt, type Ladder } from '../world/ladders';
@@ -105,10 +106,10 @@ export class Player {
 
   /** Drops with a death clip; the body keeps animating where it fell until `respawn`, which gets it back up. */
   die(): void {
-    this.mantle = null;
-    this.ladder = null;
-    this.down = true;
-    this.model.die(['death_front', 'death_back', 'fall_back', 'dying', 'death_right'][Math.floor(Math.random() * 5)]);
+    [this.mantle, this.ladder, this.down] = [null, null, true];
+    const fall = pickDeath(this.world, this.position, this.yaw, [DEATHS[Math.floor(Math.random() * 5)]], this.collider.handle);
+    this.model.root.position.add(fall.shift);
+    this.model.die(fall.key);
   }
 
   respawn(feet: THREE.Vector3, yaw: number): void {

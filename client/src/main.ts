@@ -167,7 +167,7 @@ async function boot(): Promise<void> {
   grenades.onSettled = (at) => enemies.fleeFrom(at);
   const nadeMode = new GrenadeMode(grenades, world, camera, player, sfx, hud);
   scene.add(nadeMode.group);
-  const corpses = new Loot(pickups, world, hf);
+  const corpses = new Loot(pickups, world, hf, (at) => combat.bloodStain(at));
   const objective = ch.objective && barrio?.station ? new Objective(ch.objective, barrio.station, camera) : null;
   let lives = (hud.lives = ch.lives ?? 3);
   if (objective) objective.onComplete = () => {

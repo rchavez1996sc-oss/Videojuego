@@ -1,0 +1,449 @@
+[
+ {
+  "text": "BODEGA DON LUCHO",
+  "kind": "shop",
+  "bg": "#f2f0e6",
+  "fg": "#1f4d8f"
+ },
+ {
+  "text": "LIBRERÍA EL ESTUDIANTE",
+  "kind": "shop",
+  "bg": "#f5d24a",
+  "fg": "#1c1c1c"
+ },
+ {
+  "text": "FERRETERÍA",
+  "kind": "shop",
+  "bg": "#c3362b",
+  "fg": "#ffffff"
+ },
+ {
+  "text": "POLLERÍA",
+  "kind": "shop",
+  "bg": "#e8b13a",
+  "fg": "#7a1f12",
+  "food": true
+ },
+ {
+  "text": "CABINAS INTERNET",
+  "kind": "shop",
+  "bg": "#2f6ea8",
+  "fg": "#ffffff"
+ },
+ {
+  "text": "TAPICERÍA",
+  "kind": "shop",
+  "bg": "#e6e1d3",
+  "fg": "#2b2b2b"
+ },
+ {
+  "text": "MENÚ S/ 8",
+  "kind": "shop",
+  "bg": "#ffffff",
+  "fg": "#b8261b",
+  "food": true
+ },
+ {
+  "text": "VULCANIZADORA",
+  "kind": "shop",
+  "bg": "#202020",
+  "fg": "#f2c230"
+ },
+ {
+  "text": "ABARROTES",
+  "kind": "shop",
+  "bg": "#d7e3c7",
+  "fg": "#2f5c25"
+ },
+ {
+  "text": "CEVICHERÍA EL CHALACO",
+  "kind": "shop",
+  "bg": "#1e6fb8",
+  "fg": "#ffffff",
+  "food": true
+ },
+ {
+  "text": "CHIFA SAN JOAQUÍN",
+  "kind": "shop",
+  "bg": "#b3121b",
+  "fg": "#f5d24a",
+  "food": true
+ },
+ {
+  "text": "POLLOS A LA BRASA EL REY",
+  "kind": "shop",
+  "bg": "#f5d24a",
+  "fg": "#8a1a10",
+  "food": true
+ },
+ {
+  "text": "JUGUERÍA MARY",
+  "kind": "shop",
+  "bg": "#7ac143",
+  "fg": "#ffffff",
+  "food": true
+ },
+ {
+  "text": "ANTICUCHOS DOÑA PILAR",
+  "kind": "shop",
+  "bg": "#2b1a12",
+  "fg": "#f2a23a",
+  "food": true
+ },
+ {
+  "text": "PANADERÍA SANTA ROSA",
+  "kind": "shop",
+  "bg": "#f3e2c0",
+  "fg": "#7a4a1c"
+ },
+ {
+  "text": "BOTICA SALUD",
+  "kind": "shop",
+  "bg": "#ffffff",
+  "fg": "#1b8a4a"
+ },
+ {
+  "text": "RECARGAS · YAPE · PLIN",
+  "kind": "shop",
+  "bg": "#6c2a8e",
+  "fg": "#ffffff"
+ },
+ {
+  "text": "LAVANDERÍA",
+  "kind": "shop",
+  "bg": "#d6ecf5",
+  "fg": "#1d4f7a"
+ },
+ {
+  "text": "SALÓN DE BELLEZA",
+  "kind": "shop",
+  "bg": "#f2c4d6",
+  "fg": "#8a1f4f"
+ },
+ {
+  "text": "POLLERÍA EL PODEROSO",
+  "kind": "chicha",
+  "bg": "#ff1f8e",
+  "fg": "#fff200",
+  "accent": "#00e05a",
+  "sub": "BRASA · CHAUFA · BROSTER",
+  "food": true
+ },
+ {
+  "text": "TRANSPORTES EL CHASQUI",
+  "kind": "chicha",
+  "bg": "#00d4ff",
+  "fg": "#ff1f8e",
+  "accent": "#fff200",
+  "sub": "LIMA · HUANCAYO · AYACUCHO"
+ },
+ {
+  "text": "TALLER LA SIRENITA",
+  "kind": "chicha",
+  "bg": "#ff7a00",
+  "fg": "#ffffff",
+  "accent": "#ff1f8e",
+  "sub": "MOTOS · MOTOTAXIS · SOLDADURA"
+ },
+ {
+  "text": "BANCO BCB",
+  "kind": "shop",
+  "bg": "#0b2f8f",
+  "fg": "#ff8200"
+ },
+ {
+  "text": "AGENTE BCB",
+  "kind": "shop",
+  "bg": "#ff8200",
+  "fg": "#0b2f8f"
+ },
+ {
+  "text": "TUMBO+",
+  "kind": "shop",
+  "bg": "#5a1d7d",
+  "fg": "#ffd400"
+ },
+ {
+  "text": "MOSTRO",
+  "kind": "shop",
+  "bg": "#e2001a",
+  "fg": "#ffdd00"
+ },
+ {
+  "text": "PLAZA VÍA",
+  "kind": "shop",
+  "bg": "#e30613",
+  "fg": "#ffffff"
+ },
+ {
+  "text": "INKAFORMA",
+  "kind": "shop",
+  "bg": "#00843d",
+  "fg": "#ffe600"
+ },
+ {
+  "text": "CLORO · RECARGAS",
+  "kind": "shop",
+  "bg": "#da291c",
+  "fg": "#ffffff"
+ },
+ {
+  "text": "MENÚ S/ 10",
+  "kind": "menu",
+  "bg": "#1f2b22",
+  "fg": "#f4f1e6",
+  "sub": "AJÍ DE GALLINA · LOMO SALTADO · SECO CON FRIJOLES",
+  "accent": "CHICHA MORADA DE REFRESCO"
+ },
+ {
+  "text": "MENÚ S/ 9",
+  "kind": "menu",
+  "bg": "#1f2b22",
+  "fg": "#f4f1e6",
+  "sub": "CALDO DE GALLINA · ARROZ CON POLLO · TALLARÍN ROJO",
+  "accent": "ENTRADA: PAPA A LA HUANCAÍNA"
+ },
+ {
+  "text": "HOY",
+  "kind": "menu",
+  "bg": "#22261f",
+  "fg": "#f4f1e6",
+  "sub": "CEVICHE S/ 15 · JALEA S/ 20 · CHICHARRÓN S/ 18",
+  "accent": "LECHE DE TIGRE S/ 6"
+ },
+ {
+  "text": "TOQUE DE QUEDA",
+  "kind": "curfew",
+  "bg": "#f2efe6",
+  "fg": "#111111",
+  "sub": "20:00 A 05:00 HORAS",
+  "accent": "PROHIBIDO CIRCULAR · JUNTA DE GOBIERNO"
+ },
+ {
+  "text": "ESTADO DE EMERGENCIA",
+  "kind": "curfew",
+  "bg": "#f2efe6",
+  "fg": "#111111",
+  "sub": "SE SUSPENDEN LAS GARANTÍAS",
+  "accent": "COMANDO CONJUNTO · DECRETO 014-2036"
+ },
+ {
+  "text": "SE ALQUILA CUARTO",
+  "kind": "graffiti",
+  "bg": null,
+  "fg": "#1c1c1c"
+ },
+ {
+  "text": "LA SIERRA NO SE VENDE",
+  "kind": "graffiti",
+  "bg": null,
+  "fg": "#a3241c",
+  "left": true
+ },
+ {
+  "text": "FUERA LA JUNTA",
+  "kind": "graffiti",
+  "bg": null,
+  "fg": "#16161a",
+  "left": true
+ },
+ {
+  "text": "AGUA PARA TODOS",
+  "kind": "graffiti",
+  "bg": null,
+  "fg": "#1e4f9c"
+ },
+ {
+  "text": "FLS VIVE",
+  "kind": "graffiti",
+  "bg": null,
+  "fg": "#a3241c",
+  "left": true
+ },
+ {
+  "text": "NI JUNTA NI MINERA",
+  "kind": "graffiti",
+  "bg": null,
+  "fg": "#16161a",
+  "left": true
+ },
+ {
+  "text": "VOTA LISTA 7 ✓",
+  "kind": "graffiti",
+  "bg": "#f4f1ea",
+  "fg": "#c22f22"
+ },
+ {
+  "text": "UNIDOS POR EL CONO",
+  "kind": "graffiti",
+  "bg": "#f4f1ea",
+  "fg": "#1f6b3a"
+ },
+ {
+  "text": "ORDEN Y PROGRESO",
+  "kind": "poster",
+  "bg": "#14284d",
+  "fg": "#ffffff",
+  "sub": "GRAL. A. CASTAÑEDA · JUNTA DE GOBIERNO",
+  "accent": "#c8102e"
+ },
+ {
+  "text": "LA PNP TE PROTEGE",
+  "kind": "poster",
+  "bg": "#1f2a33",
+  "fg": "#f2d03b",
+  "sub": "DENUNCIA LA SUBVERSIÓN · LLAMA AL 105",
+  "accent": "#f2d03b"
+ },
+ {
+  "text": "FERRUM ANDES",
+  "kind": "poster",
+  "bg": "#e9e6df",
+  "fg": "#2a3f55",
+  "sub": "MINERÍA RESPONSABLE PARA EL PERÚ",
+  "accent": "#d47a1c"
+ },
+ {
+  "text": "¡NO A LA MINA!",
+  "kind": "poster",
+  "bg": "#c8102e",
+  "fg": "#ffffff",
+  "sub": "FRENTE DE DEFENSA DE LA SIERRA",
+  "accent": "#111111",
+  "left": true
+ },
+ {
+  "text": "MOVIMIENTO ORDEN NACIONAL",
+  "kind": "poster",
+  "bg": "#f0f0f0",
+  "fg": "#0e3d8c",
+  "sub": "LISTA 7 · MANO DURA",
+  "accent": "#0e3d8c"
+ },
+ {
+  "text": "TOQUE DE QUEDA 20:00",
+  "kind": "poster",
+  "bg": "#111111",
+  "fg": "#ffffff",
+  "sub": "POR ORDEN DE LA JUNTA DE GOBIERNO",
+  "accent": "#c8102e"
+ },
+ {
+  "text": "NUEVA ESPERANZA",
+  "kind": "hill",
+  "bg": null,
+  "fg": "#f4f2ec"
+ },
+ {
+  "text": "PATRIA LIBRE",
+  "kind": "hill",
+  "bg": null,
+  "fg": "#f4f2ec"
+ },
+ {
+  "text": "LOS GENIALES DEL CONO",
+  "kind": "concert",
+  "bg": "#ff2d8a",
+  "fg": "#111111",
+  "sub": "SÁB 14 · CAMPO FERIAL",
+  "accent": "#fff200"
+ },
+ {
+  "text": "FUEGO ANDINO",
+  "kind": "concert",
+  "bg": "#fff200",
+  "fg": "#d0021b",
+  "sub": "DOM 15 · LOCAL LA CHOZA",
+  "accent": "#00d65a"
+ },
+ {
+  "text": "LA SONORA DEL CERRO",
+  "kind": "concert",
+  "bg": "#00e05a",
+  "fg": "#111111",
+  "sub": "VIE 20 · ENTRADA S/ 15",
+  "accent": "#ff7a00"
+ },
+ {
+  "text": "DINASTÍA DEL SUR",
+  "kind": "concert",
+  "bg": "#ff7a00",
+  "fg": "#111111",
+  "sub": "SÁB 21 · CHOLO PARTY",
+  "accent": "#ff2d8a"
+ },
+ {
+  "text": "",
+  "kind": "emblem",
+  "bg": null,
+  "fg": "#f4f2ec"
+ },
+ {
+  "text": "COMISARÍA SECTORIAL",
+  "kind": "station",
+  "bg": "#1f3d2c",
+  "fg": "#f2f0e6"
+ },
+ {
+  "text": "",
+  "kind": "stencil",
+  "bg": null,
+  "fg": "#a3161b"
+ },
+ {
+  "text": "",
+  "kind": "flag",
+  "bg": "#b3121b",
+  "fg": "#f2c230"
+ },
+ {
+  "text": "¡VIVA LA CLASE OBRERA!",
+  "kind": "red",
+  "bg": "#b3121b",
+  "fg": "#ffffff",
+  "sub": "SINDICATO UNIFICADO DE TRABAJADORES DEL CONO",
+  "accent": "#f2c230"
+ },
+ {
+  "text": "1° DE MAYO",
+  "kind": "red",
+  "bg": "#c8102e",
+  "fg": "#f2c230",
+  "sub": "TODOS A LA PLAZA · MARCHA OBRERA",
+  "accent": "#111111"
+ },
+ {
+  "text": "PAN Y TRABAJO",
+  "kind": "red",
+  "bg": "#a50f19",
+  "fg": "#ffffff",
+  "sub": "FEDERACIÓN DE CONSTRUCCIÓN CIVIL",
+  "accent": "#ffffff"
+ },
+ {
+  "text": "¡HUELGA GENERAL!",
+  "kind": "red",
+  "bg": "#d0141f",
+  "fg": "#ffffff",
+  "sub": "NI UN SOL MÁS PARA LA JUNTA",
+  "accent": "#111111"
+ },
+ {
+  "text": "EL CONO SE ORGANIZA",
+  "kind": "poster",
+  "bg": "#b3121b",
+  "fg": "#ffffff",
+  "sub": "ASAMBLEA POPULAR · SÁBADO 6 PM",
+  "accent": "#f2c230",
+  "left": true
+ },
+ {
+  "text": "SALARIO DIGNO YA",
+  "kind": "poster",
+  "bg": "#c8102e",
+  "fg": "#ffffff",
+  "sub": "CENTRAL OBRERA DEL PERÚ",
+  "accent": "#111111",
+  "left": true
+ }
+]

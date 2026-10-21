@@ -65,14 +65,17 @@ body.shot #overlay, body.shot #stats { display: none; }
 #fail h2 { font-size: 60px; letter-spacing: 0.3em; color: #e0452b; }
 #fail p { font: 15px ui-monospace, monospace; letter-spacing: 0.12em; color: rgba(240, 226, 214, 0.8); max-width: 640px; text-align: center; line-height: 1.6; }
 #fail button { margin-top: 12px; font: 600 16px 'Barlow Condensed', sans-serif; letter-spacing: 0.25em; padding: 12px 26px; background: #f0e2d6; color: #120a06; border: 0; cursor: pointer; }
-#prologue { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 34px; padding: 0 16px; background: radial-gradient(ellipse at center, #1a1310 0%, #060505 75%); cursor: pointer; transition: opacity 0.9s; font-family: 'Barlow', sans-serif; }
+#prologue { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 0 16px 13vh; background: #050404; cursor: pointer; transition: opacity 1s; font-family: 'Barlow', sans-serif; overflow: hidden; }
 #prologue.out { opacity: 0; pointer-events: none; }
-#prologue .lines { max-width: 720px; display: flex; flex-direction: column; gap: 18px; }
-#prologue p { font-size: 19px; line-height: 1.65; letter-spacing: 0.03em; color: #e9e2d6; opacity: 0; transform: translateY(8px); transition: opacity 1.6s, transform 1.6s; }
-#prologue p.on { opacity: 1; transform: none; }
-#prologue h3 { font: 700 34px 'Barlow Condensed', sans-serif; letter-spacing: 0.4em; color: #c8102e; opacity: 0; transition: opacity 2s; }
+#prologue .plates { position: absolute; inset: 0; }
+#prologue .plate { position: absolute; inset: 0; background: center / cover no-repeat; opacity: 0; transform: scale(1.02); transition: opacity 1.8s, transform 9s linear; }
+#prologue .plate.on { opacity: 1; transform: scale(1.12); }
+#prologue::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.2) 45%, rgba(0, 0, 0, 0) 70%); pointer-events: none; }
+#prologue .line { position: relative; z-index: 1; max-width: 760px; font-size: 21px; line-height: 1.6; letter-spacing: 0.03em; text-align: center; color: #ece4d6; text-shadow: 0 2px 12px #000; opacity: 0; transform: translateY(10px); transition: opacity 1.4s, transform 1.4s; }
+#prologue .line.on { opacity: 1; transform: none; }
+#prologue h3 { position: absolute; z-index: 1; top: 44%; font: 700 38px 'Barlow Condensed', sans-serif; letter-spacing: 0.4em; color: #d2141f; text-shadow: 0 2px 24px #000; opacity: 0; transition: opacity 2s; text-align: center; }
 #prologue h3.on { opacity: 1; }
-#prologue span { position: absolute; bottom: 28px; font: 600 12px 'Barlow Condensed', sans-serif; letter-spacing: 0.35em; color: rgba(233, 226, 214, 0.45); }
+#prologue span { position: absolute; z-index: 1; bottom: 26px; font: 600 12px 'Barlow Condensed', sans-serif; letter-spacing: 0.35em; color: rgba(236, 228, 214, 0.5); }
 #complete ul { list-style: none; display: flex; flex-direction: column; gap: 6px; font: 600 15px 'Barlow', sans-serif; letter-spacing: 0.1em; color: #f3efe6; text-align: center; }
 #complete ul li::before { content: '▸ '; color: #ffb547; }
 #complete .unlock { display: flex; align-items: center; gap: 18px; padding: 14px 24px; border: 1px solid rgba(255, 181, 71, 0.6); background: linear-gradient(90deg, rgba(255, 181, 71, 0.18), rgba(255, 181, 71, 0.04)); animation: unlock 1.2s ease-out both 0.6s; }
@@ -80,3 +83,7 @@ body.shot #overlay, body.shot #stats { display: none; }
 #complete .unlock small { display: block; font: 600 12px 'Barlow Condensed', sans-serif; letter-spacing: 0.35em; color: #ffb547; }
 #complete .unlock b { font: 700 30px 'Barlow Condensed', sans-serif; letter-spacing: 0.3em; }
 @keyframes unlock { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: none; } }
+#prologue .begin { position: absolute; z-index: 1; top: 47%; font: 600 15px 'Barlow Condensed', sans-serif; letter-spacing: 0.5em; color: rgba(236, 228, 214, 0.75); animation: beginPulse 2.4s ease-in-out infinite; }
+#prologue.started .begin { display: none; }
+#prologue:not(.started) > span { display: none; }
+@keyframes beginPulse { 50% { opacity: 0.35; } }

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
+import { pickDeath } from './deathFall';
 import type { Palette } from './mannequin';
 import { Rig, type Outfit } from './rig';
 import type { CharKind } from '../render/characters';
@@ -58,7 +59,7 @@ export class Enemy {
   private fallDir = new THREE.Vector3();
   private colliderCrouched = false;
 
-  constructor(readonly id: number, readonly def: EnemyDef, world: RAPIER.World, lighting: Lighting, spawn: THREE.Vector3, readonly patrol: THREE.Vector3[], readonly isStatic: boolean, outfit?: Outfit) {
+  constructor(readonly id: number, readonly def: EnemyDef, private world: RAPIER.World, lighting: Lighting, spawn: THREE.Vector3, readonly patrol: THREE.Vector3[], readonly isStatic: boolean, outfit?: Outfit) {
     this.hp = def.hp;
     this.model = new Rig(def.rig ?? 'pnp', lighting, true, false, outfit);
     this.body = world.createRigidBody(RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(spawn.x, spawn.y + HALF + RADIUS + 0.05, spawn.z));
@@ -195,8 +196,9 @@ export class Enemy {
     this.path = [];
   }
 
-  damage(amount: number): boolean {
+  damage(amount: number, at?: THREE.Vector3): boolean {
     if (!this.alive) return false;
+    if (at) this.model.wound(at);
     this.hp -= amount;
     this.shownT = 3;
     if (this.hp > 0) this.model.gesture('hit');
@@ -210,7 +212,10 @@ export class Enemy {
     const flat = dir.clone().setY(0);
     this.fallDir = flat.lengthSq() > 0.01 ? flat.normalize() : new THREE.Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
     const fromFront = this.fallDir.dot(new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw))) < 0;
-    this.model.die(this.crouched ? 'death_crouch' : fromFront ? (Math.random() < 0.4 ? 'death_head' : Math.random() < 0.5 ? 'death_front' : 'fall_back') : Math.random() < 0.5 ? 'death_back' : 'dying');
+    const wish = this.crouched ? ['death_crouch'] : fromFront ? (Math.random() < 0.4 ? ['death_head', 'death_front', 'fall_back'] : ['fall_back', 'death_front', 'death_head']) : Math.random() < 0.5 ? ['death_back', 'dying'] : ['dying', 'death_back'];
+    const fall = pickDeath(this.world, this.position, this.yaw, wish, this.collider.handle);
+    this.position.add(fall.shift);
+    this.model.die(fall.key);
   }
 
   /** The death clip plays out where the body stood. */

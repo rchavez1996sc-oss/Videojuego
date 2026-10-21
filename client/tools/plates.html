@@ -1,0 +1,5 @@
+<!doctype html><meta charset="utf-8"><body><script type="module">
+import { renderPlates } from '../src/ui/art/plates.ts';
+window.__plates = [];
+renderPlates((i, u) => (window.__plates[i] = u)).then(() => (window.__done = true), (e) => (window.__err = String(e.stack || e)));
+</script></body>

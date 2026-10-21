@@ -3,6 +3,7 @@ import { characters, type CharKind } from '../render/characters';
 import { buildAK } from '../weapons/akModel';
 import { bakeLod } from '../render/merge';
 import { dress, type Outfit } from './outfit';
+import { addWound } from './wounds';
 import type { Lighting } from '../render/lighting';
 
 export type { Outfit } from './outfit';
@@ -68,8 +69,9 @@ export class Rig {
   private acc = 0;
   private last = new THREE.Vector3();
   private spine: THREE.Bone[];
+  private wounds = 0;
 
-  constructor(kind: CharKind, lighting: Lighting, private armed = true, detailedGun = false, outfit?: Outfit) {
+  constructor(kind: CharKind, private lighting: Lighting, private armed = true, detailedGun = false, outfit?: Outfit) {
     this.inst = characters.create(kind);
     this.root.add(this.inst.model);
     this.mixer = new THREE.AnimationMixer(this.inst.model);
@@ -179,6 +181,16 @@ export class Rig {
     if (fade) this.held.action.fadeOut(fade);
     else this.held.action.stop();
     this.held = null;
+  }
+
+  /** A wet blood blot where a round struck (at most seven per body). */
+  wound(at: THREE.Vector3): void {
+    if (this.wounds++ < 7) addWound(this.inst.bones, at, this.lighting);
+  }
+
+  /** World position of the hips (where a fallen body's torso lies). */
+  hips(): THREE.Vector3 {
+    return this.inst.bones.get('mixamorigHips')!.getWorldPosition(new THREE.Vector3());
   }
 
   durationOf(key: string): number {

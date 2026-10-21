@@ -1,12 +1,15 @@
 import type { Mixer } from './mixer';
+import { CityBed } from './cityBed';
 
 /** City bed: distant traffic rumble plus positional horns and barking (distance in m, pan -1..1). */
 export class Ambience {
   private rumble: GainNode;
   private calm = 1;
+  private bed: CityBed;
 
   constructor(private m: Mixer) {
     const { ctx } = m;
+    this.bed = new CityBed(m);
     this.rumble = ctx.createGain();
     this.rumble.gain.value = 0;
     const lp = ctx.createBiquadFilter();
@@ -34,6 +37,7 @@ export class Ambience {
     if (this.m.ctx.state !== 'running') return;
     this.calm += ((combat ? 0.15 : 1) - this.calm) * Math.min(1, dt * 0.5);
     this.rumble.gain.value = 0.035 * this.calm;
+    this.bed.update(dt, this.calm);
   }
 
   horn(distance: number, pan: number): void {

@@ -99,10 +99,11 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
   const b = new Builder(world, world.createRigidBody(RAPIER.RigidBodyDesc.fixed()));
   const rand = mulberry32(def.seed), deco = mulberry32(def.seed + 7), alley = mulberry32(def.seed + 13);
   const atlas = new SignAtlas();
+  if (def.station) atlas.quietZone(def.station.x, def.station.z, 55);
   const pitch = def.blockW + def.street;
   const lm = def.landmark, st = def.station;
   const inLandmark = (x0: number, x1: number, z: number) => x1 > lm.x - lm.w / 2 - 1.6 && x0 < lm.x + lm.w / 2 + 1.6 && Math.abs(z - lm.z) < lm.d + 2 && Math.sign(z) === Math.sign(lm.z);
-  const sign = (at: THREE.Vector3, q: THREE.Quaternion, w: number, kind: SignKind = 'shop') => atlas.add(at, q, w, kind, rand);
+  const sign = (at: THREE.Vector3, q: THREE.Quaternion, w: number, kind: SignKind = 'shop') => atlas.add(at, q, w, kind === 'shop' && deco() < 0.3 ? 'chicha' : kind, rand);
 
   const rowsZ: [number, number][] = [];
   for (const s of [1, -1]) {
@@ -127,7 +128,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
           x += w;
           if (inLandmark(cx - w / 2, cx + w / 2, frontZ) || (st && x - w < st.x + st.w / 2 && x > st.x - st.w / 2 && Math.abs(frontZ - st.z) < 1)) continue;
           const lot: Lot = { x: cx, z: frontZ, y: hf.heightAt(cx, frontZ), facing, w, d: (z1 - z0 - backW) / 2 - 0.04 };
-          const red = deco() < 0.12;
+          const red = deco() < 0.12 && !(st && Math.hypot(cx - st.x, frontZ - st.z) < 55);
           flsMarks(b, hf, atlas, lot, cityHouse(b, lot, rand, sign, facing === 0 ? worldSide : -worldSide, red), red, worldSide, deco);
           if (rand() < 0.18) {
             const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), facing);

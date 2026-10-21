@@ -12,7 +12,7 @@ import type { Input } from '../core/input';
 /** Seconds a fallen soldier's magazines can still be taken. */
 const WINDOW = 30, RANGE = 2.3, EMPTY_DELAY = 2, EMPTY_EVERY = 40, LOW_EVERY = 100;
 
-interface Body { t: number; rounds: number }
+interface Body { t: number; rounds: number; stained: boolean }
 
 /** Ammo from fresh corpses (E) plus small supply drops near the player when they run dry. */
 export class Loot {
@@ -21,7 +21,7 @@ export class Loot {
   private emptyT = EMPTY_DELAY;
   private lowT = LOW_EVERY;
 
-  constructor(private pickups: Pickups, private world: RAPIER.World, private hf: Heightfield) {
+  constructor(private pickups: Pickups, private world: RAPIER.World, private hf: Heightfield, private stain: (at: THREE.Vector3) => void = () => {}) {
     this.prompt.className = 'prompt';
     document.body.appendChild(this.prompt);
   }
@@ -31,8 +31,12 @@ export class Loot {
     let near: Body | null = null, best = RANGE;
     for (const e of d.dead) {
       let b = this.bodies.get(e);
-      if (!b) this.bodies.set(e, (b = { t: 0, rounds: 30 + Math.round(Math.random() * 45) }));
+      if (!b) this.bodies.set(e, (b = { t: 0, rounds: 30 + Math.round(Math.random() * 45), stained: false }));
       b.t += dt;
+      if (!b.stained && b.t > 1.2) {
+        b.stained = true;
+        this.stain(e.model.hips().setY(e.position.y));
+      }
       const dist = e.position.distanceTo(p);
       if (b.t < WINDOW && b.rounds > 0 && dist < best) {
         best = dist;

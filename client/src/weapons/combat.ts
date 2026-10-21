@@ -159,9 +159,24 @@ export class Combat {
     this.tracers.fire(from, to);
   }
 
+  /** Dark stain under a settled body with a few drips around it. */
+  bloodStain(at: THREE.Vector3): void {
+    const up = new THREE.Vector3(0, 1, 0);
+    this.decals.place(at.clone().setY(at.y + 0.01), up, 1.25, new THREE.Color('#3b0806'));
+    this.decals.place(at.clone().add(new THREE.Vector3((Math.random() - 0.5) * 0.6, 0.012, (Math.random() - 0.5) * 0.6)), up, 0.8, new THREE.Color('#240302'));
+    for (let i = 0; i < 4; i++) {
+      const a = Math.random() * Math.PI * 2, r = 0.7 + Math.random() * 0.6;
+      this.decals.place(at.clone().add(new THREE.Vector3(Math.cos(a) * r, 0.013, Math.sin(a) * r)), up, 0.12 + Math.random() * 0.15, new THREE.Color('#3b0806'));
+    }
+  }
+
   bloodPuff(point: THREE.Vector3): void {
-    for (let i = 0; i < 9; i++) {
-      this.tmp.set((Math.random() - 0.5) * 1.4, Math.random() * 0.9, (Math.random() - 0.5) * 1.4);
+    const dir = point.clone().sub(this.cam.camera.position).normalize();
+    const from = point.clone().addScaledVector(dir, 0.9);
+    const hit = this.world.castRayAndGetNormal(new RAPIER.Ray(from, dir), 2.6, true, undefined, undefined, undefined, undefined, (c) => c.isEnabled());
+    if (hit) this.decals.place(from.addScaledVector(dir, hit.timeOfImpact), new THREE.Vector3(hit.normal.x, hit.normal.y, hit.normal.z), 0.45 + Math.random() * 0.35, new THREE.Color('#4a0806'));
+    for (let i = 0; i < 16; i++) {
+      this.tmp.set((Math.random() - 0.5) * 1.4, Math.random() * 0.9, (Math.random() - 0.5) * 1.4).addScaledVector(dir, 2.2);
       this.dust.emit({ pos: point.clone(), vel: this.tmp.clone(), color: new THREE.Color(0.32 + Math.random() * 0.1, 0.03, 0.02), size: 0.08 + Math.random() * 0.1, grow: 0.5, life: 0.45 + Math.random() * 0.3, gravity: 2.5, drag: 3, alpha: 0.75 });
     }
   }
