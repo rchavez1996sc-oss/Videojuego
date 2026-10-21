@@ -81,9 +81,19 @@ export class Builder {
    * Merges everything per material. Keys listed in a bake group are folded into that group's single
    * vertex-coloured material (colour taken from the key's own material), cutting draw calls.
    */
-  build(materials: Record<string, THREE.Material>, uvScale = 0.4, bake: { material: THREE.Material; keys: string[] }[] = []): THREE.Mesh[] {
+  /** Merges per material; with `tile` > 0 also splits into square world tiles so frustum culling can skip them. */
+  build(materials: Record<string, THREE.Material>, uvScale = 0.4, bake: { material: THREE.Material; keys: string[] }[] = [], tile = 0): THREE.Mesh[] {
     const out: THREE.Mesh[] = [];
     const parts = new Map(this.parts);
+    const emit = (geos: THREE.BufferGeometry[], material: THREE.Material) => {
+      for (const list of tiled(geos, tile)) {
+        const merged = mergeBoxes(list);
+        boxProjectUV(merged, uvScale);
+        const m = new THREE.Mesh(merged, material);
+        m.castShadow = m.receiveShadow = true;
+        out.push(m);
+      }
+    };
     for (const group of bake) {
       const geos: THREE.BufferGeometry[] = [];
       for (const key of group.keys) {
@@ -98,22 +108,22 @@ export class Builder {
         }
         parts.delete(key);
       }
-      if (!geos.length) continue;
-      const merged = mergeBoxes(geos);
-      boxProjectUV(merged, uvScale);
-      const m = new THREE.Mesh(merged, group.material);
-      m.castShadow = m.receiveShadow = true;
-      out.push(m);
+      if (geos.length) emit(geos, group.material);
     }
-    for (const [key, geos] of parts) {
-      const merged = mergeBoxes(geos);
-      boxProjectUV(merged, uvScale);
-      const m = new THREE.Mesh(merged, materials[key]);
-      m.castShadow = m.receiveShadow = true;
-      out.push(m);
-    }
+    for (const [key, geos] of parts) emit(geos, materials[key]);
     return out;
   }
+}
+
+function tiled(geos: THREE.BufferGeometry[], tile: number): THREE.BufferGeometry[][] {
+  if (!tile) return [geos];
+  const buckets = new Map<string, THREE.BufferGeometry[]>();
+  for (const g of geos) {
+    const p = g.attributes.position;
+    const k = `${Math.floor(p.getX(0) / tile)},${Math.floor(p.getZ(0) / tile)}`;
+    (buckets.get(k) ?? buckets.set(k, []).get(k)!).push(g);
+  }
+  return [...buckets.values()];
 }
 
 function mergeBoxes(geos: THREE.BufferGeometry[]): THREE.BufferGeometry {

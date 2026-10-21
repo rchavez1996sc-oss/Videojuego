@@ -114,6 +114,13 @@ export class Traffic {
     if (v.speed <= 0.05) v.state = 'wreck';
   }
 
+  /** Moves a far-off car to just beyond view behind/ahead of the player so the nearby avenue stays busy. */
+  private bringNear(v: Vehicle, camX: number): void {
+    const x = THREE.MathUtils.clamp(camX - v.dir * (150 + Math.random() * 40), X_MIN, X_MAX);
+    if (this.list.some((o) => o !== v && o.dir === v.dir && o.state !== 'off' && Math.abs(o.x - x) < o.len + 10)) return;
+    v.x = x;
+  }
+
   update(dt: number, player: THREE.Vector3, camera: THREE.Vector3): void {
     this.calmT += dt;
     for (const v of this.list) {
@@ -139,6 +146,7 @@ export class Traffic {
           v.honkT = 6 + Math.random() * 14;
           this.onHonk(new THREE.Vector3(v.x, 0, v.z));
         }
+        if (!v.panic && this.calmT > 45 && Math.abs(v.x - camera.x) > 220) this.bringNear(v, camera.x);
         if ((v.dir > 0 && v.x > X_MAX) || (v.dir < 0 && v.x < X_MIN)) {
           if (v.panic || this.calmT < 45) {
             v.state = 'off';

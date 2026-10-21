@@ -4,7 +4,7 @@ import {
   RenderPass, SMAAEffect, ToneMappingEffect, ToneMappingMode, VignetteEffect,
 } from 'postprocessing';
 import { N8AOPostPass } from 'n8ao';
-import { preset } from '../core/settings';
+import { preset, quality } from '../core/settings';
 
 export class Renderer {
   readonly gl: THREE.WebGLRenderer;
@@ -25,7 +25,7 @@ export class Renderer {
       ao.configuration.intensity = 2.2;
       ao.configuration.halfRes = true;
       ao.configuration.depthAwareUpsampling = true;
-      ao.setQualityMode('Medium');
+      ao.setQualityMode(quality === 'medium' ? 'Low' : 'Medium');
       this.composer.addPass(ao);
     }
     this.composer.addPass(new EffectPass(

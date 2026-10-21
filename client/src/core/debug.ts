@@ -24,6 +24,7 @@ export interface DebugContext {
   throwGrenade: () => void;
   extraLog?: () => string;
   traffic?: () => Traffic | undefined;
+  scene?: THREE.Scene;
 }
 
 /** `window.__game`: hooks used by the Playwright screenshot / AI / grenade scripts. */
@@ -104,6 +105,20 @@ export function installDebug(c: DebugContext): void {
         if (every && i % every === 0) c.combat.debugShoot();
         c.frame(1 / 60);
       }
+    },
+    /** Calls/triangles each top-level scene child costs in the current view (toggled off one at a time). */
+    breakdown() {
+      const info = c.renderer.gl.info.render, out: string[] = [];
+      c.frame(1 / 60);
+      const base = [info.calls, info.triangles];
+      for (const o of c.scene?.children ?? []) {
+        if (!o.visible) continue;
+        o.visible = false;
+        c.frame(1 / 60);
+        out.push(`${o.name || o.type}#${o.children.length}: calls ${base[0] - info.calls} tris ${base[1] - info.triangles}`);
+        o.visible = true;
+      }
+      return `total calls ${base[0]} tris ${base[1]}\n` + out.filter((l) => !/calls 0 tris 0/.test(l)).join('\n');
     },
     info: () => ({ calls: c.renderer.gl.info.render.calls, tris: c.renderer.gl.info.render.triangles }),
     /** Disables the nearest moving vehicle and logs every vehicle's state for 3 s. */

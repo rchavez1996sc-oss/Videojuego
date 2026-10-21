@@ -33,6 +33,7 @@ import { Grenades } from './weapons/grenades';
 import { detonate, BLAST_RADIUS } from './weapons/explosion';
 import { ThreatGrid } from './ui/threatGrid';
 import { installDebug } from './core/debug';
+import { ShadowCull } from './render/shadowCull';
 import { buildBarrio } from './world/barrio';
 import { buildFarCity } from './world/farCity';
 import { StreetNav } from './ai/nav';
@@ -72,9 +73,11 @@ async function boot(): Promise<void> {
     scene.add(village.group);
     blockers.push((x, z) => village.footprints.some((f) => Math.hypot(f.x - x, f.z - z) < f.r + 2));
   }
+  const shadowCull = new ShadowCull(90);
   const barrio = ch.barrio ? buildBarrio(hf, ch.barrio, lighting, world) : null;
   if (barrio) {
     scene.add(barrio.group);
+    shadowCull.add(barrio.group);
     blockers.push(barrio.blocked);
   }
   if (ch.farCity) scene.add(buildFarCity(hf, ch.farCity, lighting));
@@ -167,7 +170,7 @@ async function boot(): Promise<void> {
   let freeCam = false;
   installDebug({
     extraLog: () => (civilians ? `civ:${civilians.list.map((c) => c.mood[0]).join('')}` : ''),
-    views: ch.views ?? [], tpc, hf, player, combat, enemies, grenades, renderer, shotMode,
+    views: ch.views ?? [], tpc, hf, player, combat, enemies, grenades, renderer, shotMode, scene,
     frame: (dt) => frame(dt),
     setFreeCam: (v) => (freeCam = v),
     setSkipRender: (v) => (skipRender = v),
@@ -266,6 +269,7 @@ async function boot(): Promise<void> {
     camera.updateMatrixWorld();
     grass.update(t, camera.position, player.position);
     terrain.update(camera.position);
+    shadowCull.update(dt, camera.position);
     lighting.update();
     if (!skipRender) renderer.render(dt);
     input.endFrame();

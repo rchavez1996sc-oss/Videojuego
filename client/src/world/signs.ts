@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { signTexture } from '../render/urbanTextures';
 
-export type SignKind = 'shop' | 'graffiti' | 'poster' | 'hill' | 'concert' | 'emblem';
+export type SignKind = 'shop' | 'graffiti' | 'poster' | 'hill' | 'concert' | 'emblem' | 'red';
 
 interface SignDef { text: string; kind: SignKind; bg: string | null; fg: string; sub?: string; accent?: string }
 
@@ -36,6 +36,12 @@ const SIGNS: SignDef[] = [
   { text: 'LA SONORA DEL CERRO', kind: 'concert', bg: '#00e05a', fg: '#111111', sub: 'VIE 20 · ENTRADA S/ 15', accent: '#ff7a00' },
   { text: 'DINASTÍA DEL SUR', kind: 'concert', bg: '#ff7a00', fg: '#111111', sub: 'SÁB 21 · CHOLO PARTY', accent: '#ff2d8a' },
   { text: '', kind: 'emblem', bg: null, fg: '#f4f2ec' },
+  { text: '¡VIVA LA CLASE OBRERA!', kind: 'red', bg: '#b3121b', fg: '#ffffff', sub: 'SINDICATO UNIFICADO DE TRABAJADORES DEL CONO', accent: '#f2c230' },
+  { text: '1° DE MAYO', kind: 'red', bg: '#c8102e', fg: '#f2c230', sub: 'TODOS A LA PLAZA · MARCHA OBRERA', accent: '#111111' },
+  { text: 'PAN Y TRABAJO', kind: 'red', bg: '#a50f19', fg: '#ffffff', sub: 'FEDERACIÓN DE CONSTRUCCIÓN CIVIL', accent: '#ffffff' },
+  { text: '¡HUELGA GENERAL!', kind: 'red', bg: '#d0141f', fg: '#ffffff', sub: 'NI UN SOL MÁS PARA LA JUNTA', accent: '#111111' },
+  { text: 'EL CONO SE ORGANIZA', kind: 'poster', bg: '#b3121b', fg: '#ffffff', sub: 'ASAMBLEA POPULAR · SÁBADO 6 PM', accent: '#f2c230' },
+  { text: 'SALARIO DIGNO YA', kind: 'poster', bg: '#c8102e', fg: '#ffffff', sub: 'CENTRAL OBRERA DEL PERÚ', accent: '#111111' },
 ];
 
 /** A row of four identical fluorescent concert bills, Lima "chicha" style. */
@@ -133,15 +139,15 @@ function poster(d: SignDef, w: number, h: number): HTMLCanvasElement {
 export class SignAtlas {
   readonly texture: THREE.CanvasTexture;
   private geos: THREE.BufferGeometry[] = [];
-  private static ROWS = 16;
+  private static ROWS = 20;
 
   constructor() {
     const c = document.createElement('canvas');
     c.width = 1024;
-    c.height = 2048;
+    c.height = 2560;
     const ctx = c.getContext('2d')!;
     SIGNS.forEach((d, i) => {
-      const img = d.kind === 'poster' ? poster(d, 512, 128) : d.kind === 'concert' ? concert(d, 512, 128) : d.kind === 'emblem' ? emblem(d, 512, 128) : signTexture(d.text, d.bg, d.fg, 512, 128);
+      const img = d.kind === 'poster' || d.kind === 'red' ? poster(d, 512, 128) : d.kind === 'concert' ? concert(d, 512, 128) : d.kind === 'emblem' ? emblem(d, 512, 128) : signTexture(d.text, d.bg, d.fg, 512, 128);
       ctx.drawImage(img, (i % 2) * 512, Math.floor(i / 2) * 128);
     });
     this.texture = new THREE.CanvasTexture(c);

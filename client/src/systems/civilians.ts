@@ -26,6 +26,8 @@ export class Civilians {
   readonly list: Civilian[] = [];
   onHurt: () => void = () => {};
   private neighbors: number[][];
+  private calmT = 0;
+  private recycleT = 0;
 
   constructor(private graph: StreetGraph, private hf: Heightfield, lighting: Lighting, world: RAPIER.World, count: number, seed: number, private camera: THREE.Camera) {
     this.neighbors = graph.nodes.map(() => []);
@@ -58,6 +60,7 @@ export class Civilians {
 
   /** Gunfire or an explosion at `at`: everyone within `radius` panics and runs for the farthest exit. */
   alarm(at: THREE.Vector3, radius: number): void {
+    this.calmT = 0;
     for (const c of this.list) {
       if (c.mood === 'gone' || c.mood === 'dead' || c.pos.distanceTo(at) > radius) continue;
       if (c.mood !== 'panic') {
@@ -100,7 +103,32 @@ export class Civilians {
     return this.neighbors[node].reduce((best, n) => (this.graph.nodes[n].distanceTo(goal) < this.graph.nodes[best].distanceTo(goal) ? n : best), this.neighbors[node][0]);
   }
 
+  /** Keeps the street busy where the player is: calm walkers far away (or long gone) reappear just out of sight nearby. */
+  private recycle(dt: number): void {
+    this.calmT += dt;
+    if ((this.recycleT -= dt) > 0) return;
+    this.recycleT = 0.5;
+    const cam = this.camera.position;
+    const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion).setY(0).normalize();
+    const c = this.list.find((c) => ((c.mood === 'walk' || c.mood === 'idle') && c.pos.distanceTo(cam) > 110) || (c.mood === 'gone' && this.calmT > 40));
+    if (!c) return;
+    for (let k = 0; k < 12; k++) {
+      const [a, b] = this.graph.edges[Math.floor(Math.random() * this.graph.edges.length)];
+      const p = this.graph.nodes[a].clone().lerp(this.graph.nodes[b], Math.random());
+      const to = p.clone().sub(cam).setY(0), d = to.length();
+      if (d < 55 || d > 84 || to.divideScalar(d).dot(fwd) > 0.2) continue;
+      p.x += (Math.random() - 0.5) * 3;
+      p.z += (Math.random() - 0.5) * 3;
+      p.y = this.hf.heightAt(p.x, p.z);
+      Object.assign(c, { mood: 'walk', node: a, target: b, speed: 1.1 + Math.random() * 0.5, panicT: 0 });
+      c.pos.copy(p);
+      c.collider.setEnabled(true);
+      return;
+    }
+  }
+
   update(dt: number, player: THREE.Vector3): void {
+    this.recycle(dt);
     for (const c of this.list) {
       if (c.mood === 'gone') continue;
       if (c.mood === 'dead') {

@@ -114,10 +114,10 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
           if (rand() < 0.18) {
             const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), facing);
             atlas.add(new THREE.Vector3(0, 1.4 + rand() * 0.6, 0.03).applyQuaternion(q).add(new THREE.Vector3(cx, lot.y, frontZ)), q, Math.min(w - 1, 3.6), 'graffiti', rand);
-          } else if (rand() < 0.3) {
+          } else if (rand() < 0.45) {
             const l = -w / 2 + 2.15, r = Math.min(w / 4 - 0.7, w / 2 - 3.65), pw = Math.min(r - l, 2.4);
             const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), facing);
-            if (pw > 1.3) atlas.add(new THREE.Vector3((l + r) / 2, 1.45, 0.03).applyQuaternion(q).add(new THREE.Vector3(cx, lot.y, frontZ)), q, pw, 'concert', rand);
+            if (pw > 1.3) atlas.add(new THREE.Vector3((l + r) / 2, 1.45, 0.03).applyQuaternion(q).add(new THREE.Vector3(cx, lot.y, frontZ)), q, pw, rand() < 0.5 ? 'concert' : 'red', rand);
           }
         }
       }
@@ -225,7 +225,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
     { material: lighting.setup(new THREE.MeshStandardMaterial({ roughness: 0.45, metalness: 0.35, vertexColors: true }), 'plain-baked'),
       keys: ['car0', 'car1', 'car2', 'car3', 'car4', 'car5', 'moto0', 'moto1', 'moto2', 'tankBlack', 'tankBlue', 'stripe', 'checker', 'canopy', 'seat', 'tire', 'bars', 'rebar', 'cable', 'paintYellow', 'light', 'glass', ...Object.keys(STREET_COLORS)] },
   ];
-  group.add(...b.build(mats, 0.5, bake));
+  group.add(...b.build(mats, 0.5, bake, 128));
   if (atlas.geometries.length) {
     const signs = new THREE.Mesh(mergeGeometries(atlas.geometries), mats.signs);
     signs.receiveShadow = true;
