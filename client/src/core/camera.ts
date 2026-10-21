@@ -33,6 +33,7 @@ export class ThirdPersonCamera {
       if (input.aiming) this.zoomIndex = THREE.MathUtils.clamp(this.zoomIndex - input.wheel, 0, ZOOMS.length - 1);
       else this.baseDist = THREE.MathUtils.clamp(this.baseDist + input.wheel * 0.4, 2.2, 5.2);
     }
+    if (!input.aiming) this.zoomIndex = 0;
     this.zoomT = THREE.MathUtils.damp(this.zoomT, input.aiming ? ZOOMS[this.zoomIndex] : 1, 12, dt);
     const sens = SENS * (input.aiming ? 0.55 : 1) / this.zoomT;
     this.yaw -= input.mouseDX * sens;

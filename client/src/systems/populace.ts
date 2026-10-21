@@ -17,10 +17,10 @@ export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world
   const civilians = barrio && ch.civilians ? new Civilians(barrio.graph, d.hf, d.lighting, d.world, ch.civilians.count, ch.civilians.seed, d.camera) : null;
   const life = barrio && ch.life ? new CityLife(ch.life, d.world, d.hf, barrio, d.lighting, d.mixer, d.camera) : null;
   const state = { casualties: 0, onFail: () => {} };
-  const casualty = () => {
-    state.casualties++;
+  const casualty = (weight = 1) => {
+    state.casualties += weight;
     d.hud.civilians = { count: state.casualties, limit: difficulty.value.civilianLimit };
-    if (state.casualties >= difficulty.value.civilianLimit) state.onFail();
+    if (state.casualties > difficulty.value.civilianLimit) state.onFail();
   };
   const alarm = (p: THREE.Vector3, r: number) => {
     civilians?.alarm(p, r);
@@ -39,10 +39,10 @@ export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world
     const tr = life.trafficEvents;
     tr.onSmoke = (p) => d.combat.smokePuff(p);
     tr.onCrash = (p) => d.sfx.crash(p.distanceTo(d.camera.position));
-    tr.onDisabled = (p) => {
-      d.hud.showToast('VEHÍCULO CIVIL   −150');
+    tr.onDisabled = (p, weight) => {
+      d.hud.showToast(`VEHÍCULO CIVIL   ${weight} BAJA${weight > 1 ? 'S' : ''}`);
       alarm(p, 80);
-      casualty();
+      casualty(weight);
     };
   }
   return { civilians, life, alarm, state };

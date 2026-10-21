@@ -24,6 +24,7 @@ export interface BarrioDef {
   cars: number;
   billboardEvery: number;
   hillLetters: [number, number, number][];
+  hillEmblems?: [number, number, number][];
 }
 
 export interface StreetGraph { nodes: THREE.Vector3[]; edges: [number, number][]; exits: number[] }
@@ -113,6 +114,10 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
           if (rand() < 0.18) {
             const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), facing);
             atlas.add(new THREE.Vector3(0, 1.4 + rand() * 0.6, 0.03).applyQuaternion(q).add(new THREE.Vector3(cx, lot.y, frontZ)), q, Math.min(w - 1, 3.6), 'graffiti', rand);
+          } else if (rand() < 0.3) {
+            const l = -w / 2 + 2.15, r = Math.min(w / 4 - 0.7, w / 2 - 3.65), pw = Math.min(r - l, 2.4);
+            const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), facing);
+            if (pw > 1.3) atlas.add(new THREE.Vector3((l + r) / 2, 1.45, 0.03).applyQuaternion(q).add(new THREE.Vector3(cx, lot.y, frontZ)), q, pw, 'concert', rand);
           }
         }
       }
@@ -192,12 +197,12 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
     const bb = billboard(b, hf, x, side * 10.6, side > 0 ? Math.PI : 0);
     atlas.add(bb.pos, bb.q, 8, 'poster', rand);
   }
-  for (const [x, z, w] of def.hillLetters) {
+  for (const [x, z, w, kind] of [...def.hillLetters.map((h) => [...h, 'hill'] as const), ...(def.hillEmblems ?? []).map((h) => [...h, 'emblem'] as const)]) {
     const a = Math.atan2(hf.heightAt(x, z + 4) - hf.heightAt(x, z - 4), 8) * Math.sign(z);
     const X = new THREE.Vector3(-Math.sign(z), 0, 0), Y = new THREE.Vector3(0, Math.sin(a), Math.cos(a) * Math.sign(z));
     const Z = new THREE.Vector3().crossVectors(X, Y);
     const q = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(X, Y, Z));
-    atlas.add(new THREE.Vector3(x, hf.heightAt(x, z) + 3.5, z), q, w, 'hill', rand);
+    atlas.add(new THREE.Vector3(x, hf.heightAt(x, z) + (kind === 'emblem' ? 3.5 + w * 0.12 : 3.5), z), q, w, kind, rand);
   }
 
   roadMarkings(b, hf, def.x0 - 10, xEnd + 10, crossX, 8);

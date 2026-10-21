@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { signTexture } from '../render/urbanTextures';
 
-export type SignKind = 'shop' | 'graffiti' | 'poster' | 'hill';
+export type SignKind = 'shop' | 'graffiti' | 'poster' | 'hill' | 'concert' | 'emblem';
 
 interface SignDef { text: string; kind: SignKind; bg: string | null; fg: string; sub?: string; accent?: string }
 
@@ -31,7 +31,72 @@ const SIGNS: SignDef[] = [
   { text: 'TOQUE DE QUEDA 20:00', kind: 'poster', bg: '#111111', fg: '#ffffff', sub: 'POR ORDEN DE LA JUNTA DE GOBIERNO', accent: '#c8102e' },
   { text: 'NUEVA ESPERANZA', kind: 'hill', bg: null, fg: '#f4f2ec' },
   { text: 'PATRIA LIBRE', kind: 'hill', bg: null, fg: '#f4f2ec' },
+  { text: 'LOS GENIALES DEL CONO', kind: 'concert', bg: '#ff2d8a', fg: '#111111', sub: 'SÁB 14 · CAMPO FERIAL', accent: '#fff200' },
+  { text: 'FUEGO ANDINO', kind: 'concert', bg: '#fff200', fg: '#d0021b', sub: 'DOM 15 · LOCAL LA CHOZA', accent: '#00d65a' },
+  { text: 'LA SONORA DEL CERRO', kind: 'concert', bg: '#00e05a', fg: '#111111', sub: 'VIE 20 · ENTRADA S/ 15', accent: '#ff7a00' },
+  { text: 'DINASTÍA DEL SUR', kind: 'concert', bg: '#ff7a00', fg: '#111111', sub: 'SÁB 21 · CHOLO PARTY', accent: '#ff2d8a' },
+  { text: '', kind: 'emblem', bg: null, fg: '#f4f2ec' },
 ];
+
+/** A row of four identical fluorescent concert bills, Lima "chicha" style. */
+function concert(d: SignDef, w: number, h: number): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext('2d')!;
+  const pw = w / 4;
+  for (let k = 0; k < 4; k++) {
+    const x0 = k * pw + 2;
+    ctx.fillStyle = d.bg!;
+    ctx.fillRect(x0, 2 + (k % 2), pw - 4, h - 4);
+    ctx.fillStyle = d.accent!;
+    ctx.fillRect(x0, h * 0.68, pw - 4, h * 0.24);
+    ctx.fillStyle = d.fg;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const words = d.text.split(' ');
+    const half = Math.ceil(words.length / 2);
+    ctx.font = `bold ${Math.floor(h * 0.24)}px Impact, "Arial Black", sans-serif`;
+    ctx.fillText(words.slice(0, half).join(' '), x0 + pw / 2, h * 0.3, pw - 12);
+    ctx.fillText(words.slice(half).join(' '), x0 + pw / 2, h * 0.52, pw - 12);
+    ctx.font = `bold ${Math.floor(h * 0.1)}px Arial, sans-serif`;
+    ctx.fillText(d.sub ?? '', x0 + pw / 2, h * 0.8, pw - 10);
+    ctx.fillText('★ EN CONCIERTO ★', x0 + pw / 2, h * 0.1, pw - 10);
+  }
+  for (let i = 0; i < 260; i++) {
+    ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.15})`;
+    ctx.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 18, 1 + Math.random() * 5);
+  }
+  return c;
+}
+
+/** Whitewashed hammer and sickle painted on a hillside, centred in a 4:1 cell. */
+function emblem(d: SignDef, w: number, h: number): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext('2d')!;
+  ctx.translate(w / 2, h / 2);
+  ctx.scale(h, h);
+  ctx.fillStyle = ctx.strokeStyle = d.fg;
+  const rad = (deg: number) => (deg * Math.PI) / 180;
+  ctx.beginPath();
+  ctx.arc(0, 0, 0.36, rad(-125), rad(128));
+  ctx.arc(-0.05, -0.05, 0.27, rad(128), rad(-125), true);
+  ctx.fill();
+  ctx.lineCap = 'round';
+  ctx.lineWidth = 0.085;
+  ctx.beginPath();
+  ctx.moveTo(-0.2, 0.26);
+  ctx.lineTo(-0.36, 0.42);
+  ctx.stroke();
+  ctx.save();
+  ctx.rotate(rad(-45));
+  ctx.fillRect(-0.04, -0.22, 0.08, 0.66);
+  ctx.fillRect(-0.2, -0.34, 0.33, 0.13);
+  ctx.restore();
+  return c;
+}
 
 function poster(d: SignDef, w: number, h: number): HTMLCanvasElement {
   const c = document.createElement('canvas');
@@ -76,7 +141,7 @@ export class SignAtlas {
     c.height = 2048;
     const ctx = c.getContext('2d')!;
     SIGNS.forEach((d, i) => {
-      const img = d.kind === 'poster' ? poster(d, 512, 128) : signTexture(d.text, d.bg, d.fg, 512, 128);
+      const img = d.kind === 'poster' ? poster(d, 512, 128) : d.kind === 'concert' ? concert(d, 512, 128) : d.kind === 'emblem' ? emblem(d, 512, 128) : signTexture(d.text, d.bg, d.fg, 512, 128);
       ctx.drawImage(img, (i % 2) * 512, Math.floor(i / 2) * 128);
     });
     this.texture = new THREE.CanvasTexture(c);

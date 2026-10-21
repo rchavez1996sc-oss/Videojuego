@@ -10,7 +10,7 @@ import type { Lighting } from '../render/lighting';
 type State = 'drive' | 'off' | 'crash' | 'wreck';
 
 interface Vehicle {
-  group: THREE.Group; body: RAPIER.RigidBody; collider: RAPIER.Collider; dir: 1 | -1;
+  kind: CarKind | 'moto'; group: THREE.Group; body: RAPIER.RigidBody; collider: RAPIER.Collider; dir: 1 | -1;
   x: number; z: number; yaw: number; speed: number; cruise: number; len: number;
   honkT: number; panic: boolean; state: State; hp: number; spin: number; drift: number; smokeT: number;
 }
@@ -23,7 +23,7 @@ export class Traffic {
   private list: Vehicle[] = [];
   private calmT = 99;
   onHonk: (at: THREE.Vector3) => void = () => {};
-  onDisabled: (at: THREE.Vector3) => void = () => {};
+  onDisabled: (at: THREE.Vector3, weight: number) => void = () => {};
   onCrash: (at: THREE.Vector3) => void = () => {};
   onSmoke: (at: THREE.Vector3) => void = () => {};
 
@@ -55,7 +55,7 @@ export class Traffic {
       const dir = i % 2 ? 1 : -1;
       const cruise = kind === 'moto' ? 7 : kind === 'combi' ? 11 : 10;
       const v: Vehicle = {
-        group: g, body, collider, dir, x: X_MIN + ((i * 77) % (X_MAX - X_MIN)), z: dir * LANE, yaw: dir > 0 ? Math.PI / 2 : -Math.PI / 2,
+        kind, group: g, body, collider, dir, x: X_MIN + ((i * 77) % (X_MAX - X_MIN)), z: dir * LANE, yaw: dir > 0 ? Math.PI / 2 : -Math.PI / 2,
         speed: cruise, cruise, len, honkT: 3 + rand() * 10, panic: false, state: 'drive', hp: HP, spin: 0, drift: 0, smokeT: 0,
       };
       this.list.push(v);
@@ -74,7 +74,7 @@ export class Traffic {
     v.state = 'crash';
     v.spin = (Math.random() < 0.5 ? -1 : 1) * (1.2 + Math.random() * 1.6);
     v.drift = v.dir * (1.5 + Math.random() * 2.5);
-    this.onDisabled(new THREE.Vector3(v.x, 1, v.z));
+    this.onDisabled(new THREE.Vector3(v.x, 1, v.z), v.kind === 'combi' ? 4 : v.kind === 'moto' ? 1 : 2);
   }
 
   /** Test hook: disables the nearest driving vehicle and reports where it is. */
