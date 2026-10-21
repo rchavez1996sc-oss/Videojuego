@@ -206,7 +206,7 @@ export function installDebug(c: DebugContext): void {
         for (let i = 0; i < seconds * 30; i++) {
           c.tpc.yaw += Math.sin(i * 0.9) * 0.6 + (i % 23 === 0 ? 2.5 : 0);
           if (i % 30 === 10) key('Space', true);
-          if (i % 30 === 12) key('Space', false);
+          if (i % 30 === 24) key('Space', false);
           if (i % 45 === 20) key('ControlLeft', true);
           if (i % 45 === 24) key('ControlLeft', false);
           c.frame(1 / 30);

@@ -11,6 +11,14 @@ import { ladderAt, type Ladder } from '../world/ladders';
 const OUTFIT: Outfit = { color: '#8e1b14', bands: ['Left', 'Right'], scarf: '#8e1b14' };
 /** Ladder climb speed (m/s) and how far the ladder clip rises per second at normal rate. */
 const LADDER = 1.5, LADDER_CLIP = 0.61;
+/** Mantle clips: which part of the clip plays (start fraction and span) and the base duration before height is added. */
+interface Climb { key: string; from: number; span: number; dur: number }
+const CLIMBS: Record<'low' | 'high' | 'hang' | 'wall', Climb> = {
+  low: { key: 'climb_low', from: 0.12, span: 0.75, dur: 0.6 },
+  high: { key: 'climb', from: 0.12, span: 0.75, dur: 0.75 },
+  hang: { key: 'hang_climb', from: 0.08, span: 0.85, dur: 0.9 },
+  wall: { key: 'wall_climb', from: 0.15, span: 0.8, dur: 0.65 },
+};
 const WALK = 3.2, RUN = 6.2, CROUCH = 1.7, AIM = 2.2, JUMP = 7.2, GRAVITY = 22, SLIDE = 8.5;
 const RADIUS = 0.35, HALF = 0.55;
 
@@ -31,6 +39,7 @@ export class Player {
   private lastVy = 0;
   stamina = 100;
   private airT = 0;
+  private stepT = 0;
   /** Q: running to a cover spot, then holding a crouch there until the player moves. */
   private coverGoal: THREE.Vector3 | null = null;
   private inCover = false;
@@ -42,7 +51,7 @@ export class Player {
   landImpact = 0;
   stepPhase = 0;
   onMantle: (vault: boolean) => void = () => {};
-  private mantle: { ledge: Ledge; start: THREE.Vector3; t: number; dur: number } | null = null;
+  private mantle: { ledge: Ledge; start: THREE.Vector3; t: number; dur: number; step?: boolean; clip?: Climb } | null = null;
   private ladder: Ladder | null = null;
 
   constructor(private world: RAPIER.World, lighting: Lighting, spawn: THREE.Vector3, yaw: number) {
@@ -120,17 +129,34 @@ export class Player {
     m.t = Math.min(1, m.t + dt / m.dur);
     const feet = mantlePath(m.start, m.ledge, m.t);
     this.body.setNextKinematicTranslation({ x: feet.x, y: feet.y + HALF + RADIUS, z: feet.z });
-    this.crouch = THREE.MathUtils.damp(this.crouch, m.t < 0.7 ? 0.6 : 0, 10, dt);
+    this.crouch = THREE.MathUtils.damp(this.crouch, m.t < 0.7 && !m.step ? 0.6 : 0, 10, dt);
     this.speed = 0;
-    const clip = m.ledge.vault || m.ledge.height < 1.3 ? 'climb_low' : 'climb';
-    this.model.hold(clip, (this.model.durationOf(clip) * 0.75) / m.dur, true, 0.12);
-    this.model.animate(dt, 0, 0, 0);
+    if (m.step || !m.clip) this.model.animate(dt, 2, 0, 0);
+    else {
+      const c = m.clip;
+      this.model.hold(c.key, (this.model.durationOf(c.key) * c.span) / m.dur, true, c.from);
+      this.model.animate(dt, 0, 0, 0);
+    }
     if (m.t >= 1) {
       this.model.release();
       this.mantle = null;
       this.vel.set(0, -1, 0);
-      this.onMantle(m.ledge.vault);
+      if (!m.step) this.onMantle(m.ledge.vault);
     }
+  }
+
+  /** Walking into a kerb, terrace edge or low step (0.4–0.6 m; lower ones the controller's autostep handles) steps up onto it without pressing jump. */
+  private autoStep(dt: number): boolean {
+    if (!this.grounded || this.speed < 1 || (this.stepT -= dt) > 0) return false;
+    this.stepT = 0.08;
+    const yaw = Math.atan2(-this.vel.x, -this.vel.z);
+    const ledge = findLedge(this.world, this.position, yaw, this.collider.handle, 0.6);
+    if (!ledge || ledge.vault || ledge.height < 0.4) return false;
+    const reach = Math.hypot(ledge.target.x - this.position.x, ledge.target.z - this.position.z);
+    if (reach > 0.95) return false;
+    this.yaw = yaw;
+    this.mantle = { ledge, start: this.position.clone(), t: 0, dur: 0.25 + ledge.height * 0.35, step: true };
+    return true;
   }
 
   get climbing(): boolean {
@@ -183,11 +209,13 @@ export class Player {
       const ledge = findLedge(this.world, this.position, moveYaw, this.collider.handle, this.grounded ? 2.1 : 2.4);
       if (ledge && (this.grounded || !ledge.vault)) {
         this.yaw = moveYaw;
-        this.mantle = { ledge, start: this.position.clone(), t: 0, dur: ledge.vault ? 0.7 : 0.6 + ledge.height * 0.45 };
+        const clip = ledge.vault || ledge.height < 1.3 ? CLIMBS.low : !this.grounded ? CLIMBS.hang : this.speed > 5 ? CLIMBS.wall : CLIMBS.high;
+        this.mantle = { ledge, start: this.position.clone(), t: 0, dur: ledge.vault ? 0.7 : clip.dur + ledge.height * 0.3, clip };
         this.onMantle(ledge.vault);
         return this.updateMantle(dt);
       }
     }
+    if (this.autoStep(dt)) return this.updateMantle(dt);
     const f = (input.down('KeyW') ? 1 : 0) - (input.down('KeyS') ? 1 : 0);
     const s = (input.down('KeyD') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
     if (f || s || input.hit('Space')) this.coverGoal = null;
