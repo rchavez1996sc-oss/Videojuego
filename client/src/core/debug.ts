@@ -7,6 +7,7 @@ import type { Enemies } from '../systems/enemies';
 import type { Grenades } from '../weapons/grenades';
 import type { Renderer } from '../render/renderer';
 import type { Traffic } from '../systems/traffic';
+import type { Squad } from '../systems/squad';
 
 export interface DebugContext {
   views: [number, number, number, number, number, number][];
@@ -25,6 +26,7 @@ export interface DebugContext {
   extraLog?: () => string;
   traffic?: () => Traffic | undefined;
   scene?: THREE.Scene;
+  squad?: Squad | null;
 }
 
 /** `window.__game`: hooks used by the Playwright screenshot / AI / grenade scripts. */
@@ -119,6 +121,12 @@ export function installDebug(c: DebugContext): void {
         o.visible = true;
       }
       return `total calls ${base[0]} tris ${base[1]}\n` + out.filter((l) => !/calls 0 tris 0/.test(l)).join('\n');
+    },
+    squadInfo: () => {
+      const s = c.squad;
+      if (!s) return 'no squad';
+      const dead = c.enemies.list.length - c.enemies.aliveCount;
+      return `allyKills=${s.allyKills}/${dead} ` + s.list.map((a) => `${a.name}:${a.lost ? 'X' : a.unit.alive ? a.unit.state[0] : 'down'} hp=${a.unit.hp.toFixed(0)} d=${a.unit.position.distanceTo(c.player.position).toFixed(1)} @${a.unit.position.x.toFixed(0)},${a.unit.position.z.toFixed(0)}${a.unit.moveTarget ? ' mv' + a.unit.path.length + '>' + a.unit.moveTarget.x.toFixed(0) + ',' + a.unit.moveTarget.z.toFixed(0) : ''}${a.target ? ' →' + a.target.id : ''}`).join(' | ');
     },
     info: () => ({ calls: c.renderer.gl.info.render.calls, tris: c.renderer.gl.info.render.triangles }),
     /** Disables the nearest moving vehicle and logs every vehicle's state for 3 s. */

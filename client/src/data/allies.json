@@ -1,0 +1,20 @@
+{
+  "names": ["QUISPE", "MAMANI", "ROJAS", "HUAMÁN"],
+  "hp": 160,
+  "damage": 20,
+  "rpm": 480,
+  "burst": [2, 5],
+  "burstPause": [0.6, 1.5],
+  "spread": 2.4,
+  "spreadPerMeter": 0.02,
+  "reaction": 0.6,
+  "sight": 110,
+  "fov": 160,
+  "hearing": 150,
+  "walk": 2.6,
+  "run": 6.6,
+  "preferredRange": 20,
+  "killShare": 0.25,
+  "bleedOut": 35,
+  "palette": { "id": "fls", "cloth": "#4a1210", "vest": "#2a0d0b", "skin": "#946349", "helmet": "#3d100e" }
+}

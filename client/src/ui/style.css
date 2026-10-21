@@ -56,6 +56,8 @@ body.shot #overlay, body.shot #stats { display: none; }
 #healthbars .hb div { height: 100%; transition: width 0.12s; }
 #healthbars .enemy div { background: #d8432a; }
 #healthbars .ally div { background: #4a9be0; }
+#healthbars .hb[data-label]::after { content: attr(data-label); position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); font: 600 10px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; color: #9cc8f0; text-shadow: 0 1px 2px #000; white-space: nowrap; }
+#revive { position: fixed; left: 50%; top: 62%; transform: translateX(-50%); font: 600 14px ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.14em; color: #e8e2d4; text-shadow: 0 1px 3px #000; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
 
 #pain { position: fixed; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(ellipse at center, rgba(120, 0, 0, 0) 45%, rgba(130, 10, 5, 0.75) 100%); }
 #hit-arcs { position: fixed; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; }

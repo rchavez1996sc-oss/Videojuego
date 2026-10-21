@@ -1,4 +1,4 @@
-export interface Threat { angle: number; dist: number; aware: boolean; neutral?: boolean; supply?: boolean }
+export interface Threat { angle: number; dist: number; aware: boolean; neutral?: boolean; supply?: boolean; ally?: boolean }
 
 const SECTORS = 12;
 const RINGS = [30, 70, 130];
@@ -11,6 +11,7 @@ export class ThreatGrid {
   private alert = new Float32Array(SECTORS * RINGS.length);
   private civil = new Float32Array(SECTORS * RINGS.length);
   private supply = new Float32Array(SECTORS * RINGS.length);
+  private ally = new Float32Array(SECTORS * RINGS.length);
   private t = 0;
   private size = 132;
 
@@ -27,12 +28,16 @@ export class ThreatGrid {
   /** `angle`: radians relative to view direction (0 ahead, + right). */
   update(dt: number, threats: Threat[]): void {
     this.t += dt;
-    const target = new Float32Array(this.heat.length), aware = new Float32Array(this.heat.length), civil = new Float32Array(this.heat.length), supply = new Float32Array(this.heat.length);
+    const target = new Float32Array(this.heat.length), aware = new Float32Array(this.heat.length), civil = new Float32Array(this.heat.length), supply = new Float32Array(this.heat.length), ally = new Float32Array(this.heat.length);
     for (const th of threats) {
       const ring = RINGS.findIndex((r) => th.dist < r);
       if (ring < 0) continue;
       const a = ((th.angle / (Math.PI * 2)) * SECTORS + SECTORS + 0.5) % SECTORS;
       const k = Math.floor(a) * RINGS.length + ring;
+      if (th.ally) {
+        ally[k] = 1;
+        continue;
+      }
       if (th.supply) {
         supply[k] = 1;
         continue;
@@ -49,6 +54,7 @@ export class ThreatGrid {
       this.alert[i] += (aware[i] - this.alert[i]) * Math.min(1, dt * 4);
       this.civil[i] += (civil[i] - this.civil[i]) * Math.min(1, dt * 3);
       this.supply[i] += (supply[i] - this.supply[i]) * Math.min(1, dt * 3);
+      this.ally[i] += (ally[i] - this.ally[i]) * Math.min(1, dt * 3);
     }
     this.draw();
   }
@@ -65,10 +71,10 @@ export class ThreatGrid {
     for (let sec = 0; sec < SECTORS; sec++) {
       const a0 = ((sec - 0.5) / SECTORS) * Math.PI * 2 - Math.PI / 2, a1 = a0 + (Math.PI * 2) / SECTORS;
       for (let r = 0; r < RINGS.length; r++) {
-        const k = sec * RINGS.length + r, h = this.heat[k], n = this.civil[k], sp = this.supply[k];
-        if (h < 0.02 && n < 0.02 && sp < 0.02) continue;
+        const k = sec * RINGS.length + r, h = this.heat[k], n = this.civil[k], sp = this.supply[k], al = this.ally[k];
+        if (h < 0.02 && n < 0.02 && sp < 0.02 && al < 0.02) continue;
         c.fillStyle = h >= 0.02 ? `rgba(${200 + 40 * this.alert[k]}, 50, 30, ${h * (0.35 + 0.5 * this.alert[k] * pulse)})`
-          : sp >= 0.02 ? `rgba(90, 200, 110, ${sp * 0.55})` : `rgba(235, 232, 220, ${n * 0.3})`;
+          : sp >= 0.02 ? `rgba(90, 200, 110, ${sp * 0.55})` : al >= 0.02 ? `rgba(80, 150, 230, ${al * 0.5})` : `rgba(235, 232, 220, ${n * 0.3})`;
         c.beginPath();
         c.arc(cx, cy, radius(r) - 1, a0 + 0.02, a1 - 0.02);
         c.arc(cx, cy, r === 0 ? 12 : radius(r - 1) + 1, a1 - 0.02, a0 + 0.02, true);

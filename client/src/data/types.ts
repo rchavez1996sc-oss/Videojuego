@@ -43,6 +43,7 @@ export interface ChapterDef {
   farCity?: import('../world/farCity').FarCityDef;
   life?: import('../systems/cityLife').LifeDef;
   civilians?: { count: number; seed: number };
+  squad?: number;
   scatter: { rocks: number; trees: number; seed: number };
   spawn: { x: number; z: number; yaw: number };
   /** Facing used to lay out the practice range and test structures around the spawn. */

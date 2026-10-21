@@ -11,12 +11,13 @@ export class HealthBars {
     document.body.appendChild(this.root);
   }
 
-  update(id: number, world: THREE.Vector3, frac: number, visible: number, camera: THREE.Camera, enemy = true): void {
+  update(id: number, world: THREE.Vector3, frac: number, visible: number, camera: THREE.Camera, enemy = true, label = ''): void {
     let el = this.bars.get(id);
     if (!el) {
       el = document.createElement('div');
       el.className = `hb ${enemy ? 'enemy' : 'ally'}`;
       el.innerHTML = '<div></div>';
+      if (label) el.dataset.label = label;
       this.root.appendChild(el);
       this.bars.set(id, el);
     }

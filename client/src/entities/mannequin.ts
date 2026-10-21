@@ -5,7 +5,7 @@ import { mergeRig, bakeLod } from '../render/merge';
 
 export interface Palette { id: string; cloth: string; vest: string; skin: string; helmet: string }
 
-export const PLAYER_PALETTE: Palette = { id: 'p', cloth: '#4b4a36', vest: '#2f3226', skin: '#a07258', helmet: '#4b4a36' };
+export const PLAYER_PALETTE: Palette = { id: 'p', cloth: '#4a1210', vest: '#2a0d0b', skin: '#a07258', helmet: '#3d100e' };
 
 /** Placeholder soldier until the Mixamo rig arrives (Fase 1). */
 export class Mannequin {

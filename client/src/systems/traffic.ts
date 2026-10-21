@@ -26,6 +26,8 @@ export class Traffic {
   onDisabled: (at: THREE.Vector3, weight: number) => void = () => {};
   onCrash: (at: THREE.Vector3) => void = () => {};
   onSmoke: (at: THREE.Vector3) => void = () => {};
+  /** Other people on the road drivers brake for (the squad). */
+  obstacles: () => THREE.Vector3[] = () => [];
 
   constructor(private world: RAPIER.World, private hf: Heightfield, lighting: Lighting, materials: Record<string, THREE.Material>, bake: { material: THREE.Material; keys: string[] }[], count: number) {
     const glass = lighting.setup(new THREE.MeshStandardMaterial({ color: '#2a3238', roughness: 0.1, metalness: 0.5, transparent: true, opacity: 0.35 }), 'glass-see');
@@ -134,7 +136,7 @@ export class Traffic {
       else if (v.state === 'drive') {
         let target = v.panic ? 19 : v.cruise;
         const ahead = (px: number, pz: number, gap: number) => (px - v.x) * v.dir > 0 && (px - v.x) * v.dir < gap && Math.abs(pz - v.z) < 1.8;
-        if (ahead(player.x, player.z, 12 + v.speed)) {
+        if (ahead(player.x, player.z, 12 + v.speed) || this.obstacles().some((o) => ahead(o.x, o.z, 10 + v.speed))) {
           target = 0;
           v.honkT -= dt * 4;
         }

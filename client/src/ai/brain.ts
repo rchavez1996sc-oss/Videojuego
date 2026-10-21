@@ -20,7 +20,7 @@ export interface AIContext {
 }
 
 /** Sets a destination, routing along the streets when buildings are in the way. */
-export function goTo(e: Enemy, ctx: AIContext, to: THREE.Vector3, run: boolean): void {
+export function goTo(e: Enemy, ctx: Pick<AIContext, 'route'>, to: THREE.Vector3, run: boolean): void {
   e.moveTarget = to;
   e.running = run;
   e.path = ctx.route(e.position, to, e.handle);

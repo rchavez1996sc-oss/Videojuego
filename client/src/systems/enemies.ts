@@ -3,7 +3,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { Enemy, type EnemyDef } from '../entities/enemy';
 import { think, act, type AIContext } from '../ai/brain';
 import { cover } from '../ai/cover';
-import { onHit, surfaceOf } from '../world/surfaces';
+import { onHit } from '../world/surfaces';
 import type { Heightfield } from '../world/heightfield';
 import type { Lighting } from '../render/lighting';
 import type { Player } from '../entities/player';
@@ -12,6 +12,7 @@ import type { Sfx } from '../audio/sfx';
 import { HealthBars } from '../ui/healthbars';
 import type { StreetNav } from '../ai/nav';
 import { difficulty } from '../core/difficulty';
+import { enemyFire } from './enemyFire';
 
 export interface SpawnDef { type: string; x: number; z: number; y?: number; patrol?: [number, number][] }
 
@@ -23,6 +24,16 @@ export class Enemies {
   onPlayerHit: (damage: number, from: THREE.Vector3) => void = () => {};
   onEnemyHit: (kill: boolean, headshot: boolean, at: THREE.Vector3) => void = () => {};
   onEnemyShot: (at: THREE.Vector3) => void = () => {};
+  onAllyKill: (at: THREE.Vector3) => void = () => {};
+  /** Living squad members enemies may pick as targets instead of the player. */
+  allies: () => Enemy[] = () => [];
+  /** Returns true when `handle` was a squad member (who then takes the damage). */
+  onAllyHit: (handle: number, damage: number, from: THREE.Vector3) => boolean = () => false;
+  private focus = new Map<number, { unit: Enemy | null; t: number }>();
+  private byCollider = new Map<number, Enemy>();
+  private pFeet = new THREE.Vector3();
+  private pChest = new THREE.Vector3();
+  private pConceal = 1;
   private bars = new HealthBars();
   private ctx: AIContext;
   private time = 0;
@@ -44,6 +55,7 @@ export class Enemies {
       this.list.push(e);
       this.group.add(e.model.root, e.flash.group);
       onHit(e.handle, (dmg, p) => this.hit(e, dmg, new THREE.Vector3(p.x, p.y, p.z)));
+      this.byCollider.set(e.handle, e);
     });
     const ray = (from: THREE.Vector3, to: THREE.Vector3, self: number) => {
       const dir = to.clone().sub(from);
@@ -149,6 +161,49 @@ export class Enemies {
     this.onEnemyHit(kill, headshot, e.position.clone());
   }
 
+  byHandle(handle: number): Enemy | undefined {
+    return this.byCollider.get(handle);
+  }
+
+  /** A squad member's round: no hitmarker for the player; returns true on a kill. */
+  allyHit(e: Enemy, dmg: number, point: THREE.Vector3, from: THREE.Vector3): boolean {
+    if (!e.alive) return false;
+    const kill = e.damage(dmg * (point.y - e.position.y > e.headY ? 2.5 : 1));
+    e.awareness = 1;
+    e.lastKnown.copy(from);
+    this.combat.bloodPuff(point);
+    if (kill) {
+      e.die(point.clone().sub(from).setY(0).normalize());
+      this.onAllyKill(e.position.clone());
+    }
+    return kill;
+  }
+
+  /** Every 1.5 s each enemy may switch to a squad member that is clearly closer and in sight than the player. */
+  private aimAt(e: Enemy, dt: number): void {
+    const c = this.ctx;
+    let f = this.focus.get(e.id);
+    if (!f) this.focus.set(e.id, (f = { unit: null, t: Math.random() * 1.5 }));
+    if ((f.t -= dt) <= 0) {
+      f.t = 1.5;
+      const dp = e.position.distanceTo(this.pFeet), eye = e.position.clone().setY(e.position.y + e.eyeY);
+      f.unit = this.allies()
+        .filter((a) => a.position.distanceTo(e.position) < Math.min(dp * 0.8, e.def.sight))
+        .sort((a, b) => a.position.distanceToSquared(e.position) - b.position.distanceToSquared(e.position))
+        .find((a) => c.sees(eye, a.position.clone().setY(a.position.y + 1.2), e.handle)) ?? null;
+    }
+    if (f.unit && !f.unit.alive) f.unit = null;
+    if (f.unit) {
+      c.playerFeet.copy(f.unit.position);
+      c.playerChest.copy(f.unit.position).setY(f.unit.position.y + 1.25 - (f.unit.crouched ? 0.45 : 0));
+      c.playerConcealment = 1;
+    } else {
+      c.playerFeet.copy(this.pFeet);
+      c.playerChest.copy(this.pChest);
+      c.playerConcealment = this.pConceal;
+    }
+  }
+
   /** Area damage with line-of-sight check; returns how many enemies died. */
   explosion(at: THREE.Vector3, radius: number, maxDamage: number): number {
     let kills = 0;
@@ -188,36 +243,7 @@ export class Enemies {
   }
 
   private fire(e: Enemy): void {
-    const muzzle = e.model.muzzle.getWorldPosition(new THREE.Vector3());
-    e.flash.fire(e.model.muzzle);
-    this.onEnemyShot(muzzle);
-    const dist = muzzle.distanceTo(this.ctx.playerChest);
-    const moving = this.player.speed > 3 ? 1.2 : this.player.speed > 0.5 ? 0.5 : 0;
-    const settle = 1 + 1.6 * Math.max(0, 1 - e.stateT / 3.5);
-    const cone = THREE.MathUtils.degToRad((e.def.spread + dist * e.def.spreadPerMeter * 10 + moving) * settle * difficulty.value.spread);
-    const aimPoint = this.ctx.playerChest.clone();
-    if (!this.attackers.has(e.id)) {
-      const off = new THREE.Vector3(Math.random() - 0.5, Math.random() * 0.6 - 0.2, Math.random() - 0.5).normalize().multiplyScalar(1.6 + Math.random() * 2.5);
-      aimPoint.add(off);
-    }
-    const dir = aimPoint.sub(muzzle).normalize();
-    const r = Math.sqrt(Math.random()) * Math.tan(cone), a = Math.random() * Math.PI * 2;
-    const u = new THREE.Vector3(0, 1, 0).cross(dir).normalize(), v = dir.clone().cross(u);
-    dir.addScaledVector(u, Math.cos(a) * r).addScaledVector(v, Math.sin(a) * r).normalize();
-    const hit = this.world.castRayAndGetNormal(new RAPIER.Ray(muzzle, dir), 400, true, undefined, undefined, undefined, undefined, (c) => c.handle !== e.handle && c.isEnabled());
-    const end = muzzle.clone().addScaledVector(dir, hit ? hit.timeOfImpact : 400);
-    if (Math.random() < 0.5) this.combat.tracer(muzzle, end);
-    const cam = this.camera.position;
-    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(this.camera.quaternion);
-    const pan = muzzle.clone().sub(cam).normalize().dot(right);
-    this.sfx.distantShot(muzzle.distanceTo(cam), pan, e.def.rpm < 100);
-    if (hit?.collider.handle === this.player.collisionHandle) {
-      this.onPlayerHit(e.def.damage * difficulty.value.damage * (0.85 + Math.random() * 0.3), muzzle);
-      return;
-    }
-    const closest = cam.clone().sub(muzzle).dot(dir);
-    if (closest > 0 && closest < (hit?.timeOfImpact ?? 400) && muzzle.clone().addScaledVector(dir, closest).distanceTo(cam) < 2.2) this.sfx.whiz(pan);
-    if (hit && end.distanceTo(cam) < 90) this.combat.impact(end, new THREE.Vector3(hit.normal.x, hit.normal.y, hit.normal.z), surfaceOf(hit.collider.handle), dir);
+    enemyFire(e, this, this.ctx, this.attackers.has(e.id), this.world, this.camera, this.combat, this.sfx, this.player);
   }
 
   update(dt: number): void {
@@ -228,6 +254,9 @@ export class Enemies {
     c.playerChest.copy(this.player.position).setY(this.player.position.y + 1.3 - this.player.crouchAmount * 0.45);
     const grass = this.hf.maskAt(this.player.position.x, this.player.position.z, 1);
     c.playerConcealment = this.player.crouchAmount > 0.5 ? (grass > 0.5 ? 0.35 : 0.6) : 1;
+    this.pFeet.copy(c.playerFeet);
+    this.pChest.copy(c.playerChest);
+    this.pConceal = c.playerConcealment;
     this.shareIntel(dt);
     this.attackers.clear();
     this.list
@@ -238,6 +267,7 @@ export class Enemies {
     for (const e of this.list) {
       e.flash.update(dt);
       if (e.alive) {
+        this.aimAt(e, dt);
         think(e, c, dt);
         const toPlayer = c.playerChest.clone().sub(e.position.clone().setY(e.position.y + 1.4));
         const pitch = e.state === 'combat' ? Math.atan2(toPlayer.y, Math.hypot(toPlayer.x, toPlayer.z)) : 0;

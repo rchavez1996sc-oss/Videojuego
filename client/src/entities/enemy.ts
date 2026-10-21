@@ -175,6 +175,25 @@ export class Enemy {
     this.model.root.rotation.set(0, this.yaw + Math.PI, 0);
   }
 
+  teleport(p: THREE.Vector3): void {
+    this.body.setTranslation({ x: p.x, y: p.y + HALF + RADIUS + 0.05, z: p.z }, true);
+    this.body.setNextKinematicTranslation({ x: p.x, y: p.y + HALF + RADIUS + 0.05, z: p.z });
+    this.position.copy(p);
+    this.moveTarget = null;
+    this.path = [];
+    this.vel.set(0, 0, 0);
+  }
+
+  /** Back on their feet after being downed (allies only). */
+  revive(hp: number): void {
+    this.state = 'patrol';
+    this.hp = hp;
+    this.collider.setEnabled(true);
+    this.model.root.quaternion.identity();
+    this.moveTarget = null;
+    this.path = [];
+  }
+
   damage(amount: number): boolean {
     if (!this.alive) return false;
     this.hp -= amount;

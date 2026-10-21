@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import type { Heightfield } from '../world/heightfield';
 import type { Enemy } from '../entities/enemy';
+import type { Enemies } from './enemies';
 
 /**
  * Picks a respawn spot 40–90 m from where the player fell, away from living enemies and out of their sight.
@@ -47,4 +48,18 @@ export function findRespawn(world: RAPIER.World, hf: Heightfield, enemies: Enemy
   const pos = best?.pos ?? fallback;
   const look = centroid.clone().sub(pos);
   return { pos, yaw: Math.atan2(-look.x, -look.z) };
+}
+
+/** Survivors who were hunting the player go back to searching where they fell. */
+export function resetHunt(enemies: Enemies, deathPos: THREE.Vector3): void {
+  enemies.suppressIntel(15);
+  for (const e of enemies.list) {
+    if (!e.alive || e.state === 'patrol') continue;
+    e.state = 'alert';
+    e.stateT = 0;
+    e.awareness = 0.5;
+    e.lastKnown.copy(deathPos);
+    e.moveTarget = null;
+    e.path = [];
+  }
 }

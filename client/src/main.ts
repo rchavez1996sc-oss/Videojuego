@@ -28,7 +28,7 @@ import type { EnemyDef } from './entities/enemy';
 import { Enemies } from './systems/enemies';
 import { DamageFx } from './ui/damage';
 import { Pickups, collectSupplies } from './systems/pickups';
-import { findRespawn } from './systems/respawn';
+import { findRespawn, resetHunt } from './systems/respawn';
 import { Grenades } from './weapons/grenades';
 import { detonate, BLAST_RADIUS } from './weapons/explosion';
 import { ThreatGrid } from './ui/threatGrid';
@@ -42,6 +42,8 @@ import { createPopulace } from './systems/populace';
 import { showMissionFailed } from './ui/missionFail';
 import { setupStartMenu } from './ui/startMenu';
 import { gatherThreats, surfaceUnder } from './systems/sensing';
+import { createSquad, type AllyDef } from './systems/squad';
+import allyDef from './data/allies.json';
 
 const CHAPTERS: Record<string, unknown> = { '1': ch01, '2': ch02 };
 
@@ -125,6 +127,9 @@ async function boot(): Promise<void> {
     alarm(p, 90);
   };
   enemies.onEnemyShot = (p) => alarm(p, 60);
+  const squad = createSquad(ch.squad ?? 0, allyDef as unknown as AllyDef, { world, hf, lighting, player, enemies, combat, sfx, hud, camera, nav, alarm }, spawn, ch.spawn.yaw);
+  if (squad) scene.add(squad.group);
+  if (squad && life) life.trafficEvents.obstacles = () => squad.positions;
   let deadT = 0, skipRender = false, shieldT = 0;
   const deathPos = new THREE.Vector3();
   enemies.onPlayerHit = (dmg, from) => {
@@ -151,15 +156,18 @@ async function boot(): Promise<void> {
   grenades.onExplode = (at) => {
     detonate(at, { combat, sfx, tpc, enemies, player, world, playerAlive: deadT <= 0 });
     civilians?.explosion(at, BLAST_RADIUS);
+    squad?.explosion(at, BLAST_RADIUS);
     life?.alarm(at, 150);
     life?.explosion(at, BLAST_RADIUS);
   };
-  enemies.onEnemyHit = (kill, headshot, at) => {
+  const loot = (at: THREE.Vector3) => {
     const roll = Math.random();
-    if (kill) {
-      if (roll < 0.2) pickups.spawn(at, 'medkit');
-      else if (roll < 0.5) pickups.spawn(at, 'ammo');
-    }
+    if (roll < 0.2) pickups.spawn(at, 'medkit');
+    else if (roll < 0.5) pickups.spawn(at, 'ammo');
+  };
+  enemies.onAllyKill = loot;
+  enemies.onEnemyHit = (kill, headshot, at) => {
+    if (kill) loot(at);
     sfx.hitmarker(kill);
     hud.hitmarker(kill, headshot, 'BAJA  +100');
     if (kill && enemies.aliveCount === 0) setTimeout(() => hud.showToast('ZONA DESPEJADA'), 1200);
@@ -170,7 +178,7 @@ async function boot(): Promise<void> {
   let freeCam = false;
   installDebug({
     extraLog: () => (civilians ? `civ:${civilians.list.map((c) => c.mood[0]).join('')}` : ''),
-    views: ch.views ?? [], tpc, hf, player, combat, enemies, grenades, renderer, shotMode, scene,
+    views: ch.views ?? [], tpc, hf, player, combat, enemies, grenades, renderer, shotMode, scene, squad,
     frame: (dt) => frame(dt),
     setFreeCam: (v) => (freeCam = v),
     setSkipRender: (v) => (skipRender = v),
@@ -205,16 +213,8 @@ async function boot(): Promise<void> {
           tpc.yaw = spot.yaw;
           tpc.pitch = -0.1;
           shieldT = 3;
-          enemies.suppressIntel(15);
-          for (const e of enemies.list) {
-            if (!e.alive || e.state === 'patrol') continue;
-            e.state = 'alert';
-            e.stateT = 0;
-            e.awareness = 0.5;
-            e.lastKnown.copy(deathPos);
-            e.moveTarget = null;
-            e.path = [];
-          }
+          resetHunt(enemies, deathPos);
+          squad?.regroup(spot.pos, spot.yaw);
         }
       } else {
         player.update(dt, input, tpc.yaw, input.aiming, tpc.pitch, input.firing);
@@ -227,6 +227,7 @@ async function boot(): Promise<void> {
         }
       }
       enemies.update(dt);
+      squad?.update(dt, tpc.yaw, input.down('KeyE'), deadT <= 0);
       civilians?.update(dt, player.position);
       life?.update(dt, player.position, enemies.list.some((e) => e.alive && e.state === 'combat'));
       world.timestep = dt;
@@ -252,8 +253,9 @@ async function boot(): Promise<void> {
       grenades.update(dt);
     }
     enemies.sync();
+    squad?.sync();
     collectSupplies(dt, pickups, { player, gun: combat.gun, grenades, sfx, hud, alive: deadT <= 0 });
-    const threats = gatherThreats(enemies, civilians, pickups.positions, player.position, camera);
+    const threats = gatherThreats(enemies, civilians, pickups.positions, player.position, camera, squad?.positions);
     threatGrid.update(dt, threats);
     damageFx.update(dt, player.hp / 100);
     hud.enemies = enemies.aliveCount;
