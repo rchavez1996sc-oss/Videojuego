@@ -8,6 +8,7 @@ import type { Grenades } from '../weapons/grenades';
 import type { Renderer } from '../render/renderer';
 import type { Traffic } from '../systems/traffic';
 import type { Squad } from '../systems/squad';
+import type { GrenadeMode } from '../weapons/grenadeMode';
 
 export interface DebugContext {
   views: [number, number, number, number, number, number][];
@@ -27,6 +28,7 @@ export interface DebugContext {
   traffic?: () => Traffic | undefined;
   scene?: THREE.Scene;
   squad?: Squad | null;
+  grenadeMode?: GrenadeMode;
 }
 
 /** `window.__game`: hooks used by the Playwright screenshot / AI / grenade scripts. */
@@ -121,6 +123,34 @@ export function installDebug(c: DebugContext): void {
         o.visible = true;
       }
       return `total calls ${base[0]} tris ${base[1]}\n` + out.filter((l) => !/calls 0 tris 0/.test(l)).join('\n');
+    },
+    /** Grenade in hand with the throw arc drawn, rendered from the player's camera. */
+    aimGrenade(pitch: number) {
+      c.setFreeCam(false);
+      c.tpc.pitch = pitch;
+      c.grenadeMode!.equipped = true;
+      c.frame(1 / 60);
+      c.grenadeMode!.preview();
+      c.renderer.render(1 / 60);
+    },
+    /** Kills the nearest enemy, stands on the body with an empty rifle and presses E; then waits for an emergency crate. */
+    lootTest() {
+      const g = c.combat.gun, p = c.player.position;
+      const e = [...c.enemies.list].filter((x) => x.alive).sort((a, b) => a.position.distanceTo(p) - b.position.distanceTo(p))[0];
+      e.damage(1e6);
+      e.die(new THREE.Vector3(1, 0, 0));
+      c.frame(1 / 20);
+      c.player.respawn(e.position.clone().add(new THREE.Vector3(0.8, 0, 0)), 0);
+      g.ammo = 0;
+      g.reserve = 0;
+      c.frame(1 / 20);
+      dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE' }));
+      c.frame(1 / 20);
+      dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE' }));
+      const looted = g.reserve;
+      g.reserve = 0;
+      for (let i = 0; i < 80; i++) c.frame(1 / 20);
+      return `looted=${looted} toast="${document.querySelector('#hud .toast')?.textContent}"`;
     },
     squadInfo: () => {
       const s = c.squad;

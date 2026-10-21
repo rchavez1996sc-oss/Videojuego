@@ -43,6 +43,8 @@ import { showMissionFailed } from './ui/missionFail';
 import { setupStartMenu } from './ui/startMenu';
 import { gatherThreats, surfaceUnder } from './systems/sensing';
 import { createSquad, type AllyDef } from './systems/squad';
+import { GrenadeMode } from './weapons/grenadeMode';
+import { Loot } from './systems/loot';
 import allyDef from './data/allies.json';
 
 const CHAPTERS: Record<string, unknown> = { '1': ch01, '2': ch02 };
@@ -148,11 +150,9 @@ async function boot(): Promise<void> {
   const grenades = new Grenades(world, hf, lighting, () => player.collisionHandle);
   scene.add(grenades.group);
   grenades.onSettled = (at) => enemies.fleeFrom(at);
-  const throwGrenade = () => {
-    const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-    const from = player.position.clone().setY(player.position.y + 1.55).addScaledVector(fwd.clone().setY(0).normalize(), 0.55);
-    if (grenades.throw(from, fwd, new THREE.Vector3())) sfx.grenadePin();
-  };
+  const nadeMode = new GrenadeMode(grenades, world, camera, player, sfx, hud);
+  scene.add(nadeMode.group);
+  const corpses = new Loot(pickups, world, hf);
   grenades.onExplode = (at) => {
     detonate(at, { combat, sfx, tpc, enemies, player, world, playerAlive: deadT <= 0 });
     civilians?.explosion(at, BLAST_RADIUS);
@@ -178,11 +178,11 @@ async function boot(): Promise<void> {
   let freeCam = false;
   installDebug({
     extraLog: () => (civilians ? `civ:${civilians.list.map((c) => c.mood[0]).join('')}` : ''),
-    views: ch.views ?? [], tpc, hf, player, combat, enemies, grenades, renderer, shotMode, scene, squad,
+    views: ch.views ?? [], tpc, hf, player, combat, enemies, grenades, renderer, shotMode, scene, squad, grenadeMode: nadeMode,
     frame: (dt) => frame(dt),
     setFreeCam: (v) => (freeCam = v),
     setSkipRender: (v) => (skipRender = v),
-    throwGrenade,
+    throwGrenade: () => nadeMode.throwNow(),
     traffic: () => life?.trafficEvents,
   });
 
@@ -248,13 +248,13 @@ async function boot(): Promise<void> {
       tpc.update(dt, input, player.position, player.crouchAmount, player.collisionHandle);
       camera.updateMatrixWorld();
       player.model.root.updateMatrixWorld(true);
-      if (deadT <= 0) combat.update(dt, input, input.aiming, player.airborne);
-      if (deadT <= 0 && input.hit('KeyG')) throwGrenade();
+      if (!nadeMode.update(input, deadT <= 0) && deadT <= 0) combat.update(dt, input, input.aiming, player.airborne);
       grenades.update(dt);
     }
     enemies.sync();
     squad?.sync();
     collectSupplies(dt, pickups, { player, gun: combat.gun, grenades, sfx, hud, alive: deadT <= 0 });
+    corpses.update(dt, { dead: [...enemies.list.filter((e) => !e.alive), ...(squad?.fallen ?? [])], player, gun: combat.gun, input, sfx, hud, alive: deadT <= 0 });
     const threats = gatherThreats(enemies, civilians, pickups.positions, player.position, camera, squad?.positions);
     threatGrid.update(dt, threats);
     damageFx.update(dt, player.hp / 100);
@@ -265,7 +265,7 @@ async function boot(): Promise<void> {
     hud.update(dt, {
       spreadPx: (Math.tan(cone) / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) * innerHeight * 0.5,
       ammo: g.ammo, mag: g.def.magazine, reserve: g.reserve, mode: g.mode, weapon: g.def.name,
-      hp: player.hp, cap: player.regenCap, grenades: grenades.count, zoom: tpc.zoom, stamina: player.stamina, reload: g.reloadProgress, aiming: input.aiming,
+      hp: player.hp, cap: player.regenCap, grenades: grenades.count, zoom: tpc.zoom, stamina: player.stamina, reload: g.reloadProgress, aiming: input.aiming, slot: nadeMode.equipped ? 'grenade' : 'rifle',
     });
     if (!shotMode) dynRes.update(dt);
     camera.updateMatrixWorld();

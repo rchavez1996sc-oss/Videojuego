@@ -75,8 +75,13 @@ export class Squad {
       if (a) this.hurt(a, dmg, from);
       return !!a;
     };
-    this.prompt.id = 'revive';
+    this.prompt.className = 'prompt';
     document.body.appendChild(this.prompt);
+  }
+
+  /** Squad members who bled out (their ammo can be taken). */
+  get fallen(): Enemy[] {
+    return this.list.filter((a) => a.lost).map((a) => a.unit);
   }
 
   get positions(): THREE.Vector3[] {
@@ -153,7 +158,7 @@ export class Squad {
     this.reviveT = near && held ? this.reviveT + dt : 0;
     this.prompt.style.opacity = near ? '1' : '0';
     if (!near) return;
-    this.prompt.textContent = this.reviveT > 0 ? `REANIMANDO A ${near.name}  ${Math.round((this.reviveT / REVIVE_TIME) * 100)}%` : `MANTÉN E — REANIMAR A ${near.name}`;
+    this.prompt.innerHTML = this.reviveT > 0 ? `REANIMANDO A ${near.name} <span>${Math.round((this.reviveT / REVIVE_TIME) * 100)}%</span>` : `<kbd>E</kbd> MANTÉN PARA REANIMAR A ${near.name}`;
     if (this.reviveT < REVIVE_TIME) return;
     near.unit.revive(this.def.hp * 0.5);
     this.reviveT = 0;

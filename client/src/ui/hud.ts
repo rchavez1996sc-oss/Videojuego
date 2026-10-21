@@ -1,3 +1,5 @@
+import './hud.css';
+
 export class Hud {
   private root = document.createElement('div');
   private cross: HTMLElement[] = [];
@@ -14,6 +16,9 @@ export class Hud {
   private nades: HTMLElement;
   private civ: HTMLElement;
   private zoom: HTMLElement;
+  private hpNum: HTMLElement;
+  private ticks: HTMLElement;
+  private slots: HTMLElement[];
   private cache = new Map<string, string>();
   private hitT = 0;
   private toastT = 0;
@@ -25,13 +30,18 @@ export class Hud {
       <div class="hitmarker"><i></i><i></i><i></i><i></i></div>
       <div class="reload"><span>RECARGANDO</span><div class="bar"><div></div></div></div>
       <div class="toast"></div>
-      <div class="counter">ENEMIGOS<b>0</b><span class="civ"></span></div>
+      <div class="zoom"></div>
+      <div class="counter"><span class="k">ENEMIGOS</span><b>0</b><span class="civ"></span></div>
       <div class="vitals">
-        <div class="label">SALUD</div><div class="meter hp"><div></div><i class="cap"></i></div>
-        <div class="meter stamina"><div></div></div>
+        <div class="hpnum"><i class="plus"></i><b>100</b></div>
+        <div class="bars"><div class="meter hp"><div></div><i class="cap"></i></div><div class="meter stamina"><div></div></div></div>
       </div>
-      <div class="ammo"><div class="weapon"></div><div class="count"><span class="mag">30</span><span class="res">/ 150</span></div><div class="mode"></div><div class="nades"></div></div>
-      <div class="zoom"></div>`;
+      <div class="ammo">
+        <div class="head"><span class="weapon"></span><span class="mode"></span></div>
+        <div class="count"><span class="mag">30</span><span class="res">150</span></div>
+        <div class="ticks"><div></div></div>
+        <div class="slots"><div class="slot rifle on"><kbd>1</kbd>FUSIL</div><div class="slot nade"><kbd>G</kbd>GRANADA<span class="nades"></span></div></div>
+      </div>`;
     document.body.appendChild(this.root);
     const q = <T extends HTMLElement>(s: string) => this.root.querySelector(s) as T;
     this.cross = ['.t', '.b', '.l', '.r'].map((s) => q(`.crosshair ${s}`));
@@ -41,6 +51,9 @@ export class Hud {
     this.mode = q('.mode');
     this.weapon = q('.weapon');
     this.hp = q('.hp div');
+    this.hpNum = q('.hpnum b');
+    this.ticks = q('.ticks div');
+    this.slots = [q('.slot.rifle'), q('.slot.nade')];
     this.stamina = q('.stamina div');
     this.reload = q('.reload');
     this.toast = q('.toast');
@@ -60,7 +73,7 @@ export class Hud {
     this.root.style.display = v ? '' : 'none';
   }
 
-  update(dt: number, s: { spreadPx: number; ammo: number; mag: number; reserve: number; mode: string; weapon: string; hp: number; cap: number; stamina: number; grenades: number; zoom: number; reload: number; aiming: boolean }): void {
+  update(dt: number, s: { spreadPx: number; ammo: number; mag: number; reserve: number; mode: string; weapon: string; hp: number; cap: number; stamina: number; grenades: number; zoom: number; reload: number; aiming: boolean; slot: 'rifle' | 'grenade' }): void {
     const gap = Math.round(5 + s.spreadPx);
     this.set('gap', String(gap), () => {
       this.cross[0].style.transform = `translate(-50%, ${-gap - 10}px)`;
@@ -71,14 +84,28 @@ export class Hud {
     this.set('ammo', `${s.ammo}/${s.reserve}`, () => {
       this.ammo.textContent = String(s.ammo);
       this.ammo.classList.toggle('low', s.ammo <= s.mag * 0.2);
-      this.reserve.textContent = `/ ${s.reserve}`;
+      this.reserve.textContent = String(s.reserve);
+      this.reserve.classList.toggle('empty', s.reserve === 0);
+      this.ticks.style.width = `${(s.ammo / s.mag) * 100}%`;
+      this.ticks.parentElement!.style.setProperty('--n', String(s.mag));
+    });
+    this.set('slot', s.slot, () => {
+      this.slots[0].classList.toggle('on', s.slot === 'rifle');
+      this.slots[1].classList.toggle('on', s.slot === 'grenade');
     });
     this.set('mode', s.mode + s.weapon, () => {
       this.mode.textContent = s.mode === 'auto' ? 'AUTO' : 'SEMI';
       this.weapon.textContent = s.weapon;
     });
-    this.set('hp', s.hp.toFixed(0), () => (this.hp.style.width = `${s.hp}%`));
-    this.set('nades', String(s.grenades), () => (this.nades.textContent = `GRANADAS ${'●'.repeat(s.grenades)}${'○'.repeat(Math.max(0, 3 - s.grenades))}`));
+    this.set('hp', s.hp.toFixed(0), () => {
+      this.hp.style.width = `${s.hp}%`;
+      this.hpNum.textContent = String(Math.max(0, Math.ceil(s.hp)));
+      this.hpNum.parentElement!.parentElement!.classList.toggle('low', s.hp < 35);
+    });
+    this.set('nades', String(s.grenades), () => {
+      this.nades.innerHTML = '<i></i>'.repeat(s.grenades) + '<i class="off"></i>'.repeat(Math.max(0, 3 - s.grenades));
+      this.slots[1].classList.toggle('none', s.grenades === 0);
+    });
     const z = s.aiming && s.zoom > 1.2 ? `${Math.round(s.zoom)}x` : '';
     this.set('zoom', z, () => {
       this.zoom.textContent = z;
@@ -105,7 +132,7 @@ export class Hud {
   }
 
   set civilians(v: { count: number; limit: number }) {
-    this.civ.textContent = v.count ? `BAJAS CIVILES ${v.count}/${v.limit}` : '';
+    this.civ.innerHTML = v.count ? `BAJAS CIVILES <b>${v.count}/${v.limit}</b>` : '';
     this.civ.classList.toggle('warn', v.count >= v.limit - 1);
   }
 
