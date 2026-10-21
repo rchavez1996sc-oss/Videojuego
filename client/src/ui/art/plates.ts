@@ -13,6 +13,7 @@ export async function renderPlates(onPlate: (i: number, url: string) => void): P
   const manifest = await (await fetch(`${BASE}manifest.json`, { cache: 'no-cache' })).json();
   const art: Record<string, string> = manifest.art ?? {};
   KEYS.forEach((k, i) => art[k] && onPlate(i, `${BASE}${art[k]}?v=${manifest.version ?? 0}`));
+  if (KEYS.every((k) => art[k])) return;
   const cast = new Cast();
   await cast.load();
   const stage = new Stage();
