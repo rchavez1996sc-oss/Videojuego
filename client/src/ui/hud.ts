@@ -73,7 +73,7 @@ export class Hud {
     this.root.style.display = v ? '' : 'none';
   }
 
-  update(dt: number, s: { spreadPx: number; ammo: number; mag: number; reserve: number; mode: string; weapon: string; hp: number; cap: number; stamina: number; grenades: number; zoom: number; reload: number; aiming: boolean; slot: 'rifle' | 'grenade' }): void {
+  update(dt: number, s: { spreadPx: number; ammo: number; mag: number; reserve: number; carry: number; mode: string; weapon: string; hp: number; cap: number; stamina: number; grenades: number; zoom: number; reload: number; aiming: boolean; slot: 'rifle' | 'grenade' }): void {
     const gap = Math.round(5 + s.spreadPx);
     this.set('gap', String(gap), () => {
       this.cross[0].style.transform = `translate(-50%, ${-gap - 10}px)`;
@@ -82,10 +82,11 @@ export class Hud {
       this.cross[3].style.transform = `translate(${gap}px, -50%)`;
     });
     this.set('ammo', `${s.ammo}/${s.reserve}`, () => {
-      this.ammo.textContent = String(s.ammo);
-      this.ammo.classList.toggle('low', s.ammo <= s.mag * 0.2);
-      this.reserve.textContent = String(s.reserve);
-      this.reserve.classList.toggle('empty', s.reserve === 0);
+      const total = s.ammo + s.reserve;
+      this.ammo.textContent = String(total);
+      this.ammo.classList.toggle('low', total <= s.mag);
+      this.reserve.textContent = String(s.carry);
+      this.reserve.classList.toggle('empty', total === 0);
       this.ticks.style.width = `${(s.ammo / s.mag) * 100}%`;
       this.ticks.parentElement!.style.setProperty('--n', String(s.mag));
     });

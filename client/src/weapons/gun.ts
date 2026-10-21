@@ -22,8 +22,14 @@ export class Gun {
     return this.reloading > 0 ? 1 - this.reloading / this.reloadTotal : 0;
   }
 
+  /** Most rounds that can be carried in total (loaded magazine included). */
+  get carry(): number {
+    return this.def.magazine + this.def.reserve;
+  }
+
+  /** Room left in the reserve given what is loaded. */
   get reserveMax(): number {
-    return this.def.reserve + this.def.magazine * 2;
+    return this.carry - this.ammo;
   }
 
   addAmmo(rounds: number): void {
