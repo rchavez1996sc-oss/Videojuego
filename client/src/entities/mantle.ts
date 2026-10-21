@@ -78,3 +78,16 @@ export const CLIMBS: Record<'vault' | 'low' | 'high' | 'hang' | 'wall', Climb> =
   hang: { key: 'hang_climb', from: 0.08, span: 0.85, dur: 0.9 },
   wall: { key: 'wall_climb', from: 0.15, span: 0.8, dur: 0.65 },
 };
+
+/** A 0.4–0.6 m step right ahead of a walking body (lower ones the controller's autostep handles). */
+export function stepLedge(world: RAPIER.World, feet: THREE.Vector3, vel: THREE.Vector3, exclude: number): { ledge: Ledge; yaw: number } | null {
+  const yaw = Math.atan2(-vel.x, -vel.z);
+  const ledge = findLedge(world, feet, yaw, exclude, 0.6);
+  if (!ledge || ledge.vault || ledge.height < 0.4) return null;
+  return Math.hypot(ledge.target.x - feet.x, ledge.target.z - feet.z) > 0.95 ? null : { ledge, yaw };
+}
+
+/** Falls of three storeys (8 m) or more hurt, 25 to 90; five storeys (13.5 m) or more kill. */
+export function fallDamage(drop: number): number {
+  return drop >= 13.5 ? 999 : drop >= 8 ? 25 + ((drop - 8) / 5.5) * 65 : 0;
+}

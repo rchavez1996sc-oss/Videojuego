@@ -3,7 +3,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import type { Input } from '../core/input';
 import type { Lighting } from '../render/lighting';
 import { Rig, type Outfit } from './rig';
-import { findLedge, mantlePath, CLIMBS, type Climb, type Ledge } from './mantle';
+import { findLedge, mantlePath, stepLedge, fallDamage, CLIMBS, type Climb, type Ledge } from './mantle';
 import { difficulty } from '../core/difficulty';
 import { ladderAt, type Ladder } from '../world/ladders';
 
@@ -33,6 +33,7 @@ export class Player {
   private airT = 0;
   private stepT = 0;
   private down = false;
+  private peakY = -Infinity;
   /** Q: running to a cover spot, then holding a crouch there until the player moves. */
   private coverGoal: THREE.Vector3 | null = null;
   private inCover = false;
@@ -112,7 +113,7 @@ export class Player {
 
   respawn(feet: THREE.Vector3, yaw: number): void {
     if (this.down) this.model.revive();
-    this.down = false;
+    [this.down, this.peakY] = [false, -Infinity];
     this.body.setTranslation({ x: feet.x, y: feet.y + HALF + RADIUS + 0.2, z: feet.z }, true);
     this.vel.set(0, 0, 0);
     this.hp = 100;
@@ -129,6 +130,7 @@ export class Player {
 
   private updateMantle(dt: number): void {
     const m = this.mantle!;
+    this.peakY = this.position.y;
     m.t = Math.min(1, m.t + dt / m.dur);
     const feet = mantlePath(m.start, m.ledge, m.t, m.clip?.lift);
     this.body.setNextKinematicTranslation({ x: feet.x, y: feet.y + HALF + RADIUS, z: feet.z });
@@ -148,18 +150,13 @@ export class Player {
     }
   }
 
-  /** Walking into a kerb, terrace edge or low step (0.4–0.6 m; lower ones the controller's autostep handles) steps up onto it without pressing jump. */
+  /** Walking into a kerb, terrace edge or low step steps up onto it without pressing jump. */
   private autoStep(dt: number): boolean {
     if (!this.grounded || this.speed < 1 || (this.stepT -= dt) > 0) return false;
     this.stepT = 0.08;
-    const yaw = Math.atan2(-this.vel.x, -this.vel.z);
-    const ledge = findLedge(this.world, this.position, yaw, this.collider.handle, 0.6);
-    if (!ledge || ledge.vault || ledge.height < 0.4) return false;
-    const reach = Math.hypot(ledge.target.x - this.position.x, ledge.target.z - this.position.z);
-    if (reach > 0.95) return false;
-    this.yaw = yaw;
-    this.mantle = { ledge, start: this.position.clone(), t: 0, dur: 0.25 + ledge.height * 0.35, step: true };
-    return true;
+    const step = stepLedge(this.world, this.position, this.vel, this.collider.handle);
+    if (step) [this.yaw, this.mantle] = [step.yaw, { ledge: step.ledge, start: this.position.clone(), t: 0, dur: 0.25 + step.ledge.height * 0.35, step: true }];
+    return !!step;
   }
 
   get climbing(): boolean {
@@ -169,6 +166,7 @@ export class Player {
   /** On a ladder: W/S move up/down, Space lets go; reaching the top steps onto the roof. */
   private updateLadder(dt: number, input: Input): void {
     const l = this.ladder!;
+    this.peakY = this.position.y;
     const dir = (input.down('KeyW') ? 1 : 0) - (input.down('KeyS') ? 1 : 0);
     let y = this.position.y + dir * LADDER * dt;
     let x = l.base.x + l.normal.x * 0.45, z = l.base.z + l.normal.z * 0.45;
@@ -263,6 +261,9 @@ export class Player {
     const wasGrounded = this.grounded;
     this.grounded = this.ctrl.computedGrounded();
     if (this.grounded && !wasGrounded && this.lastVy < -4) this.landImpact = Math.min(1, (-this.lastVy - 4) / 8 + 0.25);
+    if (!this.grounded) this.peakY = Math.max(this.peakY, this.position.y);
+    else if (!wasGrounded && fallDamage(this.peakY - this.position.y) > 0) this.hurt(fallDamage(this.peakY - this.position.y));
+    if (this.grounded) this.peakY = this.position.y;
     this.landImpact = Math.max(0, this.landImpact - dt * 2.5);
     this.lastVy = this.vel.y;
     if (this.grounded && this.vel.y < 0) this.vel.y = -1;
