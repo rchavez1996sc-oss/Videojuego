@@ -38,10 +38,11 @@ export class Squad {
 
   constructor(private def: AllyDef, count: number, private d: Deps, spawn: THREE.Vector3, yaw: number) {
     const ground = (x: number, z: number) => d.hf.heightAt(x, z);
+    const names = [...def.names].sort(() => Math.random() - 0.5);
     for (let i = 0; i < count; i++) {
       const unit = new Enemy(100 + i, def, d.world, d.lighting, slotPosition(i, spawn, yaw, ground), [], false);
       unit.yaw = yaw;
-      const a: Ally = { unit, name: def.names[i % def.names.length], slot: i, target: null, downedT: 0, lost: false };
+      const a: Ally = { unit, name: names[i % names.length], slot: i, target: null, downedT: 0, lost: false };
       this.list.push(a);
       this.handles.add(unit.handle);
       this.group.add(unit.model.root, unit.flash.group);
