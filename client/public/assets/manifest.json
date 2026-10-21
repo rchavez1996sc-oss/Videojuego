@@ -1,5 +1,5 @@
 {
-  "version": 7,
+  "version": 8,
   "characters": {
     "pnp": {
       "near": "characters/pnp.glb",
@@ -31,6 +31,7 @@
   "art": {
     "general": "art/general.webp",
     "tanks": "art/tanks.webp",
-    "detentions": "art/detentions.webp"
+    "detentions": "art/detentions.webp",
+    "voices": "art/voices.webp"
   }
 }
