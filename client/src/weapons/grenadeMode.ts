@@ -38,6 +38,7 @@ export class GrenadeMode {
     const { from, dir } = this.release();
     if (!this.grenades.throw(from, dir, new THREE.Vector3())) return false;
     this.sfx.grenadePin();
+    this.player.model.gesture('throw', 1.1);
     return true;
   }
 

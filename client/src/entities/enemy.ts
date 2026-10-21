@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
-import { Mannequin, type Palette } from './mannequin';
+import type { Palette } from './mannequin';
+import { Rig, type Outfit } from './rig';
+import type { CharKind } from '../render/characters';
 import { MuzzleFlash } from '../fx/muzzleFlash';
 import type { Lighting } from '../render/lighting';
 import type { CoverPoint } from '../ai/cover';
@@ -8,7 +10,7 @@ import type { CoverPoint } from '../ai/cover';
 export interface EnemyDef {
   hp: number; damage: number; rpm: number; burst: [number, number]; burstPause: [number, number];
   spread: number; spreadPerMeter: number; reaction: number; sight: number; fov: number; hearing: number;
-  walk: number; run: number; preferredRange: number; palette: Palette;
+  walk: number; run: number; preferredRange: number; palette: Palette; rig?: CharKind;
 }
 
 export type EnemyState = 'patrol' | 'alert' | 'combat' | 'dead';
@@ -16,7 +18,7 @@ export type EnemyState = 'patrol' | 'alert' | 'combat' | 'dead';
 const HALF = 0.55, RADIUS = 0.35, GRAVITY = 22;
 
 export class Enemy {
-  readonly model: Mannequin;
+  readonly model: Rig;
   readonly flash = new MuzzleFlash();
   readonly position = new THREE.Vector3();
   hp: number;
@@ -54,13 +56,11 @@ export class Enemy {
   private progGoal: THREE.Vector3 | null = null;
   private lastPos = new THREE.Vector3();
   private fallDir = new THREE.Vector3();
-  private fallT = 0;
-  private fallSide = 0;
   private colliderCrouched = false;
 
-  constructor(readonly id: number, readonly def: EnemyDef, world: RAPIER.World, lighting: Lighting, spawn: THREE.Vector3, readonly patrol: THREE.Vector3[], readonly isStatic: boolean) {
+  constructor(readonly id: number, readonly def: EnemyDef, world: RAPIER.World, lighting: Lighting, spawn: THREE.Vector3, readonly patrol: THREE.Vector3[], readonly isStatic: boolean, outfit?: Outfit) {
     this.hp = def.hp;
-    this.model = new Mannequin(lighting, def.palette);
+    this.model = new Rig(def.rig ?? 'gno', lighting, true, false, outfit);
     this.body = world.createRigidBody(RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(spawn.x, spawn.y + HALF + RADIUS + 0.05, spawn.z));
     this.collider = world.createCollider(RAPIER.ColliderDesc.capsule(HALF, RADIUS), this.body);
     this.ctrl = world.createCharacterController(0.05);
@@ -189,7 +189,7 @@ export class Enemy {
     this.state = 'patrol';
     this.hp = hp;
     this.collider.setEnabled(true);
-    this.model.root.quaternion.identity();
+    this.model.revive();
     this.moveTarget = null;
     this.path = [];
   }
@@ -198,6 +198,7 @@ export class Enemy {
     if (!this.alive) return false;
     this.hp -= amount;
     this.shownT = 3;
+    if (this.hp > 0) this.model.gesture('hit');
     return this.hp <= 0;
   }
 
@@ -207,18 +208,13 @@ export class Enemy {
     this.collider.setEnabled(false);
     const flat = dir.clone().setY(0);
     this.fallDir = flat.lengthSq() > 0.01 ? flat.normalize() : new THREE.Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
-    this.fallT = 0;
-    this.fallSide = (Math.random() - 0.5) * 0.6;
+    const fromFront = this.fallDir.dot(new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw))) < 0;
+    this.model.die(this.crouched ? 'death_crouch' : fromFront ? (Math.random() < 0.4 ? 'death_head' : Math.random() < 0.5 ? 'death_front' : 'fall_back') : Math.random() < 0.5 ? 'death_back' : 'dying');
   }
 
-  /** Falls toward the hit direction around the feet, then lies on the ground. */
+  /** The death clip plays out where the body stood. */
   private syncCorpse(dt: number): void {
-    this.fallT = Math.min(1, this.fallT + dt / 0.75);
-    const k = this.fallT * this.fallT;
-    const axis = new THREE.Vector3(0, 1, 0).cross(this.fallDir).normalize();
-    const q = new THREE.Quaternion().setFromAxisAngle(axis, k * Math.PI * 0.49).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(0, this.yaw + Math.PI + this.fallSide, 0)));
-    this.model.root.quaternion.copy(q);
-    this.model.root.position.copy(this.position).addScaledVector(this.fallDir, k * 0.35).setY(this.position.y + k * 0.18);
+    this.model.root.position.copy(this.position).setY(this.position.y - 0.03);
     this.model.animate(dt, 0, 0, 0);
   }
 }

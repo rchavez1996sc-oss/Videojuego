@@ -49,10 +49,17 @@ export class ThirdPersonCamera {
     const rot = new THREE.Euler(this.pitch, this.yaw, 0, 'YXZ');
     const back = new THREE.Vector3(0, 0, 1).applyEuler(rot);
     const side = new THREE.Vector3(1, 0, 0).applyEuler(rot);
-    const origin = this.pivot.clone().addScaledVector(side, this.shoulderX + this.sway);
-    const ray = new RAPIER.Ray(origin, back);
-    const hit = this.world.castRay(ray, wantDist + 0.3, true, undefined, undefined, undefined, undefined, (c) => c.handle !== excludeCollider);
-    const allowed = hit ? Math.max(0.4, hit.timeOfImpact - 0.3) : wantDist;
+    const cast = (o: THREE.Vector3, d: THREE.Vector3, len: number) => this.world.castRay(new RAPIER.Ray(o, d), len, true, undefined, undefined, undefined, undefined, (c) => c.handle !== excludeCollider && c.isEnabled());
+    const off = this.shoulderX + this.sway, dirSide = side.clone().multiplyScalar(Math.sign(off) || 1);
+    const sideHit = cast(this.pivot, dirSide, Math.abs(off) + 0.3);
+    const origin = this.pivot.clone().addScaledVector(dirSide, sideHit ? Math.max(0, sideHit.timeOfImpact - 0.3) : Math.abs(off));
+    const up = new THREE.Vector3(0, 1, 0).applyEuler(rot);
+    let allowed = wantDist;
+    for (const [ox, oy] of [[0, 0], [0.2, 0], [-0.2, 0], [0, 0.15], [0, -0.15]]) {
+      const hit = cast(origin.clone().addScaledVector(side, ox).addScaledVector(up, oy), back, wantDist + 0.3);
+      if (hit) allowed = Math.min(allowed, hit.timeOfImpact - 0.3);
+    }
+    allowed = Math.max(0.12, allowed);
     this.dist = allowed < this.dist ? allowed : THREE.MathUtils.damp(this.dist, allowed, 6, dt);
     this.camera.position.copy(origin).addScaledVector(back, this.dist);
     this.camera.quaternion.setFromEuler(rot);

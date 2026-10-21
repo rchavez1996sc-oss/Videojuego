@@ -129,5 +129,33 @@
     "vest": "#2a0d0b",
     "skin": "#946349",
     "helmet": "#3d100e"
-  }
+  },
+  "rig": "fls",
+  "outfits": [
+    {
+      "color": "#8e1b14",
+      "scarf": "#8e1b14",
+      "bands": [
+        "Left"
+      ]
+    },
+    {
+      "color": "#8e1b14",
+      "balaclava": true,
+      "bands": [
+        "Left",
+        "Right"
+      ]
+    },
+    {
+      "color": "#8e1b14",
+      "beanie": "#8e1b14",
+      "scarf": "#1a1a1c"
+    },
+    {
+      "color": "#8e1b14",
+      "balaclava": true,
+      "scarf": "#8e1b14"
+    }
+  ]
 }

@@ -13,6 +13,7 @@ import { difficulty } from '../core/difficulty';
 export function enemyFire(e: Enemy, en: Enemies, ctx: AIContext, attacker: boolean, world: RAPIER.World, camera: THREE.PerspectiveCamera, combat: Combat, sfx: Sfx, player: Player): void {
   const muzzle = e.model.muzzle.getWorldPosition(new THREE.Vector3());
   e.flash.fire(e.model.muzzle);
+  e.model.fire();
   en.onEnemyShot(muzzle);
   const dist = muzzle.distanceTo(ctx.playerChest);
   const moving = player.speed > 3 ? 1.2 : player.speed > 0.5 ? 0.5 : 0;

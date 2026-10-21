@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type RAPIER from '@dimforge/rapier3d-compat';
 import type { ThirdPersonCamera } from './camera';
 import type { Heightfield } from '../world/heightfield';
 import type { Player } from '../entities/player';
@@ -31,6 +32,8 @@ export interface DebugContext {
   squad?: Squad | null;
   grenadeMode?: GrenadeMode;
   objective?: Objective | null;
+  civilians?: () => THREE.Vector3[];
+  world?: RAPIER.World;
 }
 
 /** `window.__game`: hooks used by the Playwright screenshot / AI / grenade scripts. */
@@ -170,6 +173,57 @@ export function installDebug(c: DebugContext): void {
       dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE' }));
       log.push(`done=${o.done} screen=${document.getElementById('complete')?.textContent?.slice(0, 120)}`);
       return log.join('\n');
+    },
+    /** Frames a unit from 3.5 m in front (enemy/ally index, or a civilian position); `kill` first plays its death for 3 s. */
+    inspect(kind: 'enemy' | 'ally' | 'civ', i: number, kill = false, side = 0, dist = 3.5) {
+      c.setFreeCam(false);
+      const unit = kind === 'enemy' ? c.enemies.list[i] : kind === 'ally' ? c.squad?.list[i].unit : null;
+      if (unit && kill && unit.alive && unit.damage(1e6)) unit.die(new THREE.Vector3(0, 0, 1));
+      for (let k = 0; k < (kill ? 60 : 4); k++) c.frame(1 / 20);
+      const p = unit ? unit.position.clone() : c.civilians!()[i].clone();
+      const yaw = unit ? unit.yaw + side : side;
+      const eye = p.clone().add(new THREE.Vector3(-Math.sin(yaw) * dist, 1.5, -Math.cos(yaw) * dist));
+      c.setFreeCam(true);
+      c.tpc.place(eye, p.clone().setY(p.y + (dist < 2 ? 1.4 : 0.9)));
+      c.frame(1 / 60);
+      c.frame(1 / 60);
+      return `${kind}${i} @${p.x.toFixed(1)},${p.z.toFixed(1)}`;
+    },
+    civ: (i: number) => c.civilians!()[i],
+    /** Pushes the player into house fronts (sprint, slide, jump, mantle) while whipping the camera; counts wall/camera penetrations. */
+    wallTest(spots: number, seconds: number) {
+      c.setFreeCam(false);
+      const key = (code: string, down: boolean) => dispatchEvent(new KeyboardEvent(down ? 'keydown' : 'keyup', { code }));
+      let crossed = 0, camIn = 0, frames = 0;
+      const log: string[] = [];
+      for (let s = 0; s < spots; s++) {
+        const side = s % 2 ? 1 : -1, x = -240 + ((s * 97) % 470), wallZ = side * 12;
+        c.player.respawn(new THREE.Vector3(x, c.hf.heightAt(x, wallZ - side * 1.2), wallZ - side * 1.2), side > 0 ? Math.PI : 0);
+        c.tpc.yaw = side > 0 ? Math.PI : 0;
+        key('KeyW', true);
+        key('ShiftLeft', true);
+        let spotCross = 0;
+        for (let i = 0; i < seconds * 30; i++) {
+          c.tpc.yaw += Math.sin(i * 0.9) * 0.6 + (i % 23 === 0 ? 2.5 : 0);
+          if (i % 30 === 10) key('Space', true);
+          if (i % 30 === 12) key('Space', false);
+          if (i % 45 === 20) key('ControlLeft', true);
+          if (i % 45 === 24) key('ControlLeft', false);
+          c.frame(1 / 30);
+          frames++;
+          if (Math.abs(c.player.position.z) > 12.2 && Math.sign(c.player.position.z) === side && Math.abs(c.player.position.y - c.hf.heightAt(c.player.position.x, c.player.position.z)) < 2) spotCross++;
+          let inside = false;
+          c.world!.intersectionsWithPoint(c.tpc.camera.position, (col) => {
+            if (col.handle !== c.player.collisionHandle && col.isEnabled() && !col.isSensor()) inside = true;
+            return !inside;
+          });
+          if (inside) camIn++;
+        }
+        ['KeyW', 'ShiftLeft', 'Space', 'ControlLeft'].forEach((k) => key(k, false));
+        crossed += spotCross ? 1 : 0;
+        if (spotCross) log.push(`spot ${s} x=${x} side=${side} crossed frames=${spotCross} end=${c.player.position.x.toFixed(1)},${c.player.position.y.toFixed(1)},${c.player.position.z.toFixed(1)}`);
+      }
+      return `spots=${spots} crossedSpots=${crossed} cameraInsideFrames=${camIn}/${frames}\n${log.join('\n')}`;
     },
     squadInfo: () => {
       const s = c.squad;

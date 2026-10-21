@@ -45,6 +45,7 @@ import { gatherThreats, surfaceUnder } from './systems/sensing';
 import { createSquad, type AllyDef } from './systems/squad';
 import { GrenadeMode } from './weapons/grenadeMode';
 import { MoveFeel } from './core/moveFeel';
+import { characters } from './render/characters';
 import { Loot } from './systems/loot';
 import { Objective } from './systems/objective';
 import { showMissionComplete } from './ui/missionComplete';
@@ -95,6 +96,8 @@ async function boot(): Promise<void> {
   const grass = new Grass(hf, ch.biome, lighting, preset.grassBlades);
   scene.add(grass.mesh);
 
+  await step('Cargando personajes…');
+  await characters.load(lighting);
   const spawn = new THREE.Vector3(ch.spawn.x, hf.heightAt(ch.spawn.x, ch.spawn.z), ch.spawn.z);
   const player = new Player(world, lighting, spawn, ch.spawn.yaw);
   scene.add(player.model.root);
@@ -188,7 +191,7 @@ async function boot(): Promise<void> {
   let freeCam = false;
   installDebug({
     extraLog: () => (civilians ? `civ:${civilians.list.map((c) => c.mood[0]).join('')}` : ''),
-    views: ch.views ?? [], tpc, hf, player, combat, enemies, grenades, renderer, shotMode, scene, squad, grenadeMode: nadeMode, objective,
+    views: ch.views ?? [], tpc, hf, player, combat, enemies, grenades, renderer, shotMode, scene, squad, grenadeMode: nadeMode, objective, civilians: () => civilians?.present ?? [], world,
     frame: (dt) => frame(dt),
     setFreeCam: (v) => (freeCam = v),
     setSkipRender: (v) => (skipRender = v),

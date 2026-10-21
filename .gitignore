@@ -3,3 +3,5 @@ dist/
 client/shots/
 *.log
 .DS_Store
+assets_src/**/*.fbx
+assets_src/**/*.zip

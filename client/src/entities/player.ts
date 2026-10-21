@@ -2,16 +2,18 @@ import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import type { Input } from '../core/input';
 import type { Lighting } from '../render/lighting';
-import { Mannequin } from './mannequin';
+import { Rig, type Outfit } from './rig';
 import { findLedge, mantlePath, type Ledge } from './mantle';
 import { difficulty } from '../core/difficulty';
 import { ladderAt, type Ladder } from '../world/ladders';
 
+/** The player's FLS dress: red scarf and arm bands. */
+const OUTFIT: Outfit = { color: '#8e1b14', bands: ['Left', 'Right'], scarf: '#8e1b14' };
 const WALK = 3.2, RUN = 6.2, CROUCH = 1.7, AIM = 2.2, JUMP = 6.0, GRAVITY = 22, SLIDE = 8.5;
 const RADIUS = 0.35, HALF = 0.55;
 
 export class Player {
-  readonly model: Mannequin;
+  readonly model: Rig;
   readonly position = new THREE.Vector3();
   yaw = 0;
   speed = 0;
@@ -38,7 +40,7 @@ export class Player {
   private ladder: Ladder | null = null;
 
   constructor(private world: RAPIER.World, lighting: Lighting, spawn: THREE.Vector3, yaw: number) {
-    this.model = new Mannequin(lighting);
+    this.model = new Rig('fls', lighting, true, true, OUTFIT);
     this.yaw = yaw;
     this.body = world.createRigidBody(RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(spawn.x, spawn.y + HALF + RADIUS + 0.2, spawn.z));
     this.collider = world.createCollider(RAPIER.ColliderDesc.capsule(HALF, RADIUS), this.body);

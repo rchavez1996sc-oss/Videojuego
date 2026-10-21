@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
-import { Mannequin, type Palette } from '../entities/mannequin';
+import { Rig } from '../entities/rig';
+import type { CharKind } from '../render/characters';
 import { mulberry32 } from '../core/rng';
 import { onHit } from '../world/surfaces';
 import type { Heightfield } from '../world/heightfield';
@@ -10,7 +11,7 @@ import type { StreetGraph } from '../world/barrio';
 type Mood = 'walk' | 'idle' | 'panic' | 'gone' | 'dead';
 
 interface Civilian {
-  model: Mannequin; body: RAPIER.RigidBody; collider: RAPIER.Collider;
+  model: Rig; body: RAPIER.RigidBody; collider: RAPIER.Collider;
   pos: THREE.Vector3; yaw: number; mood: Mood; node: number; target: number; exit: number;
   speed: number; timer: number; panicT: number; fallDir: THREE.Vector3; fallT: number; shadowed: boolean;
 }
@@ -38,8 +39,7 @@ export class Civilians {
     const rand = mulberry32(seed);
     const pick = <T>(arr: T[]) => arr[Math.floor(rand() * arr.length)];
     for (let i = 0; i < count; i++) {
-      const pal: Palette = { id: `civ${i % 9}`, cloth: pick(PANTS), vest: pick(SHIRTS), skin: pick(SKIN), helmet: pick(HAIR) };
-      const model = new Mannequin(lighting, pal, false);
+      const model = new Rig(pick<CharKind>(['civ_a', 'civ_b', 'civ_c']), lighting, false);
       model.far = true;
       const node = Math.floor(rand() * graph.nodes.length);
       const target = pick(this.neighbors[node]);
@@ -90,6 +90,7 @@ export class Civilians {
     c.fallDir.copy(c.pos).sub(from).setY(0);
     if (c.fallDir.lengthSq() < 0.01) c.fallDir.set(1, 0, 0);
     c.fallDir.normalize();
+    c.model.die(Math.random() < 0.5 ? 'fall_back' : 'dying');
     this.onHurt();
     this.alarm(c.pos, 60);
   }
@@ -132,11 +133,7 @@ export class Civilians {
     for (const c of this.list) {
       if (c.mood === 'gone') continue;
       if (c.mood === 'dead') {
-        c.fallT = Math.min(1, c.fallT + dt / 0.7);
-        const k = c.fallT * c.fallT;
-        const axis = new THREE.Vector3(0, 1, 0).cross(c.fallDir).normalize();
-        c.model.root.quaternion.setFromAxisAngle(axis, k * Math.PI * 0.49).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(0, c.yaw + Math.PI, 0)));
-        c.model.root.position.copy(c.pos).addScaledVector(c.fallDir, k * 0.3).setY(c.pos.y + k * 0.15);
+        c.model.animate(dt, 0, 0, 0);
         continue;
       }
       let moving = c.mood !== 'idle';
@@ -187,6 +184,7 @@ export class Civilians {
       if (near !== c.shadowed) c.model.castShadow = c.shadowed = near;
       c.model.root.position.copy(c.pos).setY(c.pos.y - 0.03);
       c.model.root.rotation.set(0, c.yaw + Math.PI, 0);
+      c.model.scared = c.mood === 'panic';
       c.model.animate(dt, moving ? c.speed : 0, 0, 0);
     }
   }

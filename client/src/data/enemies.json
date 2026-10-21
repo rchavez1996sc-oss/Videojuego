@@ -26,7 +26,8 @@
       "vest": "#23282e",
       "skin": "#8f6650",
       "helmet": "#2c3238"
-    }
+    },
+    "rig": "gno"
   },
   "marksman": {
     "hp": 80,
@@ -55,6 +56,7 @@
       "vest": "#2a2a22",
       "skin": "#8f6650",
       "helmet": "#3a3a2e"
-    }
+    },
+    "rig": "gno"
   }
 }

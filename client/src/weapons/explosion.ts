@@ -16,7 +16,7 @@ export function detonate(at: THREE.Vector3, d: { combat: Combat; sfx: Sfx; tpc: 
   d.sfx.explosion(dist, at.clone().sub(cam).normalize().dot(right));
   d.tpc.kick(0.01 * Math.max(0, 1 - dist / 40), 0, Math.max(0, 0.5 - dist / 60));
   d.enemies.hearShot(at);
-  d.enemies.explosion(at, BLAST_RADIUS, 160);
+  d.enemies.explosion(at, BLAST_RADIUS, 230);
   const chest = d.player.position.clone().setY(d.player.position.y + 1.0);
   const r = chest.distanceTo(at);
   if (r >= BLAST_RADIUS || !d.playerAlive) return;

@@ -39,12 +39,12 @@ export class Combat {
   }
 
   update(dt: number, input: Input, aiming: boolean, airborne: boolean): void {
-    if (input.hit('KeyR') && this.gun.startReload()) this.sfx.reload(this.gun.ammo === 0);
+    if (input.hit('KeyR') && this.gun.startReload()) this.reloadFx();
     if (input.hit('KeyB')) this.gun.toggleMode();
     const result = this.gun.update(dt, input.firing, input.hit('Mouse0'));
     if (result === 'dry') {
       this.sfx.dryFire();
-      if (this.gun.startReload()) this.sfx.reload(true);
+      if (this.gun.startReload()) this.reloadFx();
     } else if (result === 'fire') {
       this.fire(aiming, airborne);
     } else if (!input.firing) {
@@ -55,6 +55,11 @@ export class Combat {
     this.tracers.update(dt);
     this.flash.update(dt);
     this.shells.update(dt);
+  }
+
+  private reloadFx(): void {
+    this.sfx.reload(this.gun.ammo === 0);
+    this.player.model.gesture('reload', this.gun.reloading);
   }
 
   /** Test hook for automated screenshots. */
@@ -89,6 +94,7 @@ export class Combat {
     const end = hit ? muzzle.clone().addScaledVector(toAim, hit.timeOfImpact) : aimPoint;
 
     this.flash.fire(this.player.model.muzzle);
+    this.player.model.fire();
     if (this.shots++ % def.tracerEvery === 0) this.tracers.fire(muzzle, end);
     this.shells.eject(this.player.model.ejector, right);
     this.sfx.rifleShot();
@@ -96,7 +102,7 @@ export class Combat {
     const [kUp, kSide] = this.gun.recoil(aiming);
     const k = this.cam.steady;
     this.cam.kick(kUp * k, kSide * k, (aiming ? 0.012 : 0.02) * k);
-    if (this.gun.ammo === 0 && this.gun.startReload()) this.sfx.reload(true);
+    if (this.gun.ammo === 0 && this.gun.startReload()) this.reloadFx();
 
     if (!hit) return;
     const normal = new THREE.Vector3(hit.normal.x, hit.normal.y, hit.normal.z);

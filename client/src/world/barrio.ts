@@ -74,6 +74,10 @@ function materials(lighting: Lighting, atlas: SignAtlas): Record<string, THREE.M
     stripe: std('stripe', { color: '#b8261b', roughness: 0.5 }),
     checker: std('checker', { color: '#111111', roughness: 0.5 }),
     light: std('light', { color: '#f4efe0', roughness: 0.2, emissive: '#3a3628' }),
+    rim: std('rim', { color: '#9a9ea3', roughness: 0.35, metalness: 0.8 }),
+    plate: std('plate', { color: '#e8e4d2', roughness: 0.5 }),
+    tail: std('tail', { color: '#9c1a14', roughness: 0.3, emissive: '#2a0402' }),
+    plastic: std('plastic', { color: '#1d1e20', roughness: 0.7 }),
     car0: std('car0', { color: '#c9c6bf', roughness: 0.3, metalness: 0.4 }),
     car1: std('car1', { color: '#2a2c30', roughness: 0.3, metalness: 0.4 }),
     car2: std('car2', { color: '#7a1d1a', roughness: 0.35, metalness: 0.4 }),
@@ -229,7 +233,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
   const bake = [
     { material: lighting.setup(new THREE.MeshStandardMaterial({ map: pl.map, normalMap: pl.normalMap, roughness: 0.9, vertexColors: true }), 'paint-baked'), keys: PAINTS },
     { material: lighting.setup(new THREE.MeshStandardMaterial({ roughness: 0.45, metalness: 0.35, vertexColors: true }), 'plain-baked'),
-      keys: ['car0', 'car1', 'car2', 'car3', 'car4', 'car5', 'moto0', 'moto1', 'moto2', 'tankBlack', 'tankBlue', 'stripe', 'checker', 'canopy', 'seat', 'tire', 'bars', 'rebar', 'cable', 'paintYellow', 'light', 'glass', ...Object.keys(STREET_COLORS)] },
+      keys: ['car0', 'car1', 'car2', 'car3', 'car4', 'car5', 'moto0', 'moto1', 'moto2', 'tankBlack', 'tankBlue', 'stripe', 'checker', 'canopy', 'seat', 'tire', 'bars', 'rebar', 'cable', 'paintYellow', 'light', 'glass', 'rim', 'plate', 'tail', 'plastic', ...Object.keys(STREET_COLORS)] },
   ];
   group.add(...b.build(mats, 0.5, bake, 128));
   if (atlas.geometries.length) {

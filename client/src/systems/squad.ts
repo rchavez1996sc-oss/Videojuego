@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { Enemy, type EnemyDef } from '../entities/enemy';
+import type { Outfit } from '../entities/rig';
 import { allyAct, allyThink, slotPosition, type Ally, type AllyContext } from '../ai/allyBrain';
 import { onHit, surfaceOf } from '../world/surfaces';
 import { HealthBars } from '../ui/healthbars';
@@ -15,7 +16,7 @@ import type { StreetNav } from '../ai/nav';
 
 const CATCH_UP = 35;
 
-export interface AllyDef extends EnemyDef { names: string[]; killShare: number; bleedOut: number }
+export interface AllyDef extends EnemyDef { names: string[]; killShare: number; bleedOut: number; outfits: Outfit[] }
 
 interface Deps {
   world: RAPIER.World; hf: Heightfield; lighting: Lighting; player: Player; enemies: Enemies; combat: Combat;
@@ -40,7 +41,7 @@ export class Squad {
     const ground = (x: number, z: number) => d.hf.heightAt(x, z);
     const names = [...def.names].sort(() => Math.random() - 0.5);
     for (let i = 0; i < count; i++) {
-      const unit = new Enemy(100 + i, def, d.world, d.lighting, slotPosition(i, spawn, yaw, ground), [], false);
+      const unit = new Enemy(100 + i, def, d.world, d.lighting, slotPosition(i, spawn, yaw, ground), [], false, def.outfits[i % def.outfits.length]);
       unit.yaw = yaw;
       const a: Ally = { unit, name: names[i % names.length], slot: i, target: null, downedT: 0, lost: false };
       this.list.push(a);
@@ -170,6 +171,7 @@ export class Squad {
     const u = a.unit, t = a.target!;
     const muzzle = u.model.muzzle.getWorldPosition(new THREE.Vector3());
     u.flash.fire(u.model.muzzle);
+    u.model.fire();
     const aim = chestOf(t);
     const dead = enemies.list.length - enemies.aliveCount;
     if (dead >= 2 && this.allyKills / dead > this.def.killShare) aim.add(new THREE.Vector3(Math.random() - 0.5, Math.random() * 0.6 - 0.1, Math.random() - 0.5).normalize().multiplyScalar(1.2 + Math.random() * 1.6));
