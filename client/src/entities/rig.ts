@@ -8,14 +8,24 @@ import type { Lighting } from '../render/lighting';
 export type { Outfit } from './outfit';
 
 const UPPER = /Spine|Neck|Head|Shoulder|Arm|Hand/;
-const split = new Map<string, { lower: THREE.AnimationClip; upper: THREE.AnimationClip; full: THREE.AnimationClip }>();
+/** Aiming on the move: the chest and arms hold the aim, the hips and lower back keep the stride's sway. */
+const CHEST = /Spine2|Neck|Head|Shoulder|Arm|Hand/;
+type Parts = Record<'full' | 'lower' | 'upper' | 'body' | 'chest', THREE.AnimationClip>;
+const split = new Map<string, Parts>();
 
-function parts(key: string) {
+function parts(key: string): Parts {
   let p = split.get(key);
   if (!p) {
     const full = characters.clips.get(key)!;
-    const isUpper = (t: THREE.KeyframeTrack) => UPPER.test(t.name.slice(0, t.name.lastIndexOf('.')));
-    p = { full, lower: new THREE.AnimationClip(`${key}-lo`, full.duration, full.tracks.filter((t) => !isUpper(t))), upper: new THREE.AnimationClip(`${key}-up`, full.duration, full.tracks.filter(isUpper)) };
+    const bone = (t: THREE.KeyframeTrack) => t.name.slice(0, t.name.lastIndexOf('.'));
+    const clip = (tag: string, keep: (t: THREE.KeyframeTrack) => boolean) => new THREE.AnimationClip(`${key}-${tag}`, full.duration, full.tracks.filter(keep));
+    p = {
+      full,
+      lower: clip('lo', (t) => !UPPER.test(bone(t))),
+      upper: clip('up', (t) => UPPER.test(bone(t))),
+      body: clip('body', (t) => !CHEST.test(bone(t))),
+      chest: clip('chest', (t) => CHEST.test(bone(t))),
+    };
     split.set(key, p);
   }
   return p;
@@ -97,16 +107,19 @@ export class Rig {
     a.stop();
   }
 
+  /** `lowKey`/`upKey` may end in '+' (moving while aiming): legs and lower back from the stride, chest and arms from the aim. */
   private play(lowKey: string, upKey: string, fade = FADE): void {
     if (lowKey !== this.lowKey) {
-      const next = this.mixer.clipAction(parts(lowKey).lower).reset().play();
+      const mixed = lowKey.endsWith('+'), base = mixed ? lowKey.slice(0, -1) : lowKey;
+      const next = this.mixer.clipAction(mixed ? parts(base).body : parts(base).lower).reset().play();
       if (this.lower && fade) this.lower.crossFadeTo(next, fade, false);
       else this.lower?.stop();
       this.lower = next;
       this.lowKey = lowKey;
     }
     if (upKey !== this.upKey) {
-      const next = this.mixer.clipAction(parts(upKey).upper).reset().play();
+      const mixed = upKey.endsWith('+'), base = mixed ? upKey.slice(0, -1) : upKey;
+      const next = this.mixer.clipAction(mixed ? parts(base).chest : parts(base).upper).reset().play();
       const once = this.overlay?.key === upKey;
       next.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, Infinity);
       next.clampWhenFinished = once;
@@ -222,7 +235,8 @@ export class Rig {
         this.upKey = '';
       }
       const up = this.chooseUpper(low, crouch);
-      this.play(low, up);
+      const sway = this.armed && speed >= 0.3 && up !== low && !this.overlay ? '+' : '';
+      this.play(low + sway, up + sway);
       const scale = (low === 'idle' && !this.armed) ? 0 : THREE.MathUtils.clamp(rate, 0.6, 1.6);
       if (this.lower) this.lower.timeScale = scale;
       if (this.upper && up === low) this.upper.timeScale = scale;
