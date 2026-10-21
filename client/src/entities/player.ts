@@ -9,6 +9,8 @@ import { ladderAt, type Ladder } from '../world/ladders';
 
 /** The player's FLS dress: red scarf and arm bands. */
 const OUTFIT: Outfit = { color: '#8e1b14', bands: ['Left', 'Right'], scarf: '#8e1b14' };
+/** Ladder climb speed (m/s) and how far the ladder clip rises per second at normal rate. */
+const LADDER = 1.5, LADDER_CLIP = 0.61;
 const WALK = 3.2, RUN = 6.2, CROUCH = 1.7, AIM = 2.2, JUMP = 7.2, GRAVITY = 22, SLIDE = 8.5;
 const RADIUS = 0.35, HALF = 0.55;
 
@@ -139,7 +141,7 @@ export class Player {
   private updateLadder(dt: number, input: Input): void {
     const l = this.ladder!;
     const dir = (input.down('KeyW') ? 1 : 0) - (input.down('KeyS') ? 1 : 0);
-    let y = this.position.y + dir * 2.4 * dt;
+    let y = this.position.y + dir * LADDER * dt;
     let x = l.base.x + l.normal.x * 0.45, z = l.base.z + l.normal.z * 0.45;
     this.vel.set(0, 0, 0);
     this.speed = Math.abs(dir) * 1.2;
@@ -160,7 +162,7 @@ export class Player {
     }
     this.yaw = Math.atan2(l.normal.x, l.normal.z);
     this.body.setNextKinematicTranslation({ x, y: y + HALF + RADIUS, z });
-    if (this.ladder) this.model.hold('ladder', -dir * 1.3);
+    if (this.ladder) this.model.hold('ladder', dir * LADDER / LADDER_CLIP);
     this.model.animate(dt, 0, 0, 0);
   }
 

@@ -36,6 +36,8 @@ const PACE: Record<string, number> = { walk: 1.5, run: 3.7, sprint: 5.8, crouch:
 const DIR8 = ['f', 'fr', 'r', 'br', 'b', 'bl', 'l', 'fl'];
 const DIR4 = ['f', 'r', 'b', 'l'];
 const FADE = 0.2;
+/** Clips authored facing away from the viewer and starting mid-ladder: turn the body round and drop it to the rungs. */
+const HOLD_FIX: Record<string, { yaw: number; y: number }> = { ladder: { yaw: Math.PI, y: -0.75 } };
 
 /** Skinned Mixamo character with layered animation: legs from speed/direction, torso from stance and gestures. */
 export class Rig {
@@ -165,10 +167,15 @@ export class Rig {
     this.lower = this.upper = null;
     this.lowKey = this.upKey = '';
     this.held = { key, action: a };
+    const fix = HOLD_FIX[key];
+    this.inst.model.rotation.y = fix?.yaw ?? 0;
+    this.inst.model.position.y = fix?.y ?? 0;
   }
 
   release(fade = FADE): void {
     if (!this.held) return;
+    this.inst.model.rotation.y = 0;
+    this.inst.model.position.y = 0;
     if (fade) this.held.action.fadeOut(fade);
     else this.held.action.stop();
     this.held = null;
