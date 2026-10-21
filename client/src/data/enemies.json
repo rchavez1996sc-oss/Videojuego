@@ -21,13 +21,13 @@
     "run": 4.3,
     "preferredRange": 28,
     "palette": {
-      "id": "gno",
+      "id": "pnp",
       "cloth": "#3e4650",
       "vest": "#23282e",
       "skin": "#8f6650",
       "helmet": "#2c3238"
     },
-    "rig": "gno"
+    "rig": "pnp"
   },
   "marksman": {
     "hp": 80,
@@ -51,12 +51,12 @@
     "run": 0,
     "preferredRange": 80,
     "palette": {
-      "id": "gno-m",
+      "id": "pnp-m",
       "cloth": "#4a4a3e",
       "vest": "#2a2a22",
       "skin": "#8f6650",
       "helmet": "#3a3a2e"
     },
-    "rig": "gno"
+    "rig": "pnp"
   }
 }

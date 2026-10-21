@@ -9,7 +9,7 @@ import { ladderAt, type Ladder } from '../world/ladders';
 
 /** The player's FLS dress: red scarf and arm bands. */
 const OUTFIT: Outfit = { color: '#8e1b14', bands: ['Left', 'Right'], scarf: '#8e1b14' };
-const WALK = 3.2, RUN = 6.2, CROUCH = 1.7, AIM = 2.2, JUMP = 6.0, GRAVITY = 22, SLIDE = 8.5;
+const WALK = 3.2, RUN = 6.2, CROUCH = 1.7, AIM = 2.2, JUMP = 7.2, GRAVITY = 22, SLIDE = 8.5;
 const RADIUS = 0.35, HALF = 0.55;
 
 export class Player {
@@ -160,7 +160,7 @@ export class Player {
     }
     this.yaw = Math.atan2(l.normal.x, l.normal.z);
     this.body.setNextKinematicTranslation({ x, y: y + HALF + RADIUS, z });
-    if (this.ladder) this.model.hold('ladder', dir * 1.3);
+    if (this.ladder) this.model.hold('ladder', -dir * 1.3);
     this.model.animate(dt, 0, 0, 0);
   }
 
@@ -175,10 +175,11 @@ export class Player {
         return this.updateLadder(dt, input);
       }
     }
-    if (input.hit('Space')) {
+    const grab = !this.grounded && input.down('Space') && this.vel.y < 3;
+    if (input.hit('Space') || grab) {
       const moveYaw = this.speed > 0.5 ? Math.atan2(-this.vel.x, -this.vel.z) : camYaw;
-      const ledge = findLedge(this.world, this.position, moveYaw, this.collider.handle);
-      if (ledge && (this.grounded || ledge.height < 1.6)) {
+      const ledge = findLedge(this.world, this.position, moveYaw, this.collider.handle, this.grounded ? 2.1 : 2.4);
+      if (ledge && (this.grounded || !ledge.vault)) {
         this.yaw = moveYaw;
         this.mantle = { ledge, start: this.position.clone(), t: 0, dur: ledge.vault ? 0.7 : 0.6 + ledge.height * 0.45 };
         this.onMantle(ledge.vault);

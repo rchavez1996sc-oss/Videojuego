@@ -24,7 +24,7 @@ const SIGNS: SignDef[] = [
   { text: 'VOTA LISTA 7 ✓', kind: 'graffiti', bg: '#f4f1ea', fg: '#c22f22' },
   { text: 'UNIDOS POR EL CONO', kind: 'graffiti', bg: '#f4f1ea', fg: '#1f6b3a' },
   { text: 'ORDEN Y PROGRESO', kind: 'poster', bg: '#14284d', fg: '#ffffff', sub: 'GRAL. A. CASTAÑEDA · JUNTA DE GOBIERNO', accent: '#c8102e' },
-  { text: 'LA GNO TE PROTEGE', kind: 'poster', bg: '#1f2a33', fg: '#f2d03b', sub: 'DENUNCIA LA SUBVERSIÓN · LLAMA AL 105', accent: '#f2d03b' },
+  { text: 'LA PNP TE PROTEGE', kind: 'poster', bg: '#1f2a33', fg: '#f2d03b', sub: 'DENUNCIA LA SUBVERSIÓN · LLAMA AL 105', accent: '#f2d03b' },
   { text: 'FERRUM ANDES', kind: 'poster', bg: '#e9e6df', fg: '#2a3f55', sub: 'MINERÍA RESPONSABLE PARA EL PERÚ', accent: '#d47a1c' },
   { text: '¡NO A LA MINA!', kind: 'poster', bg: '#c8102e', fg: '#ffffff', sub: 'FRENTE DE DEFENSA DE LA SIERRA', accent: '#111111' },
   { text: 'MOVIMIENTO ORDEN NACIONAL', kind: 'poster', bg: '#f0f0f0', fg: '#0e3d8c', sub: 'LISTA 7 · MANO DURA', accent: '#0e3d8c' },

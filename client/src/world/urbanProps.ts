@@ -81,7 +81,7 @@ export function mototaxi(b: Builder, pos: THREE.Vector3, yaw: number, paint: str
   b.box('none', [1.3, 1.2, 2.3], at(0, 0.6, 0), q, true);
 }
 
-/** Sandbag wall section used for GNO checkpoints. */
+/** Sandbag wall section used for PNP checkpoints. */
 export function sandbags(b: Builder, hf: Heightfield, x: number, z: number, yaw: number, len: number): void {
   const q = new THREE.Quaternion().setFromAxisAngle(UP, yaw);
   const y = hf.heightAt(x, z);

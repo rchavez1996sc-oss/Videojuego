@@ -6,6 +6,7 @@ import type { ChapterDef } from './data/types';
 import { Input } from './core/input';
 import { ThirdPersonCamera } from './core/camera';
 import { preset, quality, shotMode, gpuName } from './core/settings';
+import { guardFrame } from './core/guard';
 import { Renderer } from './render/renderer';
 import { Lighting } from './render/lighting';
 import { Heightfield } from './world/heightfield';
@@ -283,11 +284,12 @@ async function boot(): Promise<void> {
     frames++;
     acc += dt;
     if (acc > 0.5) {
-      stats.textContent = `${Math.round(frames / acc)} fps · ${quality} · res ${Math.round(dynRes.scale * 100)}% · ${renderer.gl.info.render.calls} draws · ${(renderer.gl.info.render.triangles / 1e6).toFixed(2)}M tris · ${gpu}`;
+      stats.textContent = `${Math.round(frames / acc)} fps · ${quality} · res ${Math.round(dynRes.scale * 100)}% · ${renderer.gl.info.render.calls} draws · ${(renderer.gl.info.render.triangles / 1e6).toFixed(2)}M tris · ${gpu}${stats.dataset.errors ? ` · err ${stats.dataset.errors}` : ''}`;
       frames = acc = 0;
     }
   };
-  if (!shotMode) renderer.gl.setAnimationLoop(() => !failed && frame(Math.min(clock.getDelta(), 1 / 20)));
+  const safeFrame = guardFrame(() => frame(Math.min(clock.getDelta(), 1 / 20)), (n) => stats.dataset.errors = String(n));
+  if (!shotMode) renderer.gl.setAnimationLoop(() => !failed && safeFrame());
 }
 
 boot().catch((e) => {

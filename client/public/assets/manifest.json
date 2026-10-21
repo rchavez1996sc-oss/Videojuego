@@ -1,6 +1,6 @@
 {
   "characters": {
-    "gno": { "near": "characters/gno.glb", "far": "characters/gno.lod.glb", "source": "Mixamo: SWAT" },
+    "pnp": { "near": "characters/pnp.glb", "far": "characters/pnp.lod.glb", "source": "Mixamo: SWAT" },
     "fls": { "near": "characters/fls.glb", "far": "characters/fls.lod.glb", "source": "Mixamo: Ch28 (ropa oscura)" },
     "civ_a": { "near": "characters/civ_a.glb", "far": "characters/civ_a.lod.glb", "source": "Mixamo: Ch07 (traje)" },
     "civ_b": { "near": "characters/civ_b.glb", "far": "characters/civ_b.lod.glb", "source": "Mixamo: Ch02 (polera naranja)" },

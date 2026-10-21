@@ -5,7 +5,7 @@ import { chromium } from 'playwright';
 
 // Converts the Mixamo FBX sources in ../assets_src/mixamo into compressed, LOD'd glTF under public/assets/characters.
 const SRC = resolve('../assets_src/mixamo'), OUT = resolve('public/assets/characters');
-const CHARACTERS = { gno: 'Swat.fbx', fls: 'T-Pose.5.fbx', civ_a: 'T-Pose.2.fbx', civ_b: 'T-Pose.3.fbx', civ_c: 'T-Pose.4.fbx' };
+const CHARACTERS = { pnp: 'Swat.fbx', fls: 'T-Pose.5.fbx', civ_a: 'T-Pose.2.fbx', civ_b: 'T-Pose.3.fbx', civ_c: 'T-Pose.4.fbx' };
 const P = (f) => `pack/${f}.fbx`;
 const ANIMS = [
   ['idle', P('idle'), 1], ['aim', P('idle aiming'), 1],
@@ -60,8 +60,8 @@ try {
     const raw = join(OUT, `${key}.raw.glb`), rawLod = join(OUT, `${key}.rawlod.glb`);
     writeFileSync(raw, Buffer.from(data, 'base64'));
     writeFileSync(rawLod, Buffer.from(lod.data, 'base64'));
-    pack(raw, join(OUT, `${key}.glb`), ['-si', '0.4', '-cc', '-kn', '-km']);
-    pack(rawLod, join(OUT, `${key}.lod.glb`), ['-si', '0.08', '-cc', '-kn', '-km']);
+    pack(raw, join(OUT, `${key}.glb`), ['-si', '0.4', '-cc', '-kn', '-km', '-vtf']);
+    pack(rawLod, join(OUT, `${key}.lod.glb`), ['-si', '0.08', '-cc', '-kn', '-km', '-kv', '-vtf']);
     execFileSync('rm', [raw, rawLod]);
     console.log(key, info.replace(/\n/g, ' | '), `${(statSync(join(OUT, `${key}.glb`)).size / 1e6).toFixed(2)}MB / lod ${(statSync(join(OUT, `${key}.lod.glb`)).size / 1e6).toFixed(2)}MB`);
   }

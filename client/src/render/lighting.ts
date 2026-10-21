@@ -70,8 +70,16 @@ export class Lighting {
     return mat;
   }
 
+  private tick = 0;
+
+  /** Outer cascades re-render every other frame: they cover distant, mostly static geometry. */
   update(): void {
     this.csm.update();
+    const odd = ++this.tick % 2 === 1;
+    this.csm.lights.forEach((l, i) => {
+      l.shadow.autoUpdate = i === 0;
+      if (i > 0) l.shadow.needsUpdate = odd;
+    });
   }
 
   get fogColor(): THREE.Color {

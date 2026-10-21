@@ -4,7 +4,7 @@ import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.j
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { Lighting } from './lighting';
 
-export type CharKind = 'gno' | 'fls' | 'civ_a' | 'civ_b' | 'civ_c';
+export type CharKind = 'pnp' | 'fls' | 'civ_a' | 'civ_b' | 'civ_c';
 
 interface Manifest { characters: Record<CharKind, { near: string; far: string }>; animations: string }
 
@@ -18,6 +18,11 @@ function bounds(m: THREE.SkinnedMesh): THREE.Sphere {
   const s = m.geometry.boundingSphere!.clone();
   s.radius *= 1.6;
   return s;
+}
+
+/** Same joints in the same order with the same bind pose: the meshes can share one bone texture upload per frame. */
+function sameSkin(a: THREE.Skeleton, b: THREE.Skeleton): boolean {
+  return a.bones.length === b.bones.length && a.bones.every((bone, i) => bone.name === b.bones[i].name && a.boneInverses[i].equals(b.boneInverses[i]));
 }
 
 /** Mixamo characters converted by scripts/mixamo.mjs; shared geometry/materials, cloned skeletons per instance. */
@@ -63,11 +68,14 @@ class CharacterLibrary {
       if (o instanceof THREE.SkinnedMesh) near.push(o);
     });
     near.forEach((m) => (m.boundingSphere = bounds(m)));
+    const shared = near[0].skeleton;
+    for (const m of near.slice(1)) if (sameSkin(m.skeleton, shared)) m.bind(shared, m.bindMatrix);
     const far = proto.far.map((src) => {
       const m = new THREE.SkinnedMesh(src.geometry, src.material);
       m.boundingSphere = bounds(m);
       near[0].parent!.add(m);
-      m.bind(new THREE.Skeleton(src.skeleton.bones.map((b) => bones.get(b.name)!), src.skeleton.boneInverses), near[0].bindMatrix);
+      const skel = sameSkin(src.skeleton, shared) ? shared : new THREE.Skeleton(src.skeleton.bones.map((b) => bones.get(b.name)!), src.skeleton.boneInverses);
+      m.bind(skel, near[0].bindMatrix);
       m.visible = false;
       return m;
     });

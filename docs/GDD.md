@@ -52,14 +52,14 @@ TPS táctico en campos de batalla abiertos de **mínimo 500 × 500 m** por nivel
 
 ## 3. Historia (ambientada en el Perú, facciones ficticias, 10 capítulos)
 
-**Contexto:** Perú, 2031 (ucronía). El general **Aurelio Castañeda** da un golpe de Estado, disuelve el Congreso y entrega la sierra a la minera extranjera **Ferrum Andes**. Su brazo armado: la **Guardia Nacional de Orden (GNO)** y los mercenarios de **Blackridge Security**. Todas las facciones, personajes y lugares concretos son ficticios; no se usan grupos armados reales.
-**Protagonista:** **Lucía "Ceniza" Morales**, exsargento nacida en un cono de Lima, que deserta tras ver a la GNO disparar contra su barrio. Funda el **Frente de Liberación de la Sierra (FLS)**.
-**Compañeros:** *Tomás "Profe" Ibarra* (profesor de colegio nacional, estratega), *Nena Quispe* (francotiradora ayacuchana, 19 años), *Padre Elías* (párroco y médico), *Rocco* (mecánico, ex-GNO).
+**Contexto:** Perú, 2031 (ucronía). El general **Aurelio Castañeda** da un golpe de Estado, disuelve el Congreso y entrega la sierra a la minera extranjera **Ferrum Andes**. Su brazo armado: la **Policía Nacional (PNP)** y los mercenarios de **Blackridge Security**. Todas las facciones, personajes y lugares concretos son ficticios; no se usan grupos armados reales.
+**Protagonista:** **Lucía "Ceniza" Morales**, exsargento nacida en un cono de Lima, que deserta tras ver a la PNP disparar contra su barrio. Funda el **Frente de Liberación de la Sierra (FLS)**.
+**Compañeros:** *Tomás "Profe" Ibarra* (profesor de colegio nacional, estratega), *Nena Quispe* (francotiradora ayacuchana, 19 años), *Padre Elías* (párroco y médico), *Rocco* (mecánico, ex-PNP).
 **Tema:** el precio de la libertad. A partir de la mitad, el FLS se divide entre justicia y venganza.
 
 | # | Capítulo | Mapa / bioma (≥500×500 m) | Objetivo | Giro |
 |---|---|---|---|---|
-| 1 | **Ceniza** | Cono de Lima: A.H. ficticio "Nueva Esperanza", avenida, manzanas de ladrillo, cerros con escaleras, cielo gris | Romper el retén de la GNO y sacar a los vecinos | Nace el FLS |
+| 1 | **Ceniza** | Cono de Lima: A.H. ficticio "Nueva Esperanza", avenida, manzanas de ladrillo, cerros con escaleras, cielo gris | Romper el retén de la PNP y sacar a los vecinos | Nace el FLS |
 | 2 | **La Ruta del Polvo** | Pampa costera y quebradas (estilo Nazca), grifo en ruinas | Emboscar convoy, robar camioneta | Rocco deserta |
 | 3 | **Montaña Negra** | Puna nevada, campamento minero, teleférico | Sabotear la mina | Fosas comunes |
 | 4 | **El Museo** | Centro de Lima de noche, casonas, Museo Nacional (ficticio) | Robar archivos | La prensa internacional se entera |

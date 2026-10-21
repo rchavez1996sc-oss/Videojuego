@@ -60,7 +60,7 @@ export class Enemy {
 
   constructor(readonly id: number, readonly def: EnemyDef, world: RAPIER.World, lighting: Lighting, spawn: THREE.Vector3, readonly patrol: THREE.Vector3[], readonly isStatic: boolean, outfit?: Outfit) {
     this.hp = def.hp;
-    this.model = new Rig(def.rig ?? 'gno', lighting, true, false, outfit);
+    this.model = new Rig(def.rig ?? 'pnp', lighting, true, false, outfit);
     this.body = world.createRigidBody(RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(spawn.x, spawn.y + HALF + RADIUS + 0.05, spawn.z));
     this.collider = world.createCollider(RAPIER.ColliderDesc.capsule(HALF, RADIUS), this.body);
     this.ctrl = world.createCharacterController(0.05);
