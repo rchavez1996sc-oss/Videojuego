@@ -54,13 +54,13 @@ export function mototaxi(b: Builder, pos: THREE.Vector3, yaw: number, paint: str
   const g = (mat: string, geo: THREE.BufferGeometry, x = 0, y = 0, z = 0) => b.geometry(mat, geo, new THREE.Matrix4().compose(at(x, y, z), q, new THREE.Vector3(1, 1, 1)));
   g(paint, profile([[-1.0, 0.32], [0.15, 0.32], [0.25, 0.55], [0.25, 1.0], [-1.0, 1.0]], 1.24));
   g('plastic', profile([[-1.08, 0.3], [0.25, 0.3], [0.25, 0.42], [-1.08, 0.42]], 1.28));
-  g(paint, profile([[-1.12, 1.7], [0.55, 1.7], [0.95, 1.55], [1.0, 1.62], [0.58, 1.8], [-1.12, 1.8]], 1.3));
-  for (const [x, z] of [[-0.6, -0.95], [0.6, -0.95], [-0.6, 0.2], [0.6, 0.2]]) b.box('bars', [0.04, 0.72, 0.04], at(x, 1.35, z), q, false);
-  b.box('glass', [0.9, 0.55, 0.03], at(0, 1.38, 0.9), q, false);
-  b.box('bars', [0.04, 0.6, 0.04], at(-0.44, 1.32, 0.9), q, false);
-  b.box('bars', [0.04, 0.6, 0.04], at(0.44, 1.32, 0.9), q, false);
-  b.box('seat', [1.05, 0.18, 0.5], at(0, 1.02, -0.6), q, false);
-  b.box('seat', [1.05, 0.5, 0.12], at(0, 1.3, -0.88), q, false);
+  g(paint, profile([[-1.12, 1.95], [0.55, 1.95], [0.95, 1.8], [1.0, 1.87], [0.58, 2.05], [-1.12, 2.05]], 1.3));
+  for (const [x, z] of [[-0.6, -0.95], [0.6, -0.95], [-0.6, 0.2], [0.6, 0.2]]) b.box('bars', [0.04, 0.96, 0.04], at(x, 1.47, z), q, false);
+  b.box('glass', [0.9, 0.6, 0.03], at(0, 1.5, 0.9), q, false);
+  b.box('bars', [0.04, 0.85, 0.04], at(-0.44, 1.5, 0.9), q, false);
+  b.box('bars', [0.04, 0.85, 0.04], at(0.44, 1.5, 0.9), q, false);
+  b.box('seat', [1.05, 0.18, 0.5], at(0, 0.9, -0.6), q, false);
+  b.box('seat', [1.05, 0.55, 0.12], at(0, 1.2, -0.88), q, false);
   b.box('plate', [0.32, 0.16, 0.02], at(0, 0.55, -1.02), q, false);
   for (const s of [-1, 1]) b.box('tail', [0.12, 0.08, 0.03], at(s * 0.5, 0.78, -1.02), q, false);
   g(paint, new THREE.CylinderGeometry(0.17, 0.21, 0.5, 10).rotateX(Math.PI / 2), 0, 0.82, 0.62);
@@ -69,6 +69,12 @@ export function mototaxi(b: Builder, pos: THREE.Vector3, yaw: number, paint: str
   b.box('bars', [0.7, 0.04, 0.04], at(0, 1.08, 1.0), q, false);
   b.box('light', [0.16, 0.14, 0.06], at(0, 0.95, 1.16), q, false);
   b.box(paint, [0.22, 0.05, 0.4], at(0, 0.56, 1.2), q, false);
+  for (const s of [-1, 1]) {
+    b.box('canopy', [0.02, 0.7, 0.95], at(s * 0.64, 1.45, -0.45), q, false);
+    b.box('stripe', [0.015, 0.08, 1.15], at(s * 0.625, 0.75, -0.42), q, false);
+    b.box(paint, [0.2, 0.04, 0.5], at(s * 0.62, 0.55, -0.62), q, false);
+  }
+  b.geometry('rim', new THREE.CylinderGeometry(0.035, 0.04, 0.55, 8).rotateX(Math.PI / 2), new THREE.Matrix4().compose(at(0.22, 0.32, 0.2), q, new THREE.Vector3(1, 1, 1)));
   wheel(b, at, q, -0.62, -0.62, 0.25, 0.13);
   wheel(b, at, q, 0.62, -0.62, 0.25, 0.13);
   wheel(b, at, q, 0, 1.2, 0.25, 0.11);
@@ -140,7 +146,7 @@ export function car(b: Builder, pos: THREE.Vector3, yaw: number, paint: string, 
   const at = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z).applyQuaternion(q).add(pos);
   const g = (mat: string, geo: THREE.BufferGeometry) => b.geometry(mat, geo, new THREE.Matrix4().compose(pos, q, new THREE.Vector3(1, 1, 1)));
   const belt = kind === 'combi' ? 1.2 : kind === 'pickup' ? 1.02 : 0.88;
-  g(paint, profile(shape, d.w));
+  g(paint, profile(shape.map(([z, y]) => [z, Math.min(y, belt)] as [number, number]), d.w));
   const glass = GLASS[kind];
   g('glass', profile(glass, d.w + 0.02));
   const roofZ = [glass[2][0], glass[3][0]], midZ = (roofZ[0] + roofZ[1]) / 2, topY = Math.max(...shape.map(([, y]) => y));
@@ -157,6 +163,15 @@ export function car(b: Builder, pos: THREE.Vector3, yaw: number, paint: string, 
     b.box('plastic', [0.07, 0.1, 0.16], at(s * (d.w / 2 + 0.05), belt + 0.08, glass[1][0] - 0.15), q, false);
   }
   b.box('plastic', [d.w * 0.5, 0.16, 0.03], at(0, 0.62, zf + 0.01), q, false);
+  const door = glass[1][0] - 0.35, rear = (glass[0][0] + midZ) / 2;
+  for (const s of [-1, 1]) {
+    for (const z of kind === 'combi' ? [door] : [door, midZ - 0.05]) b.box('plastic', [0.012, belt - 0.42, 0.02], at(s * (d.w / 2 + 0.002), (belt + 0.42) / 2, z), q, false);
+    for (const z of kind === 'combi' || kind === 'pickup' ? [door - 0.25] : [door - 0.25, rear]) b.box('rim', [0.02, 0.035, 0.14], at(s * (d.w / 2 + 0.01), belt - 0.1, z), q, false);
+    b.box('plastic', [0.04, 0.28, 0.02], at(s * (d.w / 2 - 0.12), 0.32, -wheelZ - 0.42), q, false);
+  }
+  b.box('bars', [0.012, 0.7, 0.012], at(d.w / 2 - 0.2, topY + 0.35, glass[3][0] + 0.15), q, false);
+  if (kind === 'combi') for (const x of [-0.6, 0.6]) b.box('bars', [0.04, 0.04, d.l - 1.2], at(x, topY + 0.12, -0.2), q, false);
+  if (kind === 'combi') for (const z of [-1.6, -0.4, 0.8]) b.box('bars', [1.24, 0.04, 0.04], at(0, topY + 0.14, z), q, false);
   for (const [x, z] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) {
     b.box('plastic', [0.06, 0.12, 0.8], at(x * (d.w / 2 + 0.005), 0.66, z * wheelZ), q, false);
     wheel(b, at, q, x * (d.w / 2 - 0.13), z * wheelZ, 0.31, 0.21);
