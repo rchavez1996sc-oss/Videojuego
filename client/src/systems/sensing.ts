@@ -8,7 +8,7 @@ import type { Heightfield } from '../world/heightfield';
 import { surfaceOf } from '../world/surfaces';
 
 /** Directions/distances of nearby enemies (and bystanders, as neutral marks) relative to the camera heading. */
-export function gatherThreats(enemies: Enemies, civilians: Civilians | null, supplies: THREE.Vector3[], player: THREE.Vector3, camera: THREE.Camera, allies: THREE.Vector3[] = []): Threat[] {
+export function gatherThreats(enemies: Enemies, civilians: Civilians | null, supplies: THREE.Vector3[], player: THREE.Vector3, camera: THREE.Camera, allies: THREE.Vector3[] = [], objective?: THREE.Vector3): Threat[] {
   const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).setY(0).normalize();
   const right = new THREE.Vector3(-fwd.z, 0, fwd.x);
   const out: Threat[] = [];
@@ -22,6 +22,10 @@ export function gatherThreats(enemies: Enemies, civilians: Civilians | null, sup
   for (const p of civilians?.present ?? []) push(p, false, true);
   for (const p of supplies) push(p, false, false, true);
   for (const p of allies) push(p, false, false, false, false, true);
+  if (objective) {
+    const d = objective.clone().sub(player).setY(0);
+    out.push({ angle: Math.atan2(d.dot(right), d.dot(fwd)), dist: d.length(), aware: false, objective: true });
+  }
   return out;
 }
 

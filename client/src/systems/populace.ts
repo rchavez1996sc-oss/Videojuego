@@ -29,7 +29,7 @@ export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world
   if (civilians) {
     d.scene.add(civilians.group);
     civilians.onHurt = () => {
-      d.hud.showToast('CIVIL HERIDO   −200');
+      d.hud.showToast('CIVIL HERIDO');
       d.sfx.hurt();
       casualty();
     };

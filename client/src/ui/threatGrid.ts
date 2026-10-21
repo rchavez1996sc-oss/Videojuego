@@ -1,4 +1,4 @@
-export interface Threat { angle: number; dist: number; aware: boolean; neutral?: boolean; supply?: boolean; ally?: boolean }
+export interface Threat { angle: number; dist: number; aware: boolean; neutral?: boolean; supply?: boolean; ally?: boolean; objective?: boolean }
 
 const SECTORS = 12;
 const RINGS = [30, 70, 130];
@@ -13,6 +13,7 @@ export class ThreatGrid {
   private supply = new Float32Array(SECTORS * RINGS.length);
   private ally = new Float32Array(SECTORS * RINGS.length);
   private t = 0;
+  private obj: { angle: number; dist: number } | null = null;
   private size = 132;
 
   constructor() {
@@ -29,7 +30,12 @@ export class ThreatGrid {
   update(dt: number, threats: Threat[]): void {
     this.t += dt;
     const target = new Float32Array(this.heat.length), aware = new Float32Array(this.heat.length), civil = new Float32Array(this.heat.length), supply = new Float32Array(this.heat.length), ally = new Float32Array(this.heat.length);
+    this.obj = null;
     for (const th of threats) {
+      if (th.objective) {
+        this.obj = th;
+        continue;
+      }
       const ring = RINGS.findIndex((r) => th.dist < r);
       if (ring < 0) continue;
       const a = ((th.angle / (Math.PI * 2)) * SECTORS + SECTORS + 0.5) % SECTORS;
@@ -94,6 +100,20 @@ export class ThreatGrid {
       c.beginPath();
       c.moveTo(cx + Math.cos(a) * 12, cy + Math.sin(a) * 12);
       c.lineTo(cx + Math.cos(a) * maxR, cy + Math.sin(a) * maxR);
+      c.stroke();
+    }
+    if (this.obj) {
+      const r = 12 + (maxR - 12) * Math.min(1, this.obj.dist / RINGS[RINGS.length - 1]), a = this.obj.angle - Math.PI / 2;
+      const ox = cx + Math.cos(a) * Math.min(r, maxR - 5), oy = cy + Math.sin(a) * Math.min(r, maxR - 5), s = 5 + Math.sin(this.t * 4) * 0.8;
+      c.fillStyle = '#ffb547';
+      c.strokeStyle = 'rgba(0, 0, 0, 0.7)';
+      c.beginPath();
+      c.moveTo(ox, oy - s);
+      c.lineTo(ox + s, oy);
+      c.lineTo(ox, oy + s);
+      c.lineTo(ox - s, oy);
+      c.closePath();
+      c.fill();
       c.stroke();
     }
     c.fillStyle = 'rgba(232, 226, 212, 0.9)';

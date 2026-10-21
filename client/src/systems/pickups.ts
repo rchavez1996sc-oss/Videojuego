@@ -95,10 +95,10 @@ export function collectSupplies(dt: number, pickups: Pickups, d: { player: Playe
   d.sfx.pickup();
   if (got === 'medkit') {
     d.player.heal();
-    d.hud.showToast('+ BOTIQUÍN');
+    d.hud.showToast('BOTIQUÍN');
   } else {
     d.gun.addAmmo(d.gun.reserveMax);
     d.grenades.count = Math.min(d.grenades.count + 1, 5);
-    d.hud.showToast('+ MUNICIÓN   + GRANADA');
+    d.hud.showToast('MUNICIÓN Y GRANADA');
   }
 }

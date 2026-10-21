@@ -47,7 +47,7 @@ export class Loot {
       else {
         const before = d.gun.reserve;
         d.gun.addAmmo(near!.rounds);
-        d.hud.showToast(`+${d.gun.reserve - before} BALAS`);
+        d.hud.showToast(`${d.gun.reserve - before} BALAS`);
         near!.rounds = 0;
         d.sfx.pickup();
       }

@@ -44,6 +44,8 @@ export interface ChapterDef {
   life?: import('../systems/cityLife').LifeDef;
   civilians?: { count: number; seed: number };
   squad?: number;
+  lives?: number;
+  objective?: import('../systems/objective').ObjectiveDef;
   scatter: { rocks: number; trees: number; seed: number };
   spawn: { x: number; z: number; yaw: number };
   /** Facing used to lay out the practice range and test structures around the spawn. */

@@ -9,6 +9,7 @@ import type { Renderer } from '../render/renderer';
 import type { Traffic } from '../systems/traffic';
 import type { Squad } from '../systems/squad';
 import type { GrenadeMode } from '../weapons/grenadeMode';
+import type { Objective } from '../systems/objective';
 
 export interface DebugContext {
   views: [number, number, number, number, number, number][];
@@ -29,6 +30,7 @@ export interface DebugContext {
   scene?: THREE.Scene;
   squad?: Squad | null;
   grenadeMode?: GrenadeMode;
+  objective?: Objective | null;
 }
 
 /** `window.__game`: hooks used by the Playwright screenshot / AI / grenade scripts. */
@@ -151,6 +153,23 @@ export function installDebug(c: DebugContext): void {
       g.reserve = 0;
       for (let i = 0; i < 80; i++) c.frame(1 / 20);
       return `looted=${looted} toast="${document.querySelector('#hud .toast')?.textContent}"`;
+    },
+    /** Walks into the station lobby: reports the prompt with defenders alive, then clears them and holds E. */
+    objectiveTest() {
+      const o = c.objective!, h = o.site.hall, log: string[] = [];
+      c.setFreeCam(false);
+      c.player.respawn(new THREE.Vector3((h.x0 + h.x1) / 2, h.y + 0.25, (h.z0 + h.z1) / 2), 0);
+      for (let i = 0; i < 3; i++) c.frame(1 / 20);
+      log.push(`inside-with-defenders: ${document.querySelectorAll('.prompt')[2]?.textContent}`);
+      for (const e of c.enemies.list) if (e.alive && e.position.distanceTo(o.position) < o.def.defendRadius && e.damage(1e6)) e.die(new THREE.Vector3(1, 0, 0));
+      dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE' }));
+      for (let i = 0; i < 70 && !o.done; i++) {
+        c.player.hp = 100;
+        c.frame(1 / 20);
+      }
+      dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE' }));
+      log.push(`done=${o.done} screen=${document.getElementById('complete')?.textContent?.slice(0, 120)}`);
+      return log.join('\n');
     },
     squadInfo: () => {
       const s = c.squad;

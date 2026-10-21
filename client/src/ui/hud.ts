@@ -33,7 +33,7 @@ export class Hud {
       <div class="zoom"></div>
       <div class="counter"><span class="k">ENEMIGOS</span><b>0</b><span class="civ"></span></div>
       <div class="vitals">
-        <div class="hpnum"><i class="plus"></i><b>100</b></div>
+        <div class="hpnum"><b>100</b><span class="lives"></span></div>
         <div class="bars"><div class="meter hp"><div></div><i class="cap"></i></div><div class="meter stamina"><div></div></div></div>
       </div>
       <div class="ammo">
@@ -128,6 +128,12 @@ export class Hud {
     this.set('toastO', toastO, () => (this.toast.style.opacity = toastO));
   }
 
+  set lives(n: number) {
+    const el = this.root.querySelector('.lives') as HTMLElement;
+    el.innerHTML = '<i></i>'.repeat(Math.max(0, n)) + '<i class="off"></i>'.repeat(Math.max(0, 3 - n));
+    el.title = `${n} vidas`;
+  }
+
   set enemies(n: number) {
     this.set('enemies', String(n), () => (this.counter.textContent = String(n)));
   }
@@ -137,13 +143,13 @@ export class Hud {
     this.civ.classList.toggle('warn', v.count >= v.limit - 1);
   }
 
-  hitmarker(kill: boolean, headshot: boolean, killLabel = 'BLANCO DERRIBADO  +100'): void {
+  hitmarker(kill: boolean, headshot: boolean, killLabel = 'BLANCO DERRIBADO'): void {
     this.hitT = kill ? 0.45 : 0.22;
     this.hit.classList.toggle('kill', kill);
     this.hit.classList.remove('pop');
     void this.hit.offsetWidth;
     this.hit.classList.add('pop');
-    if (headshot || kill) this.showToast(headshot ? (kill ? 'HEADSHOT  +150' : 'HEADSHOT') : killLabel);
+    if (headshot || kill) this.showToast(headshot ? (kill ? 'HEADSHOT' : 'HEADSHOT') : killLabel);
   }
 
   showToast(text: string): void {

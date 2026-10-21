@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { signTexture } from '../render/urbanTextures';
 
-export type SignKind = 'shop' | 'graffiti' | 'poster' | 'hill' | 'concert' | 'emblem' | 'red';
+export type SignKind = 'shop' | 'graffiti' | 'poster' | 'hill' | 'concert' | 'emblem' | 'red' | 'station';
 
 interface SignDef { text: string; kind: SignKind; bg: string | null; fg: string; sub?: string; accent?: string }
 
@@ -36,6 +36,7 @@ const SIGNS: SignDef[] = [
   { text: 'LA SONORA DEL CERRO', kind: 'concert', bg: '#00e05a', fg: '#111111', sub: 'VIE 20 · ENTRADA S/ 15', accent: '#ff7a00' },
   { text: 'DINASTÍA DEL SUR', kind: 'concert', bg: '#ff7a00', fg: '#111111', sub: 'SÁB 21 · CHOLO PARTY', accent: '#ff2d8a' },
   { text: '', kind: 'emblem', bg: null, fg: '#f4f2ec' },
+  { text: 'COMISARÍA SECTORIAL', kind: 'station', bg: '#1f3d2c', fg: '#f2f0e6' },
   { text: '¡VIVA LA CLASE OBRERA!', kind: 'red', bg: '#b3121b', fg: '#ffffff', sub: 'SINDICATO UNIFICADO DE TRABAJADORES DEL CONO', accent: '#f2c230' },
   { text: '1° DE MAYO', kind: 'red', bg: '#c8102e', fg: '#f2c230', sub: 'TODOS A LA PLAZA · MARCHA OBRERA', accent: '#111111' },
   { text: 'PAN Y TRABAJO', kind: 'red', bg: '#a50f19', fg: '#ffffff', sub: 'FEDERACIÓN DE CONSTRUCCIÓN CIVIL', accent: '#ffffff' },

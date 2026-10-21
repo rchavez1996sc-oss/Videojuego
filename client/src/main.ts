@@ -44,7 +44,10 @@ import { setupStartMenu } from './ui/startMenu';
 import { gatherThreats, surfaceUnder } from './systems/sensing';
 import { createSquad, type AllyDef } from './systems/squad';
 import { GrenadeMode } from './weapons/grenadeMode';
+import { MoveFeel } from './core/moveFeel';
 import { Loot } from './systems/loot';
+import { Objective } from './systems/objective';
+import { showMissionComplete } from './ui/missionComplete';
 import allyDef from './data/allies.json';
 
 const CHAPTERS: Record<string, unknown> = { '1': ch01, '2': ch02 };
@@ -153,6 +156,13 @@ async function boot(): Promise<void> {
   const nadeMode = new GrenadeMode(grenades, world, camera, player, sfx, hud);
   scene.add(nadeMode.group);
   const corpses = new Loot(pickups, world, hf);
+  const objective = ch.objective && barrio?.station ? new Objective(ch.objective, barrio.station, camera) : null;
+  let lives = ch.lives ?? 3;
+  hud.lives = lives;
+  if (objective) objective.onComplete = () => {
+    failed = true;
+    showMissionComplete(objective.def.complete, objective.def.reward, `ENEMIGOS ABATIDOS ${enemies.list.length - enemies.aliveCount}/${enemies.list.length} · BAJAS CIVILES ${populace.casualties} · VIDAS ${lives}`);
+  };
   grenades.onExplode = (at) => {
     detonate(at, { combat, sfx, tpc, enemies, player, world, playerAlive: deadT <= 0 });
     civilians?.explosion(at, BLAST_RADIUS);
@@ -169,7 +179,7 @@ async function boot(): Promise<void> {
   enemies.onEnemyHit = (kill, headshot, at) => {
     if (kill) loot(at);
     sfx.hitmarker(kill);
-    hud.hitmarker(kill, headshot, 'BAJA  +100');
+    hud.hitmarker(kill, headshot, 'BAJA');
     if (kill && enemies.aliveCount === 0) setTimeout(() => hud.showToast('ZONA DESPEJADA'), 1200);
   };
   world.step();
@@ -178,7 +188,7 @@ async function boot(): Promise<void> {
   let freeCam = false;
   installDebug({
     extraLog: () => (civilians ? `civ:${civilians.list.map((c) => c.mood[0]).join('')}` : ''),
-    views: ch.views ?? [], tpc, hf, player, combat, enemies, grenades, renderer, shotMode, scene, squad, grenadeMode: nadeMode,
+    views: ch.views ?? [], tpc, hf, player, combat, enemies, grenades, renderer, shotMode, scene, squad, grenadeMode: nadeMode, objective,
     frame: (dt) => frame(dt),
     setFreeCam: (v) => (freeCam = v),
     setSkipRender: (v) => (skipRender = v),
@@ -194,8 +204,7 @@ async function boot(): Promise<void> {
   document.addEventListener('pointerlockchange', () => overlay.classList.toggle('hidden', document.pointerLockElement === canvas));
 
   const gpu = gpuName.replace(/^ANGLE \((.*)\)$/, '$1').slice(0, 60);
-  let lastStep = 0, landed = false;
-  const groundUnder = () => surfaceUnder(world, hf, player);
+  const feel = new MoveFeel(player, tpc, sfx, () => surfaceUnder(world, hf, player));
   const clock = new THREE.Clock();
   let frames = 0, acc = 0;
   renderer.gl.info.autoReset = false;
@@ -221,6 +230,11 @@ async function boot(): Promise<void> {
         player.regen(dt);
         shieldT = Math.max(0, shieldT - dt);
         if (player.hp <= 0) {
+          hud.lives = --lives;
+          if (lives <= 0) {
+            failed = true;
+            showMissionFailed('Perdiste tus tres vidas. El nivel se reinicia desde el principio.');
+          }
           deadT = 4;
           deathPos.copy(player.position);
           damageFx.dead = true;
@@ -233,18 +247,7 @@ async function boot(): Promise<void> {
       world.timestep = dt;
       world.step();
       player.syncPosition();
-      const moveK = Math.min(player.speed / 6, 1);
-      const amp = (0.012 + 0.02 * moveK) * moveK * (input.aiming ? 0.3 : 1);
-      const stepWave = Math.abs(Math.sin(player.stepPhase * Math.PI));
-      tpc.bob = THREE.MathUtils.damp(tpc.bob, (stepWave - 0.6) * amp - (player.sprinting ? 0.05 : moveK * 0.02), 25, dt);
-      tpc.sway = THREE.MathUtils.damp(tpc.sway, Math.sin(player.stepPhase * Math.PI) * amp * 0.5, 20, dt);
-      const step = Math.floor(player.stepPhase);
-      if (step !== lastStep && player.speed > 0.8 && !player.airborne) sfx.footstep(Math.min(1, player.speed / 6) * (player.crouchAmount > 0.5 ? 0.4 : 1), groundUnder());
-      lastStep = step;
-      if (player.landImpact > 0.6 && !landed) sfx.footstep(1.6, groundUnder());
-      landed = player.landImpact > 0.6;
-      tpc.dip = player.landImpact * 0.3;
-      tpc.fovBoost = THREE.MathUtils.damp(tpc.fovBoost, player.sprinting ? 7 : 0, 6, dt);
+      feel.update(dt, input);
       tpc.update(dt, input, player.position, player.crouchAmount, player.collisionHandle);
       camera.updateMatrixWorld();
       player.model.root.updateMatrixWorld(true);
@@ -254,8 +257,9 @@ async function boot(): Promise<void> {
     enemies.sync();
     squad?.sync();
     collectSupplies(dt, pickups, { player, gun: combat.gun, grenades, sfx, hud, alive: deadT <= 0 });
+    objective?.update(dt, player.position, enemies.list, input, deadT <= 0);
     corpses.update(dt, { dead: [...enemies.list.filter((e) => !e.alive), ...(squad?.fallen ?? [])], player, gun: combat.gun, input, sfx, hud, alive: deadT <= 0 });
-    const threats = gatherThreats(enemies, civilians, pickups.positions, player.position, camera, squad?.positions);
+    const threats = gatherThreats(enemies, civilians, pickups.positions, player.position, camera, squad?.positions, objective?.position);
     threatGrid.update(dt, threats);
     damageFx.update(dt, player.hp / 100);
     hud.enemies = enemies.aliveCount;

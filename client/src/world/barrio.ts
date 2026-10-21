@@ -8,6 +8,7 @@ import { Builder } from './buildingKit';
 import { cityHouse, hillHouse, PAINTS, type Lot } from './houses';
 import { powerLine, cable, mototaxi, sandbags, stairway, car, billboard, type CarKind } from './urbanProps';
 import { SignAtlas } from './signs';
+import { buildStation, type StationDef, type StationInfo } from './station';
 import { buildLadder } from './ladders';
 import { STREET_COLORS, stall, trashPile, roadMarkings } from './streetLife';
 import { brick, concrete, plaster, corrugated, estera } from '../render/urbanTextures';
@@ -19,6 +20,7 @@ export interface BarrioDef {
   hills: { zMin: number; zMax: number; count: number; xMax: number };
   stairs: [number, number, number][];
   landmark: { x: number; z: number; w: number; d: number; floors: number; facing: number };
+  station?: StationDef;
   barricades: [number, number, number, number][];
   mototaxis: number;
   cars: number;
@@ -35,6 +37,7 @@ export interface Barrio {
   blocked: (x: number, z: number) => boolean;
   materials: Record<string, THREE.Material>;
   bake: { material: THREE.Material; keys: string[] }[];
+  station: StationInfo | null;
 }
 
 const PAINT_COLORS = ['#9fc3d6', '#e3c46a', '#d9a3a0', '#9cc29a', '#e6dac0', '#d99a63'];
@@ -62,6 +65,8 @@ function materials(lighting: Lighting, atlas: SignAtlas): Record<string, THREE.M
     canopy: std('canopy', { color: '#2b2f6b', roughness: 0.7 }),
     seat: std('seat', { color: '#2a2a2a', roughness: 0.6 }),
     tire: std('tire', { color: '#151515', roughness: 0.85 }),
+    policeGreen: std('policeGreen', { map: pl.map, normalMap: pl.normalMap, roughness: 0.9, color: '#4f7a5c' }),
+    armsCrate: std('arms-crate', { map: wd.map, color: '#3e4228', roughness: 0.8 }),
     sandbag: std('sandbag', { map: es.map, color: '#a69673', roughness: 1 }),
     moto0: std('moto0', { color: '#b3221d', roughness: 0.35, metalness: 0.3 }),
     moto1: std('moto1', { color: '#1f5fa8', roughness: 0.35, metalness: 0.3 }),
@@ -87,7 +92,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
   const rand = mulberry32(def.seed);
   const atlas = new SignAtlas();
   const pitch = def.blockW + def.street;
-  const lm = def.landmark;
+  const lm = def.landmark, st = def.station;
   const inLandmark = (x0: number, x1: number, z: number) => x1 > lm.x - lm.w / 2 - 1.6 && x0 < lm.x + lm.w / 2 + 1.6 && Math.abs(z - lm.z) < lm.d + 2 && Math.sign(z) === Math.sign(lm.z);
   const sign = (at: THREE.Vector3, q: THREE.Quaternion, w: number) => atlas.add(at, q, w, 'shop', rand);
 
@@ -108,7 +113,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
           const cx = x + w / 2;
           const worldSide = x === bx0 ? -1 : x + w >= bx1 - 0.01 ? 1 : 0;
           x += w;
-          if (inLandmark(cx - w / 2, cx + w / 2, frontZ)) continue;
+          if (inLandmark(cx - w / 2, cx + w / 2, frontZ) || (st && x - w < st.x + st.w / 2 && x > st.x - st.w / 2 && Math.abs(frontZ - st.z) < 1)) continue;
           const lot: Lot = { x: cx, z: frontZ, y: hf.heightAt(cx, frontZ), facing, w, d: (z1 - z0) / 2 - 0.04 };
           cityHouse(b, lot, rand, sign, facing === 0 ? worldSide : -worldSide);
           if (rand() < 0.18) {
@@ -124,6 +129,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
     }
   }
   cityHouse(b, { x: lm.x, z: lm.z, y: hf.heightAt(lm.x, lm.z), facing: lm.facing, w: lm.w, d: lm.d, floors: lm.floors }, rand, sign);
+  const station = st ? buildStation(b, hf, atlas, st, rand) : null;
   const back = Math.sign(lm.z) || 1, lx = lm.x - lm.w / 2 - 0.3, lz = lm.z + back * 2.5;
   buildLadder(b, new THREE.Vector3(lx, hf.heightAt(lx, lz), lz), hf.heightAt(lm.x, lm.z) + lm.floors * 2.7, new THREE.Vector3(-1, 0, 0));
 
@@ -193,7 +199,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
   }
   for (let x = def.x0 + 20, k = 0; x < xEnd - 10; x += def.billboardEvery, k++) {
     const side = k % 2 ? 1 : -1;
-    if (crossX.some((cx) => Math.abs(cx - x) < 8)) continue;
+    if (crossX.some((cx) => Math.abs(cx - x) < 8) || (st && Math.abs(x - st.x) < st.w / 2 + 6 && side * st.z > 0)) continue;
     const bb = billboard(b, hf, x, side * 10.6, side > 0 ? Math.PI : 0);
     atlas.add(bb.pos, bb.q, 8, 'poster', rand);
   }
@@ -231,7 +237,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
     signs.receiveShadow = true;
     group.add(signs);
   }
-  return { group, materials: mats, bake, graph: streetGraph(def, crossX, hf), blocked: (x, z) => Math.abs(z) < def.gap + 2 * def.blockD + def.street + 6 || hillSpots.some((h) => Math.hypot(h.x - x, h.z - z) < h.r + 1.5) };
+  return { group, materials: mats, bake, station, graph: streetGraph(def, crossX, hf), blocked: (x, z) => Math.abs(z) < def.gap + 2 * def.blockD + def.street + 6 || hillSpots.some((h) => Math.hypot(h.x - x, h.z - z) < h.r + 1.5) };
 }
 
 function streetGraph(def: BarrioDef, crossX: number[], hf: Heightfield): StreetGraph {

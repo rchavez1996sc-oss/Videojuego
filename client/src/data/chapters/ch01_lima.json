@@ -176,7 +176,14 @@
         210,
         100
       ]
-    ]
+    ],
+    "station": {
+      "x": 204,
+      "z": -12,
+      "w": 42,
+      "d": 17,
+      "facing": 0
+    }
   },
   "scatter": {
     "rocks": 600,
@@ -464,63 +471,56 @@
     },
     {
       "type": "rifleman",
-      "x": 51,
-      "z": -50.5,
-      "patrol": [
-        [
-          51,
-          -50.5
-        ],
-        [
-          102,
-          -50.5
-        ]
-      ]
+      "x": 200,
+      "z": -25,
+      "y": 0.2
     },
     {
       "type": "rifleman",
-      "x": 76.5,
-      "z": 20
+      "x": 208.5,
+      "z": -26,
+      "y": 0.2
     },
     {
-      "type": "rifleman",
-      "x": 102,
-      "z": 50.5
-    },
-    {
-      "type": "rifleman",
-      "x": 127.5,
-      "z": -80
-    },
-    {
-      "type": "rifleman",
-      "x": 153,
-      "z": 93.5,
-      "patrol": [
-        [
-          153,
-          93.5
-        ],
-        [
-          102,
-          93.5
-        ]
-      ]
-    },
-    {
-      "type": "rifleman",
-      "x": 178.5,
-      "z": -40
-    },
-    {
-      "type": "rifleman",
+      "type": "marksman",
       "x": 204,
-      "z": 50.5
+      "z": -27,
+      "y": 6.75
     },
     {
       "type": "rifleman",
-      "x": 229.5,
-      "z": -60
+      "x": 198,
+      "z": -15
+    },
+    {
+      "type": "rifleman",
+      "x": 210,
+      "z": -15
+    },
+    {
+      "type": "rifleman",
+      "x": 189,
+      "z": -24
+    },
+    {
+      "type": "rifleman",
+      "x": 215.5,
+      "z": -16.5
+    },
+    {
+      "type": "rifleman",
+      "x": 195,
+      "z": -6.5,
+      "patrol": [
+        [
+          195,
+          -6.5
+        ],
+        [
+          213,
+          -6.5
+        ]
+      ]
     }
   ],
   "medkits": [
@@ -630,5 +630,14 @@
       70
     ]
   ],
-  "squad": 4
+  "squad": 4,
+  "lives": 3,
+  "objective": {
+    "title": "ASALTA LA COMISARÍA",
+    "detail": "Elimina a los defensores y asegura el cargamento de armas",
+    "defendRadius": 32,
+    "hold": 2.5,
+    "complete": "CAPÍTULO 1 COMPLETADO",
+    "reward": "Cargamento asegurado: el armamento de la comisaría queda en manos del FLS para el Capítulo 2."
+  }
 }
