@@ -9,7 +9,7 @@ export async function renderPlates(onPlate: (i: number, url: string) => void): P
   try {
     for (const [i, make] of SCENES.entries()) {
       const shot = make(cast);
-      onPlate(i, stage.shoot(shot.scene, shot.camera, shot.grade));
+      onPlate(i, stage.shoot(shot.scene, shot.camera, shot.grade, shot.sketch));
       await new Promise((r) => setTimeout(r, 30));
     }
   } finally {

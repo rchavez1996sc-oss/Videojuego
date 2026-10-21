@@ -8,11 +8,11 @@ const STEP = 8000;
  * audio), then each paragraph appears together with its illustrated plate and a beat of the score.
  * Click advances, Esc skips; after the last plate the chapter title appears.
  */
-export function showPrologue(title: string, paragraphs: string[]): void {
+export function showPrologue(kicker: string, title: string, paragraphs: string[]): void {
   if (!paragraphs.length) return;
   const el = document.createElement('div');
   el.id = 'prologue';
-  el.innerHTML = `<div class="plates"></div><p class="line"></p><h3>${title}</h3><div class="begin">CLIC PARA COMENZAR</div><span>CLIC: CONTINUAR · ESC: SALTAR</span>`;
+  el.innerHTML = `<div class="plates"></div><p class="line"></p><h3><small>${kicker}</small>${title}<i></i></h3><div class="begin">CLIC PARA COMENZAR</div><span>CLIC: CONTINUAR · ESC: SALTAR</span>`;
   document.body.appendChild(el);
   const plates = el.querySelector('.plates')!, line = el.querySelector('.line')!, head = el.querySelector('h3')!;
   const urls: string[] = [];

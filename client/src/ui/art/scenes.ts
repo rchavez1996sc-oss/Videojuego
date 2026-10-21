@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { Cast, skyTexture, puffTexture, type Kind } from './stage';
+import { generalPortrait } from './portrait';
 import { block, tank, truck, flag, beam, smoke, motes, rain, ground, dark } from './props';
 
-export interface Shot { scene: THREE.Scene; camera: THREE.PerspectiveCamera; grade: string }
+export interface Shot { scene: THREE.Scene; camera: THREE.PerspectiveCamera; grade: string; sketch?: boolean }
 const V = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 
@@ -162,4 +163,4 @@ export function barrio(cast: Cast): Shot {
   return { scene: s, camera: cam(40, V(-2.2, 2.4, 4.5), V(1.5, 0.4, -30)), grade: '#1d2a48' };
 }
 
-export const SCENES = [general, tanks, detentions, voices, barrio];
+export const SCENES = [generalPortrait, tanks, detentions, voices, barrio];

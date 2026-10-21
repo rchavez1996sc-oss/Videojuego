@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { sketch } from './portrait';
 
 export const W = 1280, H = 720;
 const BASE = `${import.meta.env.BASE_URL}assets/`;
@@ -24,11 +25,11 @@ export class Cast {
   }
 
   /** A posed silhouette: `clip` frozen at `frac` of its length, feet at `pos`, facing `yaw`. */
-  actor(kind: Kind, clip: string, frac: number, pos: THREE.Vector3, yaw: number, extra?: (head: THREE.Bone) => void, armed = false, arms: 'fist' | 'up' | null = null): THREE.Object3D {
+  actor(kind: Kind, clip: string, frac: number, pos: THREE.Vector3, yaw: number, extra?: (head: THREE.Bone) => void, armed = false, arms: 'fist' | 'up' | null = null, textured = false): THREE.Object3D {
     const o = SkeletonUtils.clone(this.protos.get(kind)!);
     o.traverse((m) => {
       if (m instanceof THREE.SkinnedMesh) {
-        m.material = this.ink;
+        if (!textured) m.material = this.ink;
         m.frustumCulled = false;
         m.castShadow = true;
       }
@@ -119,7 +120,7 @@ export class Stage {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   }
 
-  shoot(scene: THREE.Scene, camera: THREE.PerspectiveCamera, grade: string): string {
+  shoot(scene: THREE.Scene, camera: THREE.PerspectiveCamera, grade: string, ink = false): string {
     camera.aspect = W / H;
     camera.updateProjectionMatrix();
     this.renderer.render(scene, camera);
@@ -128,7 +129,8 @@ export class Stage {
     cv.height = H;
     const c = cv.getContext('2d')!;
     c.drawImage(this.renderer.domElement, 0, 0);
-    finish(c, grade);
+    if (ink) sketch(c, W, H);
+    else finish(c, grade);
     scene.traverse((o) => {
       if (o instanceof THREE.Mesh || o instanceof THREE.Points) o.geometry.dispose();
     });

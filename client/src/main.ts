@@ -70,7 +70,7 @@ async function boot(): Promise<void> {
   if (shotMode) document.body.classList.add('shot');
   const ch = (CHAPTERS[new URLSearchParams(location.search).get('ch') ?? '1'] ?? ch01) as ChapterDef;
   document.querySelector('#overlay .sub')!.textContent = `Capítulo ${ch.number ?? 1} — ${ch.title}`;
-  if (!shotMode) showPrologue(`CAPÍTULO ${ch.number ?? 1} · ${ch.title.toUpperCase()}`, ch.intro ?? []);
+  if (!shotMode) showPrologue(`CAPÍTULO ${ch.number ?? 1}`, ch.title.toUpperCase(), ch.intro ?? []);
   await RAPIER.init();
   const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
   const canvas = document.getElementById('game') as HTMLCanvasElement;

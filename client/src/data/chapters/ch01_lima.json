@@ -1,7 +1,7 @@
 {
   "id": "ch01",
   "number": 1,
-  "title": "Ceniza",
+  "title": "Levantamiento",
   "terrain": {
     "size": 1024,
     "playable": 470,
@@ -36,7 +36,7 @@
     "sunIntensity": 1.6,
     "ambient": 0.8,
     "fogColor": "#bcb8af",
-    "fogDensity": 0.0042,
+    "fogDensity": 0.0035,
     "colors": {
       "grassLush": "#8a7d5e",
       "grassDry": "#9d8d6c",

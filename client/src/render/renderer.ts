@@ -1,10 +1,18 @@
 import * as THREE from 'three';
 import {
-  BloomEffect, BrightnessContrastEffect, EffectComposer, EffectPass, HueSaturationEffect,
+  BlendFunction, BloomEffect, EffectComposer, EffectPass, LUT3DEffect, NoiseEffect,
   RenderPass, SMAAEffect, ToneMappingEffect, ToneMappingMode, VignetteEffect,
 } from 'postprocessing';
+import { cinematicLut } from './grade';
 import { N8AOPostPass } from 'n8ao';
 import { preset, quality } from '../core/settings';
+
+/** Very faint animated film grain over everything. */
+function grain(): NoiseEffect {
+  const n = new NoiseEffect({ blendFunction: BlendFunction.OVERLAY, premultiply: true });
+  n.blendMode.opacity.value = 0.12;
+  return n;
+}
 
 export class Renderer {
   readonly gl: THREE.WebGLRenderer;
@@ -14,7 +22,7 @@ export class Renderer {
     this.gl = new THREE.WebGLRenderer({ canvas, powerPreference: 'high-performance', antialias: false, stencil: false, depth: true });
     this.gl.setPixelRatio(preset.pixelRatio);
     this.gl.shadowMap.enabled = true;
-    this.gl.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.gl.shadowMap.type = quality === 'high' || quality === 'ultra' ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
     this.gl.toneMappingExposure = exposure;
     this.composer = new EffectComposer(this.gl, { frameBufferType: THREE.HalfFloatType });
     this.composer.addPass(new RenderPass(scene, camera));
@@ -32,9 +40,9 @@ export class Renderer {
       camera,
       new BloomEffect({ intensity: 0.55, luminanceThreshold: 0.85, luminanceSmoothing: 0.2, mipmapBlur: true }),
       new ToneMappingEffect({ mode: ToneMappingMode.AGX }),
-      new HueSaturationEffect({ saturation: 0.08 }),
-      new BrightnessContrastEffect({ contrast: 0.06 }),
-      new VignetteEffect({ offset: 0.3, darkness: 0.45 }),
+      new LUT3DEffect(cinematicLut()),
+      new VignetteEffect({ offset: 0.28, darkness: 0.52 }),
+      grain(),
     ));
     this.composer.addPass(new EffectPass(camera, new SMAAEffect()));
     this.resize(camera);
