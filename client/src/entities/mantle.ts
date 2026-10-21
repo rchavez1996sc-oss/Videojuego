@@ -30,6 +30,10 @@ export function findLedge(world: RAPIER.World, feet: THREE.Vector3, yaw: number,
   if (height < 0.3 || height > maxHeight) return null;
   const standPoint = new THREE.Vector3(feet.x + fwd.x * (wall + 0.3), top + 0.05, feet.z + fwd.z * (wall + 0.3));
   if (cast(standPoint, UP, 1.7)) return null;
+  for (const h of [0.15, 0.9, 1.6]) {
+    const o = new THREE.Vector3(feet.x, top + h, feet.z);
+    if (cast(o, fwd, wall + 0.6)) return null;
+  }
 
   const behind = probe(wall + 0.75), beyond = probe(wall + 1.1);
   if (height <= 1.3 && behind !== null && beyond !== null && behind < top - 0.4 && beyond < top - 0.4) {
