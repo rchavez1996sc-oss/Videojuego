@@ -11,6 +11,7 @@ import { SignAtlas } from './signs';
 import { buildStation, type StationDef, type StationInfo } from './station';
 import { buildLadder } from './ladders';
 import { flsMarks, poleMarks } from './flsMarks';
+import { alleyLife } from './alleys';
 import { STREET_COLORS, stall, trashPile, roadMarkings } from './streetLife';
 import { brick, concrete, plaster, corrugated, estera } from '../render/urbanTextures';
 import { rock, wood } from '../render/textures';
@@ -95,7 +96,7 @@ function materials(lighting: Lighting, atlas: SignAtlas): Record<string, THREE.M
 
 export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting, world: RAPIER.World): Barrio {
   const b = new Builder(world, world.createRigidBody(RAPIER.RigidBodyDesc.fixed()));
-  const rand = mulberry32(def.seed), deco = mulberry32(def.seed + 7);
+  const rand = mulberry32(def.seed), deco = mulberry32(def.seed + 7), alley = mulberry32(def.seed + 13);
   const atlas = new SignAtlas();
   const pitch = def.blockW + def.street;
   const lm = def.landmark, st = def.station;
@@ -112,15 +113,19 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
   for (let col = 0; col < def.cols; col++) {
     const bx0 = def.x0 + col * pitch, bx1 = bx0 + def.blockW;
     for (const [z0, z1] of rowsZ) {
-      for (const [frontZ, facing] of [[z0, Math.PI], [z1, 0]] as const) {
-        let x = bx0;
-        while (bx1 - x > 4) {
-          const w = bx1 - x < 13 ? bx1 - x : 6 + rand() * 3;
+      const special = inLandmark(bx0, bx1, z0) || inLandmark(bx0, bx1, z1) || (st && bx0 < st.x + st.w / 2 + 2 && bx1 > st.x - st.w / 2 - 2 && st.z > z0 - 6 && st.z < z1 + 6);
+      const pass = special || alley() > 0.45 ? null : { at: bx0 + 12 + alley() * (def.blockW - 24), w: 2.4 + alley() * 0.8 };
+      const backW = special || alley() > 0.35 ? 0 : 2.2 + alley() * 0.6;
+      const spans = pass ? [[bx0, pass.at - pass.w / 2], [pass.at + pass.w / 2, bx1]] : [[bx0, bx1]];
+      for (const [frontZ, facing] of [[z0, Math.PI], [z1, 0]] as const) for (const [s0, s1] of spans) {
+        let x = s0;
+        while (s1 - x > 4) {
+          const w = s1 - x < 13 ? s1 - x : 6 + rand() * 3;
           const cx = x + w / 2;
-          const worldSide = x === bx0 ? -1 : x + w >= bx1 - 0.01 ? 1 : 0;
+          const worldSide = x === s0 ? -1 : x + w >= s1 - 0.01 ? 1 : 0;
           x += w;
           if (inLandmark(cx - w / 2, cx + w / 2, frontZ) || (st && x - w < st.x + st.w / 2 && x > st.x - st.w / 2 && Math.abs(frontZ - st.z) < 1)) continue;
-          const lot: Lot = { x: cx, z: frontZ, y: hf.heightAt(cx, frontZ), facing, w, d: (z1 - z0) / 2 - 0.04 };
+          const lot: Lot = { x: cx, z: frontZ, y: hf.heightAt(cx, frontZ), facing, w, d: (z1 - z0 - backW) / 2 - 0.04 };
           const red = deco() < 0.12;
           flsMarks(b, hf, atlas, lot, cityHouse(b, lot, rand, sign, facing === 0 ? worldSide : -worldSide, red), red, worldSide, deco);
           if (rand() < 0.18) {
@@ -133,6 +138,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
           }
         }
       }
+      alleyLife(b, hf, bx0, bx1, z0, z1, pass, backW, alley);
     }
   }
   cityHouse(b, { x: lm.x, z: lm.z, y: hf.heightAt(lm.x, lm.z), facing: lm.facing, w: lm.w, d: lm.d, floors: lm.floors }, rand, sign);

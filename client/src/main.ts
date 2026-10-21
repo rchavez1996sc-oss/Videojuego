@@ -32,6 +32,7 @@ import { Pickups, collectSupplies, dropLoot } from './systems/pickups';
 import { Music } from './audio/music';
 import { wireRoad } from './systems/roadHits';
 import { respawnPlayer, streetPoints } from './systems/respawn';
+import { startSpot } from './systems/startSpot';
 import { coverSeeker } from './systems/takeCover';
 import { Grenades } from './weapons/grenades';
 import { detonate, BLAST_RADIUS } from './weapons/explosion';
@@ -102,14 +103,15 @@ async function boot(): Promise<void> {
 
   await step('Cargando personajes…');
   await characters.load(lighting);
-  const spawn = new THREE.Vector3(ch.spawn.x, hf.heightAt(ch.spawn.x, ch.spawn.z), ch.spawn.z);
-  const player = new Player(world, lighting, spawn, ch.spawn.yaw);
+  world.step();
+  const respawnPts = barrio ? streetPoints(barrio.graph) : undefined;
+  const start = respawnPts && barrio?.station && !shotMode ? startSpot(world, hf, respawnPts, barrio.station.entrance, ch.enemies ?? []) : null;
+  const spawn = start?.pos ?? new THREE.Vector3(ch.spawn.x, hf.heightAt(ch.spawn.x, ch.spawn.z), ch.spawn.z), startYaw = start?.yaw ?? ch.spawn.yaw;
+  const player = new Player(world, lighting, spawn, startYaw);
   scene.add(player.model.root);
   const input = new Input(canvas);
-  const tpc = new ThirdPersonCamera(camera, world, ch.spawn.yaw);
-  const mixer = new Mixer();
-  const sfx = new Sfx(mixer);
-  const music = new Music(mixer);
+  const tpc = new ThirdPersonCamera(camera, world, startYaw);
+  const mixer = new Mixer(), sfx = new Sfx(mixer), music = new Music(mixer);
   const hud = new Hud();
   const combat = new Combat(weapons.ak as WeaponDef, world, player, tpc, sfx, lighting, hf);
   scene.add(combat.group);
@@ -126,7 +128,6 @@ async function boot(): Promise<void> {
   const dynRes = new DynamicResolution(renderer);
   const damageFx = new DamageFx();
   const nav = barrio ? new StreetNav(barrio.graph) : null;
-  const respawnPts = barrio ? streetPoints(barrio.graph) : undefined;
   world.step();
   const enemies = new Enemies(enemyDefs as unknown as Record<string, EnemyDef>, ch.enemies ?? [], world, hf, lighting, player, combat, sfx, camera, nav);
   scene.add(enemies.group);
@@ -141,7 +142,7 @@ async function boot(): Promise<void> {
     alarm(p, 90);
   };
   enemies.onEnemyShot = (p) => alarm(p, 60);
-  const squad = createSquad(ch.squad ?? 0, allyDef as unknown as AllyDef, { world, hf, lighting, player, enemies, combat, sfx, hud, camera, nav, alarm }, spawn, ch.spawn.yaw);
+  const squad = createSquad(ch.squad ?? 0, allyDef as unknown as AllyDef, { world, hf, lighting, player, enemies, combat, sfx, hud, camera, nav, alarm }, spawn, startYaw);
   if (squad) scene.add(squad.group);
   if (life) wireRoad(life.trafficEvents, { player, enemies, squad, playerHit: (dmg, from) => enemies.onPlayerHit(dmg, from), alive: () => deadT <= 0 });
   let deadT = 0, skipRender = false, shieldT = 0;

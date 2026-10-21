@@ -21,7 +21,7 @@ export function streetPoints(graph: StreetGraph): THREE.Vector3[] {
 const BODY = new RAPIER.Capsule(0.6, 0.5);
 
 /** Room for a standing body: nothing solid (walls, cars, people) within half a metre. */
-function roomy(world: RAPIER.World, pos: THREE.Vector3, ignore: number): boolean {
+export function roomy(world: RAPIER.World, pos: THREE.Vector3, ignore: number): boolean {
   let blocked = false;
   world.intersectionsWithShape({ x: pos.x, y: pos.y + 1.15, z: pos.z }, { x: 0, y: 0, z: 0, w: 1 }, BODY, (c) => {
     blocked = c.handle !== ignore && c.isEnabled();

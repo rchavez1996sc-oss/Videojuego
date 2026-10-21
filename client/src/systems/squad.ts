@@ -13,6 +13,7 @@ import type { Sfx } from '../audio/sfx';
 import type { Hud } from '../ui/hud';
 import type { Enemies } from './enemies';
 import type { StreetNav } from '../ai/nav';
+import { roomy } from './respawn';
 
 const CATCH_UP = 35;
 
@@ -41,7 +42,7 @@ export class Squad {
     const ground = (x: number, z: number) => d.hf.heightAt(x, z);
     const names = [...def.names].sort(() => Math.random() - 0.5);
     for (let i = 0; i < count; i++) {
-      const unit = new Enemy(100 + i, def, d.world, d.lighting, slotPosition(i, spawn, yaw, ground), [], false, def.outfits[i % def.outfits.length]);
+      const unit = new Enemy(100 + i, def, d.world, d.lighting, this.freeSlot(i, spawn, yaw), [], false, def.outfits[i % def.outfits.length]);
       unit.yaw = yaw;
       const a: Ally = { unit, name: names[i % names.length], slot: i, target: null, downedT: 0, lost: false };
       this.list.push(a);
@@ -106,7 +107,21 @@ export class Squad {
 
   /** After the player respawns the surviving team regroups around them. */
   regroup(pos: THREE.Vector3, yaw: number): void {
-    for (const a of this.list) if (a.unit.alive) a.unit.teleport(slotPosition(a.slot, pos, yaw, this.ctx.groundY));
+    for (const a of this.list) if (a.unit.alive) a.unit.teleport(this.freeSlot(a.slot, pos, yaw, a.unit.handle));
+  }
+
+  /** The formation slot, or the nearest open spot around the leader when the slot is inside a wall, car or house. */
+  private freeSlot(i: number, leader: THREE.Vector3, yaw: number, self = -1): THREE.Vector3 {
+    const ground = (x: number, z: number) => this.d.hf.heightAt(x, z);
+    const open = (p: THREE.Vector3) => roomy(this.d.world, p, self) && !this.d.world.castRay(new RAPIER.Ray({ x: p.x, y: p.y + 0.4, z: p.z }, { x: 0, y: 1, z: 0 }), 30, true);
+    const slot = slotPosition(i, leader, yaw, ground);
+    if (open(slot)) return slot;
+    for (const r of [1.6, 2.4, 3.4, 4.6]) for (let k = 0; k < 12; k++) {
+      const a = yaw + Math.PI + ((k + i * 3) % 12) * (Math.PI / 6), p = new THREE.Vector3(leader.x + Math.sin(a) * -r, 0, leader.z + Math.cos(a) * -r);
+      p.y = ground(p.x, p.z);
+      if (open(p)) return p;
+    }
+    return slot;
   }
 
   update(dt: number, leaderYaw: number, reviveHeld: boolean, leaderAlive: boolean): void {
