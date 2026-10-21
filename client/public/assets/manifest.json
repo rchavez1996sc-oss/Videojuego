@@ -1,11 +1,34 @@
 {
-  "version": 4,
+  "version": 5,
   "characters": {
-    "pnp": { "near": "characters/pnp.glb", "far": "characters/pnp.lod.glb", "source": "Mixamo: SWAT" },
-    "fls": { "near": "characters/fls.glb", "far": "characters/fls.lod.glb", "source": "Mixamo: Ch28 (ropa oscura)" },
-    "civ_a": { "near": "characters/civ_a.glb", "far": "characters/civ_a.lod.glb", "source": "Mixamo: Ch07 (traje)" },
-    "civ_b": { "near": "characters/civ_b.glb", "far": "characters/civ_b.lod.glb", "source": "Mixamo: Ch02 (polera naranja)" },
-    "civ_c": { "near": "characters/civ_c.glb", "far": "characters/civ_c.lod.glb", "source": "Mixamo: Ch42 (polo rojo)" }
+    "pnp": {
+      "near": "characters/pnp.glb",
+      "far": "characters/pnp.lod.glb",
+      "source": "Mixamo: SWAT"
+    },
+    "fls": {
+      "near": "characters/fls.glb",
+      "far": "characters/fls.lod.glb",
+      "source": "Mixamo: Ch28 (ropa oscura)"
+    },
+    "civ_a": {
+      "near": "characters/civ_a.glb",
+      "far": "characters/civ_a.lod.glb",
+      "source": "Mixamo: Ch07 (traje)"
+    },
+    "civ_b": {
+      "near": "characters/civ_b.glb",
+      "far": "characters/civ_b.lod.glb",
+      "source": "Mixamo: Ch02 (polera naranja)"
+    },
+    "civ_c": {
+      "near": "characters/civ_c.glb",
+      "far": "characters/civ_c.lod.glb",
+      "source": "Mixamo: Ch42 (polo rojo)"
+    }
   },
-  "animations": "characters/anims.glb"
+  "animations": "characters/anims.glb",
+  "art": {
+    "general": "art/general.webp"
+  }
 }
