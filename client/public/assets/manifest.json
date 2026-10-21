@@ -1,5 +1,5 @@
 {
-  "version": 5,
+  "version": 6,
   "characters": {
     "pnp": {
       "near": "characters/pnp.glb",
@@ -29,6 +29,7 @@
   },
   "animations": "characters/anims.glb",
   "art": {
-    "general": "art/general.webp"
+    "general": "art/general.webp",
+    "tanks": "art/tanks.webp"
   }
 }
