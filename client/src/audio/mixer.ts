@@ -4,6 +4,9 @@ export class Mixer {
   readonly master: GainNode;
   readonly sfx: GainNode;
   readonly reverb: GainNode;
+  /** Short slapback taps off nearby façades (urban gunfire). */
+  readonly street: GainNode;
+  readonly music: GainNode;
   private noiseBuf: AudioBuffer;
 
   constructor() {
@@ -30,6 +33,20 @@ export class Mixer {
     lp.frequency.value = 900;
     this.reverb.connect(echo).connect(lp).connect(fb).connect(echo);
     lp.connect(this.master);
+    this.street = ctx.createGain();
+    const shade = ctx.createBiquadFilter();
+    shade.type = 'lowpass';
+    shade.frequency.value = 2600;
+    this.street.connect(shade);
+    for (const [delay, gain, pan] of [[0.055, 0.42, -0.6], [0.11, 0.3, 0.7], [0.19, 0.22, -0.3], [0.31, 0.14, 0.4]]) {
+      const d = ctx.createDelay(1), g = ctx.createGain(), p = ctx.createStereoPanner();
+      d.delayTime.value = delay;
+      g.gain.value = gain;
+      p.pan.value = pan;
+      shade.connect(d).connect(g).connect(p).connect(this.master);
+    }
+    this.music = ctx.createGain();
+    this.music.connect(this.master);
     this.noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     const d = this.noiseBuf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;

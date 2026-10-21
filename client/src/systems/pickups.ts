@@ -88,6 +88,13 @@ export class Pickups {
   }
 }
 
+/** A fallen soldier sometimes leaves a medkit (20 %) or an ammo crate (30 %). */
+export function dropLoot(pickups: Pickups, at: THREE.Vector3): void {
+  const roll = Math.random();
+  if (roll < 0.2) pickups.spawn(at, 'medkit');
+  else if (roll < 0.5) pickups.spawn(at, 'ammo');
+}
+
 /** Picks up whatever the player needs and applies it: medkit heals fully, ammo crate refills reserve and adds a grenade. */
 export function collectSupplies(dt: number, pickups: Pickups, d: { player: Player; gun: Gun; grenades: Grenades; sfx: Sfx; hud: Hud; alive: boolean }): void {
   const got = pickups.update(dt, d.player.position, (k) => d.alive && (k === 'medkit' ? d.player.hp < 99.5 : d.gun.reserve < d.gun.reserveMax || d.grenades.count < 5));

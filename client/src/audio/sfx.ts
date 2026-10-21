@@ -1,7 +1,33 @@
 import type { Mixer } from './mixer';
+import { buildGunshots } from './gunshot';
 
 export class Sfx {
-  constructor(private m: Mixer) {}
+  private shots: AudioBuffer[];
+  private heavy: AudioBuffer[];
+
+  constructor(private m: Mixer) {
+    this.shots = buildGunshots(m.ctx, 4);
+    this.heavy = buildGunshots(m.ctx, 2, true);
+  }
+
+  /** One pre-rendered report into `dest`, with send amounts to the street slapback and the valley reverb. */
+  private report(t: number, heavy: boolean, gain: number, dest: AudioNode, street: number, reverb: number, rate = 1): void {
+    const { ctx } = this.m;
+    const bank = heavy ? this.heavy : this.shots;
+    const src = ctx.createBufferSource();
+    src.buffer = bank[Math.floor(Math.random() * bank.length)];
+    src.playbackRate.value = rate * (0.96 + Math.random() * 0.08);
+    const g = ctx.createGain();
+    g.gain.value = gain;
+    src.connect(g).connect(dest);
+    for (const [bus, amount] of [[this.m.street, street], [this.m.reverb, reverb]] as const) {
+      if (amount <= 0) continue;
+      const s = ctx.createGain();
+      s.gain.value = amount;
+      g.connect(s).connect(bus);
+    }
+    src.start(t);
+  }
 
   private filtered(t: number, type: BiquadFilterType, freq: number, q: number, peak: number, attack: number, decay: number, send = 0, dest: AudioNode = this.m.sfx): void {
     const { ctx } = this.m;
@@ -39,12 +65,7 @@ export class Sfx {
   }
 
   rifleShot(): void {
-    const t = this.m.ctx.currentTime + 0.001, v = 0.9 + Math.random() * 0.2;
-    this.filtered(t, 'bandpass', 2400 * v, 0.7, 1.4, 0.001, 0.07, 0.6);
-    this.filtered(t, 'lowpass', 700 * v, 0.8, 1.6, 0.002, 0.22, 1.0);
-    this.filtered(t + 0.004, 'highpass', 5500, 0.5, 0.35, 0.001, 0.03);
-    this.tone(t, 'sine', 140 * v, 38, 1.3, 0.18, 0.4);
-    this.filtered(t + 0.05, 'bandpass', 3800, 4, 0.12, 0.001, 0.02);
+    this.report(this.m.ctx.currentTime + 0.001, false, 1.15, this.m.sfx, 0.55, 0.45);
   }
 
   /** Enemy gunshot: delayed by distance, dulled, quieter and panned towards its side. */
@@ -60,10 +81,7 @@ export class Sfx {
     const bus = ctx.createGain();
     bus.gain.value = 0.25 + near * 0.9;
     lp.connect(panner).connect(bus).connect(this.m.sfx);
-    const send = 0.4 + (1 - near) * 1.2;
-    this.filtered(t, 'bandpass', 2200 * v, 0.7, 1.1, 0.001, 0.07, send, lp);
-    this.filtered(t, 'lowpass', (heavy ? 500 : 650) * v, 0.8, heavy ? 1.8 : 1.3, 0.002, heavy ? 0.35 : 0.22, send, lp);
-    this.tone(t, 'sine', (heavy ? 110 : 130) * v, 38, 1.0, 0.18, send * 0.5, lp);
+    this.report(t, heavy, 0.9, lp, 0.25 + (1 - near) * 0.5, 0.4 + (1 - near) * 1.1, v > 1 ? 1 : 0.97);
     setTimeout(() => bus.disconnect(), (distance / 343 + 1.5) * 1000);
   }
 

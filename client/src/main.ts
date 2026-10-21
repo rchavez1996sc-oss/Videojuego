@@ -27,7 +27,8 @@ import enemyDefs from './data/enemies.json';
 import type { EnemyDef } from './entities/enemy';
 import { Enemies } from './systems/enemies';
 import { DamageFx } from './ui/damage';
-import { Pickups, collectSupplies } from './systems/pickups';
+import { Pickups, collectSupplies, dropLoot } from './systems/pickups';
+import { Music } from './audio/music';
 import { findRespawn, resetHunt } from './systems/respawn';
 import { Grenades } from './weapons/grenades';
 import { detonate, BLAST_RADIUS } from './weapons/explosion';
@@ -105,6 +106,7 @@ async function boot(): Promise<void> {
   const tpc = new ThirdPersonCamera(camera, world, ch.spawn.yaw);
   const mixer = new Mixer();
   const sfx = new Sfx(mixer);
+  const music = new Music(mixer);
   const hud = new Hud();
   const combat = new Combat(weapons.ak as WeaponDef, world, player, tpc, sfx, lighting, hf);
   scene.add(combat.group);
@@ -173,14 +175,9 @@ async function boot(): Promise<void> {
     life?.alarm(at, 150);
     life?.explosion(at, BLAST_RADIUS);
   };
-  const loot = (at: THREE.Vector3) => {
-    const roll = Math.random();
-    if (roll < 0.2) pickups.spawn(at, 'medkit');
-    else if (roll < 0.5) pickups.spawn(at, 'ammo');
-  };
-  enemies.onAllyKill = loot;
+  enemies.onAllyKill = (at) => dropLoot(pickups, at);
   enemies.onEnemyHit = (kill, headshot, at) => {
-    if (kill) loot(at);
+    if (kill) dropLoot(pickups, at);
     sfx.hitmarker(kill);
     hud.hitmarker(kill, headshot, 'BAJA');
     if (kill && enemies.aliveCount === 0) setTimeout(() => hud.showToast('ZONA DESPEJADA'), 1200);
@@ -246,7 +243,9 @@ async function boot(): Promise<void> {
       enemies.update(dt);
       squad?.update(dt, tpc.yaw, input.down('KeyE'), deadT <= 0);
       civilians?.update(dt, player.position);
-      life?.update(dt, player.position, enemies.list.some((e) => e.alive && e.state === 'combat'));
+      const inCombat = enemies.list.some((e) => e.alive && e.state === 'combat');
+      life?.update(dt, player.position, inCombat);
+      music.update(dt, inCombat, player.hp);
       world.timestep = dt;
       world.step();
       player.syncPosition();
