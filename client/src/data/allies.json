@@ -106,11 +106,11 @@
   "rpm": 480,
   "burst": [
     2,
-    5
+    4
   ],
   "burstPause": [
-    0.6,
-    1.5
+    1.2,
+    2.6
   ],
   "spread": 2.4,
   "spreadPerMeter": 0.02,

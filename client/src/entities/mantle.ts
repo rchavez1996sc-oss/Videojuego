@@ -43,8 +43,14 @@ export function findLedge(world: RAPIER.World, feet: THREE.Vector3, yaw: number,
   return { target: standPoint.setY(top + 0.02), top, height, vault: false };
 }
 
-/** Feet position along a mantle/vault arc for progress t in [0, 1]. */
-export function mantlePath(start: THREE.Vector3, l: Ledge, t: number): THREE.Vector3 {
+/** Feet position along a mantle/vault arc for progress t in [0, 1]; `lift` is height the animation already adds on its own. */
+export function mantlePath(start: THREE.Vector3, l: Ledge, t: number, lift = 0): THREE.Vector3 {
+  const p = arc(start, l, t);
+  p.y = Math.max(Math.min(start.y, l.target.y), p.y - lift * Math.sin(Math.PI * t));
+  return p;
+}
+
+function arc(start: THREE.Vector3, l: Ledge, t: number): THREE.Vector3 {
   if (l.vault) {
     const base = THREE.MathUtils.lerp(start.y, l.target.y, t);
     const peak = l.top + 0.25 - THREE.MathUtils.lerp(start.y, l.target.y, 0.5);
@@ -62,3 +68,13 @@ export function mantlePath(start: THREE.Vector3, l: Ledge, t: number): THREE.Vec
     THREE.MathUtils.lerp(start.z, l.target.z, forward),
   );
 }
+
+/** Mantle clips: which part of the clip plays (start fraction and span) and the base duration before height is added. */
+export interface Climb { key: string; from: number; span: number; dur: number; lift?: number }
+export const CLIMBS: Record<'vault' | 'low' | 'high' | 'hang' | 'wall', Climb> = {
+  vault: { key: 'vault', from: 0.22, span: 0.55, dur: 0.5, lift: 0.4 },
+  low: { key: 'climb_low', from: 0.12, span: 0.75, dur: 0.6 },
+  high: { key: 'climb', from: 0.12, span: 0.75, dur: 0.75 },
+  hang: { key: 'hang_climb', from: 0.08, span: 0.85, dur: 0.9 },
+  wall: { key: 'wall_climb', from: 0.15, span: 0.8, dur: 0.65 },
+};

@@ -14,7 +14,7 @@ export function detonate(at: THREE.Vector3, d: { combat: Combat; sfx: Sfx; tpc: 
   const dist = at.distanceTo(cam);
   d.combat.explosionFx(at);
   d.sfx.explosion(dist, at.clone().sub(cam).normalize().dot(right));
-  d.tpc.kick(0.01 * Math.max(0, 1 - dist / 40), 0, Math.max(0, 0.5 - dist / 60));
+  d.tpc.kick(0.025 * Math.max(0, 1 - dist / 45), (Math.random() - 0.5) * 0.01 * Math.max(0, 1 - dist / 30), Math.max(0, 1.1 - dist / 45));
   d.enemies.hearShot(at);
   d.enemies.explosion(at, BLAST_RADIUS, 230);
   const chest = d.player.position.clone().setY(d.player.position.y + 1.0);

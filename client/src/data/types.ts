@@ -45,6 +45,8 @@ export interface ChapterDef {
   civilians?: { count: number; seed: number };
   squad?: number;
   lives?: number;
+  /** Prologue paragraphs shown while the chapter loads. */
+  intro?: string[];
   objective?: import('../systems/objective').ObjectiveDef;
   scatter: { rocks: number; trees: number; seed: number };
   spawn: { x: number; z: number; yaw: number };

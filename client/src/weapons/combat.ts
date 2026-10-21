@@ -11,6 +11,7 @@ import { Decals } from '../fx/decals';
 import { Tracers } from '../fx/tracers';
 import { MuzzleFlash } from '../fx/muzzleFlash';
 import { Shells } from '../fx/shells';
+import { Blast } from '../fx/blast';
 import { SURFACE_FX, hitHandler, surfaceOf, type Surface } from '../world/surfaces';
 import type { Lighting } from '../render/lighting';
 import type { Heightfield } from '../world/heightfield';
@@ -28,6 +29,7 @@ export class Combat {
   private tracers = new Tracers();
   private flash = new MuzzleFlash();
   private shells: Shells;
+  private blast: Blast;
   private shots = 0;
   private tmp = new THREE.Vector3();
 
@@ -35,7 +37,8 @@ export class Combat {
     this.gun = new Gun(def);
     this.decals = new Decals(lighting);
     this.shells = new Shells(lighting, hf, () => sfx.shellBounce());
-    this.group.add(this.dust.points, this.sparks.points, this.decals.mesh, this.tracers.group, this.flash.group, this.shells.mesh);
+    this.blast = new Blast(this.sparks, this.dust, this.decals);
+    this.group.add(this.dust.points, this.sparks.points, this.decals.mesh, this.tracers.group, this.flash.group, this.shells.mesh, this.blast.group);
   }
 
   update(dt: number, input: Input, aiming: boolean, airborne: boolean): void {
@@ -50,8 +53,14 @@ export class Combat {
     } else if (!input.firing) {
       this.cam.recover(dt, this.gun.def.recoilRecover);
     }
+    this.fx(dt);
+  }
+
+  /** Smoke, sparks, tracers and shells keep moving even while the rifle is put away or the player is down. */
+  fx(dt: number): void {
     this.dust.update(dt);
     this.sparks.update(dt);
+    this.blast.update(dt);
     this.tracers.update(dt);
     this.flash.update(dt);
     this.shells.update(dt);
@@ -137,26 +146,7 @@ export class Combat {
   }
 
   explosionFx(at: THREE.Vector3): void {
-    const up = new THREE.Vector3(0, 1, 0);
-    this.decals.place(at.clone().setY(at.y - 0.03), up, 2.6, new THREE.Color('#1a140f'));
-    this.sparks.emit({ pos: at.clone().setY(at.y + 0.5), vel: new THREE.Vector3(), color: new THREE.Color(9, 5, 2), size: 7, grow: 6, life: 0.16, gravity: 0, drag: 0, alpha: 1 });
-    for (let i = 0; i < 14; i++) {
-      this.tmp.set((Math.random() - 0.5) * 5, 2 + Math.random() * 4, (Math.random() - 0.5) * 5);
-      this.sparks.emit({ pos: at.clone().setY(at.y + 0.3), vel: this.tmp.clone(), color: new THREE.Color(7, 3, 1), size: 0.9, grow: 1.5, life: 0.25 + Math.random() * 0.15, gravity: 0, drag: 4, alpha: 1 });
-    }
-    for (let i = 0; i < 30; i++) {
-      this.tmp.set((Math.random() - 0.5) * 18, 3 + Math.random() * 12, (Math.random() - 0.5) * 18);
-      this.sparks.emit({ pos: at.clone().setY(at.y + 0.2), vel: this.tmp.clone(), color: new THREE.Color(6, 3.5, 1.2), size: 0.035, grow: 0, life: 0.6 + Math.random() * 0.5, gravity: 9.8, drag: 0.6, alpha: 1 });
-    }
-    for (let i = 0; i < 26; i++) {
-      this.tmp.set((Math.random() - 0.5) * 12, 2 + Math.random() * 9, (Math.random() - 0.5) * 12);
-      this.dust.emit({ pos: at.clone(), vel: this.tmp.clone(), color: new THREE.Color('#2e261e'), size: 0.05 + Math.random() * 0.05, grow: 0, life: 1.2, gravity: 9.8, drag: 0.4, alpha: 1 });
-    }
-    for (let i = 0; i < 18; i++) {
-      this.tmp.set((Math.random() - 0.5) * 4, 1 + Math.random() * 3, (Math.random() - 0.5) * 4);
-      const shade = 0.25 + Math.random() * 0.25;
-      this.dust.emit({ pos: at.clone().setY(at.y + 0.6), vel: this.tmp.clone(), color: new THREE.Color(shade, shade * 0.92, shade * 0.85), size: 1.2 + Math.random(), grow: 2.2, life: 3 + Math.random() * 2.5, gravity: -0.15, drag: 1.2, alpha: 0.6 });
-    }
+    this.blast.fire(at);
   }
 
   smokePuff(at: THREE.Vector3): void {

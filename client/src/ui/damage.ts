@@ -32,4 +32,9 @@ export class DamageFx {
   set dead(v: boolean) {
     this.death.classList.toggle('on', v);
   }
+
+  /** Fade to black just before the respawn cut. */
+  set cut(v: boolean) {
+    this.death.classList.toggle('cut', v);
+  }
 }

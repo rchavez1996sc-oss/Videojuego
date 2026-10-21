@@ -46,8 +46,9 @@ body.shot #overlay, body.shot #stats { display: none; }
 #hit-arcs i { position: absolute; left: -60px; top: -150px; width: 120px; height: 300px; transform-origin: 60px 150px; animation: arc-fade 1.1s ease-out forwards; }
 #hit-arcs i::before { content: ''; position: absolute; left: 20px; top: 0; width: 80px; height: 18px; border-radius: 50% 50% 0 0 / 100% 100% 0 0; border-top: 5px solid rgba(225, 50, 30, 0.9); filter: blur(0.5px); }
 @keyframes arc-fade { from { opacity: 1; } to { opacity: 0; } }
-#death { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: rgba(40, 0, 0, 0.55); opacity: 0; pointer-events: none; transition: opacity 0.6s; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; }
-#death.on { opacity: 1; }
+#death { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: rgba(40, 0, 0, 0.38); opacity: 0; pointer-events: none; transition: opacity 0.6s; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; }
+#death.on { opacity: 1; transition-delay: 1.4s; }
+#death.cut { background: #000; transition: background 0.4s, opacity 0.6s; }
 #death h2 { font-size: 64px; letter-spacing: 0.3em; color: #f0d6c8; }
 #death p { font: 14px ui-monospace, monospace; color: rgba(240, 214, 200, 0.7); letter-spacing: 0.15em; }
 
@@ -64,3 +65,18 @@ body.shot #overlay, body.shot #stats { display: none; }
 #fail h2 { font-size: 60px; letter-spacing: 0.3em; color: #e0452b; }
 #fail p { font: 15px ui-monospace, monospace; letter-spacing: 0.12em; color: rgba(240, 226, 214, 0.8); max-width: 640px; text-align: center; line-height: 1.6; }
 #fail button { margin-top: 12px; font: 600 16px 'Barlow Condensed', sans-serif; letter-spacing: 0.25em; padding: 12px 26px; background: #f0e2d6; color: #120a06; border: 0; cursor: pointer; }
+#prologue { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 34px; padding: 0 16px; background: radial-gradient(ellipse at center, #1a1310 0%, #060505 75%); cursor: pointer; transition: opacity 0.9s; font-family: 'Barlow', sans-serif; }
+#prologue.out { opacity: 0; pointer-events: none; }
+#prologue .lines { max-width: 720px; display: flex; flex-direction: column; gap: 18px; }
+#prologue p { font-size: 19px; line-height: 1.65; letter-spacing: 0.03em; color: #e9e2d6; opacity: 0; transform: translateY(8px); transition: opacity 1.6s, transform 1.6s; }
+#prologue p.on { opacity: 1; transform: none; }
+#prologue h3 { font: 700 34px 'Barlow Condensed', sans-serif; letter-spacing: 0.4em; color: #c8102e; opacity: 0; transition: opacity 2s; }
+#prologue h3.on { opacity: 1; }
+#prologue span { position: absolute; bottom: 28px; font: 600 12px 'Barlow Condensed', sans-serif; letter-spacing: 0.35em; color: rgba(233, 226, 214, 0.45); }
+#complete ul { list-style: none; display: flex; flex-direction: column; gap: 6px; font: 600 15px 'Barlow', sans-serif; letter-spacing: 0.1em; color: #f3efe6; text-align: center; }
+#complete ul li::before { content: '▸ '; color: #ffb547; }
+#complete .unlock { display: flex; align-items: center; gap: 18px; padding: 14px 24px; border: 1px solid rgba(255, 181, 71, 0.6); background: linear-gradient(90deg, rgba(255, 181, 71, 0.18), rgba(255, 181, 71, 0.04)); animation: unlock 1.2s ease-out both 0.6s; }
+#complete .unlock svg { width: 120px; height: 44px; fill: #f3efe6; }
+#complete .unlock small { display: block; font: 600 12px 'Barlow Condensed', sans-serif; letter-spacing: 0.35em; color: #ffb547; }
+#complete .unlock b { font: 700 30px 'Barlow Condensed', sans-serif; letter-spacing: 0.3em; }
+@keyframes unlock { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: none; } }

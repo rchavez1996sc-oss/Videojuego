@@ -3,7 +3,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import type { Input } from '../core/input';
 import type { Lighting } from '../render/lighting';
 import { Rig, type Outfit } from './rig';
-import { findLedge, mantlePath, type Ledge } from './mantle';
+import { findLedge, mantlePath, CLIMBS, type Climb, type Ledge } from './mantle';
 import { difficulty } from '../core/difficulty';
 import { ladderAt, type Ladder } from '../world/ladders';
 
@@ -11,14 +11,6 @@ import { ladderAt, type Ladder } from '../world/ladders';
 const OUTFIT: Outfit = { color: '#8e1b14', bands: ['Left', 'Right'], scarf: '#8e1b14' };
 /** Ladder climb speed (m/s) and how far the ladder clip rises per second at normal rate. */
 const LADDER = 1.5, LADDER_CLIP = 0.61;
-/** Mantle clips: which part of the clip plays (start fraction and span) and the base duration before height is added. */
-interface Climb { key: string; from: number; span: number; dur: number }
-const CLIMBS: Record<'low' | 'high' | 'hang' | 'wall', Climb> = {
-  low: { key: 'climb_low', from: 0.12, span: 0.75, dur: 0.6 },
-  high: { key: 'climb', from: 0.12, span: 0.75, dur: 0.75 },
-  hang: { key: 'hang_climb', from: 0.08, span: 0.85, dur: 0.9 },
-  wall: { key: 'wall_climb', from: 0.15, span: 0.8, dur: 0.65 },
-};
 const WALK = 3.2, RUN = 6.2, CROUCH = 1.7, AIM = 2.2, JUMP = 7.2, GRAVITY = 22, SLIDE = 8.5;
 const RADIUS = 0.35, HALF = 0.55;
 
@@ -40,6 +32,7 @@ export class Player {
   stamina = 100;
   private airT = 0;
   private stepT = 0;
+  private down = false;
   /** Q: running to a cover spot, then holding a crouch there until the player moves. */
   private coverGoal: THREE.Vector3 | null = null;
   private inCover = false;
@@ -109,7 +102,17 @@ export class Player {
     if (this.hp > 0 && this.sinceHit > difficulty.value.regenDelay && this.hp < this.regenCap) this.hp = Math.min(this.regenCap, this.hp + 9 * dt);
   }
 
+  /** Drops with a death clip; the body keeps animating where it fell until `respawn`, which gets it back up. */
+  die(): void {
+    this.mantle = null;
+    this.ladder = null;
+    this.down = true;
+    this.model.die(['death_front', 'death_back', 'fall_back', 'dying', 'death_right'][Math.floor(Math.random() * 5)]);
+  }
+
   respawn(feet: THREE.Vector3, yaw: number): void {
+    if (this.down) this.model.revive();
+    this.down = false;
     this.body.setTranslation({ x: feet.x, y: feet.y + HALF + RADIUS + 0.2, z: feet.z }, true);
     this.vel.set(0, 0, 0);
     this.hp = 100;
@@ -127,7 +130,7 @@ export class Player {
   private updateMantle(dt: number): void {
     const m = this.mantle!;
     m.t = Math.min(1, m.t + dt / m.dur);
-    const feet = mantlePath(m.start, m.ledge, m.t);
+    const feet = mantlePath(m.start, m.ledge, m.t, m.clip?.lift);
     this.body.setNextKinematicTranslation({ x: feet.x, y: feet.y + HALF + RADIUS, z: feet.z });
     this.crouch = THREE.MathUtils.damp(this.crouch, m.t < 0.7 && !m.step ? 0.6 : 0, 10, dt);
     this.speed = 0;
@@ -209,7 +212,7 @@ export class Player {
       const ledge = findLedge(this.world, this.position, moveYaw, this.collider.handle, this.grounded ? 2.1 : 2.4);
       if (ledge && (this.grounded || !ledge.vault)) {
         this.yaw = moveYaw;
-        const clip = ledge.vault || ledge.height < 1.3 ? CLIMBS.low : !this.grounded ? CLIMBS.hang : this.speed > 5 ? CLIMBS.wall : CLIMBS.high;
+        const clip = ledge.vault || ledge.height < 1.15 ? CLIMBS.vault : ledge.height < 1.3 ? CLIMBS.low : !this.grounded ? CLIMBS.hang : this.speed > 5 ? CLIMBS.wall : CLIMBS.high;
         this.mantle = { ledge, start: this.position.clone(), t: 0, dur: ledge.vault ? 0.7 : clip.dur + ledge.height * 0.3, clip };
         this.onMantle(ledge.vault);
         return this.updateMantle(dt);

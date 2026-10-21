@@ -3,7 +3,7 @@ import type { StationInfo } from '../world/station';
 import type { Enemy } from '../entities/enemy';
 import type { Input } from '../core/input';
 
-export interface ObjectiveDef { title: string; detail: string; defendRadius: number; hold: number; complete: string; reward: string }
+export interface ObjectiveDef { title: string; detail: string; defendRadius: number; hold: number; complete: string; reward: string; loot?: string[]; unlock?: string }
 
 /** Chapter goal: storm the station and hold E in the lobby to loot the arms cache (defenders need not all be dead). */
 export class Objective {

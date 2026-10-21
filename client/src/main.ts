@@ -7,6 +7,7 @@ import { Input } from './core/input';
 import { ThirdPersonCamera } from './core/camera';
 import { preset, quality, shotMode, gpuName } from './core/settings';
 import { guardFrame } from './core/guard';
+import { FpsMeter } from './core/fpsMeter';
 import { Renderer } from './render/renderer';
 import { Lighting } from './render/lighting';
 import { Heightfield } from './world/heightfield';
@@ -33,6 +34,7 @@ import { Music } from './audio/music';
 import { wireRoad } from './systems/roadHits';
 import { respawnPlayer, streetPoints } from './systems/respawn';
 import { startSpot } from './systems/startSpot';
+import { Melee } from './systems/melee';
 import { coverSeeker } from './systems/takeCover';
 import { Grenades } from './weapons/grenades';
 import { detonate, BLAST_RADIUS } from './weapons/explosion';
@@ -54,6 +56,7 @@ import { characters } from './render/characters';
 import { Loot } from './systems/loot';
 import { Objective } from './systems/objective';
 import { showMissionComplete } from './ui/missionComplete';
+import { showPrologue } from './ui/prologue';
 import allyDef from './data/allies.json';
 
 const CHAPTERS: Record<string, unknown> = { '1': ch01, '2': ch02 };
@@ -67,6 +70,7 @@ async function boot(): Promise<void> {
   if (shotMode) document.body.classList.add('shot');
   const ch = (CHAPTERS[new URLSearchParams(location.search).get('ch') ?? '1'] ?? ch01) as ChapterDef;
   document.querySelector('#overlay .sub')!.textContent = `Capítulo ${ch.number ?? 1} — ${ch.title}`;
+  if (!shotMode) showPrologue(`CAPÍTULO ${ch.number ?? 1} · ${ch.title.toUpperCase()}`, ch.intro ?? []);
   await RAPIER.init();
   const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
   const canvas = document.getElementById('game') as HTMLCanvasElement;
@@ -111,8 +115,7 @@ async function boot(): Promise<void> {
   scene.add(player.model.root);
   const input = new Input(canvas);
   const tpc = new ThirdPersonCamera(camera, world, startYaw);
-  const mixer = new Mixer(), sfx = new Sfx(mixer), music = new Music(mixer);
-  const hud = new Hud();
+  const mixer = new Mixer(), sfx = new Sfx(mixer), music = new Music(mixer), hud = new Hud();
   const combat = new Combat(weapons.ak as WeaponDef, world, player, tpc, sfx, lighting, hf);
   scene.add(combat.group);
   const rangeOrigin = { ...ch.spawn, yaw: ch.rangeYaw ?? ch.spawn.yaw };
@@ -125,8 +128,7 @@ async function boot(): Promise<void> {
   scene.add(range.group);
   scene.add(buildStructures(hf, lighting, world, rangeOrigin, ch.structures ?? []));
   player.onMantle = () => sfx.footstep(1.3, 'rock');
-  const dynRes = new DynamicResolution(renderer);
-  const damageFx = new DamageFx();
+  const dynRes = new DynamicResolution(renderer), damageFx = new DamageFx();
   const nav = barrio ? new StreetNav(barrio.graph) : null;
   world.step();
   const enemies = new Enemies(enemyDefs as unknown as Record<string, EnemyDef>, ch.enemies ?? [], world, hf, lighting, player, combat, sfx, camera, nav);
@@ -167,11 +169,10 @@ async function boot(): Promise<void> {
   scene.add(nadeMode.group);
   const corpses = new Loot(pickups, world, hf);
   const objective = ch.objective && barrio?.station ? new Objective(ch.objective, barrio.station, camera) : null;
-  let lives = ch.lives ?? 3;
-  hud.lives = lives;
+  let lives = (hud.lives = ch.lives ?? 3);
   if (objective) objective.onComplete = () => {
     failed = true;
-    showMissionComplete(objective.def.complete, objective.def.reward, `ENEMIGOS ABATIDOS ${enemies.list.length - enemies.aliveCount}/${enemies.list.length} · BAJAS CIVILES ${populace.casualties} · VIDAS ${lives}`);
+    showMissionComplete(objective.def.complete, objective.def.reward, `ENEMIGOS ABATIDOS ${enemies.list.length - enemies.aliveCount}/${enemies.list.length} · BAJAS CIVILES ${populace.casualties} · VIDAS ${lives}`, objective.def.loot, objective.def.unlock);
   };
   grenades.onExplode = (at) => {
     detonate(at, { combat, sfx, tpc, enemies, player, world, playerAlive: deadT <= 0 });
@@ -209,10 +210,11 @@ async function boot(): Promise<void> {
   document.addEventListener('pointerlockchange', () => overlay.classList.toggle('hidden', document.pointerLockElement === canvas));
 
   const gpu = gpuName.replace(/^ANGLE \((.*)\)$/, '$1').slice(0, 60);
+  const melee = new Melee(player, enemies, sfx, tpc);
   const seekCover = coverSeeker({ world, cover, hf, player, enemies, camera, hud });
   const feel = new MoveFeel(player, tpc, sfx, () => surfaceUnder(world, hf, player));
   const clock = new THREE.Clock();
-  let frames = 0, acc = 0;
+  const fps = new FpsMeter(stats);
   renderer.gl.info.autoReset = false;
   const frame = (dt: number) => {
     const t = clock.elapsedTime;
@@ -220,8 +222,10 @@ async function boot(): Promise<void> {
     if (!freeCam) {
       if (deadT > 0) {
         deadT -= dt;
+        player.model.animate(dt, 0, 0, 0);
+        damageFx.cut = deadT < 0.45;
         if (deadT <= 0) {
-          damageFx.dead = false;
+          damageFx.dead = damageFx.cut = false;
           shieldT = 3;
           respawnPlayer({ world, hf, enemies, player, tpc, squad, death: deathPos, spawn: ch.spawn, streets: respawnPts });
         }
@@ -236,9 +240,10 @@ async function boot(): Promise<void> {
             failed = true;
             showMissionFailed('Perdiste tus tres vidas. El nivel se reinicia desde el principio.');
           }
-          deadT = 4;
+          deadT = 4.5;
           deathPos.copy(player.position);
           damageFx.dead = true;
+          player.die();
         }
       }
       enemies.update(dt);
@@ -254,7 +259,7 @@ async function boot(): Promise<void> {
       tpc.update(dt, input, player.position, player.crouchAmount, player.collisionHandle);
       camera.updateMatrixWorld();
       player.model.root.updateMatrixWorld(true);
-      if (!nadeMode.update(input, deadT <= 0) && deadT <= 0) combat.update(dt, input, input.aiming, player.airborne);
+      if (!nadeMode.update(input, deadT <= 0) && deadT <= 0 && !melee.update(dt, input)) combat.update(dt, input, input.aiming, player.airborne); else combat.fx(dt);
       grenades.update(dt);
     }
     enemies.sync();
@@ -282,12 +287,7 @@ async function boot(): Promise<void> {
     lighting.update();
     if (!skipRender) renderer.render(dt);
     input.endFrame();
-    frames++;
-    acc += dt;
-    if (acc > 0.5) {
-      stats.textContent = `${Math.round(frames / acc)} fps · ${quality} · res ${Math.round(dynRes.scale * 100)}% · ${renderer.gl.info.render.calls} draws · ${(renderer.gl.info.render.triangles / 1e6).toFixed(2)}M tris · ${gpu}${stats.dataset.errors ? ` · err ${stats.dataset.errors}` : ''}`;
-      frames = acc = 0;
-    }
+    fps.update(dt, (n) => `${n} fps · ${quality} · res ${Math.round(dynRes.scale * 100)}% · ${renderer.gl.info.render.calls} draws · ${(renderer.gl.info.render.triangles / 1e6).toFixed(2)}M tris · ${gpu}${stats.dataset.errors ? ` · err ${stats.dataset.errors}` : ''}`);
   };
   const safeFrame = guardFrame(() => frame(Math.min(clock.getDelta(), 1 / 20)), (n) => stats.dataset.errors = String(n));
   if (!shotMode) renderer.gl.setAnimationLoop(() => !failed && safeFrame());

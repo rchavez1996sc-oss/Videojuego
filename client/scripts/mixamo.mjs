@@ -19,6 +19,7 @@ const ANIMS = [
   ['jump', P('jump loop'), 1], ['jump_up', P('jump up'), 1], ['jump_down', P('jump down'), 1],
   ['climb', 'Climbing.fbx', 2], ['climb_low', 'Climbing.1.fbx', 2], ['ladder', 'Climbing.Ladder.fbx', 2],
   ['hang_climb', 'Freehang.Climb.fbx', 2], ['wall_climb', 'Sprint.To.Wall.Climb.fbx', 2],
+  ['vault', 'Jumping.fbx', 2], ['melee', 'Rifle.Punch.fbx', 1],
   ['fire', 'Firing.Rifle.fbx', 1], ['reload', 'Reloading.fbx', 1], ['hit', 'Hit.Reaction.fbx', 1], ['throw', 'Grenade.Throw.fbx', 1],
   ['knock', 'Knocked.Down.fbx', 1], ['getup', 'Getting.Up.fbx', 1],
   ['death_front', P('death from the front'), 0], ['death_back', P('death from the back'), 0], ['death_right', P('death from right'), 0],

@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "characters": {
     "pnp": { "near": "characters/pnp.glb", "far": "characters/pnp.lod.glb", "source": "Mixamo: SWAT" },
     "fls": { "near": "characters/fls.glb", "far": "characters/fls.lod.glb", "source": "Mixamo: Ch28 (ropa oscura)" },

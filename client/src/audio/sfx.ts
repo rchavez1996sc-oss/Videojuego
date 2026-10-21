@@ -68,8 +68,8 @@ export class Sfx {
     this.report(this.m.ctx.currentTime + 0.001, false, 1.15, this.m.sfx, 0.55, 0.45);
   }
 
-  /** Enemy gunshot: delayed by distance, dulled, quieter and panned towards its side. */
-  distantShot(distance: number, pan: number, heavy = false): void {
+  /** Other people's gunshots: delayed by distance, dulled, quieter and panned towards its side; `gain` tames the squad's fire. */
+  distantShot(distance: number, pan: number, heavy = false, gain = 1): void {
     const { ctx } = this.m;
     const t = ctx.currentTime + distance / 343, v = 0.9 + Math.random() * 0.2;
     const near = 1 / (1 + distance / 22);
@@ -79,7 +79,7 @@ export class Sfx {
     lp.type = 'lowpass';
     lp.frequency.value = Math.max(700, 9000 * near + 400);
     const bus = ctx.createGain();
-    bus.gain.value = 0.25 + near * 0.9;
+    bus.gain.value = (0.25 + near * 0.9) * gain;
     lp.connect(panner).connect(bus).connect(this.m.sfx);
     this.report(t, heavy, 0.9, lp, 0.25 + (1 - near) * 0.5, 0.4 + (1 - near) * 1.1, v > 1 ? 1 : 0.97);
     setTimeout(() => bus.disconnect(), (distance / 343 + 1.5) * 1000);
@@ -100,19 +100,33 @@ export class Sfx {
     src.stop(t + 0.2);
   }
 
+  /** Grenade: sharp crack, deep body and sub thump, a roll bouncing off the façades, debris rain and, up close, ringing ears. */
   explosion(distance: number, pan: number): void {
     const { ctx } = this.m;
     const t = ctx.currentTime + distance / 343, near = 1 / (1 + distance / 30);
     const panner = ctx.createStereoPanner();
     panner.pan.value = Math.max(-1, Math.min(1, pan)) * 0.7;
     const bus = ctx.createGain();
-    bus.gain.value = 0.4 + near * 1.1;
+    bus.gain.value = 0.45 + near * 1.2;
     panner.connect(bus).connect(this.m.sfx);
-    this.filtered(t, 'lowpass', 240, 0.7, 2.2, 0.004, 1.1, 1.4, panner);
-    this.filtered(t, 'lowpass', 1600 * near + 500, 0.6, 1.4, 0.002, 0.45, 1.0, panner);
-    this.tone(t, 'sine', 70, 28, 2.0, 0.7, 0.6, panner);
-    this.filtered(t + 0.25, 'bandpass', 3500, 1.5, 0.12 * near, 0.05, 1.4, 0, panner);
-    setTimeout(() => bus.disconnect(), (distance / 343 + 3) * 1000);
+    const echo = ctx.createGain();
+    echo.gain.value = 0.5 + (1 - near) * 0.4;
+    panner.connect(echo).connect(this.m.street);
+    this.filtered(t, 'highpass', 2200, 0.7, 0.9 * near + 0.1, 0.001, 0.09, 0.3, panner);
+    this.filtered(t, 'lowpass', 220, 0.7, 2.6, 0.004, 1.6, 1.8, panner);
+    this.filtered(t, 'lowpass', 1800 * near + 500, 0.6, 1.6, 0.002, 0.6, 1.2, panner);
+    this.tone(t, 'sine', 62, 22, 2.4, 1.4, 0.8, panner);
+    this.tone(t + 0.01, 'triangle', 110, 40, 0.8, 0.5, 0.3, panner);
+    this.filtered(t + 0.35, 'lowpass', 160, 0.5, 0.9, 0.15, 2.6, 1.6, panner);
+    for (let i = 0; i < 14; i++) {
+      const d = t + 0.45 + Math.random() * 1.6;
+      this.filtered(d, 'bandpass', 1800 + Math.random() * 3000, 3, (0.05 + Math.random() * 0.08) * near, 0.002, 0.05 + Math.random() * 0.08, 0.2, panner);
+    }
+    if (distance < 12) this.tone(t + 0.05, 'sine', 3900, 3700, 0.06 * (1 - distance / 12), 2.4);
+    setTimeout(() => {
+      bus.disconnect();
+      echo.disconnect();
+    }, (distance / 343 + 5) * 1000);
   }
 
   crash(distance: number): void {
@@ -120,6 +134,19 @@ export class Sfx {
     this.filtered(t, 'lowpass', 300, 0.8, 1.1 * vol, 0.004, 0.35, 0.5);
     this.filtered(t + 0.02, 'bandpass', 1800, 2, 0.5 * vol, 0.002, 0.25, 0.4);
     this.filtered(t + 0.18, 'bandpass', 3200, 4, 0.2 * vol, 0.002, 0.4, 0.3);
+  }
+
+  meleeSwing(): void {
+    const t = this.m.ctx.currentTime;
+    this.filtered(t, 'bandpass', 700, 1.2, 0.25, 0.08, 0.18);
+    this.filtered(t + 0.06, 'bandpass', 1400, 1.5, 0.15, 0.05, 0.12);
+  }
+
+  meleeHit(): void {
+    const t = this.m.ctx.currentTime;
+    this.filtered(t, 'lowpass', 260, 1, 1.1, 0.002, 0.16, 0.2);
+    this.tone(t, 'sine', 120, 55, 0.6, 0.14);
+    this.filtered(t + 0.01, 'bandpass', 2400, 3, 0.18, 0.001, 0.05);
   }
 
   grenadePin(): void {
