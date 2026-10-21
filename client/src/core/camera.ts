@@ -62,6 +62,11 @@ export class ThirdPersonCamera {
     }
   }
 
+  /** Spread and recoil scale while zoomed: up to 35 % steadier at 4x. */
+  get steady(): number {
+    return 1 - 0.35 * THREE.MathUtils.clamp((this.zoomT - 1) / 3, 0, 1);
+  }
+
   get zoom(): number {
     return this.zoomT;
   }

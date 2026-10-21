@@ -5,7 +5,7 @@ import type { Input } from '../core/input';
 
 export interface ObjectiveDef { title: string; detail: string; defendRadius: number; hold: number; complete: string; reward: string }
 
-/** Chapter goal: storm the station, clear its defenders and hold E in the lobby to secure the arms cache. */
+/** Chapter goal: storm the station and hold E in the lobby to loot the arms cache (defenders need not all be dead). */
 export class Objective {
   private panel = document.createElement('div');
   private marker = document.createElement('div');
@@ -55,13 +55,8 @@ export class Objective {
       this.holdT = 0;
       return;
     }
-    if (left > 0) {
-      this.holdT = 0;
-      this.prompt.innerHTML = `ELIMINA A LOS DEFENSORES <span>${left}</span>`;
-      return;
-    }
     this.holdT = input.down('KeyE') ? this.holdT + dt : 0;
-    this.prompt.innerHTML = this.holdT > 0 ? `ASEGURANDO CARGAMENTO <span>${Math.round((this.holdT / this.def.hold) * 100)}%</span>` : '<kbd>E</kbd> MANTÉN PARA ASEGURAR EL CARGAMENTO';
+    this.prompt.innerHTML = this.holdT > 0 ? `SAQUEANDO CARGAMENTO <span>${Math.round((this.holdT / this.def.hold) * 100)}%</span>` : '<kbd>E</kbd> MANTÉN PARA SAQUEAR EL CARGAMENTO';
     if (this.holdT < this.def.hold) return;
     this.done = true;
     this.prompt.style.opacity = this.marker.style.opacity = '0';

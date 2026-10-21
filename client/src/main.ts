@@ -265,7 +265,7 @@ async function boot(): Promise<void> {
     hud.enemies = enemies.aliveCount;
     range.update(dt);
     const g = combat.gun;
-    const cone = THREE.MathUtils.degToRad(g.coneDeg(input.aiming, player.speed, player.airborne));
+    const cone = THREE.MathUtils.degToRad(g.coneDeg(input.aiming, player.speed, player.airborne) * tpc.steady);
     hud.update(dt, {
       spreadPx: (Math.tan(cone) / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) * innerHeight * 0.5,
       ammo: g.ammo, mag: g.def.magazine, reserve: g.reserve, carry: g.carry, mode: g.mode, weapon: g.def.name,

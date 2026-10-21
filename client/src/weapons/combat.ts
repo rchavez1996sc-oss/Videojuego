@@ -72,7 +72,7 @@ export class Combat {
 
   private fire(aiming: boolean, airborne: boolean): void {
     const def = this.gun.def, camera = this.cam.camera;
-    const cone = THREE.MathUtils.degToRad(this.gun.coneDeg(aiming, this.player.speed, airborne));
+    const cone = THREE.MathUtils.degToRad(this.gun.coneDeg(aiming, this.player.speed, airborne) * this.cam.steady);
     const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
     const r = Math.sqrt(Math.random()) * Math.tan(cone), a = Math.random() * Math.PI * 2;
     const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
@@ -94,7 +94,8 @@ export class Combat {
     this.sfx.rifleShot();
     this.onShot(muzzle);
     const [kUp, kSide] = this.gun.recoil(aiming);
-    this.cam.kick(kUp, kSide, aiming ? 0.012 : 0.02);
+    const k = this.cam.steady;
+    this.cam.kick(kUp * k, kSide * k, (aiming ? 0.012 : 0.02) * k);
     if (this.gun.ammo === 0 && this.gun.startReload()) this.sfx.reload(true);
 
     if (!hit) return;

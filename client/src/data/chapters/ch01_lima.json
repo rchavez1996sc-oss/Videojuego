@@ -634,10 +634,10 @@
   "lives": 3,
   "objective": {
     "title": "ASALTA LA COMISARÍA",
-    "detail": "Elimina a los defensores y asegura el cargamento de armas",
+    "detail": "Entra a la comisaría y saquea el cargamento de armas",
     "defendRadius": 32,
     "hold": 2.5,
     "complete": "CAPÍTULO 1 COMPLETADO",
-    "reward": "Cargamento asegurado: el armamento de la comisaría queda en manos del FLS para el Capítulo 2."
+    "reward": "Cargamento saqueado: el armamento de la comisaría queda en manos del FLS para el Capítulo 2."
   }
 }
