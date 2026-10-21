@@ -89,7 +89,7 @@ export class Squad {
     return this.list.filter((a) => a.unit.alive).map((a) => a.unit.position);
   }
 
-  private hurt(a: Ally, dmg: number, from: THREE.Vector3): void {
+  hurt(a: Ally, dmg: number, from: THREE.Vector3): void {
     if (!a.unit.alive || !a.unit.damage(dmg)) return;
     a.unit.die(a.unit.position.clone().sub(from).setY(0).normalize());
     a.downedT = this.def.bleedOut;

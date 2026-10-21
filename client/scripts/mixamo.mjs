@@ -16,13 +16,14 @@ const ANIMS = [
   ['sprint', P('sprint forward'), 1],
   ['crouch_idle', P('idle crouching'), 1], ['crouch_aim', P('idle crouching aiming'), 1],
   ['crouch_f', P('walk crouching forward'), 1], ['crouch_b', P('walk crouching backward'), 1], ['crouch_l', P('walk crouching left'), 1], ['crouch_r', P('walk crouching right'), 1],
-  ['jump', P('jump loop'), 1],
+  ['jump', P('jump loop'), 1], ['jump_up', P('jump up'), 1], ['jump_down', P('jump down'), 1],
+  ['climb', 'Climbing.fbx', 2], ['climb_low', 'Climbing.1.fbx', 2], ['ladder', 'Climbing.Ladder.fbx', 2],
   ['fire', 'Firing.Rifle.fbx', 1], ['reload', 'Reloading.fbx', 1], ['hit', 'Hit.Reaction.fbx', 1], ['throw', 'Grenade.Throw.fbx', 1],
   ['knock', 'Knocked.Down.fbx', 1], ['getup', 'Getting.Up.fbx', 1],
   ['death_front', P('death from the front'), 0], ['death_back', P('death from the back'), 0], ['death_right', P('death from right'), 0],
   ['death_head', P('death from front headshot'), 0], ['death_crouch', P('death crouching headshot front'), 0], ['dying', 'Dying.fbx', 0], ['fall_back', 'Falling.Back.Death.fbx', 0],
   ['civ_walk', 'Walking.fbx', 1], ['civ_back', 'Walking.Backwards.fbx', 1], ['civ_run', 'Running.fbx', 1], ['terrified', 'Terrified.fbx', 1, 6],
-].map(([key, file, inPlace, maxDur]) => ({ key, url: `/src-assets/${file}`, inPlace: !!inPlace, maxDur }));
+].map(([key, file, inPlace, maxDur]) => ({ key, url: `/src-assets/${file}`, inPlace, maxDur }));
 
 /** Some Mixamo exports carry a long footer that three's FBXLoader mistakes for nodes: cut right after the top-level null record. */
 function trimFbx(buf) {

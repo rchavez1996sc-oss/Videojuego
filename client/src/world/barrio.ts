@@ -10,6 +10,7 @@ import { powerLine, cable, mototaxi, sandbags, stairway, car, billboard, type Ca
 import { SignAtlas } from './signs';
 import { buildStation, type StationDef, type StationInfo } from './station';
 import { buildLadder } from './ladders';
+import { flsMarks, poleMarks } from './flsMarks';
 import { STREET_COLORS, stall, trashPile, roadMarkings } from './streetLife';
 import { brick, concrete, plaster, corrugated, estera } from '../render/urbanTextures';
 import { rock, wood } from '../render/textures';
@@ -67,6 +68,7 @@ function materials(lighting: Lighting, atlas: SignAtlas): Record<string, THREE.M
     tire: std('tire', { color: '#151515', roughness: 0.85 }),
     policeGreen: std('policeGreen', { map: pl.map, normalMap: pl.normalMap, roughness: 0.9, color: '#4f7a5c' }),
     armsCrate: std('arms-crate', { map: wd.map, color: '#3e4228', roughness: 0.8 }),
+    doorRed: std('doorRed', { map: ca.map, roughness: 0.55, metalness: 0.5, color: '#8e1b14' }),
     sandbag: std('sandbag', { map: es.map, color: '#a69673', roughness: 1 }),
     moto0: std('moto0', { color: '#b3221d', roughness: 0.35, metalness: 0.3 }),
     moto1: std('moto1', { color: '#1f5fa8', roughness: 0.35, metalness: 0.3 }),
@@ -93,7 +95,7 @@ function materials(lighting: Lighting, atlas: SignAtlas): Record<string, THREE.M
 
 export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting, world: RAPIER.World): Barrio {
   const b = new Builder(world, world.createRigidBody(RAPIER.RigidBodyDesc.fixed()));
-  const rand = mulberry32(def.seed);
+  const rand = mulberry32(def.seed), deco = mulberry32(def.seed + 7);
   const atlas = new SignAtlas();
   const pitch = def.blockW + def.street;
   const lm = def.landmark, st = def.station;
@@ -119,7 +121,8 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
           x += w;
           if (inLandmark(cx - w / 2, cx + w / 2, frontZ) || (st && x - w < st.x + st.w / 2 && x > st.x - st.w / 2 && Math.abs(frontZ - st.z) < 1)) continue;
           const lot: Lot = { x: cx, z: frontZ, y: hf.heightAt(cx, frontZ), facing, w, d: (z1 - z0) / 2 - 0.04 };
-          cityHouse(b, lot, rand, sign, facing === 0 ? worldSide : -worldSide);
+          const red = deco() < 0.12;
+          flsMarks(b, hf, atlas, lot, cityHouse(b, lot, rand, sign, facing === 0 ? worldSide : -worldSide, red), red, worldSide, deco);
           if (rand() < 0.18) {
             const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), facing);
             atlas.add(new THREE.Vector3(0, 1.4 + rand() * 0.6, 0.03).applyQuaternion(q).add(new THREE.Vector3(cx, lot.y, frontZ)), q, Math.min(w - 1, 3.6), 'graffiti', rand);
@@ -146,6 +149,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
     const poles: THREE.Vector3[] = [];
     for (let x = def.x0 - 20; x < xEnd + 20; x += 31) poles.push(new THREE.Vector3(x, 0, s * 9.9));
     powerLine(b, hf, poles, rand);
+    poleMarks(atlas, hf, poles, s, deco);
     for (const p of poles) {
       if (rand() < 0.5) continue;
       const top = new THREE.Vector3(p.x, hf.heightAt(p.x, p.z) + 6.8, p.z);

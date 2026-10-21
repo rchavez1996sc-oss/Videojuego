@@ -2,7 +2,10 @@ import * as THREE from 'three';
 import { characters, type CharKind } from '../render/characters';
 import { buildAK } from '../weapons/akModel';
 import { bakeLod } from '../render/merge';
+import { dress, type Outfit } from './outfit';
 import type { Lighting } from '../render/lighting';
+
+export type { Outfit } from './outfit';
 
 const UPPER = /Spine|Neck|Head|Shoulder|Arm|Hand/;
 const split = new Map<string, { lower: THREE.AnimationClip; upper: THREE.AnimationClip; full: THREE.AnimationClip }>();
@@ -24,16 +27,18 @@ const DIR8 = ['f', 'fr', 'r', 'br', 'b', 'bl', 'l', 'fl'];
 const DIR4 = ['f', 'r', 'b', 'l'];
 const FADE = 0.2;
 
-/** Faction dress on top of the base character: which arms get bands, scarf/beanie colours, balaclava. */
-export interface Outfit { color: string; bands?: ('Left' | 'Right')[]; scarf?: string; balaclava?: boolean; beanie?: string }
-
-/** Skinned Mixamo soldier/civilian with layered animation; drop-in replacement for the procedural Mannequin. */
+/** Skinned Mixamo character with layered animation: legs from speed/direction, torso from stance and gestures. */
 export class Rig {
   readonly root = new THREE.Group();
   readonly muzzle: THREE.Object3D;
   readonly ejector: THREE.Object3D;
   readonly weapon: THREE.Object3D;
   scared = false;
+  /** Shouldered rifle (aiming, firing or in a firefight). */
+  aiming = false;
+  airborne = false;
+  /** Weapon put away (grenade in hand, climbing). */
+  holster = false;
   private mixer: THREE.AnimationMixer;
   private inst: ReturnType<typeof characters.create>;
   private lowKey = '';
@@ -41,22 +46,22 @@ export class Rig {
   private lower: THREE.AnimationAction | null = null;
   private upper: THREE.AnimationAction | null = null;
   private overlay: { key: string; t: number } | null = null;
+  private held: { key: string; action: THREE.AnimationAction } | null = null;
   private lockT = 0;
+  private aimT = 0;
+  private kick = 0;
   private dead = false;
   private isFar = false;
   private skip = 0;
   private acc = 0;
   private last = new THREE.Vector3();
-  private hands: [THREE.Bone, THREE.Bone];
   private spine: THREE.Bone[];
-  private tmp = new THREE.Matrix4();
 
   constructor(kind: CharKind, lighting: Lighting, private armed = true, detailedGun = false, outfit?: Outfit) {
     this.inst = characters.create(kind);
     this.root.add(this.inst.model);
     this.mixer = new THREE.AnimationMixer(this.inst.model);
     const b = this.inst.bones;
-    this.hands = [b.get('mixamorigRightHand')!, b.get('mixamorigLeftHand')!];
     this.spine = ['mixamorigSpine', 'mixamorigSpine1', 'mixamorigSpine2'].map((n) => b.get(n)!);
     const ak = buildAK(lighting);
     let gun: THREE.Object3D = ak.group;
@@ -68,47 +73,41 @@ export class Rig {
     this.weapon = gun;
     this.muzzle = ak.muzzle;
     this.ejector = ak.ejector;
-    this.weapon.visible = armed;
-    this.root.add(this.weapon);
-    if (outfit) this.dress(outfit, lighting);
-    this.play(armed ? 'idle' : 'civ_walk', armed ? 'idle' : 'civ_walk', 0);
+    if (armed) this.gripWeapon(b.get('mixamorigRightHand')!, b.get('mixamorigLeftHand')!);
+    else this.weapon.visible = false;
+    if (outfit) dress(b, outfit, lighting);
+    this.play(armed ? 'idle' : 'civ_walk', armed ? 'aim' : 'civ_walk', 0);
     this.mixer.update(Math.random());
   }
 
-  /** Faction pieces bound to bones (rig space is centimetres): arm bands, neck scarf, balaclava, beanie. */
-  private dress(o: Outfit, lighting: Lighting): void {
-    const mat = (c: string) => lighting.setup(new THREE.MeshStandardMaterial({ color: c, roughness: 0.92 }), `outfit-${c}`);
-    const bone = (n: string) => this.inst.bones.get(`mixamorig${n}`);
-    const add = (n: string, geo: THREE.BufferGeometry, color: string, y: number, rx = 0) => {
-      const m = new THREE.Mesh(geo, mat(color));
-      m.position.y = y;
-      m.rotation.x = rx;
-      bone(n)?.add(m);
-    };
-    for (const side of o.bands ?? []) add(`${side}Arm`, new THREE.CylinderGeometry(6.2, 6.2, 9, 12, 1, true), o.color, 11);
-    if (o.scarf) {
-      add('Neck', new THREE.TorusGeometry(7.5, 3.2, 8, 16), o.scarf, 3, Math.PI / 2);
-      add('Neck', new THREE.ConeGeometry(7, 10, 8, 1, true), o.scarf, -2, Math.PI);
-    }
-    if (o.balaclava) add('Head', new THREE.SphereGeometry(12.2, 16, 12).scale(0.92, 1.12, 1.04).translate(0, 0, 1.6), '#141416', 9.5);
-    if (o.beanie) add('Head', new THREE.SphereGeometry(11.9, 16, 8, 0, Math.PI * 2, 0, Math.PI * 0.5).scale(0.95, 0.9, 1.05), o.beanie, 13);
-  }
-
-  private action(clip: THREE.AnimationClip): THREE.AnimationAction {
-    return this.mixer.clipAction(clip);
+  /** Parents the rifle to the right hand, calibrated so that in the aiming pose it points straight ahead, slightly towards the left hand. */
+  private gripWeapon(rightHand: THREE.Bone, leftHand: THREE.Bone): void {
+    const a = this.mixer.clipAction(parts('aim').full).play();
+    this.mixer.update(0);
+    this.inst.model.updateMatrixWorld(true);
+    const rh = rightHand.getWorldPosition(new THREE.Vector3()), lh = leftHand.getWorldPosition(new THREE.Vector3());
+    const ahead = new THREE.Vector3(0, 0, 1).add(lh.clone().sub(rh).setY(0).normalize().multiplyScalar(0.15)).normalize();
+    const look = new THREE.Matrix4().lookAt(rh.clone().add(ahead), rh, new THREE.Vector3(0, 1, 0));
+    const q = new THREE.Quaternion().setFromRotationMatrix(look);
+    const pos = rh.clone().add(new THREE.Vector3(0.0, 0.04, 0.06).applyQuaternion(q));
+    const world = new THREE.Matrix4().compose(pos, q, new THREE.Vector3(1, 1, 1));
+    const local = rightHand.matrixWorld.clone().invert().multiply(world);
+    local.decompose(this.weapon.position, this.weapon.quaternion, this.weapon.scale);
+    rightHand.add(this.weapon);
+    a.stop();
   }
 
   private play(lowKey: string, upKey: string, fade = FADE): void {
     if (lowKey !== this.lowKey) {
-      const next = this.action(parts(lowKey).lower).reset().play();
+      const next = this.mixer.clipAction(parts(lowKey).lower).reset().play();
       if (this.lower && fade) this.lower.crossFadeTo(next, fade, false);
       else this.lower?.stop();
       this.lower = next;
       this.lowKey = lowKey;
     }
     if (upKey !== this.upKey) {
-      const next = this.action(parts(upKey).upper).reset().play();
-      const once = this.overlay?.key === upKey && upKey !== 'fire';
+      const next = this.mixer.clipAction(parts(upKey).upper).reset().play();
+      const once = this.overlay?.key === upKey;
       next.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, Infinity);
       next.clampWhenFinished = once;
       if (this.upper && fade) this.upper.crossFadeTo(next, fade * 0.6, false);
@@ -118,46 +117,70 @@ export class Rig {
     }
   }
 
-  /** Short upper-body overlays: 'fire' (refreshed per shot), 'reload', 'throw', 'hit'. */
-  gesture(key: 'fire' | 'reload' | 'throw' | 'hit', seconds?: number): void {
-    if (this.dead || (this.overlay && this.overlay.key !== 'fire' && this.overlay.key !== 'hit' && key === 'fire')) return;
+  /** Upper-body one-shots: 'reload', 'throw', 'hit'. */
+  gesture(key: 'reload' | 'throw' | 'hit', seconds?: number): void {
+    if (this.dead || this.held) return;
     const dur = characters.clips.get(key)!.duration;
-    const t = key === 'fire' ? 0.3 : seconds ?? dur * (key === 'hit' ? 0.35 : 1);
-    if (this.overlay?.key === key) this.overlay.t = Math.max(this.overlay.t, t);
-    else {
-      this.overlay = { key, t };
-      this.upKey = '';
-    }
-    if (seconds && key !== 'fire') this.mixer.clipAction(parts(key).upper).timeScale = dur / seconds;
+    if (key === 'hit' && this.overlay && this.overlay.key !== 'hit') return;
+    this.overlay = { key, t: seconds ?? dur * (key === 'hit' ? 0.35 : 1) };
+    this.upKey = '';
+    this.mixer.clipAction(parts(key).upper).timeScale = seconds ? dur / seconds : 1;
   }
 
+  /** A shot: shoulder the rifle for a moment and kick the torso back. */
   fire(): void {
-    this.gesture('fire');
+    this.aimT = 0.8;
+    this.kick = 1;
+  }
+
+  /** Full-body clip that overrides locomotion (climb, ladder) until `release`. `rate` may be negative (ladder down). */
+  hold(key: string, rate: number, once = false, startFrac = 0): void {
+    if (this.dead) return;
+    if (this.held?.key === key) {
+      this.held.action.timeScale = rate;
+      return;
+    }
+    this.release(0);
+    const a = this.mixer.clipAction(parts(key).full).reset();
+    a.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, Infinity);
+    a.clampWhenFinished = once;
+    a.time = a.getClip().duration * startFrac;
+    a.timeScale = rate;
+    a.play();
+    this.lower?.fadeOut(0.1);
+    this.upper?.fadeOut(0.1);
+    this.lower = this.upper = null;
+    this.lowKey = this.upKey = '';
+    this.held = { key, action: a };
+  }
+
+  release(fade = FADE): void {
+    if (!this.held) return;
+    if (fade) this.held.action.fadeOut(fade);
+    else this.held.action.stop();
+    this.held = null;
+  }
+
+  durationOf(key: string): number {
+    return characters.clips.get(key)?.duration ?? 1;
   }
 
   die(kind: string): void {
-    this.dead = true;
+    this.held = null;
     this.overlay = null;
     this.mixer.stopAllAction();
-    const a = this.action(parts(kind).full).reset();
-    a.setLoop(THREE.LoopOnce, 1);
-    a.clampWhenFinished = true;
-    a.play();
-    this.lowKey = this.upKey = '';
-    this.lower = this.upper = null;
+    this.dead = false;
+    this.hold(kind, 1, true);
+    this.dead = true;
   }
 
   /** Back on their feet: plays the get-up clip before locomotion resumes. */
   revive(): void {
     this.dead = false;
     this.mixer.stopAllAction();
-    const a = this.action(parts('getup').full).reset();
-    a.setLoop(THREE.LoopOnce, 1);
-    a.clampWhenFinished = true;
-    a.play();
-    this.lockT = a.getClip().duration * 0.9;
-    this.lowKey = this.upKey = '';
-    this.lower = this.upper = null;
+    this.held = null;
+    this.hold('getup', 1, true);
+    this.lockT = this.durationOf('getup') * 0.9;
   }
 
   private chooseLower(speed: number, crouch: number, fwd: number, side: number): [string, number] {
@@ -165,15 +188,20 @@ export class Rig {
       if (speed < 0.3) return [this.scared ? 'terrified' : 'idle', 1];
       return speed < 2.6 ? ['civ_walk', speed / PACE.civ_walk] : ['civ_run', speed / PACE.civ_run];
     }
-    const ang = Math.atan2(side, fwd);
-    if (crouch > 0.5) {
-      if (speed < 0.3) return ['crouch_idle', 1];
-      return [`crouch_${DIR4[Math.round(((ang + Math.PI * 2) % (Math.PI * 2)) / (Math.PI / 2)) % 4]}`, speed / PACE.crouch];
-    }
+    if (this.airborne) return ['jump', 1];
+    const ang = (Math.atan2(side, fwd) + Math.PI * 2) % (Math.PI * 2);
+    if (crouch > 0.5) return speed < 0.3 ? ['crouch_idle', 1] : [`crouch_${DIR4[Math.round(ang / (Math.PI / 2)) % 4]}`, speed / PACE.crouch];
     if (speed < 0.3) return ['idle', 1];
-    if (speed > 5 && fwd > speed * 0.8) return ['sprint', speed / PACE.sprint];
-    const dir = DIR8[Math.round(((ang + Math.PI * 2) % (Math.PI * 2)) / (Math.PI / 4)) % 8];
+    if (speed > 5 && fwd > speed * 0.8 && !this.aiming) return ['sprint', speed / PACE.sprint];
+    const dir = DIR8[Math.round(ang / (Math.PI / 4)) % 8];
     return speed < 2.8 ? [`walk_${dir}`, speed / PACE.walk] : [`run_${dir}`, speed / PACE.run];
+  }
+
+  private chooseUpper(low: string, crouch: number): string {
+    if (this.overlay) return this.overlay.key;
+    if (!this.armed) return low.startsWith('civ') && low !== 'civ_run' ? 'civ_walk' : low;
+    if (this.aiming || this.aimT > 0 || low === 'idle' || low === 'crouch_idle') return crouch > 0.5 ? 'crouch_aim' : 'aim';
+    return low;
   }
 
   animate(dt: number, speed: number, crouch: number, aimPitch: number): void {
@@ -181,39 +209,33 @@ export class Rig {
     if (this.isFar && ++this.skip % 3 !== 0) return;
     const step = this.acc;
     this.acc = 0;
-    if (!this.dead && this.lockT <= 0) {
-      const delta = this.root.position.clone().sub(this.last);
-      const yaw = this.root.rotation.y;
-      const fwd = (delta.x * Math.sin(yaw) + delta.z * Math.cos(yaw)) / Math.max(step, 1e-3);
-      const side = (delta.x * -Math.cos(yaw) + delta.z * Math.sin(yaw)) / Math.max(step, 1e-3);
+    this.lockT -= step;
+    this.aimT -= step;
+    if (this.lockT <= 0 && this.held?.key === 'getup') this.release();
+    if (!this.dead && !this.held) {
+      const delta = this.root.position.clone().sub(this.last), yaw = this.root.rotation.y, inv = 1 / Math.max(step, 1e-3);
+      const fwd = (delta.x * Math.sin(yaw) + delta.z * Math.cos(yaw)) * inv;
+      const side = (delta.x * -Math.cos(yaw) + delta.z * Math.sin(yaw)) * inv;
       const [low, rate] = this.chooseLower(speed, crouch, fwd, side);
       if (this.overlay && (this.overlay.t -= step) <= 0) {
         this.overlay = null;
         this.upKey = '';
       }
-      const up = this.overlay?.key ?? (this.armed && low === 'idle' && crouch < 0.5 ? 'aim' : low.startsWith('civ') && low !== 'civ_run' ? 'civ_walk' : low);
+      const up = this.chooseUpper(low, crouch);
       this.play(low, up);
-      if (this.lower) this.lower.timeScale = low === 'idle' && !this.armed ? 0 : THREE.MathUtils.clamp(rate, 0.6, 1.6);
-      if (this.upper && up === low) this.upper.timeScale = this.lower!.timeScale;
+      const scale = (low === 'idle' && !this.armed) ? 0 : THREE.MathUtils.clamp(rate, 0.6, 1.6);
+      if (this.lower) this.lower.timeScale = scale;
+      if (this.upper && up === low) this.upper.timeScale = scale;
       if (this.upper && !this.armed && up === 'civ_walk' && low !== 'civ_walk') this.upper.timeScale = 0;
     }
-    this.lockT -= step;
     this.last.copy(this.root.position);
     this.mixer.update(step);
-    if (!this.dead && this.armed && aimPitch) for (const b of this.spine) b.rotateX(-aimPitch / 3);
-    if (this.armed && this.weapon.visible) this.placeWeapon();
-  }
-
-  /** Rifle between the hands: grip at the right hand, barrel through the left. */
-  private placeWeapon(): void {
-    this.root.updateMatrixWorld(true);
-    const inv = this.tmp.copy(this.root.matrixWorld).invert();
-    const rh = this.hands[0].getWorldPosition(new THREE.Vector3()).applyMatrix4(inv);
-    const lh = this.hands[1].getWorldPosition(new THREE.Vector3()).applyMatrix4(inv);
-    const dir = lh.sub(rh).normalize().add(new THREE.Vector3(0, 0, this.dead ? 0 : 0.9)).normalize();
-    const m = new THREE.Matrix4().lookAt(rh.clone().add(dir), rh, new THREE.Vector3(0, 1, 0));
-    this.weapon.quaternion.setFromRotationMatrix(m);
-    this.weapon.position.copy(rh).add(new THREE.Vector3(0, 0.05, 0.04).applyQuaternion(this.weapon.quaternion));
+    if (!this.dead && !this.held && this.armed) {
+      const bend = aimPitch / 3, k = this.kick;
+      for (const [i, b] of this.spine.entries()) b.rotateX(-bend - (i === 2 ? k * 0.07 : k * 0.025));
+      this.kick = Math.max(0, this.kick - step * 14);
+    }
+    if (this.armed) this.weapon.visible = !this.holster && (!this.held || this.dead);
   }
 
   set far(v: boolean) {

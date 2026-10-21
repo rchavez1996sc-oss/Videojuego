@@ -124,7 +124,8 @@ function mergeSkinned(o: THREE.Object3D): void {
   }
 }
 
-interface AnimSpec { key: string; url: string; inPlace: boolean; maxDur?: number }
+/** inPlace: 0 keeps the hips path (relative to the start), 1 pins X/Z, 2 removes the start→end drift on all axes (climbs). */
+interface AnimSpec { key: string; url: string; inPlace: 0 | 1 | 2; maxDur?: number }
 
 async function animations(skeletonUrl: string, list: AnimSpec[]): Promise<{ data: string; info: string }> {
   const skel = await loader.loadAsync(skeletonUrl);
@@ -150,10 +151,19 @@ async function animations(skeletonUrl: string, list: AnimSpec[]): Promise<{ data
     });
     const hips = tracks.find((t) => t.name.endsWith('Hips.position'));
     if (hips) {
-      const v = hips.values, x0 = v[0], z0 = v[2];
-      for (let i = 0; i < v.length; i += 3) {
-        v[i] = a.inPlace ? 0 : v[i] - x0;
-        v[i + 2] = a.inPlace ? 0 : v[i + 2] - z0;
+      const v = hips.values, n = v.length / 3, x0 = v[0], z0 = v[2];
+      const drift = [v[v.length - 3] - v[0], v[v.length - 2] - v[1], v[v.length - 1] - v[2]];
+      for (let i = 0; i < n; i++) {
+        const k = n > 1 ? i / (n - 1) : 0;
+        if (a.inPlace === 2) for (let c = 0; c < 3; c++) v[i * 3 + c] -= drift[c] * k;
+        else {
+          v[i * 3] = a.inPlace ? 0 : v[i * 3] - x0;
+          v[i * 3 + 2] = a.inPlace ? 0 : v[i * 3 + 2] - z0;
+        }
+      }
+      if (a.inPlace === 2) for (let i = 0; i < n; i++) {
+        v[i * 3] -= x0;
+        v[i * 3 + 2] -= z0;
       }
     }
     let clip = new THREE.AnimationClip(a.key, src.duration, tracks);

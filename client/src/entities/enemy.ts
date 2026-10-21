@@ -132,6 +132,7 @@ export class Enemy {
       this.stuckT = 0;
     }
     const speed = Math.hypot(this.vel.x, this.vel.z);
+    this.model.aiming = this.state === 'combat';
     this.model.animate(dt, speed, this.crouchK, aimPitch);
   }
 

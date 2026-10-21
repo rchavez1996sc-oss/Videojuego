@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type RAPIER from '@dimforge/rapier3d-compat';
+import RAPIER from '@dimforge/rapier3d-compat';
 import type { ThirdPersonCamera } from './camera';
 import type { Heightfield } from '../world/heightfield';
 import type { Player } from '../entities/player';
@@ -224,6 +224,67 @@ export function installDebug(c: DebugContext): void {
         if (spotCross) log.push(`spot ${s} x=${x} side=${side} crossed frames=${spotCross} end=${c.player.position.x.toFixed(1)},${c.player.position.y.toFixed(1)},${c.player.position.z.toFixed(1)}`);
       }
       return `spots=${spots} crossedSpots=${crossed} cameraInsideFrames=${camIn}/${frames}\n${log.join('\n')}`;
+    },
+    /** Dies pressed against house fronts and reports where the player comes back (roof overhead = bad). */
+    respawnTest(n: number) {
+      c.setFreeCam(false);
+      c.setSkipRender(true);
+      const out: string[] = [];
+      for (let s = 0; s < n; s++) {
+        const side = s % 2 ? 1 : -1, x = -230 + ((s * 83) % 440);
+        c.player.respawn(new THREE.Vector3(x, c.hf.heightAt(x, side * 11.7), side * 11.7), 0);
+        c.frame(1 / 20);
+        c.player.hp = 0;
+        for (let i = 0; i < 110; i++) c.frame(1 / 20);
+        const p = c.player.position;
+        const roof = c.world!.castRay(new RAPIER.Ray({ x: p.x, y: p.y + 2, z: p.z }, { x: 0, y: 1, z: 0 }), 30, true);
+        out.push(`${x}->${p.x.toFixed(0)},${p.z.toFixed(0)} hp=${c.player.hp.toFixed(0)} roof=${!!roof}`);
+      }
+      c.setSkipRender(false);
+      return out.join(' | ');
+    },
+    /** Steps in front of a moving vehicle (inside its braking distance) and reports the damage taken. */
+    roadTest(gap: number) {
+      const tr = c.traffic?.();
+      const spot = tr?.debugAhead(gap);
+      if (!spot) return 'no traffic';
+      c.setFreeCam(false);
+      c.setSkipRender(true);
+      for (let i = 0; i < 40; i++) c.frame(1 / 20);
+      const s = tr!.debugAhead(gap)!;
+      c.player.respawn(new THREE.Vector3(s.x, c.hf.heightAt(s.x, s.z), s.z), 0);
+      c.player.hp = 100;
+      const before = c.player.position.clone();
+      for (let i = 0; i < 30; i++) c.frame(1 / 30);
+      c.setSkipRender(false);
+      return `hp=${c.player.hp.toFixed(0)} moved=${c.player.position.distanceTo(before).toFixed(1)}m`;
+    },
+    /** Stands at (x, z) with enemies alerted, presses Q, and reports where the player ended and whether the threat can see them. */
+    coverTest(x: number, z: number) {
+      c.setFreeCam(false);
+      c.setSkipRender(true);
+      c.player.respawn(new THREE.Vector3(x, c.hf.heightAt(x, z), z), 0);
+      c.combat.debugShoot();
+      for (let i = 0; i < 20; i++) {
+        c.player.hp = 100;
+        c.frame(1 / 20);
+      }
+      const start = c.player.position.clone();
+      const toast = document.querySelector('#hud .toast')!;
+      toast.textContent = '';
+      dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyQ' }));
+      c.frame(1 / 20);
+      dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyQ' }));
+      for (let i = 0; i < 60; i++) {
+        c.player.hp = 100;
+        c.frame(1 / 20);
+      }
+      const p = c.player.position, e = c.enemies.list.filter((n) => n.alive).sort((a, b) => a.position.distanceTo(p) - b.position.distanceTo(p))[0];
+      const eye = e.position.clone().setY(e.position.y + 1.6), chest = p.clone().setY(p.y + 0.8);
+      const dir = chest.clone().sub(eye), len = dir.length();
+      const hit = c.world!.castRay(new RAPIER.Ray(eye, dir.divideScalar(len)), len, true, undefined, undefined, undefined, undefined, (col) => col.handle !== c.player.collisionHandle && col.handle !== e.handle);
+      c.setSkipRender(false);
+      return `moved ${start.distanceTo(p).toFixed(1)}m crouch=${c.player.crouchAmount.toFixed(2)} enemy@${e.position.distanceTo(p).toFixed(0)}m hidden=${!!hit && hit.timeOfImpact < len - 0.3} toast="${document.querySelector('#hud .toast')?.textContent}"`;
     },
     squadInfo: () => {
       const s = c.squad;

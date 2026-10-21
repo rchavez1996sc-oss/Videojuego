@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { signTexture } from '../render/urbanTextures';
 
-export type SignKind = 'shop' | 'graffiti' | 'poster' | 'hill' | 'concert' | 'emblem' | 'red' | 'station';
+export type SignKind = 'shop' | 'graffiti' | 'poster' | 'hill' | 'concert' | 'emblem' | 'red' | 'station' | 'stencil' | 'flag';
 
 interface SignDef { text: string; kind: SignKind; bg: string | null; fg: string; sub?: string; accent?: string }
 
@@ -37,6 +37,8 @@ const SIGNS: SignDef[] = [
   { text: 'DINASTÍA DEL SUR', kind: 'concert', bg: '#ff7a00', fg: '#111111', sub: 'SÁB 21 · CHOLO PARTY', accent: '#ff2d8a' },
   { text: '', kind: 'emblem', bg: null, fg: '#f4f2ec' },
   { text: 'COMISARÍA SECTORIAL', kind: 'station', bg: '#1f3d2c', fg: '#f2f0e6' },
+  { text: '', kind: 'stencil', bg: null, fg: '#a3161b' },
+  { text: '', kind: 'flag', bg: '#b3121b', fg: '#f2c230' },
   { text: '¡VIVA LA CLASE OBRERA!', kind: 'red', bg: '#b3121b', fg: '#ffffff', sub: 'SINDICATO UNIFICADO DE TRABAJADORES DEL CONO', accent: '#f2c230' },
   { text: '1° DE MAYO', kind: 'red', bg: '#c8102e', fg: '#f2c230', sub: 'TODOS A LA PLAZA · MARCHA OBRERA', accent: '#111111' },
   { text: 'PAN Y TRABAJO', kind: 'red', bg: '#a50f19', fg: '#ffffff', sub: 'FEDERACIÓN DE CONSTRUCCIÓN CIVIL', accent: '#ffffff' },
@@ -74,6 +76,25 @@ function concert(d: SignDef, w: number, h: number): HTMLCanvasElement {
     ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.15})`;
     ctx.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 18, 1 + Math.random() * 5);
   }
+  return c;
+}
+
+/** Red cloth square (centre of a 4:1 cell) carrying a yellow hammer and sickle. */
+function flag(d: SignDef, w: number, h: number): HTMLCanvasElement {
+  const c = emblem(d, w, h), ctx = c.getContext('2d')!;
+  const sym = document.createElement('canvas');
+  sym.width = w;
+  sym.height = h;
+  sym.getContext('2d')!.drawImage(c, 0, 0);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = d.bg!;
+  ctx.fillRect(w / 2 - h / 2, 0, h, h);
+  for (let i = 0; i < 40; i++) {
+    ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.12})`;
+    ctx.fillRect(w / 2 - h / 2, Math.random() * h, h, 2 + Math.random() * 4);
+  }
+  ctx.drawImage(sym, w / 2 - h / 2, 0, h, h, w / 2 - h * 0.35, h * 0.15, h * 0.7, h * 0.7);
   return c;
 }
 
@@ -148,7 +169,7 @@ export class SignAtlas {
     c.height = 2560;
     const ctx = c.getContext('2d')!;
     SIGNS.forEach((d, i) => {
-      const img = d.kind === 'poster' || d.kind === 'red' ? poster(d, 512, 128) : d.kind === 'concert' ? concert(d, 512, 128) : d.kind === 'emblem' ? emblem(d, 512, 128) : signTexture(d.text, d.bg, d.fg, 512, 128);
+      const img = d.kind === 'poster' || d.kind === 'red' ? poster(d, 512, 128) : d.kind === 'concert' ? concert(d, 512, 128) : d.kind === 'emblem' || d.kind === 'stencil' ? emblem(d, 512, 128) : d.kind === 'flag' ? flag(d, 512, 128) : signTexture(d.text, d.bg, d.fg, 512, 128);
       ctx.drawImage(img, (i % 2) * 512, Math.floor(i / 2) * 128);
     });
     this.texture = new THREE.CanvasTexture(c);

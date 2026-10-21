@@ -15,6 +15,8 @@ interface Vehicle {
   honkT: number; panic: boolean; state: State; hp: number; spin: number; drift: number; smokeT: number;
 }
 
+export interface Victim { key: string; pos: THREE.Vector3; hurt(damage: number, from: THREE.Vector3, shove: THREE.Vector3): void }
+
 const LANE = 3.2, X_MIN = -300, X_MAX = 300, HP = 140;
 
 /** Avenue traffic with drivers/passengers; vehicles take bullet damage and, once disabled, skid out of control. */
@@ -26,6 +28,10 @@ export class Traffic {
   onDisabled: (at: THREE.Vector3, weight: number) => void = () => {};
   onCrash: (at: THREE.Vector3) => void = () => {};
   onSmoke: (at: THREE.Vector3) => void = () => {};
+  /** People a moving vehicle can run into (player, squad, soldiers); `hurt` receives damage, origin and a shove. */
+  victims: () => Victim[] = () => [];
+  private hitT = new Map<string, number>();
+  private clock = 0;
   /** Other people on the road drivers brake for (the squad). */
   obstacles: () => THREE.Vector3[] = () => [];
 
@@ -87,6 +93,12 @@ export class Traffic {
     return `${v.x.toFixed(0)},${v.z.toFixed(1)} speed ${v.speed.toFixed(1)}`;
   }
 
+  /** Test hook: a spot `gap` metres in front of the fastest driving vehicle, in its lane. */
+  debugAhead(gap: number): THREE.Vector3 | null {
+    const v = this.list.filter((o) => o.state === 'drive').sort((a, b) => b.speed - a.speed)[0];
+    return v ? new THREE.Vector3(v.x + v.dir * (v.len / 2 + gap), 0, v.z) : null;
+  }
+
   get debugStates(): string {
     return this.list.map((v) => `${v.state[0]}@${v.x.toFixed(0)},${v.z.toFixed(1)}`).join(' ');
   }
@@ -116,6 +128,25 @@ export class Traffic {
     if (v.speed <= 0.05) v.state = 'wreck';
   }
 
+  /** Bodies inside the bumper's sweep this frame take damage from speed and how square the hit is, and get shoved aside. */
+  private impacts(v: Vehicle, dt: number, now: number): void {
+    if (v.speed < 2.5) return;
+    const fwd = new THREE.Vector3(Math.sin(v.yaw), 0, Math.cos(v.yaw)), right = new THREE.Vector3(fwd.z, 0, -fwd.x);
+    for (const t of this.victims()) {
+      const rel = new THREE.Vector3(t.pos.x - v.x, 0, t.pos.z - v.z);
+      const along = rel.dot(fwd), lat = rel.dot(right);
+      if (Math.abs(lat) > 1.3 || along < -v.len / 2 - 0.3 || along > v.len / 2 + 0.45 + v.speed * dt) continue;
+      const key = `${t.key}`;
+      if ((this.hitT.get(key) ?? -9) > now - 1.2) continue;
+      this.hitT.set(key, now);
+      const square = along > v.len / 2 - 0.6 ? 1 - Math.min(1, Math.abs(lat) / 1.3) * 0.5 : 0.35;
+      const damage = Math.min(75, (v.speed - 2) * 5.5) * square;
+      const shove = fwd.clone().multiplyScalar(v.speed * 0.55 * square).addScaledVector(right, Math.sign(lat || 1) * (2 + v.speed * 0.25));
+      t.hurt(damage, new THREE.Vector3(v.x, t.pos.y + 0.8, v.z), shove);
+      if (square > 0.6) v.speed *= 0.6;
+    }
+  }
+
   /** Moves a far-off car to just beyond view behind/ahead of the player so the nearby avenue stays busy. */
   private bringNear(v: Vehicle, camX: number): void {
     const x = THREE.MathUtils.clamp(camX - v.dir * (150 + Math.random() * 40), X_MIN, X_MAX);
@@ -125,6 +156,7 @@ export class Traffic {
 
   update(dt: number, player: THREE.Vector3, camera: THREE.Vector3): void {
     this.calmT += dt;
+    this.clock += dt;
     for (const v of this.list) {
       if (v.state === 'off') {
         if (this.calmT > 45 && Math.random() < dt * 0.2) {
@@ -132,6 +164,7 @@ export class Traffic {
           v.group.visible = true;
         } else continue;
       }
+      if (v.state === 'drive' || v.state === 'crash') this.impacts(v, dt, this.clock);
       if (v.state === 'crash') this.crashStep(v, dt);
       else if (v.state === 'drive') {
         let target = v.panic ? 19 : v.cruise;

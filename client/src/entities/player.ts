@@ -28,6 +28,10 @@ export class Player {
   private exhausted = false;
   private lastVy = 0;
   stamina = 100;
+  private airT = 0;
+  /** Q: running to a cover spot, then holding a crouch there until the player moves. */
+  private coverGoal: THREE.Vector3 | null = null;
+  private inCover = false;
   hp = 100;
   /** Regeneration ceiling: drops to 50 once health falls below half, restored by medkits. */
   regenCap = 100;
@@ -58,6 +62,23 @@ export class Player {
 
   get airborne(): boolean {
     return !this.grounded;
+  }
+
+  /** Run to `spot` and crouch there (cancelled by any movement key). */
+  takeCover(spot: THREE.Vector3): void {
+    this.coverGoal = spot.clone();
+    this.inCover = true;
+  }
+
+  get seekingCover(): boolean {
+    return !!this.coverGoal;
+  }
+
+  /** Knocked by a vehicle: shoved sideways with a small hop. */
+  shove(v: THREE.Vector3): void {
+    if (this.ladder || this.mantle) return;
+    this.vel.add(v);
+    this.vel.y = Math.max(this.vel.y, 2.5);
   }
 
   hurt(amount: number): void {
@@ -99,8 +120,11 @@ export class Player {
     this.body.setNextKinematicTranslation({ x: feet.x, y: feet.y + HALF + RADIUS, z: feet.z });
     this.crouch = THREE.MathUtils.damp(this.crouch, m.t < 0.7 ? 0.6 : 0, 10, dt);
     this.speed = 0;
-    this.model.animate(dt, 2, this.crouch, 0);
+    const clip = m.ledge.vault || m.ledge.height < 1.3 ? 'climb_low' : 'climb';
+    this.model.hold(clip, (this.model.durationOf(clip) * 0.75) / m.dur, true, 0.12);
+    this.model.animate(dt, 0, 0, 0);
     if (m.t >= 1) {
+      this.model.release();
       this.mantle = null;
       this.vel.set(0, -1, 0);
       this.onMantle(m.ledge.vault);
@@ -125,16 +149,19 @@ export class Player {
       z = l.base.z - l.normal.z * 0.9;
       y = l.top + 0.08;
       this.ladder = null;
+      this.model.release();
       this.onMantle(false);
     } else if (input.hit('Space') || (dir < 0 && y <= l.base.y)) {
       this.ladder = null;
       x += l.normal.x * 0.4;
       z += l.normal.z * 0.4;
       y = Math.max(y, l.base.y);
+      this.model.release();
     }
     this.yaw = Math.atan2(l.normal.x, l.normal.z);
     this.body.setNextKinematicTranslation({ x, y: y + HALF + RADIUS, z });
-    this.model.animate(dt, this.speed, 0, 0);
+    if (this.ladder) this.model.hold('ladder', dir * 1.3);
+    this.model.animate(dt, 0, 0, 0);
   }
 
   update(dt: number, input: Input, camYaw: number, aiming: boolean, aimPitch: number, firing: boolean): void {
@@ -153,14 +180,16 @@ export class Player {
       const ledge = findLedge(this.world, this.position, moveYaw, this.collider.handle);
       if (ledge && (this.grounded || ledge.height < 1.6)) {
         this.yaw = moveYaw;
-        this.mantle = { ledge, start: this.position.clone(), t: 0, dur: ledge.vault ? 0.55 : 0.35 + ledge.height * 0.22 };
+        this.mantle = { ledge, start: this.position.clone(), t: 0, dur: ledge.vault ? 0.7 : 0.6 + ledge.height * 0.45 };
         this.onMantle(ledge.vault);
         return this.updateMantle(dt);
       }
     }
     const f = (input.down('KeyW') ? 1 : 0) - (input.down('KeyS') ? 1 : 0);
     const s = (input.down('KeyD') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
-    const crouchKey = input.down('ControlLeft') || input.down('KeyC');
+    if (f || s || input.hit('Space')) this.coverGoal = null;
+    if (f || s || input.hit('KeyC') || input.hit('ControlLeft')) this.inCover = false;
+    const crouchKey = input.down('ControlLeft') || input.down('KeyC') || (this.inCover && !this.coverGoal);
     if (this.stamina > 25) this.exhausted = false;
     const canSprint = input.down('ShiftLeft') && f > 0 && !aiming && !firing && !this.exhausted;
     if (this.sprinting && this.grounded && (input.hit('ControlLeft') || input.hit('KeyC')) && this.slideT <= 0) {
@@ -180,6 +209,11 @@ export class Player {
     const right = new THREE.Vector3(-fwd.z, 0, fwd.x);
     const wish = fwd.multiplyScalar(f).add(right.multiplyScalar(s));
     if (wish.lengthSq() > 0) wish.normalize().multiplyScalar(target);
+    if (this.coverGoal) {
+      const to = this.coverGoal.clone().sub(this.position).setY(0), d = to.length();
+      if (d < 0.45) this.coverGoal = null;
+      else wish.copy(to.divideScalar(d)).multiplyScalar(Math.min(RUN, 1.5 + d * 2));
+    }
     if (sliding) wish.copy(this.slideDir).multiplyScalar(THREE.MathUtils.lerp(CROUCH, SLIDE, this.slideT / 0.75));
     const accel = sliding ? 30 : this.grounded ? (wish.lengthSq() > 0 ? 10 : 14) : 2.5;
     this.vel.x = THREE.MathUtils.damp(this.vel.x, wish.x, accel, dt);
@@ -209,6 +243,9 @@ export class Player {
       const diff = Math.atan2(Math.sin(faceYaw - this.yaw), Math.cos(faceYaw - this.yaw));
       this.yaw += diff * Math.min(1, dt * (facing ? 22 : 10));
     }
+    this.airT = this.grounded ? 0 : this.airT + dt;
+    this.model.airborne = this.airT > 0.2;
+    this.model.aiming = facing;
     this.model.animate(dt, this.speed, this.crouch, facing ? aimPitch : 0);
   }
 

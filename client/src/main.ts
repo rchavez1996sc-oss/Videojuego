@@ -29,7 +29,9 @@ import { Enemies } from './systems/enemies';
 import { DamageFx } from './ui/damage';
 import { Pickups, collectSupplies, dropLoot } from './systems/pickups';
 import { Music } from './audio/music';
-import { findRespawn, resetHunt } from './systems/respawn';
+import { wireRoad } from './systems/roadHits';
+import { respawnPlayer, streetPoints } from './systems/respawn';
+import { coverSeeker } from './systems/takeCover';
 import { Grenades } from './weapons/grenades';
 import { detonate, BLAST_RADIUS } from './weapons/explosion';
 import { ThreatGrid } from './ui/threatGrid';
@@ -123,6 +125,7 @@ async function boot(): Promise<void> {
   const dynRes = new DynamicResolution(renderer);
   const damageFx = new DamageFx();
   const nav = barrio ? new StreetNav(barrio.graph) : null;
+  const respawnPts = barrio ? streetPoints(barrio.graph) : undefined;
   world.step();
   const enemies = new Enemies(enemyDefs as unknown as Record<string, EnemyDef>, ch.enemies ?? [], world, hf, lighting, player, combat, sfx, camera, nav);
   scene.add(enemies.group);
@@ -139,7 +142,7 @@ async function boot(): Promise<void> {
   enemies.onEnemyShot = (p) => alarm(p, 60);
   const squad = createSquad(ch.squad ?? 0, allyDef as unknown as AllyDef, { world, hf, lighting, player, enemies, combat, sfx, hud, camera, nav, alarm }, spawn, ch.spawn.yaw);
   if (squad) scene.add(squad.group);
-  if (squad && life) life.trafficEvents.obstacles = () => squad.positions;
+  if (life) wireRoad(life.trafficEvents, { player, enemies, squad, playerHit: (dmg, from) => enemies.onPlayerHit(dmg, from), alive: () => deadT <= 0 });
   let deadT = 0, skipRender = false, shieldT = 0;
   const deathPos = new THREE.Vector3();
   enemies.onPlayerHit = (dmg, from) => {
@@ -204,6 +207,7 @@ async function boot(): Promise<void> {
   document.addEventListener('pointerlockchange', () => overlay.classList.toggle('hidden', document.pointerLockElement === canvas));
 
   const gpu = gpuName.replace(/^ANGLE \((.*)\)$/, '$1').slice(0, 60);
+  const seekCover = coverSeeker({ world, cover, hf, player, enemies, camera, hud });
   const feel = new MoveFeel(player, tpc, sfx, () => surfaceUnder(world, hf, player));
   const clock = new THREE.Clock();
   let frames = 0, acc = 0;
@@ -216,16 +220,11 @@ async function boot(): Promise<void> {
         deadT -= dt;
         if (deadT <= 0) {
           damageFx.dead = false;
-          const fallback = new THREE.Vector3(ch.spawn.x, hf.heightAt(ch.spawn.x, ch.spawn.z), ch.spawn.z);
-          const spot = findRespawn(world, hf, enemies.list, deathPos, fallback);
-          player.respawn(spot.pos, spot.yaw);
-          tpc.yaw = spot.yaw;
-          tpc.pitch = -0.1;
           shieldT = 3;
-          resetHunt(enemies, deathPos);
-          squad?.regroup(spot.pos, spot.yaw);
+          respawnPlayer({ world, hf, enemies, player, tpc, squad, death: deathPos, spawn: ch.spawn, streets: respawnPts });
         }
       } else {
+        if (input.hit('KeyQ')) seekCover();
         player.update(dt, input, tpc.yaw, input.aiming, tpc.pitch, input.firing);
         player.regen(dt);
         shieldT = Math.max(0, shieldT - dt);

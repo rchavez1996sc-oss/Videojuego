@@ -27,7 +27,8 @@ function windowBars(b: Builder, at: At, q: THREE.Quaternion, x: number, y: numbe
  * Urban lot house: brick shell with concrete frame, 1–3 floors, flat slab roof.
  * Local frame: +z is the street-facing front, origin at the front-centre on the ground.
  */
-export function cityHouse(b: Builder, lot: Lot, rand: () => number, sign: (at: THREE.Vector3, q: THREE.Quaternion, w: number) => void, exposedSide = 0): void {
+/** Returns the number of floors built. `red` marks an FLS-friendly house (red door). */
+export function cityHouse(b: Builder, lot: Lot, rand: () => number, sign: (at: THREE.Vector3, q: THREE.Quaternion, w: number) => void, exposedSide = 0, red = false): number {
   const { q, at } = frame(lot);
   const floors = lot.floors ?? (rand() < 0.3 ? 1 : rand() < 0.65 ? 2 : 3);
   const w = lot.w - 0.06, d = lot.d, H = floors * FLOOR, sink = 0.8;
@@ -60,7 +61,7 @@ export function cityHouse(b: Builder, lot: Lot, rand: () => number, sign: (at: T
     for (const s of [1, -1]) b.box('concrete', [0.3, FLOOR, 0.3], at(s * (w / 2 - 0.12), f * FLOOR + FLOOR / 2, 0.02), q, false);
     for (const o of openings) {
       if (o.y <= base + 0.01) {
-        const metal = o.w > 2 ? 'shutter' : 'door';
+        const metal = o.w > 2 ? 'shutter' : red ? 'doorRed' : 'door';
         b.box(metal, [o.w, o.h, 0.06], at(o.x, y0 + o.y + o.h / 2, -0.12), q, false);
         b.box('none', [o.w, o.h, T], at(o.x, y0 + o.y + o.h / 2, -T / 2), q, true);
         if (o.w > 2 && rand() < 0.7) sign(at(o.x, y0 + o.y + o.h + 0.35, 0.03), q, o.w + 0.6);
@@ -86,6 +87,7 @@ export function cityHouse(b: Builder, lot: Lot, rand: () => number, sign: (at: T
     const m = new THREE.Matrix4().compose(at((rand() - 0.5) * (w - 1.5), H + 0.6, -d * (0.3 + rand() * 0.4)), q, new THREE.Vector3(1, 1, 1));
     b.geometry(rand() < 0.5 ? 'tankBlack' : 'tankBlue', tank, m);
   }
+  return floors;
 }
 
 /** Hillside shack: one storey of brick, reed mat or tin on a stone retaining base. */

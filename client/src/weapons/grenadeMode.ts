@@ -81,7 +81,7 @@ export class GrenadeMode {
       else this.hud.showToast('SIN GRANADAS');
     }
     if (this.equipped && this.grenades.count <= 0) this.equipped = false;
-    this.player.model.weapon.visible = !this.equipped;
+    this.player.model.holster = this.equipped;
     if (!this.equipped) {
       this.show(false);
       return false;

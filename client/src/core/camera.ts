@@ -38,7 +38,7 @@ export class ThirdPersonCamera {
     const sens = SENS * (input.aiming ? 0.55 : 1) / this.zoomT;
     this.yaw -= input.mouseDX * sens;
     this.pitch = THREE.MathUtils.clamp(this.pitch - input.mouseDY * sens, -1.2, 0.9);
-    if (input.hit('KeyQ')) this.shoulder *= -1;
+    if (input.hit('KeyX')) this.shoulder *= -1;
     this.aimT = THREE.MathUtils.damp(this.aimT, input.aiming ? 1 : 0, 14, dt);
     this.shoulderX = THREE.MathUtils.damp(this.shoulderX, this.shoulder * THREE.MathUtils.lerp(0.8, 0.62, this.aimT), 10, dt);
     const wantDist = THREE.MathUtils.lerp(this.baseDist, 1.6, this.aimT);
