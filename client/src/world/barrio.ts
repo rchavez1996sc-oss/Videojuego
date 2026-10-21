@@ -7,7 +7,7 @@ import type { Lighting } from '../render/lighting';
 import { Builder } from './buildingKit';
 import { cityHouse, hillHouse, PAINTS, type Lot } from './houses';
 import { powerLine, cable, mototaxi, sandbags, stairway, car, billboard, type CarKind } from './urbanProps';
-import { SignAtlas } from './signs';
+import { SignAtlas, type SignKind } from './signs';
 import { buildStation, type StationDef, type StationInfo } from './station';
 import { buildLadder } from './ladders';
 import { flsMarks, poleMarks } from './flsMarks';
@@ -76,6 +76,7 @@ function materials(lighting: Lighting, atlas: SignAtlas): Record<string, THREE.M
     moto2: std('moto2', { color: '#d4a21c', roughness: 0.35, metalness: 0.3 }),
     stripe: std('stripe', { color: '#b8261b', roughness: 0.5 }),
     checker: std('checker', { color: '#111111', roughness: 0.5 }),
+    shopLit: std('shopLit', { color: '#5a4630', roughness: 0.9, emissive: '#6a4520', emissiveIntensity: 0.55 }),
     light: std('light', { color: '#f4efe0', roughness: 0.2, emissive: '#3a3628' }),
     rim: std('rim', { color: '#9a9ea3', roughness: 0.35, metalness: 0.8 }),
     plate: std('plate', { color: '#e8e4d2', roughness: 0.5 }),
@@ -101,7 +102,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
   const pitch = def.blockW + def.street;
   const lm = def.landmark, st = def.station;
   const inLandmark = (x0: number, x1: number, z: number) => x1 > lm.x - lm.w / 2 - 1.6 && x0 < lm.x + lm.w / 2 + 1.6 && Math.abs(z - lm.z) < lm.d + 2 && Math.sign(z) === Math.sign(lm.z);
-  const sign = (at: THREE.Vector3, q: THREE.Quaternion, w: number) => atlas.add(at, q, w, 'shop', rand);
+  const sign = (at: THREE.Vector3, q: THREE.Quaternion, w: number, kind: SignKind = 'shop') => atlas.add(at, q, w, kind, rand);
 
   const rowsZ: [number, number][] = [];
   for (const s of [1, -1]) {
@@ -134,7 +135,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
           } else if (rand() < 0.45) {
             const l = -w / 2 + 2.15, r = Math.min(w / 4 - 0.7, w / 2 - 3.65), pw = Math.min(r - l, 2.4);
             const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), facing);
-            if (pw > 1.3) atlas.add(new THREE.Vector3((l + r) / 2, 1.45, 0.03).applyQuaternion(q).add(new THREE.Vector3(cx, lot.y, frontZ)), q, pw, rand() < 0.5 ? 'concert' : 'red', rand);
+            if (pw > 1.3) atlas.add(new THREE.Vector3((l + r) / 2, 1.45, 0.03).applyQuaternion(q).add(new THREE.Vector3(cx, lot.y, frontZ)), q, pw, ((k) => (k < 0.4 ? 'concert' : k < 0.7 ? 'red' : 'curfew'))(rand()), rand);
           }
         }
       }

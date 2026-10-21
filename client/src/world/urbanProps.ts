@@ -36,12 +36,12 @@ export function cable(b: Builder, a: THREE.Vector3, c: THREE.Vector3, sag: numbe
 }
 
 /** Side profile (length along x, height along y) extruded across the vehicle width and laid along local z. */
-function profile(points: [number, number][], width: number): THREE.BufferGeometry {
+export function profile(points: [number, number][], width: number): THREE.BufferGeometry {
   const g = new THREE.ExtrudeGeometry(new THREE.Shape(points.map(([z, y]) => new THREE.Vector2(z, y))), { depth: width, bevelEnabled: false });
   return g.translate(0, 0, -width / 2).rotateY(-Math.PI / 2);
 }
 
-function wheel(b: Builder, at: (x: number, y: number, z: number) => THREE.Vector3, q: THREE.Quaternion, x: number, z: number, r: number, w: number): void {
+export function wheel(b: Builder, at: (x: number, y: number, z: number) => THREE.Vector3, q: THREE.Quaternion, x: number, z: number, r: number, w: number): void {
   const m = new THREE.Matrix4().compose(at(x, r, z), q, new THREE.Vector3(1, 1, 1));
   b.geometry('tire', new THREE.CylinderGeometry(r, r, w, 16).rotateZ(Math.PI / 2), m);
   b.geometry('rim', new THREE.CylinderGeometry(r * 0.58, r * 0.58, w + 0.02, 10).rotateZ(Math.PI / 2), m);

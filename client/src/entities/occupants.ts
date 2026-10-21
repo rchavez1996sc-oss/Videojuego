@@ -17,6 +17,7 @@ export function seatedPerson(lighting: Lighting, rand: () => number): THREE.Mesh
 
 /** Seat positions (vehicle local space, +z forward) as [x, seatHeight, z]. First entry is the driver. */
 export const SEATS: Record<string, [number, number, number][]> = {
+  delivery: [[0, 0.9, -0.12]],
   moto: [[0, 1.0, 0.3], [-0.3, 0.97, -0.6], [0.3, 0.97, -0.6]],
   sedan: [[0.38, 0.48, 0.05], [-0.38, 0.48, 0.05]],
   tico: [[0.32, 0.46, 0.0]],

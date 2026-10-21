@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { Builder } from '../world/buildingKit';
 import { car, mototaxi, type CarKind } from '../world/urbanProps';
+import { deliveryBike } from '../world/deliveryBike';
 import { onHit, setSurface } from '../world/surfaces';
 import { seatedPerson, SEATS } from '../entities/occupants';
 import type { Heightfield } from '../world/heightfield';
@@ -10,14 +11,14 @@ import type { Lighting } from '../render/lighting';
 type State = 'drive' | 'off' | 'crash' | 'wreck';
 
 interface Vehicle {
-  kind: CarKind | 'moto'; group: THREE.Group; body: RAPIER.RigidBody; collider: RAPIER.Collider; dir: 1 | -1;
+  kind: CarKind | 'moto' | 'delivery'; group: THREE.Group; body: RAPIER.RigidBody; collider: RAPIER.Collider; dir: 1 | -1;
   x: number; z: number; yaw: number; speed: number; cruise: number; len: number;
   honkT: number; panic: boolean; state: State; hp: number; spin: number; drift: number; smokeT: number;
 }
 
 export interface Victim { key: string; pos: THREE.Vector3; hurt(damage: number, from: THREE.Vector3, shove: THREE.Vector3): void }
 
-const LANE = 3.2, X_MIN = -300, X_MAX = 300, HP = 140;
+const LANE = 3.2, X_MIN = -245, X_MAX = 245, HP = 140;
 
 /** Avenue traffic with drivers/passengers; vehicles take bullet damage and, once disabled, skid out of control. */
 export class Traffic {
@@ -39,13 +40,14 @@ export class Traffic {
     const glass = lighting.setup(new THREE.MeshStandardMaterial({ color: '#2a3238', roughness: 0.1, metalness: 0.5, transparent: true, opacity: 0.35 }), 'glass-see');
     const mats = { ...materials, glass };
     const bakeNoGlass = bake.map((g) => ({ ...g, keys: g.keys.filter((k) => k !== 'glass') }));
-    const kinds: (CarKind | 'moto')[] = ['combi', 'moto', 'tico', 'sedan', 'moto', 'combi', 'wagon', 'pickup', 'moto', 'tico'];
+    const kinds: (CarKind | 'moto' | 'delivery')[] = ['combi', 'moto', 'tico', 'sedan', 'delivery', 'moto', 'combi', 'wagon', 'pickup', 'moto', 'tico', 'delivery'];
     let seed = 7;
     const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
     for (let i = 0; i < count; i++) {
       const kind = kinds[i % kinds.length];
       const b = new Builder(null, null);
       if (kind === 'moto') mototaxi(b, new THREE.Vector3(), 0, `moto${i % 3}`);
+      else if (kind === 'delivery') deliveryBike(b, i % 3);
       else car(b, new THREE.Vector3(), 0, kind === 'combi' ? 'car5' : kind === 'tico' ? 'car3' : `car${i % 6}`, kind);
       const g = new THREE.Group();
       g.add(...b.build(mats, 0.5, bakeNoGlass));
@@ -56,12 +58,12 @@ export class Traffic {
         g.add(p);
       });
       this.group.add(g);
-      const len = kind === 'moto' ? 2.3 : kind === 'combi' ? 4.8 : 4.4;
+      const len = kind === 'delivery' ? 1.9 : kind === 'moto' ? 2.3 : kind === 'combi' ? 4.8 : 4.4;
       const body = this.world.createRigidBody(RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(0, -50, 0));
-      const collider = this.world.createCollider(RAPIER.ColliderDesc.cuboid(0.9, 0.8, len / 2).setTranslation(0, 0.8, 0), body);
+      const collider = this.world.createCollider(RAPIER.ColliderDesc.cuboid(kind === 'delivery' ? 0.4 : 0.9, 0.8, len / 2).setTranslation(0, 0.8, 0), body);
       setSurface(collider.handle, 'metal');
       const dir = i % 2 ? 1 : -1;
-      const cruise = kind === 'moto' ? 7 : kind === 'combi' ? 11 : 10;
+      const cruise = kind === 'delivery' ? 9 : kind === 'moto' ? 7 : kind === 'combi' ? 11 : 10;
       const v: Vehicle = {
         kind, group: g, body, collider, dir, x: X_MIN + ((i * 77) % (X_MAX - X_MIN)), z: dir * LANE, yaw: dir > 0 ? Math.PI / 2 : -Math.PI / 2,
         speed: cruise, cruise, len, honkT: 3 + rand() * 10, panic: false, state: 'drive', hp: HP, spin: 0, drift: 0, smokeT: 0,
@@ -82,7 +84,7 @@ export class Traffic {
     v.state = 'crash';
     v.spin = (Math.random() < 0.5 ? -1 : 1) * (1.2 + Math.random() * 1.6);
     v.drift = v.dir * (1.5 + Math.random() * 2.5);
-    this.onDisabled(new THREE.Vector3(v.x, 1, v.z), v.kind === 'combi' ? 4 : v.kind === 'moto' ? 1 : 2);
+    this.onDisabled(new THREE.Vector3(v.x, 1, v.z), v.kind === 'combi' ? 4 : v.kind === 'moto' || v.kind === 'delivery' ? 1 : 2);
   }
 
   /** Test hook: disables the nearest driving vehicle and reports where it is. */

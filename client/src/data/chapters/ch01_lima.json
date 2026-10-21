@@ -4,7 +4,7 @@
   "title": "Ceniza",
   "terrain": {
     "size": 1024,
-    "playable": 560,
+    "playable": 470,
     "resolution": 513,
     "seed": 1980,
     "rolling": 1.0,
@@ -55,17 +55,17 @@
   },
   "barrio": {
     "seed": 51,
-    "x0": -276,
-    "cols": 11,
+    "x0": -225,
+    "cols": 9,
     "blockW": 42,
     "blockD": 34,
     "street": 9,
     "gap": 12,
     "hills": {
       "zMin": 108,
-      "zMax": 272,
-      "count": 430,
-      "xMax": 272
+      "zMax": 230,
+      "count": 400,
+      "xMax": 228
     },
     "stairs": [
       [
@@ -191,7 +191,7 @@
     "seed": 77
   },
   "spawn": {
-    "x": -262,
+    "x": -210,
     "z": -4,
     "yaw": -1.5708
   },
@@ -205,11 +205,6 @@
       "type": "rifleman",
       "x": -146,
       "z": 3
-    },
-    {
-      "type": "rifleman",
-      "x": -142,
-      "z": 7
     },
     {
       "type": "rifleman",
@@ -306,11 +301,6 @@
     },
     {
       "type": "rifleman",
-      "x": -178.5,
-      "z": -50.5
-    },
-    {
-      "type": "rifleman",
       "x": -127.5,
       "z": -93.5,
       "patrol": [
@@ -346,11 +336,6 @@
     },
     {
       "type": "rifleman",
-      "x": 76.5,
-      "z": 93.5
-    },
-    {
-      "type": "rifleman",
       "x": 127.5,
       "z": -50.5,
       "patrol": [
@@ -376,16 +361,6 @@
     },
     {
       "type": "rifleman",
-      "x": 60,
-      "z": 130
-    },
-    {
-      "type": "rifleman",
-      "x": -204,
-      "z": -50.5
-    },
-    {
-      "type": "rifleman",
       "x": -204,
       "z": 50.5,
       "patrol": [
@@ -401,16 +376,6 @@
     },
     {
       "type": "rifleman",
-      "x": -178.5,
-      "z": 25
-    },
-    {
-      "type": "rifleman",
-      "x": -178.5,
-      "z": -25
-    },
-    {
-      "type": "rifleman",
       "x": -153,
       "z": 93.5,
       "patrol": [
@@ -423,11 +388,6 @@
           93.5
         ]
       ]
-    },
-    {
-      "type": "rifleman",
-      "x": -127.5,
-      "z": -30
     },
     {
       "type": "rifleman",
@@ -456,18 +416,8 @@
     },
     {
       "type": "rifleman",
-      "x": -25.5,
-      "z": -80
-    },
-    {
-      "type": "rifleman",
       "x": 0,
       "z": -93.5
-    },
-    {
-      "type": "rifleman",
-      "x": 25.5,
-      "z": 80
     },
     {
       "type": "rifleman",
@@ -543,10 +493,10 @@
   },
   "views": [
     [
-      -262,
+      -210,
       1.8,
       -4,
-      -150,
+      -100,
       3,
       0
     ],
@@ -592,7 +542,7 @@
     ]
   ],
   "farCity": {
-    "inner": 286,
+    "inner": 246,
     "outer": 505,
     "count": 5200,
     "maxHeight": 175,

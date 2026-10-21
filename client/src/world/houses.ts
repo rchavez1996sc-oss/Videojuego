@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { Builder, Opening } from './buildingKit';
 import { CLOTHES, laundry, sidewalkChairs, tire } from './streetLife';
+import { shopFront, type Sign } from './shopFront';
 
 export interface Lot { x: number; z: number; y: number; facing: number; w: number; d: number; floors?: number }
 
@@ -28,7 +29,7 @@ function windowBars(b: Builder, at: At, q: THREE.Quaternion, x: number, y: numbe
  * Local frame: +z is the street-facing front, origin at the front-centre on the ground.
  */
 /** Returns the number of floors built. `red` marks an FLS-friendly house (red door). */
-export function cityHouse(b: Builder, lot: Lot, rand: () => number, sign: (at: THREE.Vector3, q: THREE.Quaternion, w: number) => void, exposedSide = 0, red = false): number {
+export function cityHouse(b: Builder, lot: Lot, rand: () => number, sign: Sign, exposedSide = 0, red = false): number {
   const { q, at } = frame(lot);
   const floors = lot.floors ?? (rand() < 0.3 ? 1 : rand() < 0.65 ? 2 : 3);
   const w = lot.w - 0.06, d = lot.d, H = floors * FLOOR, sink = 0.8;
@@ -62,9 +63,9 @@ export function cityHouse(b: Builder, lot: Lot, rand: () => number, sign: (at: T
     for (const o of openings) {
       if (o.y <= base + 0.01) {
         const metal = o.w > 2 ? 'shutter' : red ? 'doorRed' : 'door';
-        b.box(metal, [o.w, o.h, 0.06], at(o.x, y0 + o.y + o.h / 2, -0.12), q, false);
         b.box('none', [o.w, o.h, T], at(o.x, y0 + o.y + o.h / 2, -T / 2), q, true);
-        if (o.w > 2 && rand() < 0.7) sign(at(o.x, y0 + o.y + o.h + 0.35, 0.03), q, o.w + 0.6);
+        if (o.w > 2) shopFront(b, at, q, o, y0, -w / 2 + 2.15, rand, sign);
+        else b.box(metal, [o.w, o.h, 0.06], at(o.x, y0 + o.y + o.h / 2, -0.12), q, false);
         if (o.w > 2 && rand() < 0.6) sidewalkChairs(b, at(o.x, 0, 1.4), q, rand);
       } else windowBars(b, at, q, o.x, y0 + o.y, 0, o.w, o.h, rand() < 0.6 ? CLOTHES[Math.floor(rand() * CLOTHES.length)] : undefined);
     }

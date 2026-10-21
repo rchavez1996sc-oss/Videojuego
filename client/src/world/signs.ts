@@ -1,20 +1,35 @@
 import * as THREE from 'three';
 import { signTexture } from '../render/urbanTextures';
 
-export type SignKind = 'shop' | 'graffiti' | 'poster' | 'hill' | 'concert' | 'emblem' | 'red' | 'station' | 'stencil' | 'flag';
+export type SignKind = 'shop' | 'graffiti' | 'poster' | 'hill' | 'concert' | 'emblem' | 'red' | 'station' | 'stencil' | 'flag' | 'menu' | 'curfew';
 
-interface SignDef { text: string; kind: SignKind; bg: string | null; fg: string; sub?: string; accent?: string }
+export interface SignDef { text: string; kind: SignKind; bg: string | null; fg: string; sub?: string; accent?: string; food?: boolean }
 
 const SIGNS: SignDef[] = [
   { text: 'BODEGA DON LUCHO', kind: 'shop', bg: '#f2f0e6', fg: '#1f4d8f' },
   { text: 'LIBRERÍA EL ESTUDIANTE', kind: 'shop', bg: '#f5d24a', fg: '#1c1c1c' },
   { text: 'FERRETERÍA', kind: 'shop', bg: '#c3362b', fg: '#ffffff' },
-  { text: 'POLLERÍA', kind: 'shop', bg: '#e8b13a', fg: '#7a1f12' },
+  { text: 'POLLERÍA', kind: 'shop', bg: '#e8b13a', fg: '#7a1f12', food: true },
   { text: 'CABINAS INTERNET', kind: 'shop', bg: '#2f6ea8', fg: '#ffffff' },
   { text: 'TAPICERÍA', kind: 'shop', bg: '#e6e1d3', fg: '#2b2b2b' },
-  { text: 'MENÚ S/ 8', kind: 'shop', bg: '#ffffff', fg: '#b8261b' },
+  { text: 'MENÚ S/ 8', kind: 'shop', bg: '#ffffff', fg: '#b8261b', food: true },
   { text: 'VULCANIZADORA', kind: 'shop', bg: '#202020', fg: '#f2c230' },
   { text: 'ABARROTES', kind: 'shop', bg: '#d7e3c7', fg: '#2f5c25' },
+  { text: 'CEVICHERÍA EL CHALACO', kind: 'shop', bg: '#1e6fb8', fg: '#ffffff', food: true },
+  { text: 'CHIFA SAN JOAQUÍN', kind: 'shop', bg: '#b3121b', fg: '#f5d24a', food: true },
+  { text: 'POLLOS A LA BRASA EL REY', kind: 'shop', bg: '#f5d24a', fg: '#8a1a10', food: true },
+  { text: 'JUGUERÍA MARY', kind: 'shop', bg: '#7ac143', fg: '#ffffff', food: true },
+  { text: 'ANTICUCHOS DOÑA PILAR', kind: 'shop', bg: '#2b1a12', fg: '#f2a23a', food: true },
+  { text: 'PANADERÍA SANTA ROSA', kind: 'shop', bg: '#f3e2c0', fg: '#7a4a1c' },
+  { text: 'BOTICA SALUD', kind: 'shop', bg: '#ffffff', fg: '#1b8a4a' },
+  { text: 'RECARGAS · YAPE · PLIN', kind: 'shop', bg: '#6c2a8e', fg: '#ffffff' },
+  { text: 'LAVANDERÍA', kind: 'shop', bg: '#d6ecf5', fg: '#1d4f7a' },
+  { text: 'SALÓN DE BELLEZA', kind: 'shop', bg: '#f2c4d6', fg: '#8a1f4f' },
+  { text: 'MENÚ S/ 10', kind: 'menu', bg: '#1f2b22', fg: '#f4f1e6', sub: 'AJÍ DE GALLINA · LOMO SALTADO · SECO CON FRIJOLES', accent: 'CHICHA MORADA DE REFRESCO' },
+  { text: 'MENÚ S/ 9', kind: 'menu', bg: '#1f2b22', fg: '#f4f1e6', sub: 'CALDO DE GALLINA · ARROZ CON POLLO · TALLARÍN ROJO', accent: 'ENTRADA: PAPA A LA HUANCAÍNA' },
+  { text: 'HOY', kind: 'menu', bg: '#22261f', fg: '#f4f1e6', sub: 'CEVICHE S/ 15 · JALEA S/ 20 · CHICHARRÓN S/ 18', accent: 'LECHE DE TIGRE S/ 6' },
+  { text: 'TOQUE DE QUEDA', kind: 'curfew', bg: '#f2efe6', fg: '#111111', sub: '20:00 A 05:00 HORAS', accent: 'PROHIBIDO CIRCULAR · JUNTA DE GOBIERNO' },
+  { text: 'ESTADO DE EMERGENCIA', kind: 'curfew', bg: '#f2efe6', fg: '#111111', sub: 'SE SUSPENDEN LAS GARANTÍAS', accent: 'COMANDO CONJUNTO · DECRETO 014-2031' },
   { text: 'SE ALQUILA CUARTO', kind: 'graffiti', bg: null, fg: '#1c1c1c' },
   { text: 'LA SIERRA NO SE VENDE', kind: 'graffiti', bg: null, fg: '#a3241c' },
   { text: 'FUERA LA JUNTA', kind: 'graffiti', bg: null, fg: '#16161a' },
@@ -75,6 +90,70 @@ function concert(d: SignDef, w: number, h: number): HTMLCanvasElement {
   for (let i = 0; i < 260; i++) {
     ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.15})`;
     ctx.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 18, 1 + Math.random() * 5);
+  }
+  return c;
+}
+
+/** Chalkboard in a wooden frame: price on the left, dishes chalked on the right. */
+function menu(d: SignDef, w: number, h: number): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext('2d')!;
+  ctx.fillStyle = '#6b4526';
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = d.bg!;
+  ctx.fillRect(7, 7, w - 14, h - 14);
+  for (let i = 0; i < 120; i++) {
+    ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.05})`;
+    ctx.fillRect(Math.random() * w, Math.random() * h, 4 + Math.random() * 30, 1 + Math.random() * 3);
+  }
+  ctx.fillStyle = d.fg;
+  ctx.textBaseline = 'middle';
+  ctx.font = `bold ${Math.floor(h * 0.3)}px "Comic Sans MS", "Segoe Print", cursive`;
+  ctx.fillText(d.text, 18, h * 0.42, w * 0.3);
+  ctx.fillStyle = '#f2c230';
+  ctx.font = `${Math.floor(h * 0.13)}px "Comic Sans MS", cursive`;
+  ctx.fillText('★ DEL DÍA ★', 18, h * 0.75, w * 0.3);
+  ctx.fillStyle = d.fg;
+  ctx.font = `${Math.floor(h * 0.12)}px "Comic Sans MS", "Segoe Print", cursive`;
+  (d.sub ?? '').split(' · ').forEach((line, i) => ctx.fillText(`· ${line}`, w * 0.36, h * (0.22 + i * 0.2), w * 0.62));
+  ctx.fillStyle = '#9fd3ff';
+  ctx.fillText(d.accent ?? '', w * 0.36, h * 0.84, w * 0.62);
+  return c;
+}
+
+/** A strip of four printed decrees glued to the wall, a bit torn and dirty. */
+function curfew(d: SignDef, w: number, h: number): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext('2d')!;
+  const pw = w / 4;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (let k = 0; k < 4; k++) {
+    const x0 = k * pw + 4, torn = Math.random() < 0.35 ? h * (0.15 + Math.random() * 0.2) : 0;
+    ctx.fillStyle = d.bg!;
+    ctx.fillRect(x0, 3 + torn * 0.2, pw - 8, h - 6 - torn);
+    ctx.fillStyle = '#c8102e';
+    ctx.fillRect(x0, 3, pw - 8, h * 0.08);
+    ctx.fillStyle = d.fg;
+    ctx.font = `bold ${Math.floor(h * 0.07)}px Arial, sans-serif`;
+    ctx.fillText('REPÚBLICA DEL PERÚ · COMUNICADO', x0 + pw / 2 - 4, h * 0.17, pw - 16);
+    ctx.font = `900 ${Math.floor(h * 0.17)}px "Arial Black", Impact, sans-serif`;
+    ctx.fillText(d.text, x0 + pw / 2 - 4, h * 0.36, pw - 16);
+    ctx.fillStyle = '#c8102e';
+    ctx.font = `bold ${Math.floor(h * 0.12)}px Arial, sans-serif`;
+    ctx.fillText(d.sub ?? '', x0 + pw / 2 - 4, h * 0.56, pw - 16);
+    ctx.fillStyle = '#333333';
+    ctx.font = `${Math.floor(h * 0.065)}px Arial, sans-serif`;
+    ctx.fillText(d.accent ?? '', x0 + pw / 2 - 4, h * 0.74, pw - 16);
+    for (let i = 0; i < 5; i++) ctx.fillRect(x0 + 12, h * (0.8 + i * 0.03), (pw - 32) * (0.5 + Math.random() * 0.5), 1.5);
+  }
+  for (let i = 0; i < 260; i++) {
+    ctx.fillStyle = `rgba(60,45,30,${Math.random() * 0.14})`;
+    ctx.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 16, 1 + Math.random() * 6);
   }
   return c;
 }
@@ -161,15 +240,15 @@ function poster(d: SignDef, w: number, h: number): HTMLCanvasElement {
 export class SignAtlas {
   readonly texture: THREE.CanvasTexture;
   private geos: THREE.BufferGeometry[] = [];
-  private static ROWS = 20;
+  private static ROWS = 28;
 
   constructor() {
     const c = document.createElement('canvas');
     c.width = 1024;
-    c.height = 2560;
+    c.height = 128 * SignAtlas.ROWS;
     const ctx = c.getContext('2d')!;
     SIGNS.forEach((d, i) => {
-      const img = d.kind === 'poster' || d.kind === 'red' ? poster(d, 512, 128) : d.kind === 'concert' ? concert(d, 512, 128) : d.kind === 'emblem' || d.kind === 'stencil' ? emblem(d, 512, 128) : d.kind === 'flag' ? flag(d, 512, 128) : signTexture(d.text, d.bg, d.fg, 512, 128);
+      const img = d.kind === 'poster' || d.kind === 'red' ? poster(d, 512, 128) : d.kind === 'concert' ? concert(d, 512, 128) : d.kind === 'emblem' || d.kind === 'stencil' ? emblem(d, 512, 128) : d.kind === 'flag' ? flag(d, 512, 128) : d.kind === 'menu' ? menu(d, 512, 128) : d.kind === 'curfew' ? curfew(d, 512, 128) : signTexture(d.text, d.bg, d.fg, 512, 128);
       ctx.drawImage(img, (i % 2) * 512, Math.floor(i / 2) * 128);
     });
     this.texture = new THREE.CanvasTexture(c);
@@ -177,7 +256,7 @@ export class SignAtlas {
     this.texture.anisotropy = 8;
   }
 
-  add(pos: THREE.Vector3, q: THREE.Quaternion, w: number, kind: SignKind, rand: () => number): void {
+  add(pos: THREE.Vector3, q: THREE.Quaternion, w: number, kind: SignKind, rand: () => number): SignDef {
     const pool = SIGNS.map((s, i) => [s, i] as const).filter(([s]) => s.kind === kind);
     const [, i] = pool[Math.floor(rand() * pool.length)];
     const g = new THREE.PlaneGeometry(w, w / 4);
@@ -186,6 +265,7 @@ export class SignAtlas {
     for (let k = 0; k < uv.count; k++) uv.setXY(k, u0 + uv.getX(k) * 0.5, v0 + uv.getY(k) / SignAtlas.ROWS);
     g.applyMatrix4(new THREE.Matrix4().compose(pos, q, new THREE.Vector3(1, 1, 1)));
     this.geos.push(g);
+    return SIGNS[i];
   }
 
   get geometries(): THREE.BufferGeometry[] {

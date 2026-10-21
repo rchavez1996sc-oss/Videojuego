@@ -3,7 +3,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import type { Heightfield } from '../world/heightfield';
 import { roomy } from './respawn';
 
-const NEAR = 330, FAR = 480, FOE_GAP = 75;
+const NEAR = 330, FAR = 480, FOE_GAP = 60;
 
 /**
  * Where a level starts: a random open street spot 330–480 m from the objective, well clear of enemy posts,
