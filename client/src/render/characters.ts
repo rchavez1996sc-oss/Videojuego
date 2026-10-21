@@ -6,7 +6,7 @@ import type { Lighting } from './lighting';
 
 export type CharKind = 'pnp' | 'fls' | 'civ_a' | 'civ_b' | 'civ_c';
 
-interface Manifest { characters: Record<CharKind, { near: string; far: string }>; animations: string }
+interface Manifest { version?: number; characters: Record<CharKind, { near: string; far: string }>; animations: string }
 
 /** Instance pieces: the animated near model and a low-poly copy bound to the same bones. */
 export interface CharInstance { model: THREE.Object3D; near: THREE.SkinnedMesh[]; far: THREE.SkinnedMesh[]; bones: Map<string, THREE.Bone> }
@@ -32,9 +32,9 @@ class CharacterLibrary {
   ready = false;
 
   async load(lighting: Lighting): Promise<void> {
-    const manifest = (await (await fetch(`${BASE}manifest.json`)).json()) as Manifest;
+    const manifest = (await (await fetch(`${BASE}manifest.json`, { cache: 'no-cache' })).json()) as Manifest;
     const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-    const get = (url: string) => loader.loadAsync(BASE + url);
+    const get = (url: string) => loader.loadAsync(`${BASE}${url}?v=${manifest.version ?? 0}`);
     const [anims, ...models] = await Promise.all([get(manifest.animations), ...Object.values(manifest.characters).flatMap((c) => [get(c.near), get(c.far)])]);
     for (const clip of anims.animations) this.clips.set(clip.name, clip);
     Object.keys(manifest.characters).forEach((kind, i) => {
@@ -59,7 +59,7 @@ class CharacterLibrary {
   }
 
   create(kind: CharKind): CharInstance {
-    const proto = this.protos.get(kind)!;
+    const proto = this.protos.get(kind) ?? this.protos.values().next().value!;
     const model = SkeletonUtils.clone(proto.near);
     const bones = new Map<string, THREE.Bone>();
     const near: THREE.SkinnedMesh[] = [];
