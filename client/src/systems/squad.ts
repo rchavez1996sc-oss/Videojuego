@@ -219,8 +219,9 @@ export class Squad {
       u.model.far = camD > 25 * 25 && u.alive;
       const near = camD < 60 * 60;
       if (near !== u.shadowed) u.model.castShadow = u.shadowed = near;
-      const show = !a.lost && camD < 90 * 90 ? 1 : 0;
-      this.bars.update(u.id, u.position.clone().setY(u.position.y + (u.alive ? 2.05 - (u.crouched ? 0.5 : 0) : 0.6)), u.hp / this.def.hp, show, this.d.camera, false, a.name);
+      const downed = !u.alive && !a.lost;
+      const show = !a.lost && camD < (downed ? 150 : 90) ** 2 ? 1 : 0;
+      this.bars.update(u.id, u.position.clone().setY(u.position.y + (u.alive ? 2.05 - (u.crouched ? 0.5 : 0) : 0.6)), downed ? a.downedT / this.def.bleedOut : u.hp / this.def.hp, show, this.d.camera, false, a.name, downed);
     }
   }
 }

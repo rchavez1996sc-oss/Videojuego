@@ -122,7 +122,7 @@
   "run": 6.6,
   "preferredRange": 20,
   "killShare": 0.25,
-  "bleedOut": 35,
+  "bleedOut": 10,
   "palette": {
     "id": "fls",
     "cloth": "#4a1210",

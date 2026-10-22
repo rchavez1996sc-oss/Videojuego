@@ -91,3 +91,7 @@ body.shot #overlay, body.shot #stats { display: none; }
 @keyframes beginPulse { 50% { opacity: 0.35; } }
 #prologue .caret { color: #e8142a; animation: caret 0.9s steps(1) infinite; }
 @keyframes caret { 50% { opacity: 0; } }
+#healthbars .hb.bleeding { width: 64px; left: -32px; height: 6px; outline-color: rgba(255, 60, 40, 0.8); animation: bleedPulse 0.8s ease-in-out infinite; }
+#healthbars .hb.bleeding div { background: linear-gradient(90deg, #ff2a1a, #ff8a3a) !important; transition: width 0.1s linear; }
+#healthbars .hb.bleeding::after { color: #ff8a6a !important; }
+@keyframes bleedPulse { 50% { box-shadow: 0 0 10px rgba(255, 50, 30, 0.9); } }

@@ -3,19 +3,20 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import type { Heightfield } from '../world/heightfield';
 import { roomy } from './respawn';
 
-const NEAR = 330, FAR = 480, FOE_GAP = 60;
+const NEAR = 400, FAR = Infinity, FOE_GAP = 60;
 
 /**
- * Where a level starts: a random open street spot 330–480 m from the objective, well clear of enemy posts,
+ * Where a level starts: a random open street (or hillside) spot at least 400 m from the objective, well clear of enemy posts,
  * with no roof overhead and no car or wall around, facing the objective. Null if nothing qualifies.
  */
 export function startSpot(world: RAPIER.World, hf: Heightfield, streets: THREE.Vector3[], goal: { x: number; z: number }, foes: { x: number; z: number }[]): { pos: THREE.Vector3; yaw: number } | null {
   const limit = hf.def.playable / 2 - 20;
-  const pool = streets.filter((p) => {
+  const open = Array.from({ length: 600 }, () => new THREE.Vector3((Math.random() * 2 - 1) * limit, 0, (Math.random() * 2 - 1) * limit));
+  const pool = [...streets, ...open].filter((p) => {
     const d = Math.hypot(p.x - goal.x, p.z - goal.z);
     return d >= NEAR && d <= FAR && Math.abs(p.x) < limit && Math.abs(p.z) < limit && foes.every((f) => Math.hypot(p.x - f.x, p.z - f.z) >= FOE_GAP);
   });
-  for (let tries = 0; tries < 80 && pool.length; tries++) {
+  for (let tries = 0; tries < 160 && pool.length; tries++) {
     const p = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
     if (1 - hf.normalAt(p.x, p.z)[1] > 0.25) continue;
     const pos = new THREE.Vector3(p.x, hf.heightAt(p.x, p.z), p.z);
