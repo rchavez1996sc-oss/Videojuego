@@ -50,10 +50,10 @@ export class IntroMusic {
     lp.connect(g).connect(this.out);
   }
 
-  /** New plate: timpani hit and the next chord swelling in. */
+  /** New plate: a timpani hit (soft at first, building towards the title) and the next chord swelling in. */
   plate(i: number): void {
     const c = this.ctx, t = c.currentTime;
-    this.timpani(t, 0.9);
+    this.timpani(t, 0.18 + i * 0.16);
     if (this.chordGain) {
       this.chordGain.gain.cancelScheduledValues(t);
       this.chordGain.gain.setTargetAtTime(0, t, 0.8);
@@ -77,6 +77,29 @@ export class IntroMusic {
       o.stop(t + 14);
     }
     this.chordGain = g;
+  }
+
+  /** A typewriter key strike (a softer thud for the space bar). */
+  key(space: boolean): void {
+    const c = this.ctx, t = c.currentTime, len = Math.floor(c.sampleRate * 0.04);
+    const buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 6);
+    const src = c.createBufferSource(), bp = c.createBiquadFilter(), g = c.createGain();
+    src.buffer = buf;
+    bp.type = 'bandpass';
+    bp.frequency.value = space ? 900 : 2200 + Math.random() * 900;
+    bp.Q.value = 1.4;
+    g.gain.value = space ? 0.14 : 0.26;
+    src.connect(bp).connect(g).connect(this.out);
+    src.start(t);
+    const o = c.createOscillator(), og = c.createGain();
+    o.frequency.setValueAtTime(space ? 120 : 180, t);
+    o.frequency.exponentialRampToValueAtTime(70, t + 0.05);
+    og.gain.setValueAtTime(space ? 0.06 : 0.1, t);
+    og.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+    o.connect(og).connect(this.out);
+    o.start(t);
+    o.stop(t + 0.07);
   }
 
   /** Chapter title: big hit and a high tremolo. */

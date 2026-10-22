@@ -71,7 +71,7 @@ body.shot #overlay, body.shot #stats { display: none; }
 #prologue .plate { position: absolute; inset: 0; background: center / cover no-repeat; opacity: 0; transform: scale(1.02); transition: opacity 1.8s, transform 9s linear; }
 #prologue .plate.on { opacity: 1; transform: scale(1.12); }
 #prologue::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.2) 45%, rgba(0, 0, 0, 0) 70%); pointer-events: none; }
-#prologue .line { position: relative; z-index: 1; max-width: 760px; font-size: 21px; line-height: 1.6; letter-spacing: 0.03em; text-align: center; color: #ece4d6; text-shadow: 0 2px 12px #000; opacity: 0; transform: translateY(10px); transition: opacity 1.4s, transform 1.4s; }
+#prologue .line { position: relative; z-index: 1; max-width: 800px; min-height: 5em; font: 21px/1.65 'Special Elite', 'Courier New', monospace; letter-spacing: 0.02em; text-align: left; color: #ece4d6; text-shadow: 0 2px 12px #000; opacity: 0; transform: translateY(10px); transition: opacity 1.4s, transform 1.4s; }
 #prologue .line.on { opacity: 1; transform: none; }
 #prologue h3 { position: absolute; z-index: 1; top: 36%; display: flex; flex-direction: column; align-items: center; gap: 6px; font: italic 800 clamp(44px, 9vw, 120px)/0.95 'Barlow Condensed', sans-serif; letter-spacing: 0.06em; color: #fff; text-shadow: 0 4px 0 #000, 0 0 40px rgba(0, 0, 0, 0.9); opacity: 0; transform: scale(1.08); transition: opacity 1.2s, transform 2.4s cubic-bezier(0.2, 0.7, 0.2, 1); text-align: center; }
 #prologue h3 small { font: 700 clamp(14px, 2vw, 22px) 'Barlow Condensed', sans-serif; letter-spacing: 0.6em; color: #e8142a; text-shadow: none; }
@@ -89,3 +89,5 @@ body.shot #overlay, body.shot #stats { display: none; }
 #prologue.started .begin { display: none; }
 #prologue:not(.started) > span { display: none; }
 @keyframes beginPulse { 50% { opacity: 0.35; } }
+#prologue .caret { color: #e8142a; animation: caret 0.9s steps(1) infinite; }
+@keyframes caret { 50% { opacity: 0; } }

@@ -1,7 +1,9 @@
 import { renderPlates } from './art/plates';
 import { IntroMusic } from '../audio/introMusic';
+import { Typewriter } from './typewriter';
 
-const STEP = 8000;
+/** How long a plate stays once its paragraph has been typed out. */
+const HOLD = 4200;
 
 /**
  * Cinematic prologue shown while the chapter loads. A title card asks for a click (browsers need one before
@@ -18,6 +20,7 @@ export function showPrologue(kicker: string, title: string, paragraphs: string[]
   const urls: string[] = [];
   const music = new IntroMusic();
   let i = -1, shown = -1, timer = 0, started = false;
+  let typing: Typewriter | null = null;
   renderPlates((k, url) => {
     urls[k] = url;
     if (k === i) reveal();
@@ -38,12 +41,12 @@ export function showPrologue(kicker: string, title: string, paragraphs: string[]
       for (const old of [...plates.children].slice(0, -2)) old.remove();
     }
     music.plate(i);
-    line.textContent = paragraphs[i];
     line.classList.add('on');
-    timer = window.setTimeout(next, STEP);
+    typing = new Typewriter(line as HTMLElement, paragraphs[i], (ch) => music.key(ch === ' '), () => (timer = window.setTimeout(next, HOLD)));
   };
   const close = () => {
     clearTimeout(timer);
+    typing?.stop();
     removeEventListener('keydown', onKey);
     music.stop();
     el.classList.add('out');
@@ -51,6 +54,7 @@ export function showPrologue(kicker: string, title: string, paragraphs: string[]
   };
   const next = () => {
     clearTimeout(timer);
+    typing?.stop();
     line.classList.remove('on');
     if (++i >= paragraphs.length) {
       if (i > paragraphs.length) return close();
@@ -69,6 +73,7 @@ export function showPrologue(kicker: string, title: string, paragraphs: string[]
       el.classList.add('started');
       music.start();
     }
-    next();
+    if (typing?.active) typing.finish();
+    else next();
   });
 }
