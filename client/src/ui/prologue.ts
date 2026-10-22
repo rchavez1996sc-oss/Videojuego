@@ -8,10 +8,13 @@ const HOLD = 4200;
 /**
  * Cinematic prologue shown while the chapter loads. A title card asks for a click (browsers need one before
  * audio), then each paragraph appears together with its illustrated plate and a beat of the score.
- * Click advances, Esc skips; after the last plate the chapter title appears.
+ * Click advances, Esc skips; after the last plate the chapter title appears. Resolves when it closes
+ * (the game loop only starts then).
  */
-export function showPrologue(kicker: string, title: string, paragraphs: string[]): void {
-  if (!paragraphs.length) return;
+export function showPrologue(kicker: string, title: string, paragraphs: string[]): Promise<void> {
+  if (!paragraphs.length) return Promise.resolve();
+  let finished = () => {};
+  const over = new Promise<void>((r) => (finished = r));
   const el = document.createElement('div');
   el.id = 'prologue';
   el.innerHTML = `<div class="plates"></div><p class="line"></p><h3><small>${kicker}</small>${title}<i></i></h3><div class="begin">CLIC PARA COMENZAR</div><span>CLIC: CONTINUAR · ESC: SALTAR</span>`;
@@ -51,6 +54,7 @@ export function showPrologue(kicker: string, title: string, paragraphs: string[]
     music.stop();
     el.classList.add('out');
     setTimeout(() => el.remove(), 1000);
+    finished();
   };
   const next = () => {
     clearTimeout(timer);
@@ -76,4 +80,5 @@ export function showPrologue(kicker: string, title: string, paragraphs: string[]
     if (typing?.active) typing.finish();
     else next();
   });
+  return over;
 }

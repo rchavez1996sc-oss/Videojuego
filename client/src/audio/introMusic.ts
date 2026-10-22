@@ -54,6 +54,7 @@ export class IntroMusic {
   plate(i: number): void {
     const c = this.ctx, t = c.currentTime;
     this.timpani(t, 0.18 + i * 0.16);
+    this.skirmish(i);
     if (this.chordGain) {
       this.chordGain.gain.cancelScheduledValues(t);
       this.chordGain.gain.setTargetAtTime(0, t, 0.8);
@@ -77,6 +78,30 @@ export class IntroMusic {
       o.stop(t + 14);
     }
     this.chordGain = g;
+  }
+
+  /** Distant gunfire during plate `i`: a few faint, muffled shots at first, closer and busier towards the end. */
+  private skirmish(i: number): void {
+    const c = this.ctx, t0 = c.currentTime, gain = 0.015 * (1 + i * i * 0.9), cut = 900 + i * 650;
+    for (let b = 0; b < 2 + i * 3; b++) {
+      let t = t0 + 0.8 + Math.random() * 7;
+      for (let k = 0, n = 1 + Math.floor(Math.random() * (1 + i)); k < n; k++, t += 0.08 + Math.random() * 0.07) this.shot(t, gain * (0.6 + Math.random() * 0.5), cut);
+    }
+  }
+
+  private shot(t: number, v: number, cut: number): void {
+    const c = this.ctx, len = Math.floor(c.sampleRate * 0.12);
+    const buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
+    for (let k = 0; k < len; k++) d[k] = (Math.random() * 2 - 1) * Math.pow(1 - k / len, 4);
+    const src = c.createBufferSource(), lp = c.createBiquadFilter(), g = c.createGain();
+    src.buffer = buf;
+    lp.type = 'lowpass';
+    lp.frequency.value = cut;
+    g.gain.value = v;
+    src.connect(lp).connect(g);
+    g.connect(this.out);
+    g.connect(this.verb);
+    src.start(t);
   }
 
   /** A typewriter key strike (a softer thud for the space bar). */

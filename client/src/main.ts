@@ -70,7 +70,7 @@ async function boot(): Promise<void> {
   if (shotMode) document.body.classList.add('shot');
   const ch = (CHAPTERS[new URLSearchParams(location.search).get('ch') ?? '1'] ?? ch01) as ChapterDef;
   document.querySelector('#overlay .sub')!.textContent = `Capítulo ${ch.number ?? 1} — ${ch.title}`;
-  if (!shotMode) showPrologue(`CAPÍTULO ${ch.number ?? 1}`, ch.title.toUpperCase(), ch.intro ?? []);
+  const prologue = shotMode ? Promise.resolve() : showPrologue(`CAPÍTULO ${ch.number ?? 1}`, ch.title.toUpperCase(), ch.intro ?? []);
   await RAPIER.init();
   const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
   const canvas = document.getElementById('game') as HTMLCanvasElement;
@@ -290,7 +290,7 @@ async function boot(): Promise<void> {
     fps.update(dt, (n) => `${n} fps · ${quality} · res ${Math.round(dynRes.scale * 100)}% · ${renderer.gl.info.render.calls} draws · ${(renderer.gl.info.render.triangles / 1e6).toFixed(2)}M tris · ${gpu}${stats.dataset.errors ? ` · err ${stats.dataset.errors}` : ''}`);
   };
   const safeFrame = guardFrame(() => frame(Math.min(clock.getDelta(), 1 / 20)), (n) => stats.dataset.errors = String(n));
-  if (!shotMode) renderer.gl.setAnimationLoop(() => !failed && safeFrame());
+  if (!shotMode) void prologue.then(() => renderer.gl.setAnimationLoop(() => !failed && safeFrame()));
 }
 
 boot().catch((e) => {

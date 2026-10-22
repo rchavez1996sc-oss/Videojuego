@@ -71,13 +71,13 @@ body.shot #overlay, body.shot #stats { display: none; }
 #prologue .plate { position: absolute; inset: 0; background: center / cover no-repeat; opacity: 0; transform: scale(1.02); transition: opacity 1.8s, transform 9s linear; }
 #prologue .plate.on { opacity: 1; transform: scale(1.12); }
 #prologue::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.2) 45%, rgba(0, 0, 0, 0) 70%); pointer-events: none; }
-#prologue .line { position: relative; z-index: 1; max-width: 800px; min-height: 5em; font: 21px/1.65 'Special Elite', 'Courier New', monospace; letter-spacing: 0.02em; text-align: left; color: #ece4d6; text-shadow: 0 2px 12px #000; opacity: 0; transform: translateY(10px); transition: opacity 1.4s, transform 1.4s; }
+#prologue .line { position: relative; z-index: 1; box-sizing: border-box; width: min(1100px, 92vw); min-height: 4.2em; padding: 18px 26px; font: clamp(22px, 2.3vw, 32px)/1.45 'Special Elite', 'Courier New', monospace; letter-spacing: 0.01em; text-align: left; color: #f1eadc; text-shadow: 0 2px 10px #000; background: linear-gradient(90deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.55) 12%, rgba(0, 0, 0, 0.55) 88%, rgba(0, 0, 0, 0)); opacity: 0; transform: translateY(10px); transition: opacity 1.2s, transform 1.2s; }
 #prologue .line.on { opacity: 1; transform: none; }
 #prologue h3 { position: absolute; z-index: 1; top: 36%; display: flex; flex-direction: column; align-items: center; gap: 6px; font: italic 800 clamp(44px, 9vw, 120px)/0.95 'Barlow Condensed', sans-serif; letter-spacing: 0.06em; color: #fff; text-shadow: 0 4px 0 #000, 0 0 40px rgba(0, 0, 0, 0.9); opacity: 0; transform: scale(1.08); transition: opacity 1.2s, transform 2.4s cubic-bezier(0.2, 0.7, 0.2, 1); text-align: center; }
 #prologue h3 small { font: 700 clamp(14px, 2vw, 22px) 'Barlow Condensed', sans-serif; letter-spacing: 0.6em; color: #e8142a; text-shadow: none; }
 #prologue h3 i { width: 60%; height: 6px; background: #e8142a; box-shadow: 0 0 24px rgba(232, 20, 42, 0.6); }
 #prologue h3.on { opacity: 1; transform: none; }
-#prologue span { position: absolute; z-index: 1; bottom: 26px; font: 600 12px 'Barlow Condensed', sans-serif; letter-spacing: 0.35em; color: rgba(236, 228, 214, 0.5); }
+#prologue > span { position: absolute; z-index: 1; bottom: 26px; font: 600 12px 'Barlow Condensed', sans-serif; letter-spacing: 0.35em; color: rgba(236, 228, 214, 0.5); }
 #complete ul { list-style: none; display: flex; flex-direction: column; gap: 6px; font: 600 15px 'Barlow', sans-serif; letter-spacing: 0.1em; color: #f3efe6; text-align: center; }
 #complete ul li::before { content: '▸ '; color: #ffb547; }
 #complete .unlock { display: flex; align-items: center; gap: 18px; padding: 14px 24px; border: 1px solid rgba(255, 181, 71, 0.6); background: linear-gradient(90deg, rgba(255, 181, 71, 0.18), rgba(255, 181, 71, 0.04)); animation: unlock 1.2s ease-out both 0.6s; }
