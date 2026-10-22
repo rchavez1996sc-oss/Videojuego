@@ -52,7 +52,7 @@ TPS táctico en campos de batalla abiertos de **mínimo 500 × 500 m** por nivel
 
 ## 3. Historia (ambientada en el Perú, facciones ficticias, 10 capítulos)
 
-**Contexto:** Perú, 2036 (ucronía). Seis años antes, el general **Aurelio Castañeda** dio un golpe de Estado, disolvió el Congreso y entregó la sierra a la minera extranjera **Ferrum Andes**. Su brazo armado: la **Policía Nacional (PNP)** y los mercenarios de **Blackridge Security**. Todas las facciones, personajes y lugares concretos son ficticios; no se usan grupos armados reales.
+**Contexto:** Perú, 2036 (ucronía). Seis años antes, el general **Angobaldo Ramírez** dio un golpe de Estado, disolvió el Congreso y entregó la sierra a la minera extranjera **Ferrum Andes**. Su brazo armado: la **Policía Nacional (PNP)** y los mercenarios de **Blackridge Security**. Todas las facciones, personajes y lugares concretos son ficticios; no se usan grupos armados reales.
 **Protagonista:** **Lucía "Ceniza" Morales**, exsargento nacida en un cono de Lima, que deserta tras ver a la PNP disparar contra su barrio. Funda el **Frente de Liberación Socialista (FLS)**, que renuncia a la vía electoral por la lucha armada.
 **Compañeros:** *Tomás "Profe" Ibarra* (profesor de colegio nacional, estratega), *Nena Quispe* (francotiradora ayacuchana, 19 años), *Padre Elías* (párroco y médico), *Rocco* (mecánico, ex-PNP).
 **Tema:** el precio de la libertad. A partir de la mitad, el FLS se divide entre justicia y venganza.
