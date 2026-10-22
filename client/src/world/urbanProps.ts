@@ -111,7 +111,7 @@ export function stairway(b: Builder, hf: Heightfield, x: number, z0: number, z1:
   }
 }
 
-export type CarKind = 'sedan' | 'tico' | 'wagon' | 'pickup' | 'combi';
+export type CarKind = 'sedan' | 'tico' | 'wagon' | 'pickup' | 'combi' | 'beetle';
 
 const CAR_DIMS: Record<CarKind, { l: number; w: number; body: number; cabin: number; cabinL: number; cabinZ: number }> = {
   sedan: { l: 4.3, w: 1.7, body: 0.65, cabin: 0.55, cabinL: 2.2, cabinZ: -0.15 },
@@ -119,6 +119,7 @@ const CAR_DIMS: Record<CarKind, { l: number; w: number; body: number; cabin: num
   wagon: { l: 4.5, w: 1.72, body: 0.68, cabin: 0.58, cabinL: 3.0, cabinZ: -0.55 },
   pickup: { l: 5.0, w: 1.78, body: 0.75, cabin: 0.65, cabinL: 1.6, cabinZ: 0.6 },
   combi: { l: 4.8, w: 1.8, body: 1.0, cabin: 0.85, cabinL: 4.4, cabinZ: -0.15 },
+  beetle: { l: 4.0, w: 1.55, body: 0.6, cabin: 0.6, cabinL: 2.0, cabinZ: -0.2 },
 };
 
 /** Side silhouettes: [length, height] pairs from the rear bumper forward (y measured from the ground). */
@@ -128,6 +129,7 @@ const SHAPES: Record<CarKind, [number, number][]> = {
   wagon: [[-2.25, 0.38], [2.25, 0.38], [2.27, 0.74], [1.25, 0.9], [0.65, 1.42], [-2.15, 1.44], [-2.25, 0.92]],
   pickup: [[-2.5, 0.42], [2.5, 0.42], [2.52, 0.86], [1.55, 1.0], [1.05, 1.58], [-0.25, 1.6], [-0.3, 1.0], [-2.5, 1.0]],
   combi: [[-2.4, 0.4], [2.4, 0.4], [2.42, 1.0], [2.2, 1.95], [-2.35, 2.0], [-2.4, 1.2]],
+  beetle: [[-2.0, 0.36], [2.0, 0.36], [2.02, 0.62], [1.6, 0.8], [1.0, 0.92], [0.55, 1.36], [-0.35, 1.46], [-1.25, 1.24], [-1.85, 0.9], [-2.0, 0.62]],
 };
 
 /** Glass band per silhouette: belt line up to just proud of the roof and pillars, so windscreens read over the paint. */
@@ -137,6 +139,7 @@ const GLASS: Record<CarKind, [number, number][]> = {
   wagon: [[-2.28, 0.93], [1.29, 0.93], [0.67, 1.45], [-2.18, 1.47]],
   pickup: [[-0.33, 1.03], [1.59, 1.03], [1.07, 1.61], [-0.28, 1.63]],
   combi: [[-2.35, 1.25], [2.24, 1.25], [2.22, 1.88], [-2.35, 1.9]],
+  beetle: [[-1.2, 0.95], [0.9, 0.95], [0.52, 1.37], [-0.4, 1.44]],
 };
 
 /** Parked car: extruded body silhouette with glass band, wheels with rims, bumpers, lamps and plates; box collider for cover. */

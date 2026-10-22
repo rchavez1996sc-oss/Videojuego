@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 import type { Builder } from '../buildingKit';
 import type { MaleconDef } from './layout';
-import { EXTENT, SIDEWALK } from './layout';
+import { EXTENT, SIDEWALK, streetHalf } from './layout';
+import { house } from './houses';
 
-export const FACADES = ['aptWhite', 'aptCream', 'aptSand', 'aptGray', 'aptBlue', 'aptWhite'];
+export const FACADES = ['aptWhite', 'aptCream', 'aptSand', 'aptGray', 'aptBlue', 'aptWhite', 'aptTerracotta', 'aptSalmon'];
 const FLOOR = 3, snap = (v: number) => Math.round(v / 6) * 6;
 const Q = new THREE.Quaternion();
 
@@ -15,8 +16,8 @@ export function cityBlocks(def: MaleconDef): [number, number, number, number, bo
   for (let i = 0; i + 1 < sx.length; i++) {
     const x0 = sx[i] + (i ? half : 0), x1 = sx[i + 1] - (i + 2 < sx.length ? half : 0);
     for (let k = 0; k < zs.length; k++) {
-      const z0 = zs[k] + (k ? half : 0), avenue = k === zs.length - 1;
-      const z1 = avenue ? def.avenue.z - def.avenue.half - SIDEWALK : zs[k + 1] - half;
+      const z0 = zs[k] + (k ? streetHalf(def, zs[k]) + SIDEWALK : 0), avenue = k === zs.length - 1;
+      const z1 = avenue ? def.avenue.z - def.avenue.half - SIDEWALK : zs[k + 1] - streetHalf(def, zs[k + 1]) - SIDEWALK;
       out.push([x0, x1, z0, z1, avenue]);
     }
   }
@@ -29,11 +30,12 @@ function tower(t: Builder, b: Builder, x0: number, w: number, zFace: number, d: 
   t.box(style, [w, H + 0.6, d], new THREE.Vector3(cx, H / 2 - 0.3, cz), Q);
   const glass = style === 'glassWall';
   if (!glass) {
+    const rail = rand() < 0.35 ? 'railBlue' : 'railGlass';
     const deep = 1.1 + rand() * 0.5, bw = w * (rand() < 0.4 ? 0.62 : 1) + 0.4, bx = cx + (bw < w ? (rand() - 0.5) * (w - bw) : 0);
     for (let f = 1; f < floors; f++) {
       const y = f * FLOOR;
       b.box('slab', [bw, 0.22, deep], new THREE.Vector3(bx, y, zFace + s * deep / 2), Q, false);
-      b.box('railGlass', [bw, 1.0, 0.05], new THREE.Vector3(bx, y + 0.6, zFace + s * (deep - 0.04)), Q, false);
+      b.box(rail, [bw, 1.0, 0.05], new THREE.Vector3(bx, y + 0.6, zFace + s * (deep - 0.04)), Q, false);
       b.box('alu', [bw, 0.06, 0.08], new THREE.Vector3(bx, y + 1.12, zFace + s * (deep - 0.04)), Q, false);
     }
   } else {
@@ -58,8 +60,8 @@ function casona(t: Builder, b: Builder, x0: number, w: number, zFace: number, d:
   b.box('roofTile', [w - 1.6, 0.3, d - 3.6], new THREE.Vector3(cx, H + 0.15, zFace - s * (d / 2 + 1)), Q, false);
 }
 
-/** Fills every block: tall towers facing the sea along the avenue, mid-rise behind, a few houses. */
-export function buildTowers(t: Builder, b: Builder, def: MaleconDef, paints: string[], rand: () => number): { x: number; w: number; z: number; h: number }[] {
+/** Fills every block: tall towers facing the sea along the avenue, mid-rise behind; inland mostly modern houses. */
+export function buildTowers(t: Builder, b: Builder, def: MaleconDef, paints: string[], rand: () => number, gardens: THREE.Vector3[]): { x: number; w: number; z: number; h: number }[] {
   const fronts: { x: number; w: number; z: number; h: number }[] = [];
   for (const [bx0, bx1, bz0, bz1, avenue] of cityBlocks(def)) {
     const depth = bz1 - bz0;
@@ -67,6 +69,15 @@ export function buildTowers(t: Builder, b: Builder, def: MaleconDef, paints: str
     for (const [zFace, s, maxD] of rows) {
       let x = Math.ceil((bx0 + 2) / 6) * 6;
       while (x + 12 <= bx1 - 2) {
+        if (!avenue && rand() < 0.65) {
+          const w = Math.min(10 + rand() * 4, bx1 - 2 - x);
+          const tree = house(b, x, w, zFace, s, rand);
+          if (tree) gardens.push(tree);
+          x += w + 0.4;
+          continue;
+        }
+        x = Math.ceil(x / 6) * 6;
+        if (x + 12 > bx1 - 2) break;
         const w = Math.min(snap(14 + rand() * 14), Math.floor((bx1 - 2 - x) / 6) * 6);
         if (w < 12) break;
         const d = Math.max(12, Math.min(snap(14 + rand() * 10), Math.floor(maxD / 6) * 6));

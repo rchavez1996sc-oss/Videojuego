@@ -16,6 +16,8 @@ import { paragliders } from '../../fx/paragliders';
 import { apartment, curtain, flagstone, mosaic, lattice, confetti, foliage } from './textures';
 import { maleconGraph, type MaleconDef } from './layout';
 import { buildTowers } from './towers';
+import { buildBoulevard } from './boulevard';
+import { streetDetail } from './streetDetail';
 import { buildRoads } from './roads';
 import { buildPark, bench } from './park';
 import { buildMonuments } from './monuments';
@@ -69,8 +71,18 @@ function maleconMaterials(lighting: Lighting): Record<string, THREE.Material> {
     flagMast: std('flagMast', { color: '#e9e9e6', roughness: 0.4, metalness: 0.5 }),
     steelDark: std('steelDark', { color: '#2b2e31', roughness: 0.5, metalness: 0.6 }),
     columnGreen: std('columnGreen', { color: '#1f3a2e', roughness: 0.5, metalness: 0.4 }),
+    railBlue: std('railBlue', { color: '#3f7f9e', roughness: 0.05, metalness: 0.5, transparent: true, opacity: 0.55, depthWrite: false }),
+    houseBrick: std('houseBrick', { map: br.map, normalMap: br.normalMap, color: '#d4876c', roughness: 0.9 }),
+    brickRed: std('brickRed', { map: br.map, normalMap: br.normalMap, color: '#c25a3e', roughness: 0.9 }),
+    woodSlat: std('woodSlat', { map: wd.map, color: '#8a5a36', roughness: 0.7 }),
+    woodGate: std('woodGate', { map: wd.map, color: '#6e4a2f', roughness: 0.7 }),
+    fenceIron: std('fenceIron', { color: '#2e2622', roughness: 0.55, metalness: 0.5 }),
+    benchGreen: std('benchGreen', { color: '#24483a', roughness: 0.55, metalness: 0.3 }),
+    kerbYellow: std('kerbYellow', { map: co.map, color: '#e0b830', roughness: 0.8 }),
+    bollardGreen: std('bollardGreen', { color: '#2f6b55', roughness: 0.45, metalness: 0.3 }),
   };
-  [['aptWhite', '#f6f4ee'], ['aptCream', '#ecdfc4'], ['aptSand', '#dcc9a4'], ['aptGray', '#c9cbcc'], ['aptBlue', '#c5d5e6']].forEach(([k, c]) => (m[k] = std(k, { map: apt.map, normalMap: apt.normalMap, color: c, roughness: 0.85 })));
+  [['houseWhite', '#f4f2ed'], ['houseCream', '#ece2cf'], ['houseGray', '#d6d7d5'], ['houseWarm', '#e9d8c0']].forEach(([k, c]) => (m[k] = std(k, { map: pl.map, normalMap: pl.normalMap, color: c, roughness: 0.85 })));
+  [['aptTerracotta', '#c98b70'], ['aptSalmon', '#dba58c'], ['aptWhite', '#f6f4ee'], ['aptCream', '#ecdfc4'], ['aptSand', '#dcc9a4'], ['aptGray', '#c9cbcc'], ['aptBlue', '#c5d5e6']].forEach(([k, c]) => (m[k] = std(k, { map: apt.map, normalMap: apt.normalMap, color: c, roughness: 0.85 })));
   return m;
 }
 
@@ -81,10 +93,13 @@ export function buildMalecon(hf: Heightfield, def: MaleconDef, lighting: Lightin
   const b = new Builder(world, body), t = new Builder(world, body);
   const rand = mulberry32(def.seed);
   const mats = { ...barrioMaterials(lighting, new SignAtlas()), ...maleconMaterials(lighting) };
-  const bake = bakeGroups(lighting, ['alu', 'railGreen', 'lampPole', 'chair', 'awningRed', 'lobby', 'steelDark', 'columnGreen', 'flagMast']);
-  const fronts = buildTowers(t, b, def, PAINTS, rand);
-  const streetTrees = buildRoads(b, hf, def, c, rand);
+  const bake = bakeGroups(lighting, ['alu', 'railGreen', 'lampPole', 'chair', 'awningRed', 'lobby', 'steelDark', 'columnGreen', 'flagMast', 'fenceIron', 'benchGreen', 'bollardGreen']);
+  const gardens: THREE.Vector3[] = [];
+  const fronts = buildTowers(t, b, def, PAINTS, rand, gardens);
+  const streetTrees = [...buildRoads(b, hf, def, c, rand), ...gardens];
+  streetDetail(b, hf, def, rand);
   const plants = buildPark(b, hf, def, c, rand);
+  buildBoulevard(b, hf, def, plants, rand);
   buildLandmarks(b, hf, def, c);
   const group = new THREE.Group();
   group.add(buildLarcomar(b, def, c, lighting, plants, rand));

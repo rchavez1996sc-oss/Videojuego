@@ -5,7 +5,7 @@ import { edgeZ, type CoastDef } from '../coast';
 import { EXTENT, SIDEWALK, inLarcomar, innerPathZ, overRavine, promenadeZ, type MaleconDef } from './layout';
 
 const UP = new THREE.Vector3(0, 1, 0), Q = new THREE.Quaternion();
-export interface Plants { palms: THREE.Vector3[]; phoenix: THREE.Vector3[]; trees: THREE.Vector3[]; bent: THREE.Vector3[]; pines: THREE.Vector3[]; seats: { pos: THREE.Vector3; yaw: number }[] }
+export interface Plants { palms: THREE.Vector3[]; phoenix: THREE.Vector3[]; trees: THREE.Vector3[]; bent: THREE.Vector3[]; pines: THREE.Vector3[]; seats: { pos: THREE.Vector3; yaw: number }[]; arch: { pos: THREE.Vector3; lean: number }[] }
 
 /** Flat strip following a polyline, a few cm above the ground. */
 export function ribbon(b: Builder, hf: Heightfield, pts: THREE.Vector2[], width: number, mat: string, lift = 0.04): void {
@@ -43,7 +43,7 @@ export function railing(b: Builder, pts: THREE.Vector3[], mat = 'railGreen'): vo
   }
 }
 
-function lamp(b: Builder, at: THREE.Vector3): void {
+export function lamp(b: Builder, at: THREE.Vector3): void {
   const m = new THREE.Matrix4().makeTranslation(at.x, at.y, at.z);
   b.geometry('lampPole', new THREE.CylinderGeometry(0.06, 0.1, 4.2, 8).translate(0, 2.1, 0), m);
   b.geometry('lampPole', new THREE.CylinderGeometry(0.16, 0.2, 0.5, 10).translate(0, 0.25, 0), m);
@@ -52,18 +52,18 @@ function lamp(b: Builder, at: THREE.Vector3): void {
   b.box('none', [0.2, 4, 0.2], at.clone().setY(at.y + 2), Q, true);
 }
 
-export function bench(b: Builder, at: THREE.Vector3, yaw: number): void {
+export function bench(b: Builder, at: THREE.Vector3, yaw: number, wood = 'benchWood'): void {
   const q = new THREE.Quaternion().setFromAxisAngle(UP, yaw);
   const p = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z).applyQuaternion(q).add(at);
-  for (let k = 0; k < 4; k++) b.box('benchWood', [1.8, 0.04, 0.09], p(0, 0.45, -0.18 + k * 0.12), q, false);
-  for (let k = 0; k < 3; k++) b.box('benchWood', [1.8, 0.09, 0.04], p(0, 0.62 + k * 0.13, -0.27 - k * 0.03), q, false);
+  for (let k = 0; k < 4; k++) b.box(wood, [1.8, 0.04, 0.09], p(0, 0.45, -0.18 + k * 0.12), q, false);
+  for (let k = 0; k < 3; k++) b.box(wood, [1.8, 0.09, 0.04], p(0, 0.62 + k * 0.13, -0.27 - k * 0.03), q, false);
   for (const x of [-0.75, 0.75]) b.box('lampPole', [0.06, 0.45, 0.5], p(x, 0.22, -0.02), q, false);
   b.box('none', [1.8, 0.9, 0.6], p(0, 0.45, -0.05), q, true);
 }
 
 /** Clifftop park: paths, lawns painted into the terrain mask, railings, lamps, benches, hedges; returns where to plant. */
 export function buildPark(b: Builder, hf: Heightfield, def: MaleconDef, c: CoastDef, rand: () => number): Plants {
-  const plants: Plants = { palms: [], phoenix: [], trees: [], bent: [], pines: [], seats: [] };
+  const plants: Plants = { palms: [], phoenix: [], trees: [], bent: [], pines: [], seats: [], arch: [] };
   const seat = (at: THREE.Vector3, yaw: number) => {
     bench(b, at, yaw);
     if (rand() < 0.4) plants.seats.push({ pos: at, yaw });
@@ -161,10 +161,10 @@ export function buildPark(b: Builder, hf: Heightfield, def: MaleconDef, c: Coast
 }
 
 /** Writes lawn coverage into the terrain mask's grass channel (texture uploads happen at first render). */
-function paintLawns(hf: Heightfield, lawn: (x: number, z: number) => number): void {
+export function paintLawns(hf: Heightfield, lawn: (x: number, z: number) => number, zMin = 20, zMax = 140): void {
   for (let zi = 0; zi < hf.n; zi++) for (let xi = 0; xi < hf.n; xi++) {
     const x = -hf.half + xi * hf.step, z = -hf.half + zi * hf.step;
-    if (Math.abs(x) > EXTENT + 40 || z < 20 || z > 140) continue;
+    if (Math.abs(x) > EXTENT + 40 || z < zMin || z > zMax) continue;
     const g = lawn(x, z), k = (zi * hf.n + xi) * 4;
     if (hf.mask[k + 3] === 255) hf.mask[k + 1] = g * 255;
   }

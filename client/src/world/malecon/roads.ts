@@ -3,7 +3,7 @@ import type { Builder } from '../buildingKit';
 import type { Heightfield } from '../heightfield';
 import { car, type CarKind } from '../urbanProps';
 import type { CoastDef } from '../coast';
-import { EXTENT, SIDEWALK, type MaleconDef } from './layout';
+import { EXTENT, SIDEWALK, streetHalf, type MaleconDef } from './layout';
 
 const Q = new THREE.Quaternion();
 const L = EXTENT + 30;
@@ -52,23 +52,27 @@ export function buildRoads(b: Builder, hf: Heightfield, def: MaleconDef, c: Coas
   laneLines(b, flat, av.z, av.half, def.streets.x, true);
   for (const s of [-1, 1]) pavement(b, -L, L, av.z + s * av.half + (s < 0 ? -SIDEWALK : 0), av.z + s * av.half + (s > 0 ? SIDEWALK : 0));
   for (const z of def.streets.z) {
-    b.box('asphalt', [L * 2, 0.1, sh * 2], new THREE.Vector3(0, -0.03, z), Q, false);
-    laneLines(b, flat, z, sh, def.streets.x, false);
-    for (const s of [-1, 1]) pavement(b, -L, L, z + (s < 0 ? -sh - SIDEWALK : sh), z + (s < 0 ? -sh : sh + SIDEWALK));
+    const h = streetHalf(def, z);
+    if (def.boulevard?.z !== z) {
+      b.box('asphalt', [L * 2, 0.1, sh * 2], new THREE.Vector3(0, -0.03, z), Q, false);
+      laneLines(b, flat, z, sh, def.streets.x, true);
+    }
+    for (const s of [-1, 1]) pavement(b, -L, L, z + (s < 0 ? -h - SIDEWALK : h), z + (s < 0 ? -h : h + SIDEWALK));
   }
   const zMax = av.z - av.half;
   for (const x of def.streets.x) {
     b.box('asphalt', [sh * 2, 0.1, zMax + L], new THREE.Vector3(x, -0.025, (zMax - L) / 2), Q, false);
     for (const s of [-1, 1]) pavement(b, x + (s < 0 ? -sh - SIDEWALK : sh), x + (s < 0 ? -sh : sh + SIDEWALK), -L, zMax - SIDEWALK);
     for (const z of [...def.streets.z, av.z]) {
-      zebra(b, x, z + (z === av.z ? -av.half - 2 : sh + 2), sh, true);
-      zebra(b, x + sh + 2, z, z === av.z ? av.half : sh, false);
+      const h = z === av.z ? av.half : streetHalf(def, z);
+      zebra(b, x, z + (z === av.z ? -av.half - 2 : h + 2), sh, true);
+      for (const s of def.boulevard?.z === z ? [-1, 1] : [0]) zebra(b, x + sh + 2, z + s * (h - 3.5), s ? 3.5 : h, false);
     }
-    for (let z = zMax - 10; z > -L; z -= 9) if (!def.streets.z.some((sz) => Math.abs(sz - z) < sh + 6)) trees.push(new THREE.Vector3(x + (rand() < 0.5 ? -1 : 1) * (sh + 1.2), 0, z));
+    for (let z = zMax - 10; z > -L; z -= 9) if (!def.streets.z.some((sz) => Math.abs(sz - z) < streetHalf(def, sz) + 6)) trees.push(new THREE.Vector3(x + (rand() < 0.5 ? -1 : 1) * (sh + 1.2), 0, z));
   }
   for (let x = -L + 4; x < L; x += 11) {
     if (def.streets.x.some((sx) => Math.abs(sx - x) < sh + 6)) continue;
-    for (const z of def.streets.z) trees.push(new THREE.Vector3(x, 0, z + (rand() < 0.5 ? -1 : 1) * (sh + 1.2)));
+    for (const z of def.streets.z) trees.push(new THREE.Vector3(x, 0, z + (rand() < 0.5 ? -1 : 1) * (streetHalf(def, z) + 1.2)));
     trees.push(new THREE.Vector3(x + 5, 0, av.z - av.half - 1.4));
   }
   const br = def.beachRoad, beachY = (x: number, z: number) => hf.heightAt(x, z);
@@ -91,19 +95,19 @@ export function buildRoads(b: Builder, hf: Heightfield, def: MaleconDef, c: Coas
 }
 
 function parkedCars(b: Builder, def: MaleconDef, rand: () => number): void {
-  const kinds: CarKind[] = ['sedan', 'sedan', 'wagon', 'pickup', 'sedan', 'tico'];
+  const kinds: CarKind[] = ['sedan', 'sedan', 'wagon', 'pickup', 'sedan', 'tico', 'beetle'];
   const paints = ['car0', 'car1', 'car2', 'car4', 'car5', 'car0', 'car1'];
   const sh = def.streets.half;
   for (let i = 0; i < def.parkedCars; i++) {
     const kind = kinds[Math.floor(rand() * kinds.length)], paint = kind === 'tico' ? 'car3' : paints[Math.floor(rand() * paints.length)];
     const s = rand() < 0.5 ? 1 : -1;
     if (rand() < 0.55) {
-      const z = def.streets.z[Math.floor(rand() * def.streets.z.length)] + s * (sh - 1.2), x = (rand() * 2 - 1) * (EXTENT - 5);
+      const sz = def.streets.z[Math.floor(rand() * def.streets.z.length)], z = sz + s * (streetHalf(def, sz) - 1.2), x = (rand() * 2 - 1) * (EXTENT - 5);
       if (def.streets.x.some((sx) => Math.abs(sx - x) < sh + 7)) continue;
       car(b, new THREE.Vector3(x, 0.03, z), (s > 0 ? -1 : 1) * Math.PI / 2, paint, kind);
     } else {
       const x = def.streets.x[Math.floor(rand() * def.streets.x.length)] + s * (sh - 1.2), z = -EXTENT + 5 + rand() * (def.avenue.z - def.avenue.half - 12 + EXTENT);
-      if (def.streets.z.some((sz) => Math.abs(sz - z) < sh + 7)) continue;
+      if (def.streets.z.some((sz) => Math.abs(sz - z) < streetHalf(def, sz) + 7)) continue;
       car(b, new THREE.Vector3(x, 0.03, z), s > 0 ? 0 : Math.PI, paint, kind);
     }
   }

@@ -108,6 +108,12 @@ export function buildVegetation(b: Builder, plants: Plants, streetTrees: THREE.V
   const buckets: THREE.Matrix4[][] = broad.map(() => []);
   [...plants.trees, ...streetTrees].forEach((p, i) => buckets[i % broad.length].push(at(p, 0.9 + r() * 0.5)));
   plants.bent.forEach((p, i) => buckets[i % broad.length].push(new THREE.Matrix4().makeTranslation(p.x, p.y, p.z).multiply(shear).multiply(new THREE.Matrix4().makeScale(1.6, 0.65, 1.3))));
+  plants.arch.forEach(({ pos, lean }, i) => {
+    b.box('none', [0.6, 3, 0.6], pos.clone().setY(pos.y + 1.5), new THREE.Quaternion(), true);
+    const bend = new THREE.Matrix4().set(1, 0, 0, 0, 0, 1, 0, 0, 0, lean, 1, 0, 0, 0, 0, 1);
+    const turn = new THREE.Matrix4().makeRotationY(r() * Math.PI * 2), size = 1.5 + r() * 0.4;
+    buckets[i % broad.length].push(new THREE.Matrix4().makeTranslation(pos.x, pos.y, pos.z).multiply(bend).multiply(new THREE.Matrix4().makeScale(size * 1.15, size, size * 1.15)).multiply(turn));
+  });
   broad.forEach((t, i) => g.add(instanced(t.trunk, t.barkMat, buckets[i]), instanced(t.canopy, t.leafMat, buckets[i])));
   return g;
 }

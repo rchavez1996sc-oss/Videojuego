@@ -9,6 +9,8 @@ export interface MaleconDef {
   avenue: { z: number; half: number };
   /** Streets along x (z centres) and along z (x centres) of the tower blocks. */
   streets: { z: number[]; x: number[]; half: number };
+  /** Street along x turned into a dual carriageway with a tree-lined promenade (berma) in the middle. */
+  boulevard?: { z: number; median: number };
   beachRoad: { z: number; half: number };
   lighthouse: { x: number; z: number };
   amor: { x: number; w: number };
@@ -24,6 +26,11 @@ export interface MaleconDef {
 
 export const EXTENT = 232;
 export const SIDEWALK = 4.5;
+
+/** Half width of the street along x at `z` (a boulevard counts both carriageways and the median). */
+export function streetHalf(def: MaleconDef, z: number): number {
+  return def.boulevard?.z === z ? def.boulevard.median / 2 + 7 : def.streets.half;
+}
 
 /** Main promenade: runs a few metres inside the cliff fence, wandering a little. */
 export function promenadeZ(c: CoastDef, x: number): number {
@@ -63,9 +70,12 @@ export function maleconGraph(def: MaleconDef, c: CoastDef, hf: Heightfield): Str
   for (let x = -EXTENT + 8; x <= EXTENT - 8; x += 16) xs.push(x);
   const bs = bridgeSpan(c, def), l = def.larcomar;
   const onBridge = (x: number) => x > bs.x0 - 4 && x < bs.x1 + 4;
-  const rows: { z: (x: number) => number; ok: (x: number, z: number) => boolean }[] = [];
+  const rows: { z: (x: number) => number; ok: (x: number, z: number) => boolean; street?: number; paseo?: boolean }[] = [];
   const pave = def.avenue.half + 1.6;
-  for (const sz of def.streets.z) for (const s of [-1, 1]) rows.push({ z: () => sz + s * (def.streets.half + 1.6), ok: () => true });
+  for (const sz of def.streets.z) for (const s of [-1, 1]) {
+    rows.push({ z: () => sz + s * (streetHalf(def, sz) + 1.6), ok: () => true, street: sz });
+    if (s < 0 && def.boulevard?.z === sz) rows.push({ z: () => sz, ok: () => true, street: sz, paseo: true });
+  }
   rows.push({ z: () => def.avenue.z - pave, ok: () => true });
   rows.push({ z: () => def.avenue.z + pave, ok: () => true });
   rows.push({ z: (x) => innerPathZ(def, x), ok: (x, z) => !overRavine(c, x, z, 2) && !inLarcomar(def, c, x, z, 2) });
@@ -82,7 +92,7 @@ export function maleconGraph(def: MaleconDef, c: CoastDef, hf: Heightfield): Str
       const a = grid[r][i], b = grid[r + 1][i];
       if (a < 0 || b < 0) continue;
       const parkLink = r >= grid.length - 3;
-      const sameStreet = r < grid.length - 3 && Math.abs(nodes[a].z - nodes[b].z) < def.streets.half * 2 + 5;
+      const sameStreet = r < grid.length - 3 && rows[r].street !== undefined && rows[r].street === rows[r + 1].street && !rows[r].paseo && !rows[r + 1].paseo;
       if (parkLink ? i % 3 === 1 : sameStreet || crossing(xs[i])) link(a, b);
     }
   }
