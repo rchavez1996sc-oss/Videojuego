@@ -4,7 +4,7 @@ import type { Input } from '../core/input';
 import type { Lighting } from '../render/lighting';
 import { Rig, type Outfit } from './rig';
 import { pickDeath, DEATHS } from './deathFall';
-import { findLedge, mantlePath, stepLedge, fallDamage, CLIMBS, type Climb, type Ledge } from './mantle';
+import { findLedge, mantlePath, stepLedge, fallDamage, CLIMBS, type Climb, type Ledge, steepContact } from './mantle';
 import { difficulty } from '../core/difficulty';
 import { ladderAt, type Ladder } from '../world/ladders';
 
@@ -260,7 +260,9 @@ export class Player {
     this.ctrl.computeColliderMovement(this.collider, { x: this.vel.x * dt, y: this.vel.y * dt, z: this.vel.z * dt });
     const m = this.ctrl.computedMovement();
     const wasGrounded = this.grounded;
-    this.grounded = this.ctrl.computedGrounded();
+    const falling = this.peakY - this.position.y > 6, slide = steepContact(this.ctrl, falling);
+    this.grounded = this.ctrl.computedGrounded() && !slide;
+    if (slide) this.vel.addScaledVector(slide, 14 * dt);
     if (this.grounded && !wasGrounded && this.lastVy < -4) this.landImpact = Math.min(1, (-this.lastVy - 4) / 8 + 0.25);
     if (!this.grounded) this.peakY = Math.max(this.peakY, this.position.y);
     else if (!wasGrounded && fallDamage(this.peakY - this.position.y) > 0) this.hurt(fallDamage(this.peakY - this.position.y));

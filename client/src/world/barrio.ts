@@ -38,7 +38,8 @@ export interface BarrioDef {
   road2?: RoadDef;
 }
 
-export interface StreetGraph { nodes: THREE.Vector3[]; edges: [number, number][]; exits: number[] }
+/** Walkable network; `ground` overrides the terrain height where paths run over decks or sunken floors. */
+export interface StreetGraph { nodes: THREE.Vector3[]; edges: [number, number][]; exits: number[]; ground?: (x: number, z: number) => number }
 
 export interface Barrio {
   group: THREE.Group;

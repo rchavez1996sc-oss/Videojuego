@@ -59,8 +59,8 @@ function casona(t: Builder, b: Builder, x0: number, w: number, zFace: number, d:
 }
 
 /** Fills every block: tall towers facing the sea along the avenue, mid-rise behind, a few houses. */
-export function buildTowers(t: Builder, b: Builder, def: MaleconDef, paints: string[], rand: () => number): { x: number; z: number; r: number }[] {
-  const foot: { x: number; z: number; r: number }[] = [];
+export function buildTowers(t: Builder, b: Builder, def: MaleconDef, paints: string[], rand: () => number): { x: number; w: number; z: number; h: number }[] {
+  const fronts: { x: number; w: number; z: number; h: number }[] = [];
   for (const [bx0, bx1, bz0, bz1, avenue] of cityBlocks(def)) {
     const depth = bz1 - bz0;
     const rows: [number, 1 | -1, number][] = depth > 52 ? [[bz1 - 2, 1, 24], [bz0 + 2, -1, 20]] : [[bz1 - 2, 1, Math.min(24, depth - 6)]];
@@ -76,11 +76,11 @@ export function buildTowers(t: Builder, b: Builder, def: MaleconDef, paints: str
           const floors = front ? 13 + Math.floor(rand() * 13) : 5 + Math.floor(rand() * (avenue ? 12 : 9));
           const style = rand() < (front ? 0.18 : 0.08) ? 'glassWall' : FACADES[Math.floor(rand() * FACADES.length)];
           tower(t, b, x, w, zFace, d, s, floors, style, rand);
+          if (front && style !== 'glassWall') fronts.push({ x: x + w / 2, w, z: zFace, h: floors * FLOOR });
         }
-        foot.push({ x: x + w / 2, z: zFace - s * d / 2, r: Math.hypot(w, d) / 2 });
         x += w + 6;
       }
     }
   }
-  return foot;
+  return fronts;
 }

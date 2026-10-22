@@ -17,7 +17,10 @@ import { apartment, curtain, flagstone, mosaic, lattice, confetti, foliage } fro
 import { maleconGraph, type MaleconDef } from './layout';
 import { buildTowers } from './towers';
 import { buildRoads } from './roads';
-import { buildPark } from './park';
+import { buildPark, bench } from './park';
+import { buildMonuments } from './monuments';
+import { buildPropaganda } from './propaganda';
+import { seated, surfers } from './people';
 import { buildLandmarks } from './landmarks';
 import { buildLarcomar } from './larcomar';
 import { buildVegetation } from './vegetation';
@@ -61,9 +64,13 @@ function maleconMaterials(lighting: Lighting): Record<string, THREE.Material> {
     chair: std('chair', { color: '#3a3a3c', roughness: 0.6 }),
     planter: std('planter', { map: co.map, color: '#6b6560', roughness: 0.9 }),
     sail: std('sail', { color: '#ece4d2', roughness: 0.9, side: THREE.DoubleSide }),
+    granite: std('granite', { map: co.map, normalMap: co.normalMap, color: '#9d988f', roughness: 0.7 }),
+    bronze: std('bronze', { color: '#6a5634', roughness: 0.42, metalness: 0.75 }),
+    flagMast: std('flagMast', { color: '#e9e9e6', roughness: 0.4, metalness: 0.5 }),
+    steelDark: std('steelDark', { color: '#2b2e31', roughness: 0.5, metalness: 0.6 }),
+    columnGreen: std('columnGreen', { color: '#1f3a2e', roughness: 0.5, metalness: 0.4 }),
   };
   [['aptWhite', '#f6f4ee'], ['aptCream', '#ecdfc4'], ['aptSand', '#dcc9a4'], ['aptGray', '#c9cbcc'], ['aptBlue', '#c5d5e6']].forEach(([k, c]) => (m[k] = std(k, { map: apt.map, normalMap: apt.normalMap, color: c, roughness: 0.85 })));
-  ['#f2f2ee', '#e8462c', '#2d6fd1'].forEach((c, i) => (m[`wing${i}`] = std(`wing${i}`, { color: c, roughness: 0.7, side: THREE.DoubleSide })));
   return m;
 }
 
@@ -74,14 +81,19 @@ export function buildMalecon(hf: Heightfield, def: MaleconDef, lighting: Lightin
   const b = new Builder(world, body), t = new Builder(world, body);
   const rand = mulberry32(def.seed);
   const mats = { ...barrioMaterials(lighting, new SignAtlas()), ...maleconMaterials(lighting) };
-  const bake = bakeGroups(lighting, ['alu', 'railGreen', 'lampPole', 'chair', 'awningRed', 'lobby', 'wing0', 'wing1', 'wing2']);
-  buildTowers(t, b, def, PAINTS, rand);
+  const bake = bakeGroups(lighting, ['alu', 'railGreen', 'lampPole', 'chair', 'awningRed', 'lobby', 'steelDark', 'columnGreen', 'flagMast']);
+  const fronts = buildTowers(t, b, def, PAINTS, rand);
   const streetTrees = buildRoads(b, hf, def, c, rand);
   const plants = buildPark(b, hf, def, c, rand);
   buildLandmarks(b, hf, def, c);
   const group = new THREE.Group();
   group.add(buildLarcomar(b, def, c, lighting, plants, rand));
+  group.add(buildMonuments(b, hf, def, lighting, plants.seats, (at, yaw) => bench(b, at, yaw)));
+  group.add(buildPropaganda(b, hf, def, lighting, fronts, rand));
   group.add(buildVegetation(b, plants, streetTrees, lighting));
+  const sitting = seated(plants.seats, lighting);
+  if (sitting) group.add(sitting);
+  group.add(surfers(def.surfers ?? 0, c, lighting));
   group.add(...b.build(mats, 0.5, bake, 128), ...t.build(mats, 1 / 6, bake, 128));
   group.add(buildOcean(hf, c, lighting));
   group.add(paragliders(def.paragliders, c.edge, lighting));

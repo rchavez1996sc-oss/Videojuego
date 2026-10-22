@@ -48,7 +48,7 @@ export function buildLarcomar(b: Builder, def: MaleconDef, c: CoastDef, lighting
       if (k % 2 === 0) b.box(rand() < 0.5 ? 'awningRed' : 'stripe', [2.4, 0.06, 6.6], new THREE.Vector3(face - s * 1.1, y0 + 4.1, z + 0.5), awning, false);
       const [t, bg, fg] = SHOPS[(k * 2 + (s > 0 ? 1 : 0)) % SHOPS.length];
       sign(t, bg, fg, new THREE.Vector3(face - s * 0.05, y0 + 5.0, z + 0.5), yaw, 4.8);
-      plaza(b, new THREE.Vector3(face - s * 5, y0, z + 0.5), rand);
+      plaza(b, new THREE.Vector3(face - s * 5, y0, z + 0.5), rand, plants.seats);
     }
     for (let z = l.z0; z < zEdge; z += 2.5) b.box('railGlass', [0.05, 1.1, 2.5], new THREE.Vector3(face + s * 0.3, 0.6, z + 1.25), Q, false);
     b.box('none', [0.3, 1.4, zEdge - l.z0], new THREE.Vector3(face + s * 0.3, 0.7, (l.z0 + zEdge) / 2), Q, true);
@@ -85,8 +85,8 @@ export function buildLarcomar(b: Builder, def: MaleconDef, c: CoastDef, lighting
   }
   b.box('none', [l.x1 - l.x0, 1.6, 0.4], new THREE.Vector3(cx, y0 + 0.8, zEdge), Q, true);
   kiosk(b, new THREE.Vector3(cx - 12, y0, (l.z0 + zEdge) / 2 + 3));
-  for (let x = cx + 4; x < inner[1] - 5; x += 4.5) for (let z = l.z0 + 17; z < zEdge - 4; z += 4.5) plaza(b, new THREE.Vector3(x + (rand() - 0.5), y0, z + (rand() - 0.5)), rand);
-  for (let x = inner[0] + 4; x < cx - 20; x += 5) plaza(b, new THREE.Vector3(x, y0, zEdge - 3.5), rand);
+  for (let x = cx + 4; x < inner[1] - 5; x += 4.5) for (let z = l.z0 + 17; z < zEdge - 4; z += 4.5) plaza(b, new THREE.Vector3(x + (rand() - 0.5), y0, z + (rand() - 0.5)), rand, plants.seats);
+  for (let x = inner[0] + 4; x < cx - 20; x += 5) plaza(b, new THREE.Vector3(x, y0, zEdge - 3.5), rand, plants.seats);
   for (let k = 0; k < 4; k++) sail(b, new THREE.Vector3(cx + 6 + k * 6, y0, l.z0 + 12 + (k % 2) * 7), k);
   for (const [dx, dz] of [[-24, 8], [-2, 20], [14, 24], [26, 10], [-28, 22]]) {
     const p = new THREE.Vector3(cx + dx, y0, l.z0 + dz);
@@ -115,7 +115,7 @@ function stairs(b: Builder, cx: number, z0: number, y0: number): void {
   b.box('none', [0.2, 1.4, Math.hypot(len, y0)], new THREE.Vector3(cx - 3.75, y0 / 2 + 0.7, mid), q, true);
 }
 
-function plaza(b: Builder, at: THREE.Vector3, rand: () => number): void {
+function plaza(b: Builder, at: THREE.Vector3, rand: () => number, seats: Plants['seats']): void {
   if (rand() < 0.4) return;
   const m = new THREE.Matrix4().makeTranslation(at.x, at.y, at.z);
   b.geometry('lampPole', new THREE.CylinderGeometry(0.04, 0.04, 2.4, 6).translate(0, 1.2, 0), m);
@@ -123,7 +123,11 @@ function plaza(b: Builder, at: THREE.Vector3, rand: () => number): void {
   b.geometry('benchWood', new THREE.CylinderGeometry(0.45, 0.45, 0.05, 12).translate(0, 0.74, 0), m);
   for (let k = 0; k < 4; k++) {
     const a = (k / 4) * Math.PI * 2 + 0.4;
-    b.box('chair', [0.45, 0.85, 0.45], new THREE.Vector3(at.x + Math.cos(a) * 0.9, at.y + 0.42, at.z + Math.sin(a) * 0.9), new THREE.Quaternion().setFromAxisAngle(UP, -a), false);
+    const yaw = Math.atan2(-Math.cos(a), -Math.sin(a)), q = new THREE.Quaternion().setFromAxisAngle(UP, yaw);
+    const p = new THREE.Vector3(at.x + Math.cos(a) * 0.95, at.y, at.z + Math.sin(a) * 0.95);
+    b.box('chair', [0.44, 0.45, 0.42], p.clone().setY(at.y + 0.225), q, false);
+    b.box('chair', [0.44, 0.5, 0.05], p.clone().add(new THREE.Vector3(0, 0.7, -0.2).applyQuaternion(q)), q, false);
+    if (rand() < 0.35) seats.push({ pos: p.clone().add(new THREE.Vector3(0, 0, 0.05).applyQuaternion(q)), yaw });
   }
   b.box('none', [1.2, 0.8, 1.2], at.clone().setY(at.y + 0.4), Q, true);
 }

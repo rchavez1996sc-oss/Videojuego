@@ -30,6 +30,10 @@ export class Civilians {
   private calmT = 0;
   private recycleT = 0;
 
+  private groundAt(x: number, z: number): number {
+    return this.graph.ground?.(x, z) ?? this.hf.heightAt(x, z);
+  }
+
   constructor(private graph: StreetGraph, private hf: Heightfield, lighting: Lighting, world: RAPIER.World, count: number, seed: number, private camera: THREE.Camera) {
     this.neighbors = graph.nodes.map(() => []);
     for (const [a, b] of graph.edges) {
@@ -45,7 +49,7 @@ export class Civilians {
       const target = pick(this.neighbors[node]);
       const t = rand();
       const pos = graph.nodes[node].clone().lerp(graph.nodes[target], t).add(new THREE.Vector3((rand() - 0.5) * 3, 0, (rand() - 0.5) * 3));
-      pos.y = hf.heightAt(pos.x, pos.z);
+      pos.y = graph.ground?.(pos.x, pos.z) ?? hf.heightAt(pos.x, pos.z);
       const body = world.createRigidBody(RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(pos.x, pos.y + 0.9, pos.z));
       const collider = world.createCollider(RAPIER.ColliderDesc.capsule(0.5, 0.3), body);
       const c: Civilian = {
@@ -120,7 +124,7 @@ export class Civilians {
       if (d < 55 || d > 84 || to.divideScalar(d).dot(fwd) > 0.2) continue;
       p.x += (Math.random() - 0.5) * 3;
       p.z += (Math.random() - 0.5) * 3;
-      p.y = this.hf.heightAt(p.x, p.z);
+      p.y = this.groundAt(p.x, p.z);
       Object.assign(c, { mood: 'walk', node: a, target: b, speed: 1.1 + Math.random() * 0.5, panicT: 0 });
       c.pos.copy(p);
       c.collider.setEnabled(true);
@@ -162,7 +166,7 @@ export class Civilians {
           }
         } else {
           c.pos.addScaledVector(to.divideScalar(d), Math.min(d, c.speed * dt));
-          c.pos.y = this.hf.heightAt(c.pos.x, c.pos.z);
+          c.pos.y = this.groundAt(c.pos.x, c.pos.z);
           const want = Math.atan2(-to.x, -to.z);
           c.yaw += Math.atan2(Math.sin(want - c.yaw), Math.cos(want - c.yaw)) * Math.min(1, dt * 8);
         }

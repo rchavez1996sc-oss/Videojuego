@@ -46,7 +46,7 @@ export function coastHeight(c: CoastDef, x: number, z: number, noise: Noise): nu
   if (t <= 0) h = 0;
   else if (t < 1) {
     const steep = Math.pow(t, lerp(0.55, 1.0, green));
-    const shelf = Math.sin(t * Math.PI) * noise.fbm(x, z, 1 / 18, 3) * lerp(3.5, 1.4, green);
+    const shelf = Math.sin(t * Math.PI) * noise.fbm(x, z, 1 / 18, 3) * lerp(1.6, 0.8, green);
     h = -c.drop * smoothstep(0, 1, steep) + shelf;
   } else {
     const beach = z - e - c.run;

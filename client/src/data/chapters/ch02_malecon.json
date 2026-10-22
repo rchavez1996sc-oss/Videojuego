@@ -121,7 +121,107 @@
    "w": 50
   },
   "paragliders": 6,
-  "parkedCars": 110
+  "parkedCars": 110,
+  "surfers": 12,
+  "busts": [
+   {
+    "name": "MIGUEL GRAU",
+    "years": "1834 – 1879",
+    "x": -200,
+    "look": "beard"
+   },
+   {
+    "name": "FRANCISCO BOLOGNESI",
+    "years": "1816 – 1880",
+    "x": -145,
+    "look": "kepi"
+   },
+   {
+    "name": "CHABUCA GRANDA",
+    "years": "1920 – 1983",
+    "x": -30,
+    "look": "woman"
+   },
+   {
+    "name": "RICARDO PALMA",
+    "years": "1833 – 1919",
+    "x": 20,
+    "look": "plain"
+   },
+   {
+    "name": "JOSÉ OLAYA",
+    "years": "1789 – 1823",
+    "x": 115,
+    "look": "plain"
+   },
+   {
+    "name": "ANDRÉS A. CÁCERES",
+    "years": "1836 – 1923",
+    "x": 210,
+    "look": "kepi"
+   }
+  ],
+  "propaganda": {
+   "portrait": "general",
+   "banners": 2,
+   "columns": 8,
+   "billboards": [
+    [
+     -205,
+     64,
+     3.1416
+    ],
+    [
+     -62,
+     64,
+     3.1416
+    ],
+    [
+     110,
+     62,
+     3.1416
+    ],
+    [
+     212,
+     64,
+     3.1416
+    ]
+   ],
+   "slogans": [
+    [
+     "UN PERÚ CON ORDEN",
+     "GRACIAS, GENERAL RAMÍREZ"
+    ],
+    [
+     "LA PATRIA SE DEFIENDE",
+     "DENUNCIE AL TERRORISMO · LÍNEA 105"
+    ],
+    [
+     "MIRAFLORES SEGURA",
+     "TOQUE DE QUEDA 23:00 – 05:00"
+    ],
+    [
+     "PERÚ FIRME",
+     "ORDEN · TRABAJO · PROGRESO"
+    ],
+    [
+     "NI UN PASO ATRÁS",
+     "FRENTE AL TERROR ROJO"
+    ],
+    [
+     "LA JUNTA CUMPLE",
+     "2 000 NUEVOS PATRULLEROS"
+    ],
+    [
+     "INVIERTA EN EL PERÚ",
+     "CONFIANZA QUE CRECE"
+    ],
+    [
+     "SU SEGURIDAD ES NUESTRO DEBER",
+     "FUERZAS DEL ORDEN"
+    ]
+   ]
+  }
  },
  "farCity": {
   "inner": 238,
@@ -134,14 +234,14 @@
  },
  "life": {
   "traffic": 40,
-  "dogs": 6,
+  "dogs": 10,
   "birds": 14,
   "roads": [
    {
     "z": 30,
     "lane": 3.5,
     "half": 7,
-    "count": 16,
+    "count": 20,
     "kinds": [
      "sedan",
      "wagon",
@@ -183,7 +283,7 @@
     "z": 158,
     "lane": 3.5,
     "half": 7,
-    "count": 14,
+    "count": 16,
     "kinds": [
      "sedan",
      "wagon",
@@ -197,7 +297,7 @@
   ]
  },
  "civilians": {
-  "count": 80,
+  "count": 120,
   "seed": 8
  },
  "squad": 4,
@@ -299,12 +399,36 @@
    90
   ],
   [
-   60,
+   -30,
    1.7,
-   70,
-   60,
+   46,
+   -30,
+   2.2,
+   52.5
+  ],
+  [
+   -62,
+   2,
+   52,
+   -62,
+   6,
+   64
+  ],
+  [
+   -185,
+   1.7,
+   96,
+   -170,
+   0.5,
+   96
+  ],
+  [
+   -90,
    3,
-   95
+   75,
+   -120,
+   30,
+   0
   ]
  ]
 }

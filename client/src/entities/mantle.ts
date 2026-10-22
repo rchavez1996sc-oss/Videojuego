@@ -91,3 +91,16 @@ export function stepLedge(world: RAPIER.World, feet: THREE.Vector3, vel: THREE.V
 export function fallDamage(drop: number): number {
   return drop >= 13.5 ? 999 : drop >= 8 ? 25 + ((drop - 8) / 5.5) * 65 : 0;
 }
+
+/** Downhill direction of a contact steeper than the 48° climb limit (37° in a long fall): a slide, not a landing. */
+export function steepContact(ctrl: RAPIER.KinematicCharacterController, falling: boolean): THREE.Vector3 | null {
+  let best: { x: number; y: number; z: number } | null = null, n = 0;
+  for (let i = 0; i < ctrl.numComputedCollisions(); i++) {
+    const c = ctrl.computedCollision(i);
+    if (!c || Math.abs(c.normal1.y) <= 0.05) continue;
+    const s = Math.sign(c.normal1.y), g = { x: c.normal1.x * s, y: c.normal1.y * s, z: c.normal1.z * s };
+    if (!best || g.y > best.y) best = g;
+    n++;
+  }
+  return n > 0 && best!.y < (falling ? 0.8 : 0.67) ? new THREE.Vector3(best!.x, 0, best!.z) : null;
+}

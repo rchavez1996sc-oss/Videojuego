@@ -23,6 +23,10 @@ export class Dogs {
   private barkT = 4;
   private neighbors: number[][];
 
+  private groundAt(x: number, z: number): number {
+    return this.graph.ground?.(x, z) ?? this.hf.heightAt(x, z);
+  }
+
   constructor(private graph: StreetGraph, private hf: Heightfield, lighting: Lighting, count: number) {
     this.neighbors = graph.nodes.map(() => []);
     for (const [a, b] of graph.edges) {
@@ -114,7 +118,7 @@ export class Dogs {
         const want = Math.atan2(to.x, to.z);
         d.yaw += Math.atan2(Math.sin(want - d.yaw), Math.cos(want - d.yaw)) * Math.min(1, dt * 6);
       }
-      d.pos.y = this.hf.heightAt(d.pos.x, d.pos.z);
+      d.pos.y = this.groundAt(d.pos.x, d.pos.z);
       d.phase += dt * (4 + d.speed * 3);
       const swing = Math.min(1, d.speed / 2) * 0.7;
       d.legs.forEach((l, i) => (l.rotation.x = Math.sin(d.phase + (i === 0 || i === 3 ? 0 : Math.PI)) * swing));

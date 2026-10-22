@@ -16,6 +16,9 @@ export interface MaleconDef {
   larcomar: { x0: number; x1: number; z0: number; y: number };
   launch: { x: number; w: number };
   paragliders: number;
+  surfers?: number;
+  busts?: import('./monuments').BustDef[];
+  propaganda?: import('./propaganda').PropagandaDef;
   parkedCars: number;
 }
 
@@ -83,13 +86,25 @@ export function maleconGraph(def: MaleconDef, c: CoastDef, hf: Heightfield): Str
       if (parkLink ? i % 3 === 1 : sameStreet || crossing(xs[i])) link(a, b);
     }
   }
-  const plaza = [add((l.x0 + l.x1) / 2 - 15, l.z0 + 14, l.y), add((l.x0 + l.x1) / 2 + 15, l.z0 + 14, l.y), add((l.x0 + l.x1) / 2, l.z0 + 24, l.y)];
-  link(plaza[0], plaza[1]); link(plaza[1], plaza[2]); link(plaza[2], plaza[0]);
-  const top = add((l.x0 + l.x1) / 2, l.z0 - 6), stairFoot = add((l.x0 + l.x1) / 2, l.z0 + 6, l.y);
-  link(top, stairFoot); link(stairFoot, plaza[0]); link(stairFoot, plaza[1]);
+  const cx = (l.x0 + l.x1) / 2, zEdge = Math.min(edgeZ(c, l.x0 + 8), edgeZ(c, l.x1 - 8), edgeZ(c, cx)) - 0.8;
+  const stairEnd = l.z0 + 0.6 + Math.ceil(-l.y / 0.25) * 0.4;
+  const ring = [add(cx - 24, l.z0 + 10, l.y), add(cx - 2, stairEnd + 1.5, l.y), add(cx + 2, zEdge - 5, l.y), add(cx - 24, zEdge - 5, l.y)];
+  ring.forEach((a, k) => link(a, ring[(k + 1) % ring.length]));
+  const top = add(cx - 2, l.z0 - 4, 0);
+  link(top, ring[1]);
   const inner = grid[grid.length - 2];
   const near = inner.filter((k) => k >= 0).sort((a, b) => nodes[a].distanceTo(nodes[top]) - nodes[b].distanceTo(nodes[top]))[0];
   link(top, near);
-  const ends = grid.flatMap((row) => [row.find((k) => k >= 0)!, [...row].reverse().find((k) => k >= 0)!]);
-  return { nodes, edges, exits: ends };
+  const beach = xs.map((x) => add(x, def.beachRoad.z - def.beachRoad.half - 1.6));
+  for (let i = 0; i + 1 < beach.length; i++) link(beach[i], beach[i + 1]);
+  const ends = [...grid, beach].flatMap((row) => [row.find((k) => k >= 0)!, [...row].reverse().find((k) => k >= 0)!]);
+  const ground = (x: number, z: number) => {
+    if (Math.abs(z - def.bridge.z) < def.bridge.width / 2 && onBridge(x)) return 0.35;
+    if (x > l.x0 + 12 && x < l.x1 - 12 && z > l.z0 && z < zEdge) {
+      if (Math.abs(x - (cx - 2)) < 1.8 && z < stairEnd) return Math.min(0, Math.max(l.y, l.y * (z - l.z0 - 0.6) / (stairEnd - l.z0 - 0.6)));
+      return l.y;
+    }
+    return hf.heightAt(x, z);
+  };
+  return { nodes, edges, exits: ends, ground };
 }
