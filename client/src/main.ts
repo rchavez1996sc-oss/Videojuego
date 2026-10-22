@@ -202,12 +202,11 @@ async function boot(): Promise<void> {
     traffic: () => life?.trafficEvents,
   });
 
-  setupStartMenu(overlay, status, () => {
+  setupStartMenu(overlay, status, canvas, () => {
     if (failed) return;
     mixer.resume();
     input.lock();
   });
-  document.addEventListener('pointerlockchange', () => overlay.classList.toggle('hidden', document.pointerLockElement === canvas));
 
   const gpu = gpuName.replace(/^ANGLE \((.*)\)$/, '$1').slice(0, 60);
   const melee = new Melee(player, enemies, sfx, tpc);
@@ -289,7 +288,7 @@ async function boot(): Promise<void> {
     input.endFrame();
     fps.update(dt, (n) => `${n} fps · ${quality} · res ${Math.round(dynRes.scale * 100)}% · ${renderer.gl.info.render.calls} draws · ${(renderer.gl.info.render.triangles / 1e6).toFixed(2)}M tris · ${gpu}${stats.dataset.errors ? ` · err ${stats.dataset.errors}` : ''}`);
   };
-  const safeFrame = guardFrame(() => frame(Math.min(clock.getDelta(), 1 / 20)), (n) => stats.dataset.errors = String(n));
+  const safeFrame = guardFrame(() => (document.pointerLockElement === canvas ? frame(Math.min(clock.getDelta(), 1 / 20)) : (clock.getDelta(), renderer.render(0))), (n) => stats.dataset.errors = String(n));
   if (!shotMode) void prologue.then(() => renderer.gl.setAnimationLoop(() => !failed && safeFrame()));
 }
 

@@ -14,6 +14,7 @@ import type { Hud } from '../ui/hud';
 import type { Enemies } from './enemies';
 import type { StreetNav } from '../ai/nav';
 import { roomy } from './respawn';
+import { holdingFire } from './truce';
 
 const CATCH_UP = 35;
 
@@ -182,6 +183,7 @@ export class Squad {
   }
 
   private fire(a: Ally): void {
+    if (holdingFire()) return;
     const { world, enemies, combat, camera, sfx, player } = this.d;
     const u = a.unit, t = a.target!;
     const muzzle = u.model.muzzle.getWorldPosition(new THREE.Vector3());

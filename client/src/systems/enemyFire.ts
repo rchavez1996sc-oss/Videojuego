@@ -1,3 +1,4 @@
+import { holdingFire } from './truce';
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import type { Enemy } from '../entities/enemy';
@@ -11,6 +12,7 @@ import { difficulty } from '../core/difficulty';
 
 /** One enemy round: accurate attackers aim at the target's chest, the rest suppress around it. */
 export function enemyFire(e: Enemy, en: Enemies, ctx: AIContext, attacker: boolean, world: RAPIER.World, camera: THREE.PerspectiveCamera, combat: Combat, sfx: Sfx, player: Player): void {
+  if (holdingFire()) return;
   const muzzle = e.model.muzzle.getWorldPosition(new THREE.Vector3());
   e.flash.fire(e.model.muzzle);
   e.model.fire();
