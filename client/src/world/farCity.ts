@@ -3,7 +3,16 @@ import { mulberry32 } from '../core/rng';
 import type { Heightfield } from './heightfield';
 import type { Lighting } from '../render/lighting';
 
-export interface FarCityDef { inner: number; outer: number; count: number; maxHeight: number; seed: number; avenueHalf: number }
+export interface FarCityDef { inner: number; outer: number; count: number; maxHeight: number; seed: number; avenueHalf: number; tall?: boolean }
+
+const TALL_COLORS = ['#ebe8e1', '#ddd5c4', '#cfd1d3', '#c8d5e2', '#e6dccb', '#b7c4cc'];
+
+/** Windows by world position (6 m tiles) so towers of any size keep storey-sized windows. */
+const WORLD_UV = /* glsl */ `
+vec3 an = abs(vWN);
+vec2 wuv = (an.x > an.z ? vWP.zy : vWP.xy) / 6.0;
+diffuseColor.rgb *= texture2D(map, wuv).rgb;
+`;
 
 const COLORS = ['#8c5440', '#7f4c3b', '#93593f', '#7a4636', '#8c5440', '#86817a', '#9a958c', '#7c8c96', '#b09a62', '#a8807a', '#a39c8a'];
 
@@ -40,7 +49,14 @@ function facadeTexture(): THREE.CanvasTexture {
  */
 export function buildFarCity(hf: Heightfield, def: FarCityDef, lighting: Lighting): THREE.InstancedMesh {
   const rand = mulberry32(def.seed);
-  const mat = lighting.setup(new THREE.MeshStandardMaterial({ map: facadeTexture(), roughness: 0.95 }), 'farcity');
+  const tex = facadeTexture();
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  const mat = lighting.setup(new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95 }), def.tall ? 'farcity-tall' : 'farcity', def.tall ? (sh) => {
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP;\nvarying vec3 vWN;')
+      .replace('#include <fog_vertex>', '#include <fog_vertex>\nvWP = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;\nvWN = mat3(modelMatrix * instanceMatrix) * objectNormal;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP;\nvarying vec3 vWN;').replace('#include <map_fragment>', WORLD_UV);
+  } : undefined);
+  const coast = hf.def.coast;
   const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), mat, def.count);
   const m = new THREE.Matrix4(), q = new THREE.Quaternion(), color = new THREE.Color();
   let n = 0;
@@ -48,16 +64,18 @@ export function buildFarCity(hf: Heightfield, def: FarCityDef, lighting: Lightin
     const x = (rand() * 2 - 1) * def.outer, z = (rand() * 2 - 1) * def.outer;
     if (Math.max(Math.abs(x), Math.abs(z)) < def.inner) continue;
     if (Math.abs(z) < def.avenueHalf && Math.abs(x) > def.inner - 10) continue;
+    if (coast && z > coast.edge - 25) continue;
     const ground = hf.heightAt(x, z);
     if (ground > def.maxHeight || hf.normalAt(x, z, 4)[1] < 0.55) continue;
     const nearAvenue = Math.abs(z) < 60;
-    const w = 5 + rand() * 4, d = 6 + rand() * 6;
-    const floors = nearAvenue && rand() < 0.2 ? 3 + Math.floor(rand() * 3) : 1 + Math.floor(rand() * 2.4);
+    const w = def.tall ? 14 + rand() * 12 : 5 + rand() * 4, d = def.tall ? 14 + rand() * 10 : 6 + rand() * 6;
+    const floors = def.tall ? 5 + Math.floor(rand() * rand() * 22) : nearAvenue && rand() < 0.2 ? 3 + Math.floor(rand() * 3) : 1 + Math.floor(rand() * 2.4);
     const yaw = nearAvenue ? (rand() < 0.5 ? 0 : Math.PI) + (rand() - 0.5) * 0.05 : (rand() - 0.5) * 0.6 + (z > 0 ? Math.PI : 0);
     q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-    m.compose(new THREE.Vector3(x, ground - 1.2, z), q, new THREE.Vector3(w, floors * 2.7 + 1.2, d));
+    m.compose(new THREE.Vector3(x, ground - 1.2, z), q, new THREE.Vector3(w, floors * (def.tall ? 3 : 2.7) + 1.2, d));
     mesh.setMatrixAt(n, m);
-    mesh.setColorAt(n, color.set(COLORS[Math.floor(rand() * COLORS.length)]).multiplyScalar(0.75 + rand() * 0.25));
+    const palette = def.tall ? TALL_COLORS : COLORS;
+    mesh.setColorAt(n, color.set(palette[Math.floor(rand() * palette.length)]).multiplyScalar(0.75 + rand() * 0.25));
     n++;
   }
   mesh.count = n;

@@ -1,5 +1,6 @@
 import { Noise, lerp, smoothstep } from '../core/rng';
 import type { TerrainDef } from '../data/types';
+import { coastHeight, coastMask } from './coast';
 
 /** Height grid (row-major, z rows, x columns) plus a RGBA mask: R road, G grass density, B packed ground. */
 export class Heightfield {
@@ -54,6 +55,11 @@ export class Heightfield {
       for (let xi = 0; xi < n; xi++) {
         const x = -half + xi * step, z = -half + zi * step;
         const dRoad = this.distToRoad(x, z);
+        if (def.coast) {
+          this.heights[zi * n + xi] = coastHeight(def.coast, x, z, noise);
+          this.roadDist[zi * n + xi] = dRoad;
+          continue;
+        }
         let h = this.rawHeight(x, z, noise, dRoad);
         def.flatten.forEach((f, i) => {
           const t = smoothstep(f.r, f.r * 0.55, Math.hypot(x - f.x, z - f.z));
@@ -75,6 +81,10 @@ export class Heightfield {
       for (let xi = 0; xi < n; xi++) {
         const x = -half + xi * step, z = -half + zi * step;
         const k = zi * n + xi;
+        if (def.coast) {
+          coastMask(def.coast, x, z, noise).forEach((v, i) => (this.mask[k * 4 + i] = v * 255));
+          continue;
+        }
         const edgeNoise = noise.fbm(x, z, 1 / 6, 2) * 1.6;
         const rw = (def.roadWidth ?? 6.4) / 2;
         const road = 1 - smoothstep(rw - 1, rw + 1, this.roadDist[k] + edgeNoise * (rw > 4 ? 0.3 : 1));

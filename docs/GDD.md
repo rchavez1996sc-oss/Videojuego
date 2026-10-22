@@ -70,7 +70,7 @@ TPS táctico en campos de batalla abiertos de **mínimo 500 × 500 m** por nivel
 | 9 | **La Represa** | Represa andina entre cerros | Evitar la inundación del valle | Decisión moral (finales A/B) |
 | 10 | **Palacio de Invierno** | Lima nocturna, barricadas, palacio presidencial (ficticio) | Asalto final | Final A / Final B |
 
-La aldea andina construida en la Fase 1 queda como mapa de la sierra (`?ch=2`).
+La aldea andina construida en la Fase 1 queda como mapa de la sierra (`?ch=3`).
 **Civiles:** los mapas urbanos tienen transeúntes que huyen al oír disparos; herir civiles penaliza.
 
 ## 4. Mundo y mapas

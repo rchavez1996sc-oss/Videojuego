@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import ch01 from './data/chapters/ch01_lima.json';
-import ch02 from './data/chapters/ch02_aldea.json';
+import ch02 from './data/chapters/ch02_malecon.json';
+import ch03 from './data/chapters/ch03_aldea.json';
 import type { ChapterDef } from './data/types';
 import { Input } from './core/input';
 import { ThirdPersonCamera } from './core/camera';
@@ -43,6 +44,7 @@ import { installDebug } from './core/debug';
 import { ShadowCull } from './render/shadowCull';
 import { buildBarrio } from './world/barrio';
 import { buildFarCity } from './world/farCity';
+import { buildMalecon } from './world/malecon';
 import { StreetNav } from './ai/nav';
 import { cover } from './ai/cover';
 import { createPopulace } from './systems/populace';
@@ -59,7 +61,7 @@ import { showMissionComplete } from './ui/missionComplete';
 import { showPrologue } from './ui/prologue';
 import allyDef from './data/allies.json';
 
-const CHAPTERS: Record<string, unknown> = { '1': ch01, '2': ch02 };
+const CHAPTERS: Record<string, unknown> = { '1': ch01, '2': ch02, '3': ch03 };
 
 const status = document.getElementById('status')!;
 const overlay = document.getElementById('overlay')!;
@@ -91,7 +93,7 @@ async function boot(): Promise<void> {
     blockers.push((x, z) => village.footprints.some((f) => Math.hypot(f.x - x, f.z - z) < f.r + 2));
   }
   const shadowCull = new ShadowCull(90);
-  const barrio = ch.barrio ? buildBarrio(hf, ch.barrio, lighting, world) : null;
+  const barrio = ch.barrio ? buildBarrio(hf, ch.barrio, lighting, world) : ch.malecon ? buildMalecon(hf, ch.malecon, lighting, world) : null;
   if (barrio) {
     scene.add(barrio.group);
     shadowCull.add(barrio.group);

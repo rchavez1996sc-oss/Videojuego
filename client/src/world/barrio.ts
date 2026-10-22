@@ -19,6 +19,7 @@ import { alleyLife } from './alleys';
 import { STREET_COLORS, stall, trashPile, roadMarkings } from './streetLife';
 import { brick, concrete, plaster, corrugated, estera } from '../render/urbanTextures';
 import { rock, wood } from '../render/textures';
+import { bakeGroups } from './bake';
 
 export interface BarrioDef {
   seed: number;
@@ -50,7 +51,7 @@ export interface Barrio {
 
 const PAINT_COLORS = ['#9fc3d6', '#e3c46a', '#d9a3a0', '#9cc29a', '#e6dac0', '#d99a63'];
 
-function materials(lighting: Lighting, atlas: SignAtlas): Record<string, THREE.Material> {
+export function materials(lighting: Lighting, atlas: SignAtlas): Record<string, THREE.Material> {
   const br = brick(), co = concrete(), pl = plaster(), ca = corrugated(), es = estera(), st = rock(), wd = wood();
   const std = (key: string, p: THREE.MeshStandardMaterialParameters) => lighting.setup(new THREE.MeshStandardMaterial(p), key);
   const m: Record<string, THREE.Material> = {
@@ -264,12 +265,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
 
   const group = new THREE.Group();
   const mats = materials(lighting, atlas);
-  const pl = plaster();
-  const bake = [
-    { material: lighting.setup(new THREE.MeshStandardMaterial({ map: pl.map, normalMap: pl.normalMap, roughness: 0.9, vertexColors: true }), 'paint-baked'), keys: PAINTS },
-    { material: lighting.setup(new THREE.MeshStandardMaterial({ roughness: 0.45, metalness: 0.35, vertexColors: true }), 'plain-baked'),
-      keys: ['car0', 'car1', 'car2', 'car3', 'car4', 'car5', 'moto0', 'moto1', 'moto2', 'tankBlack', 'tankBlue', 'stripe', 'checker', 'canopy', 'seat', 'tire', 'bars', 'rebar', 'cable', 'paintYellow', 'light', 'glass', 'rim', 'plate', 'tail', 'plastic', ...Object.keys(STREET_COLORS)] },
-  ];
+  const bake = bakeGroups(lighting);
   group.add(...b.build(mats, 0.5, bake, 128));
   if (atlas.geometries.length) {
     const signs = new THREE.Mesh(mergeGeometries(atlas.geometries), mats.signs);

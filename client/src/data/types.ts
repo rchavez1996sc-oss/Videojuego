@@ -12,6 +12,7 @@ export interface TerrainDef {
   flatten: { x: number; z: number; r: number }[];
   /** Bands along x (centre z, half width) that are paved: no grass grows there. */
   paved?: { z: number; half: number }[];
+  coast?: import('../world/coast').CoastDef;
 }
 
 export interface BiomeDef {
@@ -43,6 +44,7 @@ export interface ChapterDef {
   village?: { x: number; z: number; radius: number; houses: number; church: { x: number; z: number; rot: number } };
   barrio?: import('../world/barrio').BarrioDef;
   farCity?: import('../world/farCity').FarCityDef;
+  malecon?: import('../world/malecon/layout').MaleconDef;
   life?: import('../systems/cityLife').LifeDef;
   civilians?: { count: number; seed: number };
   squad?: number;

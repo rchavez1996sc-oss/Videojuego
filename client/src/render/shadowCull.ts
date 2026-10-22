@@ -9,7 +9,7 @@ export class ShadowCull {
 
   add(root: THREE.Object3D): void {
     root.traverse((o) => {
-      if (!(o instanceof THREE.Mesh) || !o.castShadow) return;
+      if (!(o instanceof THREE.Mesh) || o instanceof THREE.InstancedMesh || !o.castShadow) return;
       const s = o.geometry.boundingSphere ?? (o.geometry.computeBoundingSphere(), o.geometry.boundingSphere!);
       this.meshes.push({ mesh: o, center: s.center.clone(), radius: s.radius });
     });
