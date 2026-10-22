@@ -26,7 +26,7 @@
     "paved": [
       {
         "z": 50.5,
-        "half": 4.6
+        "half": 4.8
       }
     ]
   },
@@ -412,7 +412,7 @@
     ],
     "road2": {
       "z": 50.5,
-      "half": 3.5
+      "half": 4.0
     }
   },
   "scatter": {
@@ -718,7 +718,7 @@
     ]
   ],
   "civilians": {
-    "count": 70,
+    "count": 58,
     "seed": 5
   },
   "views": [
@@ -788,13 +788,41 @@
         "z": 0,
         "lane": 3.2,
         "half": 7.6,
-        "count": 24
+        "count": 20
       },
       {
         "z": 50.5,
-        "lane": 1.75,
-        "half": 3.4,
-        "count": 9
+        "lane": 2.0,
+        "half": 3.9,
+        "count": 14
+      },
+      {
+        "z": 93.5,
+        "lane": 1.8,
+        "half": 3.6,
+        "count": 6,
+        "kinds": [
+          "combi",
+          "combi",
+          "moto",
+          "combi",
+          "tico",
+          "combi"
+        ]
+      },
+      {
+        "z": -93.5,
+        "lane": 1.8,
+        "half": 3.6,
+        "count": 6,
+        "kinds": [
+          "combi",
+          "combi",
+          "moto",
+          "combi",
+          "tico",
+          "combi"
+        ]
       }
     ]
   },

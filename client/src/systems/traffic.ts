@@ -18,8 +18,8 @@ interface Vehicle {
 
 export interface Victim { key: string; pos: THREE.Vector3; hurt(damage: number, from: THREE.Vector3, shove: THREE.Vector3): void }
 
-/** A straight road along x: centre `z`, lane offset from the centre, half width, how many vehicles use it. */
-export interface Road { z: number; lane: number; half: number; count: number }
+/** A straight road along x: centre `z`, lane offset from the centre, half width, how many vehicles use it (and which kinds). */
+export interface Road { z: number; lane: number; half: number; count: number; kinds?: (CarKind | 'moto' | 'delivery')[] }
 
 const X_MIN = -245, X_MAX = 245, HP = 140;
 
@@ -28,6 +28,7 @@ export class Traffic {
   readonly group = new THREE.Group();
   private list: Vehicle[] = [];
   private calmT = 99;
+  private cam = new THREE.Vector3();
   onHonk: (at: THREE.Vector3) => void = () => {};
   onDisabled: (at: THREE.Vector3, weight: number) => void = () => {};
   onCrash: (at: THREE.Vector3) => void = () => {};
@@ -48,7 +49,7 @@ export class Traffic {
     let seed = 7;
     const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
     for (let i = 0; i < count; i++) {
-      const kind = kinds[i % kinds.length];
+      const kind = lanes[i].kinds?.[i % lanes[i].kinds!.length] ?? kinds[i % kinds.length];
       const b = new Builder(null, null);
       if (kind === 'moto') mototaxi(b, new THREE.Vector3(), 0, `moto${i % 3}`);
       else if (kind === 'delivery') deliveryBike(b, i % 3);
@@ -109,7 +110,9 @@ export class Traffic {
     return this.list.map((v) => `${v.state[0]}@${v.x.toFixed(0)},${v.z.toFixed(1)}`).join(' ');
   }
 
+  /** Gunfire or a blast: only a scare near the camera clears the streets (fights far away leave traffic alone). */
   alarm(at: THREE.Vector3): void {
+    if (Math.hypot(at.x - this.cam.x, at.z - this.cam.z) > 200) return;
     this.calmT = 0;
     for (const v of this.list) if (v.state === 'drive' && Math.abs(v.x - at.x) < 160) v.panic = true;
   }
@@ -162,10 +165,11 @@ export class Traffic {
 
   update(dt: number, player: THREE.Vector3, camera: THREE.Vector3): void {
     this.calmT += dt;
+    this.cam.copy(camera);
     this.clock += dt;
     for (const v of this.list) {
       if (v.state === 'off') {
-        if (this.calmT > 45 && Math.random() < dt * 0.2) {
+        if (this.calmT > 20 && Math.random() < dt * 0.5) {
           Object.assign(v, { state: 'drive', panic: false, hp: HP, x: v.dir > 0 ? X_MIN : X_MAX, z: v.base + v.dir * v.lane, yaw: v.dir > 0 ? Math.PI / 2 : -Math.PI / 2 });
           v.group.visible = true;
         } else continue;
@@ -187,9 +191,9 @@ export class Traffic {
           v.honkT = 6 + Math.random() * 14;
           this.onHonk(new THREE.Vector3(v.x, 0, v.z));
         }
-        if (!v.panic && this.calmT > 45 && Math.abs(v.x - camera.x) > 220) this.bringNear(v, camera.x);
+        if (!v.panic && this.calmT > 20 && Math.abs(v.x - camera.x) > 160) this.bringNear(v, camera.x);
         if ((v.dir > 0 && v.x > X_MAX) || (v.dir < 0 && v.x < X_MIN)) {
-          if (v.panic || this.calmT < 45) {
+          if (v.panic || this.calmT < 20) {
             v.state = 'off';
             v.group.visible = false;
             v.body.setNextKinematicTranslation({ x: 0, y: -50, z: 0 });

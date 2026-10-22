@@ -62,9 +62,9 @@ export class Pickups {
     this.items.push({ kind, mesh: g, ttl, base, spins: ttl !== Infinity || kind === 'medkit' });
   }
 
-  /** Positions of supplies still on the map (for the radar). */
-  get positions(): THREE.Vector3[] {
-    return this.items.map((p) => p.mesh.position);
+  /** Supplies still on the map and what they are (for the radar icons). */
+  get markers(): { pos: THREE.Vector3; kind: SupplyKind }[] {
+    return this.items.map((p) => ({ pos: p.mesh.position, kind: p.kind }));
   }
 
   /** Returns the kind collected this frame, if any. `wants` filters out pickups the player does not need. */

@@ -135,10 +135,10 @@ async function boot(): Promise<void> {
   scene.add(enemies.group);
   const { civilians, life, alarm, state: populace } = createPopulace(ch, barrio, { world, hf, lighting, mixer, sfx, combat, hud, camera, scene });
   let failed = false;
-  populace.onFail = () => {
+  populace.onFail = () => window.setTimeout(() => {
+    if (!failed) showMissionFailed('El FLS no dispara contra su propio pueblo. Demasiadas bajas civiles: la gente del barrio ya no confía en ustedes.');
     failed = true;
-    showMissionFailed('El FLS no dispara contra su propio pueblo. Demasiadas bajas civiles: la gente del barrio ya no confía en ustedes.');
-  };
+  }, 2600);
   combat.onShot = (p) => {
     enemies.hearShot(p);
     alarm(p, 90);
@@ -236,8 +236,8 @@ async function boot(): Promise<void> {
         if (player.hp <= 0) {
           hud.lives = --lives;
           if (lives <= 0) {
-            failed = true;
-            showMissionFailed('Perdiste tus tres vidas. El nivel se reinicia desde el principio.');
+            window.setTimeout(() => (failed = true), 2600);
+            window.setTimeout(() => showMissionFailed('Perdiste tus tres vidas. El nivel se reinicia desde el principio.'), 2600);
           }
           deadT = 4.5;
           deathPos.copy(player.position);
@@ -266,7 +266,7 @@ async function boot(): Promise<void> {
     collectSupplies(dt, pickups, { player, gun: combat.gun, grenades, sfx, hud, alive: deadT <= 0 });
     objective?.update(dt, player.position, enemies.list, input, deadT <= 0);
     corpses.update(dt, { dead: [...enemies.list.filter((e) => !e.alive), ...(squad?.fallen ?? [])], player, gun: combat.gun, input, sfx, hud, alive: deadT <= 0 });
-    const threats = gatherThreats(enemies, civilians, pickups.positions, player.position, camera, squad?.positions, objective?.position);
+    const threats = gatherThreats(enemies, civilians, pickups.markers, player.position, camera, squad?.positions, objective?.position);
     threatGrid.update(dt, threats);
     damageFx.update(dt, player.hp / 100);
     hud.enemies = enemies.aliveCount;

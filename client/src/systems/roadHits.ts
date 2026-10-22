@@ -7,7 +7,7 @@ import type { Squad } from './squad';
 /** Who traffic brakes for and who it can run over (only people near the avenue are checked). */
 export function wireRoad(traffic: Traffic, d: { player: Player; enemies: Enemies; squad: Squad | null; playerHit: (dmg: number, from: THREE.Vector3) => void; alive: () => boolean }): void {
   const { player, enemies, squad } = d;
-  traffic.obstacles = () => squad?.positions ?? [];
+  traffic.obstacles = () => [...(squad?.positions ?? []), ...enemies.list.filter((e) => e.alive && e.state === 'patrol').map((e) => e.position)];
   traffic.victims = () => {
     const out: Victim[] = [];
     if (d.alive()) out.push({ key: 'p', pos: player.position, hurt: (dmg, from, shove) => { d.playerHit(dmg, from); player.shove(shove); } });

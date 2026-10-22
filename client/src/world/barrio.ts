@@ -204,6 +204,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
     const onAvenue = rand() < 0.6;
     const x = onAvenue ? def.x0 + rand() * (xEnd - def.x0) : crossX[Math.floor(rand() * crossX.length)] + (rand() < 0.5 ? -3 : 3);
     const z = onAvenue ? (rand() < 0.5 ? -6.6 : 6.6) : (rand() < 0.5 ? 1 : -1) * (def.gap + rand() * def.blockD * 1.8);
+    if (def.road2 && Math.abs(z - def.road2.z) < def.road2.half + 3) continue;
     mototaxi(b, new THREE.Vector3(x, hf.heightAt(x, z), z), onAvenue ? Math.PI / 2 + (rand() < 0.5 ? 0 : Math.PI) : rand() < 0.5 ? 0 : Math.PI, `moto${i % 3}`);
   }
 
@@ -280,7 +281,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
 
 function streetGraph(def: BarrioDef, crossX: number[], hf: Heightfield): StreetGraph {
   const outer = def.gap + 2 * def.blockD + def.street * 1.5, mid = def.gap + def.blockD + def.street / 2;
-  const zs = [-outer, -mid, -9.4, 9.4, def.road2 ? def.road2.z + def.road2.half + 0.6 : mid, outer];
+  const zs = [-outer - 4.2, -mid, -9.4, 9.4, def.road2 ? def.road2.z + def.road2.half + 0.3 : mid, outer + 4.2];
   const nodes: THREE.Vector3[] = [], edges: [number, number][] = [];
   const id = (i: number, j: number) => i * zs.length + j;
   crossX.forEach((x) => zs.forEach((z) => nodes.push(new THREE.Vector3(x, hf.heightAt(x, z), z))));

@@ -1,7 +1,35 @@
-export interface Threat { angle: number; dist: number; aware: boolean; neutral?: boolean; supply?: boolean; ally?: boolean; objective?: boolean }
+export interface Threat { angle: number; dist: number; aware: boolean; neutral?: boolean; supply?: 'medkit' | 'ammo'; ally?: boolean; objective?: boolean }
 
 const SECTORS = 12;
 const RINGS = [30, 70, 130];
+
+/** Radar marks for supplies: a green box with a white cross (medkit) or three brass rounds (ammo). */
+function supplyIcon(c: CanvasRenderingContext2D, x: number, y: number, kind: 'medkit' | 'ammo'): void {
+  c.strokeStyle = 'rgba(0, 0, 0, 0.75)';
+  c.lineWidth = 1;
+  if (kind === 'medkit') {
+    c.fillStyle = '#3fbf5f';
+    c.beginPath();
+    c.roundRect(x - 4.5, y - 4.5, 9, 9, 2);
+    c.fill();
+    c.stroke();
+    c.fillStyle = '#ffffff';
+    c.fillRect(x - 0.9, y - 3, 1.8, 6);
+    c.fillRect(x - 3, y - 0.9, 6, 1.8);
+    return;
+  }
+  for (const dx of [-2.6, 0, 2.6]) {
+    c.fillStyle = '#e0a83a';
+    c.beginPath();
+    c.moveTo(x + dx - 1, y + 4);
+    c.lineTo(x + dx - 1, y - 1.5);
+    c.quadraticCurveTo(x + dx, y - 4.5, x + dx + 1, y - 1.5);
+    c.lineTo(x + dx + 1, y + 4);
+    c.closePath();
+    c.fill();
+    c.stroke();
+  }
+}
 
 /** Polar grid around the player: lights the direction/distance band holding enemies, never exact spots. */
 export class ThreatGrid {
@@ -10,10 +38,10 @@ export class ThreatGrid {
   private heat = new Float32Array(SECTORS * RINGS.length);
   private alert = new Float32Array(SECTORS * RINGS.length);
   private civil = new Float32Array(SECTORS * RINGS.length);
-  private supply = new Float32Array(SECTORS * RINGS.length);
   private ally = new Float32Array(SECTORS * RINGS.length);
   private t = 0;
   private obj: { angle: number; dist: number } | null = null;
+  private items: { angle: number; dist: number; kind: 'medkit' | 'ammo' }[] = [];
   private size = 132;
 
   constructor() {
@@ -29,11 +57,16 @@ export class ThreatGrid {
   /** `angle`: radians relative to view direction (0 ahead, + right). */
   update(dt: number, threats: Threat[]): void {
     this.t += dt;
-    const target = new Float32Array(this.heat.length), aware = new Float32Array(this.heat.length), civil = new Float32Array(this.heat.length), supply = new Float32Array(this.heat.length), ally = new Float32Array(this.heat.length);
+    const target = new Float32Array(this.heat.length), aware = new Float32Array(this.heat.length), civil = new Float32Array(this.heat.length), ally = new Float32Array(this.heat.length);
     this.obj = null;
+    this.items = [];
     for (const th of threats) {
       if (th.objective) {
         this.obj = th;
+        continue;
+      }
+      if (th.supply) {
+        this.items.push({ angle: th.angle, dist: th.dist, kind: th.supply });
         continue;
       }
       const ring = RINGS.findIndex((r) => th.dist < r);
@@ -42,10 +75,6 @@ export class ThreatGrid {
       const k = Math.floor(a) * RINGS.length + ring;
       if (th.ally) {
         ally[k] = 1;
-        continue;
-      }
-      if (th.supply) {
-        supply[k] = 1;
         continue;
       }
       if (th.neutral) {
@@ -59,7 +88,6 @@ export class ThreatGrid {
       this.heat[i] += (target[i] - this.heat[i]) * Math.min(1, dt * 4);
       this.alert[i] += (aware[i] - this.alert[i]) * Math.min(1, dt * 4);
       this.civil[i] += (civil[i] - this.civil[i]) * Math.min(1, dt * 3);
-      this.supply[i] += (supply[i] - this.supply[i]) * Math.min(1, dt * 3);
       this.ally[i] += (ally[i] - this.ally[i]) * Math.min(1, dt * 3);
     }
     this.draw();
@@ -77,10 +105,10 @@ export class ThreatGrid {
     for (let sec = 0; sec < SECTORS; sec++) {
       const a0 = ((sec - 0.5) / SECTORS) * Math.PI * 2 - Math.PI / 2, a1 = a0 + (Math.PI * 2) / SECTORS;
       for (let r = 0; r < RINGS.length; r++) {
-        const k = sec * RINGS.length + r, h = this.heat[k], n = this.civil[k], sp = this.supply[k], al = this.ally[k];
-        if (h < 0.02 && n < 0.02 && sp < 0.02 && al < 0.02) continue;
+        const k = sec * RINGS.length + r, h = this.heat[k], n = this.civil[k], al = this.ally[k];
+        if (h < 0.02 && n < 0.02 && al < 0.02) continue;
         c.fillStyle = h >= 0.02 ? `rgba(${200 + 40 * this.alert[k]}, 50, 30, ${h * (0.35 + 0.5 * this.alert[k] * pulse)})`
-          : sp >= 0.02 ? `rgba(90, 200, 110, ${sp * 0.55})` : al >= 0.02 ? `rgba(80, 150, 230, ${al * 0.5})` : `rgba(235, 232, 220, ${n * 0.3})`;
+          : al >= 0.02 ? `rgba(80, 150, 230, ${al * 0.5})` : `rgba(235, 232, 220, ${n * 0.3})`;
         c.beginPath();
         c.arc(cx, cy, radius(r) - 1, a0 + 0.02, a1 - 0.02);
         c.arc(cx, cy, r === 0 ? 12 : radius(r - 1) + 1, a1 - 0.02, a0 + 0.02, true);
@@ -101,6 +129,10 @@ export class ThreatGrid {
       c.moveTo(cx + Math.cos(a) * 12, cy + Math.sin(a) * 12);
       c.lineTo(cx + Math.cos(a) * maxR, cy + Math.sin(a) * maxR);
       c.stroke();
+    }
+    for (const it of this.items) {
+      const r = 12 + (maxR - 12) * Math.min(1, it.dist / RINGS[RINGS.length - 1]) - 4, a = it.angle - Math.PI / 2;
+      supplyIcon(c, cx + Math.cos(a) * r, cy + Math.sin(a) * r, it.kind);
     }
     if (this.obj) {
       const r = 12 + (maxR - 12) * Math.min(1, this.obj.dist / RINGS[RINGS.length - 1]), a = this.obj.angle - Math.PI / 2;
