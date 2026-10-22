@@ -29,7 +29,7 @@ import enemyDefs from './data/enemies.json';
 import type { EnemyDef } from './entities/enemy';
 import { Enemies } from './systems/enemies';
 import { DamageFx } from './ui/damage';
-import { Pickups, collectSupplies, dropLoot } from './systems/pickups';
+import { Pickups, collectSupplies } from './systems/pickups';
 import { Music } from './audio/music';
 import { wireRoad } from './systems/roadHits';
 import { respawnPlayer, streetPoints } from './systems/respawn';
@@ -181,9 +181,7 @@ async function boot(): Promise<void> {
     life?.alarm(at, 150);
     life?.explosion(at, BLAST_RADIUS);
   };
-  enemies.onAllyKill = (at) => dropLoot(pickups, at);
-  enemies.onEnemyHit = (kill, headshot, at) => {
-    if (kill) dropLoot(pickups, at);
+  enemies.onEnemyHit = (kill, headshot) => {
     sfx.hitmarker(kill);
     hud.hitmarker(kill, headshot, 'BAJA');
     if (kill && enemies.aliveCount === 0) setTimeout(() => hud.showToast('ZONA DESPEJADA'), 1200);
@@ -194,7 +192,7 @@ async function boot(): Promise<void> {
   let freeCam = false;
   installDebug({
     extraLog: () => (civilians ? `civ:${civilians.list.map((c) => c.mood[0]).join('')}` : ''),
-    views: ch.views ?? [], tpc, hf, player, combat, enemies, grenades, renderer, shotMode, scene, squad, grenadeMode: nadeMode, objective, civilians: () => civilians?.present ?? [], world,
+    views: ch.views ?? [], tpc, hf, player, combat, enemies, grenades, pickups, renderer, shotMode, scene, squad, grenadeMode: nadeMode, objective, civilians: () => civilians?.present ?? [], world,
     frame: (dt) => frame(dt),
     setFreeCam: (v) => (freeCam = v),
     setSkipRender: (v) => (skipRender = v),
@@ -265,7 +263,7 @@ async function boot(): Promise<void> {
     squad?.sync();
     collectSupplies(dt, pickups, { player, gun: combat.gun, grenades, sfx, hud, alive: deadT <= 0 });
     objective?.update(dt, player.position, enemies.list, input, deadT <= 0);
-    corpses.update(dt, { dead: [...enemies.list.filter((e) => !e.alive), ...(squad?.fallen ?? [])], player, gun: combat.gun, input, sfx, hud, alive: deadT <= 0 });
+    corpses.update(dt, { dead: enemies.list.filter((e) => !e.alive), fallen: squad?.fallen ?? [], player, gun: combat.gun, hud, alive: deadT <= 0 });
     const threats = gatherThreats(enemies, civilians, pickups.markers, player.position, camera, squad?.positions, objective?.position);
     threatGrid.update(dt, threats);
     damageFx.update(dt, player.hp / 100);

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { Pickups } from '../systems/pickups';
 import RAPIER from '@dimforge/rapier3d-compat';
 import type { ThirdPersonCamera } from './camera';
 import type { Heightfield } from '../world/heightfield';
@@ -20,6 +21,7 @@ export interface DebugContext {
   combat: Combat;
   enemies: Enemies;
   grenades: Grenades;
+  pickups: Pickups;
   renderer: Renderer;
   shotMode: boolean;
   frame: (dt: number) => void;
@@ -144,18 +146,14 @@ export function installDebug(c: DebugContext): void {
       const e = [...c.enemies.list].filter((x) => x.alive).sort((a, b) => a.position.distanceTo(p) - b.position.distanceTo(p))[0];
       e.damage(1e6);
       e.die(new THREE.Vector3(1, 0, 0));
-      c.frame(1 / 20);
-      c.player.respawn(e.position.clone().add(new THREE.Vector3(0.8, 0, 0)), 0);
+      for (let i = 0; i < 40; i++) c.frame(1 / 20);
+      const drops = c.pickups.markers.filter((m) => m.pos.distanceTo(e.position) < 2).map((m) => m.kind).join('+');
       g.ammo = 0;
       g.reserve = 0;
-      c.frame(1 / 20);
-      dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE' }));
-      c.frame(1 / 20);
-      dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE' }));
+      c.player.respawn(e.position.clone(), 0);
+      for (let i = 0; i < 6; i++) c.frame(1 / 20);
       const looted = g.reserve;
-      g.reserve = 0;
-      for (let i = 0; i < 80; i++) c.frame(1 / 20);
-      return `looted=${looted} toast="${document.querySelector('#hud .toast')?.textContent}"`;
+      return `drops=${drops} looted=${looted} toast="${document.querySelector('#hud .toast')?.textContent}"`;
     },
     /** Walks into the station lobby: reports the prompt with defenders alive, then clears them and holds E. */
     objectiveTest() {

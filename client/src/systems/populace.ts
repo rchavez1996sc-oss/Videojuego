@@ -20,7 +20,7 @@ export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world
   const casualty = (weight = 1) => {
     state.casualties += weight;
     d.hud.civilians = { count: state.casualties, limit: difficulty.value.civilianLimit };
-    if (state.casualties > difficulty.value.civilianLimit) state.onFail();
+    if (state.casualties >= difficulty.value.civilianLimit) state.onFail();
   };
   const alarm = (p: THREE.Vector3, r: number) => {
     civilians?.alarm(p, r);

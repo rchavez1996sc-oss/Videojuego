@@ -1,61 +1,32 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import type { Enemy } from '../entities/enemy';
-import type { Pickups } from './pickups';
+import { dropLoot, type Pickups } from './pickups';
 import type { Heightfield } from '../world/heightfield';
 import type { Player } from '../entities/player';
 import type { Gun } from '../weapons/gun';
-import type { Sfx } from '../audio/sfx';
 import type { Hud } from '../ui/hud';
-import type { Input } from '../core/input';
 
-/** Seconds a fallen soldier's magazines can still be taken. */
-const WINDOW = 30, RANGE = 2.3, EMPTY_DELAY = 2, EMPTY_EVERY = 40, LOW_EVERY = 100;
+const SETTLE = 1.2, EMPTY_DELAY = 2, EMPTY_EVERY = 40, LOW_EVERY = 100;
 
-interface Body { t: number; rounds: number; stained: boolean }
-
-/** Ammo from fresh corpses (E) plus small supply drops near the player when they run dry. */
+/** Once a body settles: blood under it and, for enemies, their rounds (and maybe a medkit). Plus crates when the player runs dry. */
 export class Loot {
-  private bodies = new Map<Enemy, Body>();
-  private prompt = document.createElement('div');
+  private bodies = new Map<Enemy, number>();
   private emptyT = EMPTY_DELAY;
   private lowT = LOW_EVERY;
 
-  constructor(private pickups: Pickups, private world: RAPIER.World, private hf: Heightfield, private stain: (at: THREE.Vector3) => void = () => {}) {
-    this.prompt.className = 'prompt';
-    document.body.appendChild(this.prompt);
-  }
+  constructor(private pickups: Pickups, private world: RAPIER.World, private hf: Heightfield, private stain: (at: THREE.Vector3) => void = () => {}) {}
 
-  update(dt: number, d: { dead: Enemy[]; player: Player; gun: Gun; input: Input; sfx: Sfx; hud: Hud; alive: boolean }): void {
-    const p = d.player.position;
-    let near: Body | null = null, best = RANGE;
-    for (const e of d.dead) {
-      let b = this.bodies.get(e);
-      if (!b) this.bodies.set(e, (b = { t: 0, rounds: 30 + Math.round(Math.random() * 45), stained: false }));
-      b.t += dt;
-      if (!b.stained && b.t > 1.2) {
-        b.stained = true;
-        this.stain(e.model.hips().setY(e.position.y));
-      }
-      const dist = e.position.distanceTo(p);
-      if (b.t < WINDOW && b.rounds > 0 && dist < best) {
-        best = dist;
-        near = b;
-      }
+  update(dt: number, d: { dead: Enemy[]; fallen: Enemy[]; player: Player; gun: Gun; hud: Hud; alive: boolean }): void {
+    for (const e of [...d.dead, ...d.fallen]) {
+      const t = this.bodies.get(e) ?? 0;
+      this.bodies.set(e, t + dt);
+      if (t >= SETTLE || t + dt < SETTLE) continue;
+      const at = e.model.hips().setY(e.position.y);
+      this.stain(at);
+      if (d.dead.includes(e)) dropLoot(this.pickups, at, e.position.y);
     }
-    const show = d.alive && !!near;
-    this.prompt.style.opacity = show ? '1' : '0';
-    if (show) this.prompt.innerHTML = `<kbd>E</kbd> TOMAR MUNICIÓN <span>${near!.rounds}</span>`;
-    if (show && d.input.hit('KeyE')) {
-      if (d.gun.reserve >= d.gun.reserveMax) d.hud.showToast('MUNICIÓN LLENA');
-      else {
-        const before = d.gun.reserve;
-        d.gun.addAmmo(near!.rounds);
-        d.hud.showToast(`${d.gun.reserve - before} BALAS`);
-        near!.rounds = 0;
-        d.sfx.pickup();
-      }
-    }
+    for (const [e, t] of this.bodies) if (t >= SETTLE && e.alive) this.bodies.delete(e);
     this.resupply(dt, d);
   }
 
