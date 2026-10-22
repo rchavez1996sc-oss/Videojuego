@@ -5,7 +5,19 @@ import { edgeZ, type CoastDef } from '../coast';
 import { EXTENT, SIDEWALK, inLarcomar, innerPathZ, overRavine, promenadeZ, type MaleconDef } from './layout';
 
 const UP = new THREE.Vector3(0, 1, 0), Q = new THREE.Quaternion();
-export interface Plants { palms: THREE.Vector3[]; phoenix: THREE.Vector3[]; trees: THREE.Vector3[]; bent: THREE.Vector3[]; pines: THREE.Vector3[]; seats: { pos: THREE.Vector3; yaw: number }[]; arch: { pos: THREE.Vector3; lean: number }[] }
+/** A standing extra: where, facing, which looping clip. */
+export interface Extra { pos: THREE.Vector3; yaw: number; key: string }
+
+/** Two or three people chatting in a ring around `at`. */
+export function chatGroup(list: Extra[], at: THREE.Vector3, rand: () => number): void {
+  const n = 2 + Math.floor(rand() * 2), a0 = rand() * Math.PI * 2;
+  for (let k = 0; k < n; k++) {
+    const a = a0 + (k / n) * Math.PI * 2, p = at.clone().add(new THREE.Vector3(Math.cos(a) * 0.75, 0, Math.sin(a) * 0.75));
+    list.push({ pos: p, yaw: Math.atan2(at.x - p.x, at.z - p.z), key: k === 0 || rand() < 0.4 ? 'talk' : rand() < 0.5 ? 'civ_idle' : 'texting' });
+  }
+}
+
+export interface Plants { palms: THREE.Vector3[]; phoenix: THREE.Vector3[]; trees: THREE.Vector3[]; bent: THREE.Vector3[]; pines: THREE.Vector3[]; seats: { pos: THREE.Vector3; yaw: number }[]; standing: Extra[]; arch: { pos: THREE.Vector3; lean: number }[] }
 
 /** Flat strip following a polyline, a few cm above the ground. */
 export function ribbon(b: Builder, hf: Heightfield, pts: THREE.Vector2[], width: number, mat: string, lift = 0.04): void {
@@ -43,6 +55,18 @@ export function railing(b: Builder, pts: THREE.Vector3[], mat = 'railGreen'): vo
   }
 }
 
+/** Brick parapet with a concrete coping, where the park meets the cliff. */
+function parapet(b: Builder, hf: Heightfield, a: THREE.Vector3, c: THREE.Vector3): void {
+  const mid = a.clone().lerp(c, 0.5), len = a.distanceTo(c) + 0.05, q = new THREE.Quaternion().setFromAxisAngle(UP, Math.atan2(c.x - a.x, c.z - a.z));
+  b.box('pavement', [0.46, 0.3, len], mid.clone().setY(mid.y + 0.15), q, true);
+  b.box('brickRed', [0.4, 0.82, len], mid.clone().setY(mid.y + 0.71), q, true);
+  b.box('brickRed', [0.46, 0.07, len], mid.clone().setY(mid.y + 1.15), q, false);
+  const inward = new THREE.Vector3(-(c.z - a.z), 0, c.x - a.x).normalize().multiplyScalar(-2.4);
+  const p0 = new THREE.Vector2(a.x + inward.x, a.z + inward.z), p1 = new THREE.Vector2(c.x + inward.x, c.z + inward.z);
+  ribbon(b, hf, [p0, p1], 4.4, 'pavement', 0.05);
+  ribbon(b, hf, [p0.clone().add(new THREE.Vector2(inward.x, inward.z)), p1.clone().add(new THREE.Vector2(inward.x, inward.z))], 0.7, 'brickRed', 0.055);
+}
+
 export function lamp(b: Builder, at: THREE.Vector3): void {
   const m = new THREE.Matrix4().makeTranslation(at.x, at.y, at.z);
   b.geometry('lampPole', new THREE.CylinderGeometry(0.06, 0.1, 4.2, 8).translate(0, 2.1, 0), m);
@@ -63,7 +87,7 @@ export function bench(b: Builder, at: THREE.Vector3, yaw: number, wood = 'benchW
 
 /** Clifftop park: paths, lawns painted into the terrain mask, railings, lamps, benches, hedges; returns where to plant. */
 export function buildPark(b: Builder, hf: Heightfield, def: MaleconDef, c: CoastDef, rand: () => number): Plants {
-  const plants: Plants = { palms: [], phoenix: [], trees: [], bent: [], pines: [], seats: [], arch: [] };
+  const plants: Plants = { palms: [], phoenix: [], trees: [], bent: [], pines: [], seats: [], standing: [], arch: [] };
   const seat = (at: THREE.Vector3, yaw: number) => {
     bench(b, at, yaw);
     if (rand() < 0.4) plants.seats.push({ pos: at, yaw });
@@ -106,6 +130,7 @@ export function buildPark(b: Builder, hf: Heightfield, def: MaleconDef, c: Coast
     if (z < parkStart + 0.5 || z > edgeZ(c, x) - 0.6 || blocked(x, z, 1)) return 0;
     if (Math.abs(z - promenadeZ(c, x)) < 3 || Math.abs(z - innerPathZ(def, x)) < 2.4) return 0;
     if (Math.hypot(x - lh.x, z - lh.z) < 11.5) return 0;
+    if (def.brickEdge && x > def.brickEdge[0] - 2 && x < def.brickEdge[1] + 2 && z > edgeZ(c, x) - 7.5) return 0;
     for (const l of links) for (const p of l) if (Math.abs(p.x - x) < 2.2 && Math.abs(p.y - z) < 2.2) return 0;
     return 1;
   });
@@ -116,7 +141,19 @@ export function buildPark(b: Builder, hf: Heightfield, def: MaleconDef, c: Coast
     if (blocked(x, z, 4)) { if (edge[edge.length - 1].length) edge.push([]); continue; }
     edge[edge.length - 1].push(new THREE.Vector3(x, hf.heightAt(x, z), z));
   }
-  for (const e of edge) railing(b, e);
+  const brick = def.brickEdge ?? [0, 0], onBrick = (p: THREE.Vector3) => p.x >= brick[0] && p.x <= brick[1];
+  for (const e of edge) {
+    let run: THREE.Vector3[] = [];
+    for (let i = 0; i < e.length; i++) {
+      run.push(e[i]);
+      if (i + 1 < e.length && onBrick(e[i]) && onBrick(e[i + 1])) {
+        parapet(b, hf, e[i], e[i + 1]);
+        railing(b, run);
+        run = [];
+      }
+    }
+    railing(b, run);
+  }
   for (const r of c.ravines ?? []) for (const s of [-1, 1]) {
     const pts: THREE.Vector3[] = [];
     for (let z = r.head - 10; z < edgeZ(c, r.x + s * r.width / 2) - 1; z += 2.5) {
@@ -134,8 +171,14 @@ export function buildPark(b: Builder, hf: Heightfield, def: MaleconDef, c: Coast
     lamp(b, new THREE.Vector3(x, hf.heightAt(x, z), z));
     for (const dx of [-5, 5]) if (Math.hypot(x + dx - def.lighthouse.x, z - def.lighthouse.z) > 14) seat(new THREE.Vector3(x + dx, hf.heightAt(x + dx, z), z + 0.3), 0);
   }
+  for (const run of prom) for (let i = 4; i < run.length; i += 12) {
+    const p = run[i], z = edgeZ(c, p.x) - 2.2;
+    if (rand() < 0.45 || blocked(p.x, z, 3) || Math.abs(p.x - def.amor.x) < def.amor.w / 2) continue;
+    for (let k = 0; k < 1 + Math.floor(rand() * 2); k++) plants.standing.push({ pos: new THREE.Vector3(p.x + k * 0.8, hf.heightAt(p.x, z), z), yaw: (rand() - 0.5) * 0.6, key: rand() < 0.5 ? 'look_around' : rand() < 0.5 ? 'civ_idle' : 'texting' });
+  }
   for (const run of inner) for (let i = 0; i < run.length; i++) {
     const p = run[i];
+    if (i % 20 === 10 && rand() < 0.7 && !blocked(p.x, p.y + 4.5, 3)) chatGroup(plants.standing, new THREE.Vector3(p.x, hf.heightAt(p.x, p.y + 4.5), p.y + 4.5), rand);
     if (i % 6 === 0) plants.palms.push(new THREE.Vector3(p.x + 1, 0, p.y - 2.8));
     if (i % 6 === 3 && !blocked(p.x, p.y - 2.3, 3)) seat(new THREE.Vector3(p.x, hf.heightAt(p.x, p.y - 2.3), p.y - 2.3), 0);
     if (i % 9 === 4 && rand() < 0.7) {

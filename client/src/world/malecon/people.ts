@@ -4,6 +4,7 @@ import type { Lighting } from '../../render/lighting';
 import { Rig } from '../../entities/rig';
 import { characters, type CharKind } from '../../render/characters';
 import type { CoastDef } from '../coast';
+import type { Extra } from './park';
 
 const KINDS: CharKind[] = ['civ_a', 'civ_b', 'civ_c'];
 
@@ -15,35 +16,48 @@ function ticker(tick: (camera: THREE.Camera) => void): THREE.Mesh {
   return m;
 }
 
-/** A Mixamo civilian frozen in a seated pose, hips `seat` metres above `at`. */
-function sitter(lighting: Lighting, rand: () => number, at: THREE.Vector3, yaw: number, seat: number): Rig {
+const SEATED = ['sit', 'sit', 'sit_talk'];
+
+/** A Mixamo civilian looping `key`; seated clips put the hips `seat` metres above `at`, standing ones the feet on it. */
+function extra(lighting: Lighting, rand: () => number, at: THREE.Vector3, yaw: number, key: string, seat = 0.47): Rig {
   const rig = new Rig(KINDS[Math.floor(rand() * KINDS.length)], lighting, false);
-  rig.sit();
+  rig.loop(key);
   rig.root.updateMatrixWorld(true);
-  const hips = rig.hips().y;
-  rig.root.position.set(at.x, at.y + seat - hips + 0.06, at.z);
-  rig.root.rotation.y = yaw;
+  const seated = key.startsWith('sit'), hips = rig.hips();
+  let turn = 0;
+  if (seated) {
+    const knees = ['Left', 'Right'].map((s) => rig.root.getObjectByName(`mixamorig${s}Leg`)!.getWorldPosition(new THREE.Vector3()));
+    const ahead = knees[0].add(knees[1]).multiplyScalar(0.5).sub(hips);
+    turn = Math.atan2(ahead.x, ahead.z);
+  }
+  rig.root.position.set(at.x, at.y + (seated ? seat - hips.y + 0.06 : 0), at.z);
+  rig.root.rotation.y = yaw - turn;
   rig.castShadow = false;
   return rig;
 }
 
-/** People sitting on benches and at café tables (needs the Mixamo `sit` clip); built once the characters have loaded, near/far LOD by camera distance. */
-export function seatedCrowd(seats: { pos: THREE.Vector3; yaw: number }[], lighting: Lighting): THREE.Group {
+/** Seated and standing extras (benches, café tables, chats, railing); built once characters load; animated only up close. */
+export function crowd(seats: { pos: THREE.Vector3; yaw: number }[], standing: Extra[], lighting: Lighting): THREE.Group {
   const g = new THREE.Group(), r = mulberry32(12);
-  let rigs: Rig[] | null = null, last = 0;
+  let rigs: Rig[] | null = null, last = 0, prev = performance.now();
+  const near = new Set<Rig>();
   g.add(ticker((camera) => {
+    const now = performance.now(), dt = Math.min(0.1, (now - prev) / 1000);
+    prev = now;
     if (!rigs) {
-      if (!characters.ready) return;
-      rigs = !characters.clips.has('sit') ? [] : seats.map((s) => sitter(lighting, r, s.pos, s.yaw, 0.47));
+      if (!characters.ready || !characters.clips.has('sit')) return;
+      rigs = [...seats.map((s) => extra(lighting, r, s.pos, s.yaw, SEATED[Math.floor(r() * SEATED.length)])), ...standing.map((s) => extra(lighting, r, s.pos, s.yaw, s.key))];
       if (rigs.length) g.add(...rigs.map((x) => x.root));
     }
-    const now = performance.now();
+    for (const x of near) x.tick(dt);
     if (now - last < 400) return;
     last = now;
+    near.clear();
     for (const x of rigs) {
       const d = x.root.position.distanceTo(camera.position);
       x.root.visible = d < 70;
       x.far = d > 22;
+      if (d < 40) near.add(x);
     }
   }));
   return g;
@@ -73,7 +87,7 @@ export function surfers(count: number, c: CoastDef, lighting: Lighting): THREE.G
       boardsGroup.visible = characters.clips.has('sit');
       if (!boardsGroup.visible) return;
       for (const s of list) {
-        const rig = sitter(lighting, r, new THREE.Vector3(0, 0, -0.2), 0, 0.12);
+        const rig = extra(lighting, r, new THREE.Vector3(0, 0, -0.2), 0, 'sit', 0.12);
         rig.far = true;
         s.obj.add(rig.root);
       }

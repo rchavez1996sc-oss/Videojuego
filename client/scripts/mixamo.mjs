@@ -25,6 +25,8 @@ const ANIMS = [
   ['death_front', P('death from the front'), 0], ['death_back', P('death from the back'), 0], ['death_right', P('death from right'), 0],
   ['death_head', P('death from front headshot'), 0], ['death_crouch', P('death crouching headshot front'), 0], ['dying', 'Dying.fbx', 0], ['fall_back', 'Falling.Back.Death.fbx', 0],
   ['civ_walk', 'Walking.fbx', 1], ['civ_back', 'Walking.Backwards.fbx', 1], ['civ_run', 'Running.fbx', 1], ['terrified', 'Terrified.fbx', 1, 6],
+  ['sit', 'Sitting.Idle.fbx', 1, 8], ['sit2', 'Sitting.Idle.1.fbx', 1, 8], ['sit_talk', 'Sitting.Talking.fbx', 1, 8],
+  ['civ_idle', 'Breathing.Idle.fbx', 1, 8], ['talk', 'Talking.fbx', 1, 8], ['texting', 'Texting.While.Standing.fbx', 1, 8], ['lean', 'Leaning.fbx', 1, 8], ['look_around', 'Looking.Around.fbx', 1, 8],
 ].map(([key, file, inPlace, maxDur]) => ({ key, url: `/src-assets/${file}`, inPlace, maxDur }));
 
 /** Some Mixamo exports carry a long footer that three's FBXLoader mistakes for nodes: cut right after the top-level null record. */

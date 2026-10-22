@@ -3,7 +3,7 @@ import type { Builder } from '../buildingKit';
 import type { Lighting } from '../../render/lighting';
 import { edgeZ, type CoastDef } from '../coast';
 import type { MaleconDef } from './layout';
-import type { Plants } from './park';
+import { chatGroup, type Plants } from './park';
 import { canvasTexture } from './textures';
 
 const Q = new THREE.Quaternion(), UP = new THREE.Vector3(0, 1, 0);
@@ -85,6 +85,7 @@ export function buildLarcomar(b: Builder, def: MaleconDef, c: CoastDef, lighting
   }
   b.box('none', [l.x1 - l.x0, 1.6, 0.4], new THREE.Vector3(cx, y0 + 0.8, zEdge), Q, true);
   kiosk(b, new THREE.Vector3(cx - 12, y0, (l.z0 + zEdge) / 2 + 3));
+  for (const [dx, dz] of [[-26, 12], [-4, 27], [10, 14]]) chatGroup(plants.standing, new THREE.Vector3(cx + dx, y0, l.z0 + dz), rand);
   for (let x = cx + 4; x < inner[1] - 5; x += 4.5) for (let z = l.z0 + 17; z < zEdge - 4; z += 4.5) plaza(b, new THREE.Vector3(x + (rand() - 0.5), y0, z + (rand() - 0.5)), rand, plants.seats);
   for (let x = inner[0] + 4; x < cx - 20; x += 5) plaza(b, new THREE.Vector3(x, y0, zEdge - 3.5), rand, plants.seats);
   for (let k = 0; k < 4; k++) sail(b, new THREE.Vector3(cx + 6 + k * 6, y0, l.z0 + 12 + (k % 2) * 7), k);

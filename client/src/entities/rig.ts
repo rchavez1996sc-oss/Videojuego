@@ -48,6 +48,7 @@ export class Rig {
   private last = new THREE.Vector3();
   private spine: THREE.Bone[];
   private wounds = 0;
+  private idleKey = ['civ_idle', 'civ_idle', 'texting', 'look_around'].filter((k) => characters.clips.has(k))[Math.floor(Math.random() * 4)] ?? 'civ_stand';
 
   constructor(kind: CharKind, private lighting: Lighting, private armed = true, detailedGun = false, outfit?: Outfit) {
     this.inst = characters.create(kind);
@@ -113,15 +114,15 @@ export class Rig {
     }
   }
 
-  /** Frozen frame of the Mixamo seated idle (benches, café tables, surfboards); false if that clip is not installed. */
-  sit(): boolean {
-    const clip = characters.clips.get('sit');
+  /** Static extras (seated, chatting, at the railing): loops one full-body clip, advanced by `tick`. */
+  loop(key: string): boolean {
+    const clip = characters.clips.get(key);
     if (!clip) return false;
-    this.mixer.stopAllAction();
-    this.mixer.clipAction(clip).play();
+    this.mixer.stopAllAction().clipAction(clip).play();
     this.mixer.update(Math.random() * clip.duration);
     return true;
   }
+  tick(dt: number): void { this.mixer.update(dt); }
 
   /** Upper-body one-shots: 'reload', 'throw', 'hit'; `from` starts part-way into the clip. */
   gesture(key: 'reload' | 'throw' | 'hit', seconds?: number, from = 0): void {
@@ -230,7 +231,7 @@ export class Rig {
 
   private chooseLower(speed: number, crouch: number, fwd: number, side: number): [string, number] {
     if (!this.armed) {
-      if (speed < 0.3) return [this.scared ? 'terrified' : 'civ_stand', 1];
+      if (speed < 0.3) return [this.scared ? 'terrified' : this.idleKey, 1];
       return speed < 2.6 ? ['civ_walk', speed / PACE.civ_walk] : ['civ_run', speed / PACE.civ_run];
     }
     if (this.airborne) return ['jump', 1];
@@ -244,7 +245,7 @@ export class Rig {
 
   private chooseUpper(low: string, crouch: number): string {
     if (this.overlay) return this.overlay.key;
-    if (!this.armed) return low === 'civ_walk' ? 'civ_walk' : low;
+    if (!this.armed) return low;
     if (this.aiming || this.aimT > 0 || low === 'idle' || low === 'crouch_idle') return crouch > 0.5 ? 'crouch_aim' : 'aim';
     return low;
   }

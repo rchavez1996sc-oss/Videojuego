@@ -11,6 +11,8 @@ export interface MaleconDef {
   streets: { z: number[]; x: number[]; half: number };
   /** Street along x turned into a dual carriageway with a tree-lined promenade (berma) in the middle. */
   boulevard?: { z: number; median: number };
+  /** Stretch of the clifftop (x0, x1) edged by a brick parapet instead of the green railing. */
+  brickEdge?: [number, number];
   beachRoad: { z: number; half: number };
   lighthouse: { x: number; z: number };
   amor: { x: number; w: number };

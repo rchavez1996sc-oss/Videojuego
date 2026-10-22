@@ -225,7 +225,11 @@
   "boulevard": {
    "z": -70,
    "median": 12
-  }
+  },
+  "brickEdge": [
+   -78,
+   12
+  ]
  },
  "farCity": {
   "inner": 238,
