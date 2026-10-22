@@ -2,28 +2,35 @@ import * as THREE from 'three';
 import { signTexture } from '../render/urbanTextures';
 import signData from '../data/signs.json';
 import { concert, chicha, menu, curfew, flag, emblem, poster } from './signArt';
+import { brand } from './brandArt';
 
 export type SignKind = 'shop' | 'graffiti' | 'poster' | 'hill' | 'concert' | 'emblem' | 'red' | 'station' | 'stencil' | 'flag' | 'menu' | 'curfew' | 'chicha';
 
-export interface SignDef { text: string; kind: SignKind; bg: string | null; fg: string; sub?: string; accent?: string; food?: boolean; left?: boolean }
+export interface SignDef { text: string; kind: SignKind; bg: string | null; fg: string; sub?: string; accent?: string; food?: boolean; left?: boolean; style?: string }
 
 const SIGNS = signData as SignDef[];
 
-/** One 4:1-cell atlas for every sign, mural and poster so they merge into a single draw call. */
+const COLS = 3, ROWS = 32, CW = 512, CH = 128, PAD = 8;
+
+function render(d: SignDef): HTMLCanvasElement {
+  if (d.style) return brand(d, CW, CH);
+  return d.kind === 'poster' || d.kind === 'red' ? poster(d, 512, 128) : d.kind === 'concert' ? concert(d, 512, 128) : d.kind === 'emblem' || d.kind === 'stencil' ? emblem(d, 512, 128) : d.kind === 'flag' ? flag(d, 512, 128) : d.kind === 'menu' ? menu(d, 512, 128) : d.kind === 'chicha' ? chicha(d, 512, 128) : d.kind === 'curfew' ? curfew(d, 512, 128) : signTexture(d.text, d.bg, d.fg, 512, 128);
+}
+
+/**
+ * One atlas (3 columns of 4:1 cells) for every sign, mural and poster so they merge into a single draw call.
+ * Each cell keeps an empty margin so distant mip levels never blend in the neighbouring sign.
+ */
 export class SignAtlas {
   readonly texture: THREE.CanvasTexture;
   private geos: THREE.BufferGeometry[] = [];
-  private static ROWS = 32;
 
   constructor() {
     const c = document.createElement('canvas');
-    c.width = 1024;
-    c.height = 128 * SignAtlas.ROWS;
+    c.width = CW * COLS;
+    c.height = CH * ROWS;
     const ctx = c.getContext('2d')!;
-    SIGNS.forEach((d, i) => {
-      const img = d.kind === 'poster' || d.kind === 'red' ? poster(d, 512, 128) : d.kind === 'concert' ? concert(d, 512, 128) : d.kind === 'emblem' || d.kind === 'stencil' ? emblem(d, 512, 128) : d.kind === 'flag' ? flag(d, 512, 128) : d.kind === 'menu' ? menu(d, 512, 128) : d.kind === 'chicha' ? chicha(d, 512, 128) : d.kind === 'curfew' ? curfew(d, 512, 128) : signTexture(d.text, d.bg, d.fg, 512, 128);
-      ctx.drawImage(img, (i % 2) * 512, Math.floor(i / 2) * 128);
-    });
+    SIGNS.forEach((d, i) => ctx.drawImage(render(d), (i % COLS) * CW + PAD, Math.floor(i / COLS) * CH + PAD, CW - 2 * PAD, CH - 2 * PAD));
     this.texture = new THREE.CanvasTexture(c);
     this.texture.colorSpace = THREE.SRGBColorSpace;
     this.texture.anisotropy = 8;
@@ -43,9 +50,9 @@ export class SignAtlas {
     const pool = SIGNS.map((s, i) => [s, i] as const).filter(([s]) => s.kind === kind && !(hush && s.left));
     const [, i] = pool[Math.floor(rand() * pool.length)];
     const g = new THREE.PlaneGeometry(w, w / 4);
-    const u0 = (i % 2) * 0.5, v0 = 1 - (Math.floor(i / 2) + 1) / SignAtlas.ROWS;
+    const W = CW * COLS, H = CH * ROWS, x0 = (i % COLS) * CW + PAD, y0 = Math.floor(i / COLS) * CH + PAD;
     const uv = g.attributes.uv as THREE.BufferAttribute;
-    for (let k = 0; k < uv.count; k++) uv.setXY(k, u0 + uv.getX(k) * 0.5, v0 + uv.getY(k) / SignAtlas.ROWS);
+    for (let k = 0; k < uv.count; k++) uv.setXY(k, (x0 + uv.getX(k) * (CW - 2 * PAD)) / W, 1 - (y0 + (1 - uv.getY(k)) * (CH - 2 * PAD)) / H);
     g.applyMatrix4(new THREE.Matrix4().compose(pos, q, new THREE.Vector3(1, 1, 1)));
     this.geos.push(g);
     return SIGNS[i];

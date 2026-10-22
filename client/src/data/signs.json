@@ -103,7 +103,7 @@
   "fg": "#1b8a4a"
  },
  {
-  "text": "RECARGAS · YAPE · PLIN",
+  "text": "RECARGAS · YAPO · PLON",
   "kind": "shop",
   "bg": "#6c2a8e",
   "fg": "#ffffff"
@@ -146,46 +146,53 @@
   "sub": "MOTOS · MOTOTAXIS · SOLDADURA"
  },
  {
-  "text": "BANCO BCB",
+  "text": "BCB",
   "kind": "shop",
   "bg": "#0b2f8f",
-  "fg": "#ff8200"
+  "fg": "#ff8200",
+  "style": "bcb"
  },
  {
-  "text": "AGENTE BCB",
+  "text": "BCB",
   "kind": "shop",
   "bg": "#ff8200",
-  "fg": "#0b2f8f"
+  "fg": "#0b2f8f",
+  "style": "agente"
  },
  {
-  "text": "TUMBO+",
+  "text": "tumbo",
   "kind": "shop",
   "bg": "#5a1d7d",
-  "fg": "#ffd400"
+  "fg": "#ffd400",
+  "style": "tumbo"
  },
  {
-  "text": "MOSTRO",
+  "text": "Mostro",
   "kind": "shop",
   "bg": "#e2001a",
-  "fg": "#ffdd00"
+  "fg": "#ffdd00",
+  "style": "mostro"
  },
  {
-  "text": "PLAZA VÍA",
+  "text": "plaza vía",
   "kind": "shop",
   "bg": "#e30613",
-  "fg": "#ffffff"
+  "fg": "#ffffff",
+  "style": "plazavia"
  },
  {
   "text": "INKAFORMA",
   "kind": "shop",
   "bg": "#00843d",
-  "fg": "#ffe600"
+  "fg": "#ffe600",
+  "style": "inkaforma"
  },
  {
-  "text": "CLORO · RECARGAS",
+  "text": "cloro",
   "kind": "shop",
   "bg": "#da291c",
-  "fg": "#ffffff"
+  "fg": "#ffffff",
+  "style": "cloro"
  },
  {
   "text": "MENÚ S/ 10",
@@ -445,5 +452,115 @@
   "sub": "CENTRAL OBRERA DEL PERÚ",
   "accent": "#111111",
   "left": true
+ },
+ {
+  "text": "movistor",
+  "kind": "shop",
+  "bg": null,
+  "fg": "#fff",
+  "style": "movistor"
+ },
+ {
+  "text": "bitol",
+  "kind": "shop",
+  "bg": null,
+  "fg": "#fff",
+  "style": "bitol"
+ },
+ {
+  "text": "Interbunk",
+  "kind": "shop",
+  "bg": null,
+  "fg": "#fff",
+  "style": "interbunk"
+ },
+ {
+  "text": "KFF",
+  "kind": "shop",
+  "bg": null,
+  "fg": "#fff",
+  "style": "kff",
+  "food": true
+ },
+ {
+  "text": "Pardas Chicken",
+  "kind": "shop",
+  "bg": "#6b2a12",
+  "fg": "#ffffff",
+  "accent": "#f2b632",
+  "sub": "POLLOS A LA BRASA · PARRILLAS",
+  "style": "pollo",
+  "food": true
+ },
+ {
+  "text": "Norkis",
+  "kind": "shop",
+  "bg": "#f5c400",
+  "fg": "#c8102e",
+  "accent": "#c8102e",
+  "sub": "POLLOS A LA BRASA",
+  "style": "pollo",
+  "food": true
+ },
+ {
+  "text": "yapo",
+  "kind": "shop",
+  "bg": null,
+  "fg": "#fff",
+  "style": "yapo"
+ },
+ {
+  "text": "FERRETERÍA EL MAESTRO",
+  "kind": "shop",
+  "bg": "#f2c230",
+  "fg": "#1c1c1c"
+ },
+ {
+  "text": "IMPRENTA · COPIAS · ANILLADOS",
+  "kind": "shop",
+  "bg": "#ffffff",
+  "fg": "#1d4f9c"
+ },
+ {
+  "text": "PELUQUERÍA UNISEX",
+  "kind": "shop",
+  "bg": "#1c1c1c",
+  "fg": "#f2c4d6"
+ },
+ {
+  "text": "CABINAS · JUEGOS EN RED",
+  "kind": "shop",
+  "bg": "#1e2a5a",
+  "fg": "#3ef2ff"
+ },
+ {
+  "text": "BODEGA LA ECONÓMICA",
+  "kind": "shop",
+  "bg": "#e8e2d0",
+  "fg": "#b8261b"
+ },
+ {
+  "text": "SE VENDE GAS · DELIVERY",
+  "kind": "shop",
+  "bg": "#1d4fa8",
+  "fg": "#ffd200"
+ },
+ {
+  "text": "LICORERÍA 24 HORAS",
+  "kind": "shop",
+  "bg": "#3a0d12",
+  "fg": "#f2c230"
+ },
+ {
+  "text": "VIDRIERÍA Y ALUMINIO",
+  "kind": "shop",
+  "bg": "#9ad0e8",
+  "fg": "#0d2a4a"
+ },
+ {
+  "text": "MERCERÍA DOÑA ROSA",
+  "kind": "shop",
+  "bg": "#f7d6e0",
+  "fg": "#7a1f4f"
  }
 ]

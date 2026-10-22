@@ -54,23 +54,20 @@ export function chicha(d: SignDef, w: number, h: number): HTMLCanvasElement {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.lineJoin = 'round';
-  ctx.font = `900 ${Math.floor(h * 0.34)}px Impact, "Arial Black", sans-serif`;
-  ctx.lineWidth = h * 0.11;
+  ctx.font = `900 ${Math.floor(h * 0.3)}px Impact, "Arial Black", sans-serif`;
+  ctx.lineWidth = h * 0.07;
   ctx.strokeStyle = '#111111';
-  ctx.strokeText(d.text, w / 2, h * 0.42, w - 40);
-  ctx.lineWidth = h * 0.05;
-  ctx.strokeStyle = '#ffffff';
-  ctx.strokeText(d.text, w / 2, h * 0.42, w - 40);
+  ctx.strokeText(d.text, w / 2, h * 0.42, w - 120);
   ctx.fillStyle = d.fg;
-  ctx.fillText(d.text, w / 2, h * 0.42, w - 40);
+  ctx.fillText(d.text, w / 2, h * 0.42, w - 120);
   ctx.font = `bold ${Math.floor(h * 0.12)}px Arial, sans-serif`;
   ctx.fillStyle = '#111111';
   ctx.fillText(d.sub ?? '', w / 2, h * 0.73, w - 60);
   ctx.fillStyle = '#ffffff';
-  for (const x of [w * 0.05, w * 0.95]) {
+  for (const x of [w * 0.06, w * 0.94]) {
     ctx.beginPath();
     for (let k = 0; k < 10; k++) {
-      const r = k % 2 ? h * 0.05 : h * 0.12, a = (k / 10) * Math.PI * 2 - Math.PI / 2;
+      const r = k % 2 ? h * 0.04 : h * 0.1, a = (k / 10) * Math.PI * 2 - Math.PI / 2;
       ctx.lineTo(x + Math.cos(a) * r, h * 0.45 + Math.sin(a) * r);
     }
     ctx.fill();
