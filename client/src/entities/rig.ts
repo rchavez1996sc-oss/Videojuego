@@ -113,6 +113,16 @@ export class Rig {
     }
   }
 
+  /** Frozen frame of the Mixamo seated idle (benches, café tables, surfboards); false if that clip is not installed. */
+  sit(): boolean {
+    const clip = characters.clips.get('sit');
+    if (!clip) return false;
+    this.mixer.stopAllAction();
+    this.mixer.clipAction(clip).play();
+    this.mixer.update(Math.random() * clip.duration);
+    return true;
+  }
+
   /** Upper-body one-shots: 'reload', 'throw', 'hit'; `from` starts part-way into the clip. */
   gesture(key: 'reload' | 'throw' | 'hit', seconds?: number, from = 0): void {
     if (this.dead || this.held) return;
@@ -220,7 +230,7 @@ export class Rig {
 
   private chooseLower(speed: number, crouch: number, fwd: number, side: number): [string, number] {
     if (!this.armed) {
-      if (speed < 0.3) return [this.scared ? 'terrified' : 'idle', 1];
+      if (speed < 0.3) return [this.scared ? 'terrified' : 'civ_stand', 1];
       return speed < 2.6 ? ['civ_walk', speed / PACE.civ_walk] : ['civ_run', speed / PACE.civ_run];
     }
     if (this.airborne) return ['jump', 1];
@@ -234,7 +244,7 @@ export class Rig {
 
   private chooseUpper(low: string, crouch: number): string {
     if (this.overlay) return this.overlay.key;
-    if (!this.armed) return low.startsWith('civ') && low !== 'civ_run' ? 'civ_walk' : low;
+    if (!this.armed) return low === 'civ_walk' ? 'civ_walk' : low;
     if (this.aiming || this.aimT > 0 || low === 'idle' || low === 'crouch_idle') return crouch > 0.5 ? 'crouch_aim' : 'aim';
     return low;
   }
@@ -259,10 +269,9 @@ export class Rig {
       const up = this.chooseUpper(low, crouch);
       const sway = this.armed && speed >= 0.3 && up !== low && !this.overlay ? '+' : '';
       this.play(low + sway, up + sway);
-      const scale = (low === 'idle' && !this.armed) ? 0 : THREE.MathUtils.clamp(rate, 0.6, 1.6);
+      const scale = THREE.MathUtils.clamp(rate, 0.6, 1.6);
       if (this.lower) this.lower.timeScale = scale;
       if (this.upper && up === low) this.upper.timeScale = scale;
-      if (this.upper && !this.armed && up === 'civ_walk' && low !== 'civ_walk') this.upper.timeScale = 0;
     }
     this.last.copy(this.root.position);
     this.mixer.update(step);

@@ -25,6 +25,17 @@ function sameSkin(a: THREE.Skeleton, b: THREE.Skeleton): boolean {
   return a.bones.length === b.bones.length && a.bones.every((bone, i) => bone.name === b.bones[i].name && a.boneInverses[i].equals(b.boneInverses[i]));
 }
 
+/** Passing frame of the walk cycle (feet together, arms down): a relaxed unarmed stance. */
+const STAND_AT = 0.25;
+
+/** One frame of `clip` as a static clip. */
+function still(clip: THREE.AnimationClip, name: string, time: number): THREE.AnimationClip {
+  return new THREE.AnimationClip(name, 1, clip.tracks.map((t) => {
+    const Track = t.constructor as new (name: string, times: number[], values: number[]) => THREE.KeyframeTrack;
+    return new Track(t.name, [0], Array.from(t.createInterpolant().evaluate(time)));
+  }));
+}
+
 /** Mixamo characters converted by scripts/mixamo.mjs; shared geometry/materials, cloned skeletons per instance. */
 class CharacterLibrary {
   readonly clips = new Map<string, THREE.AnimationClip>();
@@ -37,6 +48,8 @@ class CharacterLibrary {
     const get = (url: string) => loader.loadAsync(`${BASE}${url}?v=${manifest.version ?? 0}`);
     const [anims, ...models] = await Promise.all([get(manifest.animations), ...Object.values(manifest.characters).flatMap((c) => [get(c.near), get(c.far)])]);
     for (const clip of anims.animations) this.clips.set(clip.name, clip);
+    const walk = this.clips.get('civ_walk');
+    if (walk) this.clips.set('civ_stand', still(walk, 'civ_stand', walk.duration * STAND_AT));
     Object.keys(manifest.characters).forEach((kind, i) => {
       const near = models[i * 2].scene, farScene = models[i * 2 + 1].scene;
       const mats = new Map<string, THREE.Material>();

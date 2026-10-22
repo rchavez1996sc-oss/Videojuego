@@ -7,7 +7,7 @@ import { mototaxi } from './urbanProps';
 /** A narrower paved street along x: centre `z`, `half` width of the asphalt. */
 export interface RoadDef { z: number; half: number }
 
-/** Worn asphalt draped over the ground (patches, potholes, faded broken centre line and zebras), stalls/mototaxis on the pavements. */
+/** Pale, worn asphalt draped over the ground with a faded broken centre line and zebras; stalls/mototaxis on the pavements. */
 export function secondRoad(b: Builder, hf: Heightfield, x0: number, x1: number, road: RoadDef, crossX: number[], rand: () => number): void {
   const pos: number[] = [], uv: number[] = [];
   const v = (x: number, z: number) => {
@@ -23,15 +23,11 @@ export function secondRoad(b: Builder, hf: Heightfield, x0: number, x1: number, 
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
   geo.computeVertexNormals();
-  b.geometry('asphalt', geo, new THREE.Matrix4());
+  b.geometry('asphaltWorn', geo, new THREE.Matrix4());
   const flat = (mat: string, size: [number, number, number], x: number, z: number, lift = 0.05) => b.box(mat, size, new THREE.Vector3(x, hf.heightAt(x, z) + lift, z), new THREE.Quaternion(), false);
   const nearCross = (x: number, gap: number) => crossX.some((cx) => Math.abs(cx - x) < gap);
   for (let x = x0 + 2; x < x1; x += 6) if (!nearCross(x, 6) && rand() < 0.7) flat('roadFaded', [1.2 + rand() * 1.8, 0.02, 0.12], x + rand() * 0.6, road.z + (rand() - 0.5) * 0.1);
-  for (const cx of crossX) for (const side of [-1, 1]) for (let k = -3; k <= 3; k++) if (rand() < 0.6) flat('roadFaded', [0.5, 0.02, 0.6 + rand() * 0.5], cx + side * 5.6, road.z + k * 1.1);
-  for (let i = 0; i < (x1 - x0) / 9; i++) {
-    const x = x0 + rand() * (x1 - x0), z = road.z + (rand() - 0.5) * road.half * 1.6, big = rand() < 0.35;
-    flat(big ? 'asphaltPatch' : 'pothole', big ? [2 + rand() * 4, 0.02, 1 + rand() * 2] : [0.4 + rand() * 0.8, 0.02, 0.3 + rand() * 0.6], x, z, big ? 0.04 : 0.045);
-  }
+  for (const cx of crossX) for (const side of [-1, 1]) for (let z = road.z - road.half + 0.7; z < road.z + road.half - 0.4; z += 1) flat('roadFaded', [2.6, 0.02, 0.45], cx + side * 5.8, z);
   for (let x = x0 + 10; x < x1 - 10; x += 14 + rand() * 18) {
     if (nearCross(x, 7)) continue;
     const s = rand() < 0.5 ? 1 : -1, z = road.z + s * (road.half - 0.4);

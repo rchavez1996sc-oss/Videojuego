@@ -20,7 +20,7 @@ import { buildRoads } from './roads';
 import { buildPark, bench } from './park';
 import { buildMonuments } from './monuments';
 import { buildPropaganda } from './propaganda';
-import { seated, surfers } from './people';
+import { seatedCrowd, surfers } from './people';
 import { buildLandmarks } from './landmarks';
 import { buildLarcomar } from './larcomar';
 import { buildVegetation } from './vegetation';
@@ -91,8 +91,7 @@ export function buildMalecon(hf: Heightfield, def: MaleconDef, lighting: Lightin
   group.add(buildMonuments(b, hf, def, lighting, plants.seats, (at, yaw) => bench(b, at, yaw)));
   group.add(buildPropaganda(b, hf, def, lighting, fronts, rand));
   group.add(buildVegetation(b, plants, streetTrees, lighting));
-  const sitting = seated(plants.seats, lighting);
-  if (sitting) group.add(sitting);
+  group.add(seatedCrowd(plants.seats, lighting));
   group.add(surfers(def.surfers ?? 0, c, lighting));
   group.add(...b.build(mats, 0.5, bake, 128), ...t.build(mats, 1 / 6, bake, 128));
   group.add(buildOcean(hf, c, lighting));

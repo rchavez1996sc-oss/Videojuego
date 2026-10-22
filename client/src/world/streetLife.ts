@@ -67,11 +67,12 @@ export function tire(b: Builder, pos: THREE.Vector3, rand: Rand): void {
 export function roadMarkings(b: Builder, hf: Heightfield, x0: number, x1: number, crossX: number[], halfWidth: number): void {
   const q = new THREE.Quaternion();
   for (let x = x0; x < x1; x += 6) {
-    if (crossX.some((cx) => Math.abs(cx - x) < 4)) continue;
+    if (crossX.some((cx) => Math.abs(cx - x) < 10)) continue;
     b.box('roadWhite', [3, 0.03, 0.15], new THREE.Vector3(x, hf.heightAt(x, 0) + 0.02, 0), q, false);
   }
-  for (const cx of crossX) {
-    for (let x = cx - 2.4; x <= cx + 2.4; x += 0.9) b.box('roadWhite', [0.45, 0.03, halfWidth * 2 - 1], new THREE.Vector3(x, hf.heightAt(x, 0) + 0.02, 0), q, false);
+  for (const cx of crossX) for (const side of [-1, 1]) {
+    const x = cx + side * 7;
+    for (let z = -halfWidth + 0.8; z < halfWidth - 0.5; z += 1) b.box('roadWhite', [3, 0.03, 0.5], new THREE.Vector3(x, hf.heightAt(x, z) + 0.02, z), q, false);
   }
   for (const s of [1, -1]) {
     for (let x = x0; x < x1; x += 2) {
