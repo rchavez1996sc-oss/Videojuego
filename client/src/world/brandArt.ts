@@ -43,7 +43,7 @@ const STYLES: Record<string, (c: Ctx, d: SignDef, w: number, h: number) => void>
     c.fillRect(0, 0, w, h);
     text(c, 'AGENTE', w * 0.05, h * 0.52, h * 0.42, '#002a8d', { max: w * 0.45 });
     round(c, w * 0.55, h * 0.16, w * 0.4, h * 0.68, 10, '#002a8d');
-    text(c, d.text, w * 0.75, h * 0.52, h * 0.46, '#ffffff', { align: 'center', italic: true, max: w * 0.36 });
+    text(c, d.text.replace(/^AGENTE /i, ''), w * 0.75, h * 0.52, h * 0.46, '#ffffff', { align: 'center', italic: true, max: w * 0.36 });
   },
   tumbo(c, d, w, h) {
     c.fillStyle = '#6b1d7b';

@@ -8,7 +8,7 @@ export const STREET_COLORS: Record<string, string> = {
   cloth0: '#c23b30', cloth1: '#2f62a8', cloth2: '#e8e2d2', cloth3: '#e3b630', cloth4: '#3d7a45', cloth5: '#8a4f9e',
   chairRed: '#c22a22', chairBlue: '#2a54a8', umbrella0: '#d83a2c', umbrella1: '#2e7bc4', umbrella2: '#e8c12e', umbrella3: '#3e9a4a',
   trashBag: '#1b1c1e', cardboard: '#a5845a', fruit0: '#e07a1f', fruit1: '#c9b62a', fruit2: '#7a2a1c', lampHead: '#5c6066',
-  roadWhite: '#e6e4dc', crate: '#8a6a3a', deliv0: '#f26b1d', deliv1: '#e3262f', deliv2: '#f5c518',
+  roadWhite: '#e6e4dc', crate: '#8a6a3a', facadeRed: '#b3121b', facadeBlue: '#123f8f', facadeGreen: '#00703c', facadeOrange: '#e8650f', facadeYellow: '#e8b400', facadeGrey: '#8a8d90', deliv0: '#f26b1d', deliv1: '#e3262f', deliv2: '#f5c518',
 };
 
 type Rand = () => number;

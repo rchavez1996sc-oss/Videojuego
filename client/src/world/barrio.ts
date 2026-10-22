@@ -9,6 +9,7 @@ import { cityHouse, hillHouse, PAINTS, type Lot } from './houses';
 import { powerLine, cable, mototaxi, sandbags, stairway, car, billboard, type CarKind } from './urbanProps';
 import { SignAtlas, type SignKind } from './signs';
 import { brandQuota } from './brandQuota';
+import { bigStore, carve, type BigStoreDef } from './bigStore';
 import { buildStation, type StationDef, type StationInfo } from './station';
 import { buildLadder } from './ladders';
 import { flsMarks, poleMarks } from './flsMarks';
@@ -30,6 +31,7 @@ export interface BarrioDef {
   billboardEvery: number;
   hillLetters: [number, number, number][];
   hillEmblems?: [number, number, number][];
+  bigStores?: BigStoreDef[];
 }
 
 export interface StreetGraph { nodes: THREE.Vector3[]; edges: [number, number][]; exits: number[] }
@@ -119,12 +121,18 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
   }
   for (let col = 0; col < def.cols; col++) {
     const bx0 = def.x0 + col * pitch, bx1 = bx0 + def.blockW;
-    for (const [z0, z1] of rowsZ) {
-      const special = inLandmark(bx0, bx1, z0) || inLandmark(bx0, bx1, z1) || (st && bx0 < st.x + st.w / 2 + 2 && bx1 > st.x - st.w / 2 - 2 && st.z > z0 - 6 && st.z < z1 + 6);
+    for (const [ri, [z0, z1]] of rowsZ.entries()) {
+      const stores = (def.bigStores ?? []).filter((t) => t.col === col && t.row === ri);
+      const special = stores.length > 0 || inLandmark(bx0, bx1, z0) || inLandmark(bx0, bx1, z1) || (st && bx0 < st.x + st.w / 2 + 2 && bx1 > st.x - st.w / 2 - 2 && st.z > z0 - 6 && st.z < z1 + 6);
       const pass = special || alley() > 0.45 ? null : { at: bx0 + 12 + alley() * (def.blockW - 24), w: 2.4 + alley() * 0.8 };
       const backW = special || alley() > 0.35 ? 0 : 2.2 + alley() * 0.6;
       const spans = pass ? [[bx0, pass.at - pass.w / 2], [pass.at + pass.w / 2, bx1]] : [[bx0, bx1]];
-      for (const [frontZ, facing] of [[z0, Math.PI], [z1, 0]] as const) for (const [s0, s1] of spans) {
+      const frontSpans = (fi: number) => stores.filter((t) => t.front === fi).reduce((sp, t) => {
+        const a = bx0 + t.at * def.blockW, e = Math.min(bx1, a + t.w);
+        bigStore(b, hf, atlas, t, (a + e) / 2, fi ? z1 : z0, fi ? 0 : Math.PI, (z1 - z0 - backW) / 2 - 0.04, rand);
+        return carve(sp, a, e);
+      }, spans);
+      for (const [fi, [frontZ, facing]] of ([[z0, Math.PI], [z1, 0]] as const).entries()) for (const [s0, s1] of frontSpans(fi)) {
         let x = s0;
         while (s1 - x > 4) {
           const w = s1 - x < 13 ? s1 - x : 6 + rand() * 3;
@@ -220,7 +228,8 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
   }
   for (let x = def.x0 + 20, k = 0; x < xEnd - 10; x += def.billboardEvery, k++) {
     const side = k % 2 ? 1 : -1;
-    if (crossX.some((cx) => Math.abs(cx - x) < 8) || (st && Math.abs(x - st.x) < st.w / 2 + 6 && side * st.z > 0)) continue;
+    const overStore = (def.bigStores ?? []).some((t) => Math.sign(rowsZ[t.row][0]) === side && Math.abs(x - (def.x0 + t.col * pitch + t.at * def.blockW + t.w / 2)) < t.w / 2 + 6);
+    if (overStore || crossX.some((cx) => Math.abs(cx - x) < 8) || (st && Math.abs(x - st.x) < st.w / 2 + 6 && side * st.z > 0)) continue;
     const bb = billboard(b, hf, x, side * 10.6, side > 0 ? Math.PI : 0);
     const ad = deco() < 0.6 ? quota() : undefined;
     atlas.add(bb.pos, bb.q, 8, ad ? 'shop' : 'poster', rand, ad);
