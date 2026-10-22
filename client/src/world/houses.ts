@@ -66,6 +66,7 @@ export function cityHouse(b: Builder, lot: Lot, rand: () => number, sign: Sign, 
         b.box('none', [o.w, o.h, T], at(o.x, y0 + o.y + o.h / 2, -T / 2), q, true);
         if (o.w > 2) shopFront(b, at, q, o, y0, -w / 2 + 2.15, rand, sign);
         else b.box(metal, [o.w, o.h, 0.06], at(o.x, y0 + o.y + o.h / 2, -0.12), q, false);
+        if (o.w <= 2 && rand() < 0.3) sign(at(o.x + 1.3, y0 + o.y + 1.75, 0.03), q, 1.3, 'brand');
         if (o.w > 2 && rand() < 0.6) sidewalkChairs(b, at(o.x, 0, 1.4), q, rand);
       } else windowBars(b, at, q, o.x, y0 + o.y, 0, o.w, o.h, rand() < 0.6 ? CLOTHES[Math.floor(rand() * CLOTHES.length)] : undefined);
     }

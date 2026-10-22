@@ -8,6 +8,7 @@ import { Builder } from './buildingKit';
 import { cityHouse, hillHouse, PAINTS, type Lot } from './houses';
 import { powerLine, cable, mototaxi, sandbags, stairway, car, billboard, type CarKind } from './urbanProps';
 import { SignAtlas, type SignKind } from './signs';
+import { brandQuota } from './brandQuota';
 import { buildStation, type StationDef, type StationInfo } from './station';
 import { buildLadder } from './ladders';
 import { flsMarks, poleMarks } from './flsMarks';
@@ -103,7 +104,11 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
   const pitch = def.blockW + def.street;
   const lm = def.landmark, st = def.station;
   const inLandmark = (x0: number, x1: number, z: number) => x1 > lm.x - lm.w / 2 - 1.6 && x0 < lm.x + lm.w / 2 + 1.6 && Math.abs(z - lm.z) < lm.d + 2 && Math.sign(z) === Math.sign(lm.z);
-  const sign = (at: THREE.Vector3, q: THREE.Quaternion, w: number, kind: SignKind = 'shop') => atlas.add(at, q, w, kind === 'shop' && deco() < 0.3 ? 'chicha' : kind, rand);
+  const quota = brandQuota(atlas.brands, 3, deco);
+  const sign = (at: THREE.Vector3, q: THREE.Quaternion, w: number, kind: SignKind = 'shop') => {
+    const brand = kind === 'brand' || (kind === 'shop' && deco() < 0.55) ? quota() : undefined;
+    return atlas.add(at, q, w, kind === 'brand' ? 'shop' : kind === 'shop' && !brand && deco() < 0.3 ? 'chicha' : kind, rand, brand);
+  };
 
   const rowsZ: [number, number][] = [];
   for (const s of [1, -1]) {
@@ -217,7 +222,8 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
     const side = k % 2 ? 1 : -1;
     if (crossX.some((cx) => Math.abs(cx - x) < 8) || (st && Math.abs(x - st.x) < st.w / 2 + 6 && side * st.z > 0)) continue;
     const bb = billboard(b, hf, x, side * 10.6, side > 0 ? Math.PI : 0);
-    atlas.add(bb.pos, bb.q, 8, 'poster', rand);
+    const ad = deco() < 0.6 ? quota() : undefined;
+    atlas.add(bb.pos, bb.q, 8, ad ? 'shop' : 'poster', rand, ad);
   }
   for (const [x, z, w, kind] of [...def.hillLetters.map((h) => [...h, 'hill'] as const), ...(def.hillEmblems ?? []).map((h) => [...h, 'emblem'] as const)]) {
     const a = Math.atan2(hf.heightAt(x, z + 4) - hf.heightAt(x, z - 4), 8) * Math.sign(z);

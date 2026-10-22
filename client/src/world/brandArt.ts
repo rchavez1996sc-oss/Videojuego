@@ -2,6 +2,11 @@ import type { SignDef } from './signs';
 
 type Ctx = CanvasRenderingContext2D;
 
+function dark(hex: string): boolean {
+  const n = parseInt(hex.replace('#', '').padEnd(6, '0').slice(0, 6), 16);
+  return 0.3 * (n >> 16) + 0.59 * ((n >> 8) & 255) + 0.11 * (n & 255) < 140;
+}
+
 function text(c: Ctx, s: string, x: number, y: number, size: number, color: string, opts: { font?: string; weight?: string; align?: CanvasTextAlign; max?: number; italic?: boolean } = {}): void {
   c.font = `${opts.italic ? 'italic ' : ''}${opts.weight ?? '900'} ${size}px ${opts.font ?? '"Arial Black", Arial, sans-serif'}`;
   c.fillStyle = color;
@@ -146,6 +151,55 @@ const STYLES: Record<string, (c: Ctx, d: SignDef, w: number, h: number) => void>
     text(c, 'AQUÍ', w * 0.06, h * 0.5, h * 0.3, '#ffffff', { font: 'Arial, sans-serif', weight: '700' });
     round(c, w * 0.32, h * 0.14, w * 0.62, h * 0.72, h * 0.3, '#00d1c1');
     text(c, d.text, w * 0.63, h * 0.52, h * 0.52, '#742284', { font: '"Arial Rounded MT Bold", Arial, sans-serif', weight: '900', align: 'center', max: w * 0.56 });
+  },
+  /** Generic look-alike: colours from the data, `font` (sans/italic/round/serif/script) and an accent `shape`. */
+  logo(c, d, w, h) {
+    c.fillStyle = d.bg ?? '#ffffff';
+    c.fillRect(0, 0, w, h);
+    const acc = d.accent ?? d.fg, shape = d.shape ?? 'bar';
+    let x = w / 2, max = w * 0.86;
+    if (shape === 'bar') {
+      c.fillStyle = acc;
+      c.fillRect(0, h * 0.74, w, h * 0.26);
+    } else if (shape === 'pill') round(c, w * 0.06, h * 0.14, w * 0.88, h * 0.72, h * 0.36, acc);
+    else if (shape === 'circle') {
+      c.fillStyle = acc;
+      c.beginPath();
+      c.arc(w * 0.12, h / 2, h * 0.34, 0, Math.PI * 2);
+      c.fill();
+      text(c, d.text[0], w * 0.12, h * 0.53, h * 0.44, d.bg ?? '#fff', { align: 'center' });
+      [x, max] = [w * 0.58, w * 0.72];
+    } else if (shape === 'swoosh') {
+      c.strokeStyle = acc;
+      c.lineWidth = h * 0.08;
+      c.lineCap = 'round';
+      c.beginPath();
+      c.moveTo(w * 0.12, h * 0.88);
+      c.quadraticCurveTo(w * 0.5, h * 1.0, w * 0.88, h * 0.84);
+      c.stroke();
+    } else if (shape === 'stripes') {
+      c.fillStyle = acc;
+      for (let k = 0; k < 3; k++) c.fillRect(0, h * (0.1 + k * 0.32), w * 0.18, h * 0.16);
+      [x, max] = [w * 0.6, w * 0.72];
+    } else if (shape === 'star') {
+      c.fillStyle = acc;
+      c.beginPath();
+      for (let k = 0; k < 10; k++) {
+        const r = k % 2 ? h * 0.14 : h * 0.34, a = (k / 10) * Math.PI * 2 - Math.PI / 2;
+        c.lineTo(w * 0.12 + Math.cos(a) * r, h / 2 + Math.sin(a) * r);
+      }
+      c.fill();
+      [x, max] = [w * 0.58, w * 0.72];
+    }
+    const fonts: Record<string, [string, string, boolean]> = {
+      sans: ['Arial, sans-serif', '700', false], italic: ['"Arial Black", Arial, sans-serif', '900', true], round: ['"Arial Rounded MT Bold", "Trebuchet MS", Arial, sans-serif', '800', false],
+      serif: ['Georgia, serif', '900', false], script: ['"Brush Script MT", "Segoe Script", cursive', '700', true], heavy: ['"Arial Black", Impact, sans-serif', '900', false],
+    };
+    const [font, weight, italic] = fonts[d.font ?? 'heavy'] ?? fonts.heavy;
+    const ink = shape === 'pill' && d.fg === acc ? d.bg ?? '#fff' : d.fg;
+    const low = shape === 'bar' || shape === 'swoosh';
+    text(c, d.text, x, h * (low ? 0.38 : 0.47), h * (d.sub ? 0.44 : 0.56), ink, { font, weight, italic, align: 'center', max });
+    if (d.sub) text(c, d.sub, x, h * (shape === 'bar' ? 0.87 : shape === 'swoosh' ? 0.7 : 0.8), h * 0.13, shape === 'bar' ? (dark(acc) ? '#ffffff' : '#1a1a1a') : ink, { font: 'Arial, sans-serif', weight: '700', align: 'center', max });
   },
 };
 

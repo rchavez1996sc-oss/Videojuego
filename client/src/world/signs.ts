@@ -4,13 +4,13 @@ import signData from '../data/signs.json';
 import { concert, chicha, menu, curfew, flag, emblem, poster } from './signArt';
 import { brand } from './brandArt';
 
-export type SignKind = 'shop' | 'graffiti' | 'poster' | 'hill' | 'concert' | 'emblem' | 'red' | 'station' | 'stencil' | 'flag' | 'menu' | 'curfew' | 'chicha';
+export type SignKind = 'shop' | 'graffiti' | 'poster' | 'hill' | 'concert' | 'emblem' | 'red' | 'station' | 'stencil' | 'flag' | 'menu' | 'curfew' | 'chicha' | 'brand';
 
-export interface SignDef { text: string; kind: SignKind; bg: string | null; fg: string; sub?: string; accent?: string; food?: boolean; left?: boolean; style?: string }
+export interface SignDef { text: string; kind: SignKind; bg: string | null; fg: string; sub?: string; accent?: string; food?: boolean; left?: boolean; style?: string; shape?: string; font?: string }
 
 const SIGNS = signData as SignDef[];
 
-const COLS = 3, ROWS = 32, CW = 512, CH = 128, PAD = 8;
+const COLS = 4, ROWS = 32, CW = 512, CH = 128, PAD = 8;
 
 function render(d: SignDef): HTMLCanvasElement {
   if (d.style) return brand(d, CW, CH);
@@ -18,7 +18,7 @@ function render(d: SignDef): HTMLCanvasElement {
 }
 
 /**
- * One atlas (3 columns of 4:1 cells) for every sign, mural and poster so they merge into a single draw call.
+ * One atlas (4 columns of 4:1 cells) for every sign, mural and poster so they merge into a single draw call.
  * Each cell keeps an empty margin so distant mip levels never blend in the neighbouring sign.
  */
 export class SignAtlas {
@@ -43,11 +43,17 @@ export class SignAtlas {
     this.quiet.push({ x, z, r });
   }
 
-  add(pos: THREE.Vector3, q: THREE.Quaternion, w: number, kind: SignKind, rand: () => number): SignDef {
+  /** Names of the look-alike brand signs (the ones with a graphic `style`). */
+  get brands(): string[] {
+    return SIGNS.filter((d) => d.style).map((d) => d.text);
+  }
+
+  /** `only` forces a specific sign by name (brand quota). */
+  add(pos: THREE.Vector3, q: THREE.Quaternion, w: number, kind: SignKind, rand: () => number, only?: string): SignDef {
     const hush = this.quiet.some((z) => Math.hypot(pos.x - z.x, pos.z - z.z) < z.r);
     if (hush && (kind === 'stencil' || kind === 'flag' || kind === 'emblem')) return SIGNS.find((d) => d.kind === kind)!;
     if (hush && kind === 'red') kind = 'poster';
-    const pool = SIGNS.map((s, i) => [s, i] as const).filter(([s]) => s.kind === kind && !(hush && s.left));
+    const pool = SIGNS.map((s, i) => [s, i] as const).filter(([s]) => (only ? s.text === only : s.kind === kind && !(hush && s.left)));
     const [, i] = pool[Math.floor(rand() * pool.length)];
     const g = new THREE.PlaneGeometry(w, w / 4);
     const W = CW * COLS, H = CH * ROWS, x0 = (i % COLS) * CW + PAD, y0 = Math.floor(i / COLS) * CH + PAD;
