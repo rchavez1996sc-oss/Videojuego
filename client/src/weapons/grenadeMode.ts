@@ -7,11 +7,18 @@ import type { Sfx } from '../audio/sfx';
 import type { Hud } from '../ui/hud';
 
 const STEPS = 90, DT = 0.03, GRAVITY = 9.81, THROW_SPEED = 17, THROW_LIFT = 3.5;
+/** Grenade Throw clip: torso poses (held ready / arm cocked), the throwing stretch and when the hand lets go. */
+const READY = 1.0, COCKED = 1.84, FROM = 1.6, THROW_TIME = 0.75, RELEASE = 0.29, DRAW = 0.3;
 
-/** G equips a grenade: right click shows the throw arc and landing spot, left click throws, then back to the rifle. */
+/**
+ * G puts the rifle away and takes a grenade in hand; right click cocks the arm and shows the arc, left click throws
+ * (the grenade leaves the hand at the release moment). Another grenade is drawn while any are left, then the rifle returns.
+ */
 export class GrenadeMode {
   readonly group = new THREE.Group();
   equipped = false;
+  private drawnAt = 0;
+  private throwing: { t0: number; released: boolean } | null = null;
   private arc: THREE.Line;
   private marker: THREE.Mesh;
   private pts = new Float32Array(STEPS * 3);
@@ -72,24 +79,51 @@ export class GrenadeMode {
     }
   }
 
+  private stow(): void {
+    this.equipped = false;
+    this.throwing = null;
+    this.show(false);
+    const m = this.player.model;
+    m.clearPose();
+    m.grenadeInHand = false;
+    m.holster = false;
+  }
+
   /** Returns true while the grenade is in hand (the rifle must not fire). */
   update(input: Input, alive: boolean): boolean {
-    if (!alive || input.hit('Digit1')) this.equipped = false;
-    else if (input.hit('KeyG')) {
-      if (this.equipped) this.equipped = false;
-      else if (this.grenades.count > 0) this.equipped = true;
+    const now = performance.now() / 1000, m = this.player.model;
+    if (!alive || input.hit('Digit1')) this.stow();
+    else if (input.hit('KeyG') && !this.throwing) {
+      if (this.equipped) this.stow();
+      else if (this.grenades.count > 0) [this.equipped, this.drawnAt] = [true, now];
       else this.hud.showToast('SIN GRANADAS');
     }
-    if (this.equipped && this.grenades.count <= 0) this.equipped = false;
-    this.player.model.holster = this.equipped;
-    if (!this.equipped) {
-      this.show(false);
-      return false;
+    if (!this.equipped) return false;
+    m.holster = true;
+    if (this.throwing) {
+      const t = now - this.throwing.t0;
+      if (!this.throwing.released && t >= RELEASE) {
+        this.throwing.released = true;
+        const { from, dir } = this.release();
+        this.grenades.throw(from, dir, new THREE.Vector3());
+      }
+      m.grenadeInHand = !this.throwing.released;
+      if (t >= THROW_TIME) {
+        this.throwing = null;
+        if (this.grenades.count <= 0) this.stow();
+        else this.drawnAt = now;
+      }
+      return true;
     }
+    const ready = now - this.drawnAt > DRAW;
+    m.grenadeInHand = ready;
+    m.pose('throw', input.aiming ? COCKED : READY);
     if (input.aiming) this.preview();
     else this.show(false);
-    if (input.hit('Mouse0') && this.throwNow()) {
-      this.equipped = false;
+    if (ready && input.hit('Mouse0')) {
+      this.throwing = { t0: now, released: false };
+      this.sfx.grenadePin();
+      m.gesture('throw', THROW_TIME, FROM);
       this.show(false);
     }
     return true;

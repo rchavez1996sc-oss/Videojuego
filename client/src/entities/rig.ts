@@ -4,33 +4,10 @@ import { buildAK } from '../weapons/akModel';
 import { bakeLod } from '../render/merge';
 import { dress, type Outfit } from './outfit';
 import { addWound } from './wounds';
+import { parts } from './clipParts';
 import type { Lighting } from '../render/lighting';
 
 export type { Outfit } from './outfit';
-
-const UPPER = /Spine|Neck|Head|Shoulder|Arm|Hand/;
-/** Aiming on the move: the chest and arms hold the aim, the hips and lower back keep the stride's sway. */
-const CHEST = /Spine2|Neck|Head|Shoulder|Arm|Hand/;
-type Parts = Record<'full' | 'lower' | 'upper' | 'body' | 'chest', THREE.AnimationClip>;
-const split = new Map<string, Parts>();
-
-function parts(key: string): Parts {
-  let p = split.get(key);
-  if (!p) {
-    const full = characters.clips.get(key)!;
-    const bone = (t: THREE.KeyframeTrack) => t.name.slice(0, t.name.lastIndexOf('.'));
-    const clip = (tag: string, keep: (t: THREE.KeyframeTrack) => boolean) => new THREE.AnimationClip(`${key}-${tag}`, full.duration, full.tracks.filter(keep));
-    p = {
-      full,
-      lower: clip('lo', (t) => !UPPER.test(bone(t))),
-      upper: clip('up', (t) => UPPER.test(bone(t))),
-      body: clip('body', (t) => !CHEST.test(bone(t))),
-      chest: clip('chest', (t) => CHEST.test(bone(t))),
-    };
-    split.set(key, p);
-  }
-  return p;
-}
 
 /** Reference ground speed (m/s) of each locomotion clip, to keep feet from sliding. */
 const PACE: Record<string, number> = { walk: 1.5, run: 3.7, sprint: 5.8, crouch: 1.2, civ_walk: 1.4, civ_run: 3.9 };
@@ -58,7 +35,8 @@ export class Rig {
   private upKey = '';
   private lower: THREE.AnimationAction | null = null;
   private upper: THREE.AnimationAction | null = null;
-  private overlay: { key: string; t: number } | null = null;
+  private overlay: { key: string; t: number; from: number } | null = null;
+  private nade: THREE.Mesh | null = null;
   private held: { key: string; action: THREE.AnimationAction } | null = null;
   private lockT = 0;
   private aimT = 0;
@@ -125,6 +103,7 @@ export class Rig {
       const mixed = upKey.endsWith('+'), base = mixed ? upKey.slice(0, -1) : upKey;
       const next = this.mixer.clipAction(mixed ? parts(base).chest : parts(base).upper).reset().play();
       const once = this.overlay?.key === upKey;
+      if (once) next.time = this.overlay!.from;
       next.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, Infinity);
       next.clampWhenFinished = once;
       if (this.upper && fade) this.upper.crossFadeTo(next, fade * 0.6, false);
@@ -134,14 +113,38 @@ export class Rig {
     }
   }
 
-  /** Upper-body one-shots: 'reload', 'throw', 'hit'. */
-  gesture(key: 'reload' | 'throw' | 'hit', seconds?: number): void {
+  /** Upper-body one-shots: 'reload', 'throw', 'hit'; `from` starts part-way into the clip. */
+  gesture(key: 'reload' | 'throw' | 'hit', seconds?: number, from = 0): void {
     if (this.dead || this.held) return;
     const dur = characters.clips.get(key)!.duration;
     if (key === 'hit' && this.overlay && this.overlay.key !== 'hit') return;
-    this.overlay = { key, t: seconds ?? dur * (key === 'hit' ? 0.35 : 1) };
+    this.overlay = { key, t: seconds ?? dur * (key === 'hit' ? 0.35 : 1), from };
     this.upKey = '';
-    this.mixer.clipAction(parts(key).upper).timeScale = seconds ? dur / seconds : 1;
+    this.mixer.clipAction(parts(key).upper).timeScale = seconds ? (dur - from) / seconds : 1;
+  }
+
+  /** Torso frozen at `at` seconds of `key` until `clearPose` (grenade held ready or cocked). */
+  pose(key: string, at: number): void {
+    if (this.dead || this.held || (this.overlay?.key === key && this.overlay.from === at && this.overlay.t === Infinity)) return;
+    this.overlay = { key, t: Infinity, from: at };
+    this.upKey = '';
+    this.mixer.clipAction(parts(key).upper).timeScale = 0;
+  }
+
+  clearPose(): void {
+    if (this.overlay?.t !== Infinity) return;
+    this.overlay = null;
+    this.upKey = '';
+  }
+
+  /** A frag grenade in the right hand. */
+  set grenadeInHand(v: boolean) {
+    if (!this.nade && v) {
+      this.nade = new THREE.Mesh(new THREE.SphereGeometry(3.6, 12, 10).scale(1, 1.3, 1), this.lighting.setup(new THREE.MeshStandardMaterial({ color: '#46502c', roughness: 0.6, metalness: 0.3 }), 'nade-hand'));
+      this.nade.position.set(0, 9, 3);
+      this.inst.bones.get('mixamorigRightHand')?.add(this.nade);
+    }
+    if (this.nade) this.nade.visible = v;
   }
 
   /** A shot: shoulder the rifle for a moment and kick the torso back. */
