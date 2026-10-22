@@ -86,6 +86,7 @@ export class Heightfield {
         const patches = smoothstep(-0.35, 0.25, noise.fbm(x, z, 1 / 25, 3));
         let grass = (1 - road) * (1 - packed * 0.85) * smoothstep(0.32, 0.12, slope) * patches;
         grass *= smoothstep(def.mountainHeight * 0.6, def.mountainHeight * 0.3, this.heights[k]);
+        if (def.paved?.some((p) => Math.abs(z - p.z) < p.half)) grass = 0;
         const o = k * 4;
         this.mask[o] = road * 255;
         this.mask[o + 1] = grass * 255;

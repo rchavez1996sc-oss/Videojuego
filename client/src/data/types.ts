@@ -10,6 +10,8 @@ export interface TerrainDef {
   road: [number, number][];
   roadWidth?: number;
   flatten: { x: number; z: number; r: number }[];
+  /** Bands along x (centre z, half width) that are paved: no grass grows there. */
+  paved?: { z: number; half: number }[];
 }
 
 export interface BiomeDef {

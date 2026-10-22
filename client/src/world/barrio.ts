@@ -10,6 +10,8 @@ import { powerLine, cable, mototaxi, sandbags, stairway, car, billboard, type Ca
 import { SignAtlas, type SignKind } from './signs';
 import { brandQuota } from './brandQuota';
 import { bigStore, carve, type BigStoreDef } from './bigStore';
+import { secondRoad, type RoadDef } from './secondRoad';
+import { cornerAds } from './cornerAds';
 import { buildStation, type StationDef, type StationInfo } from './station';
 import { buildLadder } from './ladders';
 import { flsMarks, poleMarks } from './flsMarks';
@@ -32,6 +34,7 @@ export interface BarrioDef {
   hillLetters: [number, number, number][];
   hillEmblems?: [number, number, number][];
   bigStores?: BigStoreDef[];
+  road2?: RoadDef;
 }
 
 export interface StreetGraph { nodes: THREE.Vector3[]; edges: [number, number][]; exits: number[] }
@@ -56,6 +59,7 @@ function materials(lighting: Lighting, atlas: SignAtlas): Record<string, THREE.M
     wood: std('beam', { map: co.map, normalMap: co.normalMap, roughness: 0.95, color: '#cfcac0' }),
     calamina: std('calamina', { map: ca.map, normalMap: ca.normalMap, roughness: 0.6, metalness: 0.5 }),
     estera: std('estera', { map: es.map, normalMap: es.normalMap, roughness: 1 }),
+    asphalt: std('asphalt', { map: st.map, normalMap: st.normalMap, roughness: 0.95, color: '#4a4744' }),
     stone: std('stone-b', { map: st.map, normalMap: st.normalMap, roughness: 0.9, color: '#a59c90' }),
     door: std('door', { map: ca.map, roughness: 0.55, metalness: 0.6, color: '#3d5a52' }),
     shutter: std('shutter', { map: ca.map, normalMap: ca.normalMap, roughness: 0.5, metalness: 0.6, color: '#8d8f90' }),
@@ -203,6 +207,10 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
     mototaxi(b, new THREE.Vector3(x, hf.heightAt(x, z), z), onAvenue ? Math.PI / 2 + (rand() < 0.5 ? 0 : Math.PI) : rand() < 0.5 ? 0 : Math.PI, `moto${i % 3}`);
   }
 
+  const overStore = (x: number, z: number) => (def.bigStores ?? []).some((t) => Math.abs(rowsZ[t.row][t.front] - z) < 8 && Math.abs(x - (def.x0 + t.col * pitch + t.at * def.blockW + t.w / 2)) < t.w / 2 + 6);
+  const r2 = def.road2;
+  if (r2) secondRoad(b, hf, def.x0 - 10, xEnd + 10, r2, crossX, deco);
+  cornerAds(b, hf, atlas, crossX, [[10.6, -1], [-10.6, 1], ...(r2 ? ([[r2.z - r2.half - 0.6, 1], [r2.z + r2.half + 0.6, -1]] as [number, 1 | -1][]) : [])], deco, (x, z) => overStore(x, z) || (!!st && Math.hypot(x - st.x, z - st.z) < 30));
   const kinds: CarKind[] = ['sedan', 'sedan', 'tico', 'tico', 'wagon', 'pickup', 'combi'];
   const midZ = def.gap + def.blockD + def.street / 2;
   for (let i = 0; i < def.cars; i++) {
@@ -223,13 +231,12 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
       z = (rand() < 0.5 ? 1 : -1) * (midZ + (rand() < 0.5 ? -3.2 : 3.2));
       yaw = Math.PI / 2 + (rand() < 0.5 ? 0 : Math.PI);
     }
-    if (crossX.some((cx) => Math.abs(cx - x) < 6) && Math.abs(Math.abs(z) - 6.9) < 1) continue;
+    if ((crossX.some((cx) => Math.abs(cx - x) < 6) && Math.abs(Math.abs(z) - 6.9) < 1) || (r2 && Math.abs(z - r2.z) < r2.half + 1)) continue;
     car(b, new THREE.Vector3(x, hf.heightAt(x, z), z), yaw + (rand() - 0.5) * 0.06, paint, kind);
   }
   for (let x = def.x0 + 20, k = 0; x < xEnd - 10; x += def.billboardEvery, k++) {
     const side = k % 2 ? 1 : -1;
-    const overStore = (def.bigStores ?? []).some((t) => Math.sign(rowsZ[t.row][0]) === side && Math.abs(x - (def.x0 + t.col * pitch + t.at * def.blockW + t.w / 2)) < t.w / 2 + 6);
-    if (overStore || crossX.some((cx) => Math.abs(cx - x) < 8) || (st && Math.abs(x - st.x) < st.w / 2 + 6 && side * st.z > 0)) continue;
+    if (overStore(x, side * 10.6) || crossX.some((cx) => Math.abs(cx - x) < 8) || (st && Math.abs(x - st.x) < st.w / 2 + 6 && side * st.z > 0)) continue;
     const bb = billboard(b, hf, x, side * 10.6, side > 0 ? Math.PI : 0);
     const ad = deco() < 0.6 ? quota() : undefined;
     atlas.add(bb.pos, bb.q, 8, ad ? 'shop' : 'poster', rand, ad);
@@ -273,7 +280,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
 
 function streetGraph(def: BarrioDef, crossX: number[], hf: Heightfield): StreetGraph {
   const outer = def.gap + 2 * def.blockD + def.street * 1.5, mid = def.gap + def.blockD + def.street / 2;
-  const zs = [-outer, -mid, -9.4, 9.4, mid, outer];
+  const zs = [-outer, -mid, -9.4, 9.4, def.road2 ? def.road2.z + def.road2.half + 0.6 : mid, outer];
   const nodes: THREE.Vector3[] = [], edges: [number, number][] = [];
   const id = (i: number, j: number) => i * zs.length + j;
   crossX.forEach((x) => zs.forEach((z) => nodes.push(new THREE.Vector3(x, hf.heightAt(x, z), z))));

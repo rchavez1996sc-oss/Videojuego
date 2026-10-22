@@ -12,13 +12,16 @@ type State = 'drive' | 'off' | 'crash' | 'wreck';
 
 interface Vehicle {
   kind: CarKind | 'moto' | 'delivery'; group: THREE.Group; body: RAPIER.RigidBody; collider: RAPIER.Collider; dir: 1 | -1;
-  x: number; z: number; yaw: number; speed: number; cruise: number; len: number;
+  x: number; z: number; base: number; lane: number; half: number; yaw: number; speed: number; cruise: number; len: number;
   honkT: number; panic: boolean; state: State; hp: number; spin: number; drift: number; smokeT: number;
 }
 
 export interface Victim { key: string; pos: THREE.Vector3; hurt(damage: number, from: THREE.Vector3, shove: THREE.Vector3): void }
 
-const LANE = 3.2, X_MIN = -245, X_MAX = 245, HP = 140;
+/** A straight road along x: centre `z`, lane offset from the centre, half width, how many vehicles use it. */
+export interface Road { z: number; lane: number; half: number; count: number }
+
+const X_MIN = -245, X_MAX = 245, HP = 140;
 
 /** Avenue traffic with drivers/passengers; vehicles take bullet damage and, once disabled, skid out of control. */
 export class Traffic {
@@ -36,7 +39,8 @@ export class Traffic {
   /** Other people on the road drivers brake for (the squad). */
   obstacles: () => THREE.Vector3[] = () => [];
 
-  constructor(private world: RAPIER.World, private hf: Heightfield, lighting: Lighting, materials: Record<string, THREE.Material>, bake: { material: THREE.Material; keys: string[] }[], count: number) {
+  constructor(private world: RAPIER.World, private hf: Heightfield, lighting: Lighting, materials: Record<string, THREE.Material>, bake: { material: THREE.Material; keys: string[] }[], roads: Road[]) {
+    const lanes = roads.flatMap((r) => Array<Road>(r.count).fill(r)), count = lanes.length;
     const glass = lighting.setup(new THREE.MeshStandardMaterial({ color: '#2a3238', roughness: 0.1, metalness: 0.5, transparent: true, opacity: 0.35 }), 'glass-see');
     const mats = { ...materials, glass };
     const bakeNoGlass = bake.map((g) => ({ ...g, keys: g.keys.filter((k) => k !== 'glass') }));
@@ -65,7 +69,7 @@ export class Traffic {
       const dir = i % 2 ? 1 : -1;
       const cruise = kind === 'delivery' ? 9 : kind === 'moto' ? 7 : kind === 'combi' ? 11 : 10;
       const v: Vehicle = {
-        kind, group: g, body, collider, dir, x: X_MIN + ((i * 77) % (X_MAX - X_MIN)), z: dir * LANE, yaw: dir > 0 ? Math.PI / 2 : -Math.PI / 2,
+        kind, group: g, body, collider, dir, x: X_MIN + ((i * 77) % (X_MAX - X_MIN)), z: lanes[i].z + dir * lanes[i].lane, base: lanes[i].z, lane: lanes[i].lane, half: lanes[i].half, yaw: dir > 0 ? Math.PI / 2 : -Math.PI / 2,
         speed: cruise, cruise, len, honkT: 3 + rand() * 10, panic: false, state: 'drive', hp: HP, spin: 0, drift: 0, smokeT: 0,
       };
       this.list.push(v);
@@ -119,13 +123,13 @@ export class Traffic {
     const step = v.speed * dt + v.len / 2 + 0.3;
     const y = this.hf.heightAt(v.x, v.z) + 0.6;
     const hit = this.world.castRay(new RAPIER.Ray({ x: v.x, y, z: v.z }, fwd), step, true, undefined, undefined, undefined, undefined, (c) => c.handle !== v.collider.handle);
-    if (hit || Math.abs(v.z) > 7.5) {
+    if (hit || Math.abs(v.z - v.base) > v.half - 0.1) {
       if (v.speed > 2) this.onCrash(new THREE.Vector3(v.x, y, v.z));
       v.speed = 0;
     }
     v.speed = Math.max(0, v.speed - 7 * dt);
     v.x += fwd.x * v.speed * dt;
-    v.z = THREE.MathUtils.clamp(v.z + fwd.z * v.speed * dt + v.drift * dt * Math.min(1, v.speed / 4), -7.6, 7.6);
+    v.z = THREE.MathUtils.clamp(v.z + fwd.z * v.speed * dt + v.drift * dt * Math.min(1, v.speed / 4), v.base - v.half, v.base + v.half);
     v.yaw += v.spin * dt * Math.min(1, v.speed / 3);
     if (v.speed <= 0.05) v.state = 'wreck';
   }
@@ -152,7 +156,7 @@ export class Traffic {
   /** Moves a far-off car to just beyond view behind/ahead of the player so the nearby avenue stays busy. */
   private bringNear(v: Vehicle, camX: number): void {
     const x = THREE.MathUtils.clamp(camX - v.dir * (150 + Math.random() * 40), X_MIN, X_MAX);
-    if (this.list.some((o) => o !== v && o.dir === v.dir && o.state !== 'off' && Math.abs(o.x - x) < o.len + 10)) return;
+    if (this.list.some((o) => o !== v && o.dir === v.dir && o.base === v.base && o.state !== 'off' && Math.abs(o.x - x) < o.len + 10)) return;
     v.x = x;
   }
 
@@ -162,7 +166,7 @@ export class Traffic {
     for (const v of this.list) {
       if (v.state === 'off') {
         if (this.calmT > 45 && Math.random() < dt * 0.2) {
-          Object.assign(v, { state: 'drive', panic: false, hp: HP, x: v.dir > 0 ? X_MIN : X_MAX, z: v.dir * LANE, yaw: v.dir > 0 ? Math.PI / 2 : -Math.PI / 2 });
+          Object.assign(v, { state: 'drive', panic: false, hp: HP, x: v.dir > 0 ? X_MIN : X_MAX, z: v.base + v.dir * v.lane, yaw: v.dir > 0 ? Math.PI / 2 : -Math.PI / 2 });
           v.group.visible = true;
         } else continue;
       }
