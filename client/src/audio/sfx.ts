@@ -155,11 +155,20 @@ export class Sfx {
     this.filtered(t + 0.18, 'bandpass', 1300, 3, 0.2, 0.002, 0.08);
   }
 
-  pickup(): void {
+  /** Brass rounds rattling into a pouch, then a magazine seated with a solid click. */
+  pickupAmmo(): void {
     const t = this.m.ctx.currentTime;
-    this.filtered(t, 'bandpass', 900, 2, 0.25, 0.005, 0.08);
-    this.tone(t + 0.05, 'sine', 660, 660, 0.12, 0.12);
-    this.tone(t + 0.13, 'sine', 990, 990, 0.12, 0.18);
+    for (let i = 0; i < 6; i++) this.filtered(t + i * 0.035 + Math.random() * 0.02, 'bandpass', 3200 + Math.random() * 2600, 9, 0.16, 0.001, 0.06);
+    this.filtered(t + 0.26, 'bandpass', 1800, 3, 0.4, 0.001, 0.05);
+    this.filtered(t + 0.27, 'lowpass', 500, 1, 0.3, 0.001, 0.07);
+  }
+
+  /** Medkit: a velcro rip, then a soft rising two-note chime. */
+  pickupMedkit(): void {
+    const t = this.m.ctx.currentTime;
+    for (let i = 0; i < 5; i++) this.filtered(t + i * 0.03, 'highpass', 2500, 0.7, 0.12, 0.002, 0.03);
+    this.tone(t + 0.18, 'sine', 523, 523, 0.1, 0.25);
+    this.tone(t + 0.3, 'sine', 784, 784, 0.1, 0.4);
   }
 
   hurt(): void {

@@ -42,7 +42,7 @@ export function buildBoulevard(b: Builder, hf: Heightfield, def: MaleconDef, pla
   for (const [x0, x1] of runs) {
     const len = x1 - x0, cx = (x0 + x1) / 2;
     for (const s of [-1, 1]) b.box('kerbYellow', [len, 0.18, 0.18], new THREE.Vector3(cx, 0.05, z + s * (m - 0.09)), Q, false);
-    ribbon(b, hf, [new THREE.Vector2(x0, z), new THREE.Vector2(x1, z)], 5, 'pavement', 0.06);
+    ribbon(b, hf, [new THREE.Vector2(x0, z), new THREE.Vector2(x1, z)], 5, 'pavement', 0.1);
     for (const s of [-1, 1]) b.box('paintYellow', [len, 0.02, 0.1], new THREE.Vector3(cx, 0.075, z + s * 1.2), Q, false);
     for (let x = x0 + 1; x < x1 - 1; x += 4) b.box('roadWhite', [2, 0.02, 0.08], new THREE.Vector3(x + 1, 0.075, z + 0.1), Q, false);
     for (let x = x0 + 3; x < x1 - 2; x += 8 + rand() * 2) for (const s of [-1, 1]) {

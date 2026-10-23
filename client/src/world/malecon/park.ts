@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { Builder } from '../buildingKit';
 import type { Heightfield } from '../heightfield';
 import { edgeZ, ravineCentre, ravineHalf, type CoastDef } from '../coast';
+import { planFlights } from './bajadaStairs';
 import { EXTENT, SIDEWALK, inLarcomar, innerPathZ, overRavine, promenadeZ, type MaleconDef } from './layout';
 
 const UP = new THREE.Vector3(0, 1, 0), Q = new THREE.Quaternion();
@@ -65,8 +66,8 @@ function parapet(b: Builder, hf: Heightfield, a: THREE.Vector3, c: THREE.Vector3
   b.box('brickRed', [0.46, 0.07, len], mid.clone().setY(mid.y + 1.15), q, false);
   const inward = new THREE.Vector3(-(c.z - a.z), 0, c.x - a.x).normalize().multiplyScalar(-2.4);
   const p0 = new THREE.Vector2(a.x + inward.x, a.z + inward.z), p1 = new THREE.Vector2(c.x + inward.x, c.z + inward.z);
-  ribbon(b, hf, [p0, p1], 4.4, 'pavement', 0.05);
-  ribbon(b, hf, [p0.clone().add(new THREE.Vector2(inward.x, inward.z)), p1.clone().add(new THREE.Vector2(inward.x, inward.z))], 0.7, 'brickRed', 0.055);
+  ribbon(b, hf, [p0, p1], 4.4, 'pavement', 0.1);
+  ribbon(b, hf, [p0.clone().add(new THREE.Vector2(inward.x, inward.z)), p1.clone().add(new THREE.Vector2(inward.x, inward.z))], 0.7, 'brickRed', 0.11);
 }
 
 export function lamp(b: Builder, at: THREE.Vector3): void {
@@ -108,9 +109,9 @@ export function buildPark(b: Builder, hf: Heightfield, def: MaleconDef, c: Coast
     return out;
   };
   const prom = runs((x) => promenadeZ(c, x), 2), inner = runs((x) => innerPathZ(def, x), 2);
-  for (const r of prom) ribbon(b, hf, r, 4.2, 'flagstone');
-  for (const r of runs((x) => promenadeZ(c, x) - BIKE, 3)) ribbon(b, hf, r, 2.2, 'bikeRed', 0.035);
-  for (const r of inner) ribbon(b, hf, r, 3, 'paving');
+  for (const r of prom) ribbon(b, hf, r, 4.2, 'flagstone', 0.12);
+  for (const r of runs((x) => promenadeZ(c, x) - BIKE, 3)) ribbon(b, hf, r, 2.2, 'bikeRed', 0.1);
+  for (const r of inner) ribbon(b, hf, r, 3, 'paving', 0.1);
   const links: THREE.Vector2[][] = [];
   for (let x = -EXTENT + 24; x < EXTENT; x += 48) {
     const pts: THREE.Vector2[] = [];
@@ -119,12 +120,12 @@ export function buildPark(b: Builder, hf: Heightfield, def: MaleconDef, c: Coast
       pts.push(new THREE.Vector2(xx, z));
     }
     if (pts.some((p) => blocked(p.x, p.y, 3) || Math.hypot(p.x - lh.x, p.y - lh.z) < 14)) continue;
-    ribbon(b, hf, pts, 2.4, 'pathChecker', 0.035);
+    ribbon(b, hf, pts, 2.4, 'pathChecker', 0.16);
     links.push(pts);
   }
   const ring: THREE.Vector2[] = [];
   for (let a = 0; a <= Math.PI * 2 + 0.01; a += Math.PI / 24) ring.push(new THREE.Vector2(lh.x + Math.cos(a) * 9, lh.z + Math.sin(a) * 9));
-  ribbon(b, hf, ring, 3.2, 'flagstone', 0.05);
+  ribbon(b, hf, ring, 3.2, 'flagstone', 0.12);
   for (let k = 0; k < 6; k++) {
     const a = (k / 6) * Math.PI * 2 + 0.5, x = lh.x + Math.cos(a) * 12.5, z = lh.z + Math.sin(a) * 12.5;
     if (!blocked(x, z, 2) && z < edgeZ(c, x) - 3) seat(new THREE.Vector3(x, hf.heightAt(x, z), z), Math.atan2(lh.x - x, lh.z - z));
@@ -139,7 +140,7 @@ export function buildPark(b: Builder, hf: Heightfield, def: MaleconDef, c: Coast
     for (let a = 0.6; a < Math.PI * 5; a += 0.15) pts.push(new THREE.Vector2(x + Math.cos(a) * (r * a) / (Math.PI * 5), z + Math.sin(a) * (r * a) / (Math.PI * 5)));
     const end = pts[pts.length - 1];
     for (let k = 1; k <= 8; k++) pts.push(new THREE.Vector2(end.x + k * r * 0.12, end.y));
-    ribbon(b, hf, pts, 0.45, 'gravel', 0.1);
+    ribbon(b, hf, pts, 0.45, 'gravel', 0.18);
   }
   paintLawns(hf, (x, z) => {
     if ((def.flowerBeds ?? []).some(([bx, bz, r]) => Math.hypot(x - bx, z - bz) < r + 0.6)) return 0;
@@ -175,7 +176,7 @@ export function buildPark(b: Builder, hf: Heightfield, def: MaleconDef, c: Coast
     for (let z = r.head + 1; z < edgeZ(c, ravineCentre(r, z) + s * ravineHalf(c, r, z)) - 1; z += 2.5) {
       let x = ravineCentre(r, z);
       while (overRavine(c, x, z, 3)) x += s;
-      if (Math.abs(z - def.bridge.z) < 3) { if (pts.length) railing(b, pts.splice(0)); continue; }
+      if (Math.abs(z - def.bridge.z) < 3 || planFlights(c, r).some((fl) => fl.side === s && Math.abs(z - fl.z0) < 2.5)) { if (pts.length) railing(b, pts.splice(0)); continue; }
       pts.push(new THREE.Vector3(x, hf.heightAt(x, z), z));
     }
     railing(b, pts);

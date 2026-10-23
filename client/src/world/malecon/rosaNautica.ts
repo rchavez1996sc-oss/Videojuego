@@ -43,6 +43,17 @@ function pavilion(b: Builder, x: number, y: number, z: number, r: number, floors
   }
 }
 
+/** Open octagonal gazebo you walk through: white posts, a lattice frieze and a slate roof with a finial. */
+function gazebo(b: Builder, x: number, y: number, z: number, r: number): void {
+  for (let k = 0; k < 8; k++) {
+    const a = (k * Math.PI) / 4 + Math.PI / 8, px = x + Math.sin(a) * r, pz = z + Math.cos(a) * r;
+    b.geometry('lhWhite', new THREE.CylinderGeometry(0.09, 0.11, 2.8, 8).translate(0, 1.4, 0), at(px, y, pz), { size: [0.22, 2.8, 0.22], pos: new THREE.Vector3(px, y + 1.4, pz), quat: Q });
+  }
+  b.geometry('lattice', new THREE.CylinderGeometry(r, r, 0.5, 8, 1, true).rotateY(Math.PI / 8), at(x, y + 2.6, z));
+  b.geometry('roofSlate', new THREE.CylinderGeometry(0.15, r + 0.6, 2.2, 8).rotateY(Math.PI / 8).translate(0, 1.1, 0), at(x, y + 2.85, z));
+  b.geometry('lhWhite', new THREE.ConeGeometry(0.12, 0.8, 6).translate(0, 0.4, 0), at(x, y + 5.05, z));
+}
+
 /**
  * La Rosa Náutica: a breakwater of dark boulders running out from the beach road, a paved promenade on top with white
  * lattice railings, lamps and blue-roofed kiosks, ending in the cream restaurant whose wing stands on stilts over the
@@ -60,24 +71,27 @@ export function rosaNautica(b: Builder, hf: Heightfield, def: MaleconDef, c: Coa
   const mound = new THREE.Shape([new THREE.Vector2(-8, foot), new THREE.Vector2(8, foot), new THREE.Vector2(3.5, top), new THREE.Vector2(-3.5, top)]);
   b.geometry('breakRock', new THREE.ExtrudeGeometry(mound, { depth: zE + 14 - z0, bevelEnabled: false }), at(X, 0, z0));
   for (let z = z0; z < zE + 14; z += 0.9) for (const s of [-1, 1]) for (let k = 0; k < 3; k++) {
-    const off = 3 + r() * 5, rad = 0.5 + r() * 0.9, y = top - Math.max(0, off - 3.5) * slope + rad * 0.2;
+    const off = 3 + r() * 5, rad = 0.5 + r() * 0.9, y = Math.min(top - Math.max(0, off - 3.5) * slope + rad * 0.2, D - 0.35 - rad * 0.75);
     b.geometry('breakRock', new THREE.DodecahedronGeometry(rad, 0).scale(1.3, 0.75, 1), new THREE.Matrix4().compose(new THREE.Vector3(X + s * off, y, z + r() * 0.9), new THREE.Quaternion().setFromEuler(new THREE.Euler(r() * 3, r() * 3, r() * 3)), new THREE.Vector3(1, 1, 1)));
   }
   for (let k = 0; k < 40; k++) {
     const a = r() * Math.PI, rad = 0.6 + r() * 1;
     b.geometry('breakRock', new THREE.DodecahedronGeometry(rad, 0).scale(1.3, 0.75, 1), new THREE.Matrix4().compose(new THREE.Vector3(X + Math.cos(a) * 6 * r(), top - r() * 3, zE + 14 + Math.sin(a) * 4), new THREE.Quaternion().setFromEuler(new THREE.Euler(r() * 3, r() * 3, r() * 3)), new THREE.Vector3(1, 1, 1)));
   }
-  for (const s of [-1, 1]) railing(b, X + s * 2.6, z0 + 6, X + s * 2.6, walkEnd, D);
+  const kiosk0 = walkEnd - 52;
+  railing(b, X + 2.6, z0 + 6, X + 2.6, walkEnd, D);
+  railing(b, X - 2.6, z0 + 6, X - 2.6, kiosk0, D);
+  railing(b, X - 9.2, kiosk0, X - 9.2, walkEnd, D);
   for (let z = z0 + 14; z < walkEnd; z += 16) lamp(b, new THREE.Vector3(X + 2.2, D, z));
   for (let z = z0 + 10; z < walkEnd - 4; z += 9) b.box('planter', [0.7, 0.6, 0.7], new THREE.Vector3(X - 2.1, D + 0.3, z), Q, true);
-  pavilion(b, X, D, z0 + 8, 2.6, 1, 0);
-  b.box('paving', [7, 0.5, 30], new THREE.Vector3(X - 5.6, D - 0.25, walkEnd - 16), Q, true);
-  for (let z = walkEnd - 28; z < walkEnd - 2; z += 6.5) {
+  gazebo(b, X, D, z0 + 9, 3.2);
+  b.box('paving', [7, 0.5, walkEnd - kiosk0], new THREE.Vector3(X - 5.6, D - 0.25, (kiosk0 + walkEnd) / 2), Q, true);
+  for (let z = kiosk0 + 4; z < walkEnd - 2; z += 6.5) {
     b.box('creamWall', [4, 2.8, 5.4], new THREE.Vector3(X - 6.4, D + 1.4, z), Q, true);
     b.box('lobby', [0.05, 1.5, 3.4], new THREE.Vector3(X - 4.37, D + 1.5, z), Q, false);
     hip(b, 'roofSlate', 4.6, 6, 2.2, 0, X - 6.4, D + 2.8, z);
   }
-  pavilion(b, X - 4, D, walkEnd - 34, 3, 1, 0);
+  gazebo(b, X, D, kiosk0 - 6, 3.2);
   // Main hall on the breakwater: two storeys, door facing the promenade.
   const hx0 = X - 8, hx1 = X + 8, hz0 = walkEnd, hz1 = zE + 2, H = 6.4, T = 0.3;
   b.box('benchWood', [hx1 - hx0 + 4, 0.5, hz1 - hz0 + 4], new THREE.Vector3(X, D - 0.25, (hz0 + hz1) / 2), Q, true);

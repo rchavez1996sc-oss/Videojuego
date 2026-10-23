@@ -211,7 +211,7 @@ export class Player {
       const ledge = findLedge(this.world, this.position, moveYaw, this.collider.handle, this.grounded ? 2.1 : 2.4);
       if (ledge && (this.grounded || !ledge.vault)) {
         this.yaw = moveYaw;
-        const clip = ledge.vault || ledge.height < 1.15 ? CLIMBS.vault : ledge.height < 1.3 ? CLIMBS.low : !this.grounded ? CLIMBS.hang : this.speed > 5 ? CLIMBS.wall : CLIMBS.high;
+        const clip = ledge.vault || ledge.height < 1.6 ? CLIMBS.vault : ledge.height < 1.9 ? CLIMBS.low : !this.grounded ? CLIMBS.hang : this.speed > 5 ? CLIMBS.wall : CLIMBS.high;
         this.mantle = { ledge, start: this.position.clone(), t: 0, dur: ledge.vault ? 0.7 : clip.dur + ledge.height * 0.3, clip };
         this.onMantle(ledge.vault);
         return this.updateMantle(dt);

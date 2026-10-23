@@ -25,6 +25,7 @@ SETS = {
     'cobble': ('cobblestone_05', None),
     'pirca': ('old_stone_wall', None),
     'stoneWall': ('yellow_stone_wall', (168, 150, 122)),
+    'pebbles': ('ganges_river_pebbles', None),
 }
 
 def fetch(asset, kind):

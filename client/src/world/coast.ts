@@ -22,9 +22,16 @@ export function edgeZ(c: CoastDef, x: number): number {
   return z;
 }
 
-/** 1 where the cliff face is covered by creepers instead of bare conglomerate. */
-export function greenCliff(x: number, noise: Noise): number {
-  return smoothstep(-0.05, 0.12, noise.fbm(x, 0, 1 / 70, 3) + 0.08);
+/** 1 where the cliff face is covered by creepers instead of bare conglomerate (patchy; bare below sunken plazas). */
+export function greenCliff(x: number, noise: Noise, c?: CoastDef): number {
+  const bare = Math.max(0, ...(c?.carves ?? []).map((k) => smoothstep(30, 5, Math.max(k.x0 - x, x - k.x1))));
+  return smoothstep(0.02, 0.16, noise.fbm(x, 0, 1 / 70, 3) - 0.04) * (1 - bare);
+}
+
+/** Vertical erosion furrows of the conglomerate face: ridged noise along the cliff, 0 at top and toe. */
+function gullies(x: number, t: number, noise: Noise): number {
+  const ridge = 1 - Math.abs(noise.fbm(x, 3, 1 / 9, 2)) * 2;
+  return (ridge - 0.4) * 4.5 * Math.sin(t * Math.PI);
 }
 
 type Ravine = NonNullable<CoastDef['ravines']>[number];
@@ -63,14 +70,14 @@ function ravineCut(c: CoastDef, r: Ravine, x: number, z: number, h: number): num
 }
 
 export function coastHeight(c: CoastDef, x: number, z: number, noise: Noise): number {
-  const e = edgeZ(c, x), green = greenCliff(x, noise);
+  const e = edgeZ(c, x), green = greenCliff(x, noise, c);
   const t = (z - e) / c.run;
   let h: number;
   if (t <= 0) h = 0;
   else if (t < 1) {
     const steep = Math.pow(t, lerp(0.55, 1.0, green));
     const shelf = Math.sin(t * Math.PI) * noise.fbm(x, z, 1 / 18, 3) * lerp(1.6, 0.8, green);
-    h = -c.drop * smoothstep(0, 1, steep) + shelf;
+    h = -c.drop * smoothstep(0, 1, steep) + shelf + gullies(x, t, noise) * (1 - green * 0.7);
   } else {
     const beach = z - e - c.run;
     h = -c.drop - beach * 0.012;
@@ -90,11 +97,11 @@ export function coastHeight(c: CoastDef, x: number, z: number, noise: Noise): nu
 /** Mask for the coast: [road, grass, packed, rockAllowed] in 0..1. Lawns are painted later by the park. */
 export function coastMask(c: CoastDef, x: number, z: number, noise: Noise): [number, number, number, number] {
   const e = edgeZ(c, x), t = (z - e) / c.run;
-  let ivy = t > 0 && t < 1.05 ? Math.max(greenCliff(x, noise), smoothstep(0.3, 0.05, t)) : 0;
+  let ivy = t > 0 && t < 1.05 ? Math.max(greenCliff(x, noise, c), smoothstep(0.3, 0.05, t) * 0.6) : 0;
   for (const r of c.ravines ?? []) {
     const mouth = edgeZ(c, r.x) + c.run;
     if (z > r.head && z < mouth && Math.abs(x - ravineCentre(r, z)) < ravineHalf(c, r, z) + 2) ivy = 1;
   }
-  const beach = t >= 1 ? 1 : 0;
-  return [0, ivy, beach, 1 - ivy];
+  const beach = t >= 1 ? 1 : 0, bare = t > 0 && t < 1.05 ? 1 - ivy : 0;
+  return [0, ivy, Math.max(beach, bare), 1 - ivy];
 }

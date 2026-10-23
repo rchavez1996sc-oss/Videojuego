@@ -48,7 +48,8 @@ vec3 grass = mix(uGrassLush, uGrassDry, dryness);
 grass *= 0.78 + 0.28 * n2 + 0.12 * n3;
 grass = mix(grass, grass * soilC * 2.0, 0.25);
 
-float rockW = smoothstep(0.24, 0.4, slope + n2 * 0.08) * m.a;
+float bareK = m.b * m.a * 0.16;
+float rockW = smoothstep(0.24 - bareK, 0.4 - bareK, slope + n2 * 0.08) * m.a;
 float dirtW = max(m.b * 0.85, (1.0 - m.g) * 0.55) * (1.0 - rockW);
 vec3 col = mix(grass, uDirt * soilC * 2.1, dirtW);
 col = mix(col, uRoad * soilC * 2.2, m.r * (1.0 - rockW));

@@ -5,7 +5,7 @@
  "terrain": {
   "size": 1024,
   "playable": 450,
-  "seaReach": 300,
+  "seaReach": 345,
   "resolution": 513,
   "seed": 2036,
   "rolling": 0,
@@ -62,9 +62,9 @@
   "colors": {
    "grassLush": "#4d7d2a",
    "grassDry": "#6d8a38",
-   "dirt": "#8a8479",
+   "dirt": "#9a8566",
    "road": "#5a5754",
-   "rock": "#b39f80",
+   "rock": "#c2a27a",
    "snow": "#ffffff"
   },
   "snowLine": 9999,
@@ -97,7 +97,7 @@
   },
   "beachRoad": {
    "z": 158,
-   "half": 7
+   "half": 8
   },
   "lighthouse": {
    "x": -175,
@@ -278,7 +278,7 @@
   ],
   "pier": {
    "x": 65,
-   "length": 95
+   "length": 140
   }
  },
  "farCity": {
@@ -340,17 +340,29 @@
    },
    {
     "z": 158,
-    "lane": 3.5,
-    "half": 7,
-    "count": 10,
+    "lane": 2,
+    "half": 8,
+    "count": 6,
     "kinds": [
      "sedan",
      "wagon",
      "pickup",
      "sedan",
      "tico",
-     "combi",
-     "sedan"
+     "combi"
+    ]
+   },
+   {
+    "z": 158,
+    "lane": 6,
+    "half": 8,
+    "count": 5,
+    "kinds": [
+     "sedan",
+     "wagon",
+     "sedan",
+     "tico",
+     "combi"
     ]
    }
   ]
@@ -495,55 +507,55 @@
   {
    "type": "marksman",
    "x": 65,
-   "z": 182,
+   "z": 227,
    "at": -40.6
   },
   {
    "type": "rifleman",
    "x": 64.5,
-   "z": 198,
+   "z": 243,
    "at": -40.6
   },
   {
    "type": "rifleman",
    "x": 65.5,
-   "z": 214,
+   "z": 259,
    "at": -40.6
   },
   {
    "type": "marksman",
    "x": 64.5,
-   "z": 230,
+   "z": 275,
    "at": -40.6
   },
   {
    "type": "rifleman",
    "x": 64,
-   "z": 244,
+   "z": 289,
    "at": -40.6
   },
   {
    "type": "rifleman",
    "x": 65,
-   "z": 248,
+   "z": 293,
    "at": -40.6
   },
   {
    "type": "rifleman",
    "x": 82,
-   "z": 257,
+   "z": 302,
    "at": -40.6
   },
   {
    "type": "rifleman",
    "x": 100,
-   "z": 257,
+   "z": 302,
    "at": -40.6
   },
   {
    "type": "marksman",
    "x": 90,
-   "z": 275.5,
+   "z": 320.5,
    "at": -40.6
   },
   {
@@ -554,31 +566,31 @@
   {
    "type": "rifleman",
    "x": 62.5,
-   "z": 263,
+   "z": 308,
    "at": -40.6
   },
   {
    "type": "rifleman",
    "x": 67.5,
-   "z": 280,
+   "z": 325,
    "at": -40.6
   },
   {
    "type": "rifleman",
    "x": 84,
-   "z": 266,
+   "z": 311,
    "at": -40.6
   },
   {
    "type": "rifleman",
    "x": 101,
-   "z": 266,
+   "z": 311,
    "at": -40.6
   },
   {
    "type": "rifleman",
    "x": 109.5,
-   "z": 263.4,
+   "z": 308.4,
    "at": -40.6
   }
  ],
@@ -706,7 +718,7 @@
   "doing": "CAPTURANDO",
   "capture": {
    "x": 111,
-   "z": 268.5,
+   "z": 313.5,
    "y": -40.6,
    "yaw": 3.1416,
    "failed": "El hombre de terno debía ser capturado con vida. Sin él, la operación no sirve de nada."

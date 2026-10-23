@@ -99,12 +99,23 @@ export function dropLoot(pickups: Pickups, at: THREE.Vector3, ground: number): v
   if (Math.random() < 0.2) pickups.spawn(at.clone().sub(side), 'medkit', 90, ground);
 }
 
-/** Picks up whatever the player needs: medkit heals fully, corpse rounds add to the reserve, crates refill it and add a grenade. */
+let fullT = 0;
+
+/** Picks up whatever the player needs (and says so when walking over one that is not needed): medkit heals fully, corpse rounds add to the reserve, crates refill it and add a grenade. */
 export function collectSupplies(dt: number, pickups: Pickups, d: { player: Player; gun: Gun; grenades: Grenades; sfx: Sfx; hud: Hud; alive: boolean }): void {
   const roomy = d.gun.reserve < d.gun.reserveMax;
   const got = pickups.update(dt, d.player.position, (p) => d.alive && (p.kind === 'medkit' ? d.player.hp < 99.5 : roomy || (!p.rounds && d.grenades.count < 5)));
-  if (!got) return;
-  d.sfx.pickup();
+  fullT -= dt;
+  if (!got) {
+    const near = pickups.markers.find((m) => Math.hypot(m.pos.x - d.player.position.x, m.pos.z - d.player.position.z) < 1.4 && Math.abs(m.pos.y - d.player.position.y) < 2.3);
+    if (near && d.alive && fullT <= 0) {
+      d.hud.showToast(near.kind === 'medkit' ? 'VIDA COMPLETA' : 'MUNICIÓN COMPLETA');
+      fullT = 3;
+    }
+    return;
+  }
+  if (got.kind === 'medkit') d.sfx.pickupMedkit();
+  else d.sfx.pickupAmmo();
   if (got.kind === 'medkit') {
     d.player.heal();
     d.hud.showToast('BOTIQUÍN');

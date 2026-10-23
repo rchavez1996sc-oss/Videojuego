@@ -99,6 +99,10 @@
   "stoneWall": {
    "map": "textures/stoneWall_col.jpg",
    "normal": "textures/stoneWall_nrm.jpg"
+  },
+  "pebbles": {
+   "map": "textures/pebbles_col.jpg",
+   "normal": "textures/pebbles_nrm.jpg"
   }
  }
 }

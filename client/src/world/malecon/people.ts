@@ -47,14 +47,22 @@ function extra(lighting: Lighting, rand: () => number, at: THREE.Vector3, yaw: n
 /** Called when a bystander (extra, paraglider) is shot; set by the populace. */
 export interface Bystanders { onHurt: (p: THREE.Vector3) => void }
 
-/** A seated body going limp: it keeps the sitting pose and keels over sideways, pivoting on the hips. */
-interface Slump { rig: Rig; t: number; pivot: THREE.Vector3; from: THREE.Vector3; q0: THREE.Quaternion; axis: THREE.Vector3 }
+/** A seated body going limp in place: the sitting pose freezes, the torso folds forward, the head drops, it leans a little. */
+interface Slump { rig: Rig; t: number; bones: [THREE.Object3D, THREE.Quaternion, number, number][]; fold: THREE.Vector3; lean: THREE.Vector3 }
 
+const SLUMP: [string, number, number][] = [['mixamorigSpine', 0.2, 0.06], ['mixamorigSpine1', 0.26, 0.08], ['mixamorigSpine2', 0.2, 0.06], ['mixamorigNeck', 0.3, 0.05], ['mixamorigHead', 0.45, 0.12]];
+
+/** Bends each bone about world axes (so the fold is forward whatever the rig's local bone axes are). */
 function slumpStep(s: Slump, dt: number): boolean {
-  s.t = Math.min(1, s.t + dt * 1.4);
-  const a = (1 - (1 - s.t) ** 3) * 1.35, turn = new THREE.Quaternion().setFromAxisAngle(s.axis, a);
-  s.rig.root.position.copy(s.from).sub(s.pivot).applyQuaternion(turn).add(s.pivot);
-  s.rig.root.quaternion.copy(turn).multiply(s.q0);
+  s.t = Math.min(1, s.t + dt * 1.8);
+  const k = 1 - (1 - s.t) ** 3, pq = new THREE.Quaternion(), d = new THREE.Quaternion();
+  for (const [bone, base, fwd, lean] of s.bones) {
+    bone.quaternion.copy(base);
+    bone.parent!.updateWorldMatrix(true, false);
+    bone.parent!.getWorldQuaternion(pq);
+    d.setFromAxisAngle(s.fold, fwd * k).multiply(new THREE.Quaternion().setFromAxisAngle(s.lean, lean * k));
+    bone.quaternion.premultiply(pq.clone().invert().multiply(d).multiply(pq));
+  }
   return s.t < 1;
 }
 
@@ -68,8 +76,13 @@ function shootable(world: RAPIER.World, rig: Rig, floor: number, seated: boolean
     if (seated) {
       rig.dead = true;
       limp.add(rig);
-      const side = new THREE.Vector3(1, 0, 0).applyQuaternion(rig.root.quaternion).multiplyScalar(Math.random() < 0.5 ? 1 : -1);
-      slumps.push({ rig, t: 0, pivot: rig.hips(), from: rig.root.position.clone(), q0: rig.root.quaternion.clone(), axis: new THREE.Vector3(side.z, 0, -side.x).normalize() });
+      const bones = SLUMP.flatMap(([n, fwd, lean]) => {
+        const o = rig.root.getObjectByName(n);
+        return o ? [[o, o.quaternion.clone(), fwd, lean] as [THREE.Object3D, THREE.Quaternion, number, number]] : [];
+      });
+      const knees = ['Left', 'Right'].map((n) => rig.root.getObjectByName(`mixamorig${n}Leg`)!.getWorldPosition(new THREE.Vector3()));
+      const facing = knees[0].add(knees[1]).multiplyScalar(0.5).sub(rig.hips()).setY(0).normalize();
+      slumps.push({ rig, t: 0, bones, fold: new THREE.Vector3(0, 1, 0).cross(facing).normalize(), lean: facing.multiplyScalar(Math.random() < 0.5 ? 1 : -1) });
     } else {
       rig.root.position.y = floor;
       rig.die(Math.random() < 0.5 ? 'fall_back' : 'dying');

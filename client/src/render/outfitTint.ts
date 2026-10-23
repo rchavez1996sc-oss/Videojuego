@@ -30,10 +30,10 @@ export function tintHook(hair: boolean) {
       .replace('#include <map_fragment>', hair ? `#include <map_fragment>
   diffuseColor.rgb = mix(diffuseColor.rgb, uTone * dot(diffuseColor.rgb, vec3(0.3, 0.59, 0.11)) * 2.2, 0.8);` : `#include <map_fragment>
   {
-    vec3 hsv = tq_rgb2hsv(diffuseColor.rgb);
-    float skin = (1.0 - smoothstep(0.10, 0.14, hsv.x)) * smoothstep(0.18, 0.28, hsv.y) * (1.0 - smoothstep(0.52, 0.64, hsv.y)) * smoothstep(0.02, 0.06, hsv.z);
-    vec3 cloth = vec3(fract(hsv.x + uOutfit.x), clamp(max(hsv.y * uOutfit.y, uOutfit.w * (1.0 - smoothstep(0.0, 0.2, hsv.y))), 0.0, 1.0), hsv.z * uOutfit.z);
-    diffuseColor.rgb = mix(tq_hsv2rgb(cloth), diffuseColor.rgb * uTone.x, skin);
+    vec3 hsv = tq_rgb2hsv(pow(max(diffuseColor.rgb, 0.0), vec3(1.0 / 2.2)));
+    float skin = (1.0 - smoothstep(0.10, 0.14, hsv.x)) * smoothstep(0.15, 0.24, hsv.y) * (1.0 - smoothstep(0.55, 0.68, hsv.y)) * smoothstep(0.15, 0.25, hsv.z);
+    vec3 cloth = vec3(fract(hsv.x + uOutfit.x), clamp(max(hsv.y * uOutfit.y, uOutfit.w * (1.0 - smoothstep(0.0, 0.2, hsv.y))), 0.0, 1.0), min(hsv.z * uOutfit.z, 0.92));
+    diffuseColor.rgb = mix(pow(tq_hsv2rgb(cloth), vec3(2.2)), diffuseColor.rgb * uTone.x, skin);
   }`);
   };
 }
@@ -46,8 +46,8 @@ export function variants(mat: THREE.MeshStandardMaterial, key: string, lighting:
   const hair = /hair/i.test(mat.name);
   return Array.from({ length: LOOKS + 1 }, (_, i) => {
     const m = i ? mat.clone() : mat, suit = i === LOOKS, c = new THREE.Color(suit ? '#151515' : HAIR[Math.floor(rand() * HAIR.length)]);
-    m.userData.outfit = { value: suit ? new THREE.Vector4(0, 0.3, 0.55, 0) : i ? new THREE.Vector4(rand(), 0.55 + rand() * 0.9, 0.6 + rand() * 0.6, rand() < 0.5 ? rand() * 0.45 : 0) : new THREE.Vector4(0, 1, 1, 0) };
-    m.userData.tone = { value: hair ? new THREE.Vector3(c.r, c.g, c.b) : new THREE.Vector3(suit ? 0.95 : 0.72 + rand() * 0.38, 0, 0) };
+    m.userData.outfit = { value: suit ? new THREE.Vector4(0, 0.3, 0.55, 0) : i ? new THREE.Vector4(rand(), 0.6 + rand() * 0.8, 0.55 + rand() * 0.45, rand() < 0.5 ? rand() * 0.45 : 0) : new THREE.Vector4(0, 1, 1, 0) };
+    m.userData.tone = { value: hair ? new THREE.Vector3(c.r, c.g, c.b) : new THREE.Vector3(suit ? 0.9 : 0.65 + rand() * 0.33, 0, 0) };
     return lighting.setup(m, key, (sh) => tintHook(hair)(sh, m));
   });
 }

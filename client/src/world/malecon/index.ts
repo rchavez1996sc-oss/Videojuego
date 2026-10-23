@@ -29,6 +29,7 @@ import { buildLandmarks } from './landmarks';
 import { rosaNautica } from './rosaNautica';
 import { buildBorder } from './border';
 import { buildBajada } from './bajada';
+import { buildBeach, chainLink } from './beach';
 import { buildLarcomar } from './larcomar';
 import { buildVegetation } from './vegetation';
 
@@ -76,6 +77,8 @@ function maleconMaterials(lighting: Lighting, { apt, co, pl, br, wd, fo }: Tex):
     barrierWhite: std('barrierWhite', { color: '#e8e4dc', roughness: 0.8 }),
     glassClear: std('glassClear', { color: '#cfe3ea', roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.22, depthWrite: false }),
     cobble: photoStd('cobble', 0.85),
+    pebbles: photoStd('pebbles', 0.9),
+    cliffMesh: std('cliffMesh', { map: chainLink(), alphaTest: 0.4, side: THREE.DoubleSide, metalness: 0.5, roughness: 0.5 }),
     pirca: photoStd('pirca', 0.95),
     stoneWall: photoStd('stoneWall', 0.9),
     chairGreen: std('chairGreen', { color: '#2e3a2b', roughness: 0.6 }),
@@ -153,6 +156,7 @@ export function buildMalecon(hf: Heightfield, def: MaleconDef, lighting: Lightin
   plants.standing.push(...guards.map((g) => ({ ...g, key: rand() < 0.5 ? 'civ_idle' : 'texting' })));
   buildLandmarks(b, hf, def, c);
   buildBajada(b, hf, def, c, plants);
+  buildBeach(b, hf, def, c, rand);
   const station = rosaNautica(b, hf, def, c);
   buildBorder(b, hf, def, c, hf.def.playable / 2);
   const group = new THREE.Group();

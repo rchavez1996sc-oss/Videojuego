@@ -82,7 +82,7 @@ export function buildRoads(b: Builder, hf: Heightfield, def: MaleconDef, c: Coas
   drape(b, hf, br.z, br.half, 'asphalt', 0.08);
   drape(b, hf, br.z - br.half - 1.6, 1.6, 'pavement', 0.15);
   laneLines(b, beachY, br.z, br.half, [], true);
-  for (let x = -L; x < L; x += 3) b.box('concrete', [3, 0.8, 0.5], new THREE.Vector3(x + 1.5, beachY(x, br.z + br.half + 0.6) + 0.3, br.z + br.half + 0.6), Q, true);
+  for (let x = -L; x < L; x += 3) if (Math.abs(x + 1.5 - (def.pier?.x ?? 1e9)) > 4) b.box('concrete', [3, 0.8, 0.5], new THREE.Vector3(x + 1.5, beachY(x, br.z + br.half + 0.6) + 0.3, br.z + br.half + 0.6), Q, true);
   for (const jx of [-170, -40, 95, 205]) {
     for (let z = br.z + br.half + 3; z < c.shore + 55; z += 2.2) {
       for (const s of [-1, 0, 1]) {
