@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { Mannequin } from './mannequin';
 import { SHIRTS, PANTS, SKIN, HAIR } from '../systems/civilians';
 import type { Lighting } from '../render/lighting';
+import { Rig } from './rig';
+import { characters, type CharKind } from '../render/characters';
 
 let shared: THREE.Material | null = null;
 
@@ -13,6 +15,30 @@ export function seatedPerson(lighting: Lighting, rand: () => number): THREE.Mesh
   const mesh = m.seatedMesh(shared);
   mesh.castShadow = false;
   return mesh;
+}
+
+const RIDERS: CharKind[] = ['civ_a', 'civ_b', 'civ_c'];
+
+/**
+ * A Mixamo civilian frozen in the sitting pose, facing +z with the hips at the returned group's origin (for open
+ * vehicles: mototaxis and delivery bikes). Null until the characters and their `sit` clip are loaded.
+ */
+export function seatedRig(lighting: Lighting, rand: () => number): THREE.Group | null {
+  if (!characters.ready || !characters.clips.has('sit')) return null;
+  const rig = new Rig(RIDERS[Math.floor(rand() * RIDERS.length)], lighting, false);
+  rig.loop('sit');
+  rig.tick(0.5 + rand());
+  rig.root.updateMatrixWorld(true);
+  const knees = ['Left', 'Right'].map((s) => rig.root.getObjectByName(`mixamorig${s}Leg`)!.getWorldPosition(new THREE.Vector3()));
+  const ahead = knees[0].add(knees[1]).multiplyScalar(0.5).sub(rig.hips());
+  rig.root.rotation.y = -Math.atan2(ahead.x, ahead.z);
+  rig.root.updateMatrixWorld(true);
+  rig.root.position.sub(rig.hips());
+  rig.castShadow = false;
+  const holder = new THREE.Group();
+  holder.name = 'rider';
+  holder.add(rig.root);
+  return holder;
 }
 
 /** Seat positions (vehicle local space, +z forward) as [x, seatHeight, z]. First entry is the driver. */

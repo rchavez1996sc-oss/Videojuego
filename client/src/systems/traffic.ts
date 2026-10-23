@@ -5,7 +5,7 @@ import { Builder } from '../world/buildingKit';
 import { car, mototaxi, type CarKind } from '../world/urbanProps';
 import { deliveryBike } from '../world/deliveryBike';
 import { onHit, setSurface } from '../world/surfaces';
-import { seatedPerson, SEATS } from '../entities/occupants';
+import { seatedPerson, seatedRig, SEATS } from '../entities/occupants';
 import type { Heightfield } from '../world/heightfield';
 import type { Lighting } from '../render/lighting';
 
@@ -61,6 +61,11 @@ export class Traffic {
       let riderMat: THREE.Material | null = null;
       SEATS[kind].forEach(([x, y, z], k) => {
         if (k > 0 && rand() < 0.45) return;
+        const rider = kind === 'moto' || kind === 'delivery' ? seatedRig(lighting, rand) : null;
+        if (rider) {
+          rider.position.set(x, y, z);
+          return void g.add(rider);
+        }
         const p = seatedPerson(lighting, rand);
         riderMat = p.material as THREE.Material;
         riders.push(p.geometry.clone().translate(x, y - 0.95, z));
