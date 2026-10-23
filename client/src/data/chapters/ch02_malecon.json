@@ -710,21 +710,45 @@
  ],
  "shadowRange": 45,
  "objective": {
-  "title": "CAPTURA AL HOMBRE DE TERNO",
-  "detail": "Está en el comedor de la Rosa Náutica. Lo queremos vivo.",
+  "title": "SECUESTRA A GIACOMO MIRÓ QUESADA",
+  "detail": "Gerente general del BCB. Cena en el comedor de la Rosa Náutica. Lo queremos vivo.",
   "defendRadius": 45,
   "hold": 2.5,
-  "action": "CAPTURARLO",
-  "doing": "CAPTURANDO",
+  "action": "SOMETERLO",
+  "doing": "SOMETIENDO A MIRÓ QUESADA",
   "capture": {
    "x": 111,
    "z": 313.5,
    "y": -40.6,
    "yaw": 3.1416,
-   "failed": "El hombre de terno debía ser capturado con vida. Sin él, la operación no sirve de nada."
+   "failed": "Miró Quesada está muerto. Sin rehén no hay rescate, y la Junta tendrá a su mártir. La operación fracasó.",
+   "name": "Giacomo Miró Quesada",
+   "extraction": {
+    "radius": 100,
+    "seconds": 180,
+    "warn": 30,
+    "alert": "¡NOS DETECTARON! La Junta envía un helicóptero para evacuar a Miró Quesada. Tienen 3 minutos para capturarlo.",
+    "arrived": "El helicóptero de rescate llegó a la Rosa Náutica y se llevó a Miró Quesada. La operación fracasó."
+   }
   },
   "complete": "CAPÍTULO 2 COMPLETADO",
-  "reward": "El hombre de terno está en manos del Frente. (Texto provisional: falta definir quién es y qué sabe.)"
+  "reward": "Giacomo Miró Quesada está en manos del Frente. Su rescate llenará las arcas de la guerra, y el rostro del milagro económico de la Junta aparecerá mañana en todos los noticieros, vendado y bajo la bandera roja.",
+  "loot": [
+   "Giacomo Miró Quesada, gerente general del BCB (rehén)",
+   "Rescate exigido: US$ 25 millones",
+   "Agenda y contactos de la cúpula militar"
+  ]
  },
- "alertAll": true
+ "alertAll": true,
+ "intro": [
+  "Giacomo Miró Quesada, gerente general del BCB. El rostro amable del milagro económico de la Junta: mientras los barrios pasan hambre, él habla de «crecimiento con orden» en los foros de inversión.",
+  "Fue el primero en darle la mano al general Angobaldo. El BCB financia la represión, y a cambio la Junta le entrega las concesiones, los bonos del Estado y los ahorros de un país entero.",
+  "Esta noche cena con la cúpula militar en la Rosa Náutica, como cada viernes. El Frente lo quiere vivo: su rescate pagará las armas de la próxima ofensiva. Y su captura le recordará a la Junta que nadie está a salvo."
+ ],
+ "introPlates": [
+  "forum",
+  "alliance",
+  "dinner"
+ ],
+ "introScore": "intrigue"
 }

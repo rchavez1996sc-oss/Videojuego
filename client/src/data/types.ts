@@ -49,6 +49,9 @@ export interface ChapterDef {
   malecon?: import('../world/malecon/layout').MaleconDef;
   /** Once a shot is heard, every mobile enemy on the map converges on the player. */
   alertAll?: boolean;
+  /** Manifest `art` keys for the prologue plates (default: chapter 1's) and the score's mood. */
+  introPlates?: string[];
+  introScore?: 'war' | 'intrigue';
   /** Static tiles and tree groups farther than this (m) stop casting shadows. */
   shadowRange?: number;
   life?: import('../systems/cityLife').LifeDef;

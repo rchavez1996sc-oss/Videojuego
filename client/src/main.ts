@@ -72,7 +72,7 @@ async function boot(): Promise<void> {
   if (shotMode) document.body.classList.add('shot');
   const ch = (CHAPTERS[new URLSearchParams(location.search).get('ch') ?? '1'] ?? ch01) as ChapterDef;
   document.querySelector('#overlay .sub')!.textContent = `Capítulo ${ch.number ?? 1} — ${ch.title}`;
-  const prologue = shotMode ? Promise.resolve() : showPrologue(`CAPÍTULO ${ch.number ?? 1}`, ch.title.toUpperCase(), ch.intro ?? []);
+  const prologue = shotMode ? Promise.resolve() : showPrologue(`CAPÍTULO ${ch.number ?? 1}`, ch.title.toUpperCase(), ch.intro ?? [], ch.introPlates, ch.introScore);
   await RAPIER.init();
   const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
   const canvas = document.getElementById('game') as HTMLCanvasElement;
@@ -171,7 +171,7 @@ async function boot(): Promise<void> {
   const nadeMode = new GrenadeMode(grenades, world, camera, player, sfx, hud);
   scene.add(nadeMode.group);
   const corpses = new Loot(pickups, world, hf, (at) => combat.bloodStain(at));
-  const objective = ch.objective && barrio?.station ? new Objective(ch.objective, barrio.station, camera, { lighting, world, scene }) : null;
+  const objective = ch.objective && barrio?.station ? new Objective(ch.objective, barrio.station, camera, { lighting, world, scene, mixer, cinematic: (eye, look) => (freeCam = true, tpc.place(eye, look)) }) : null;
   let lives = (hud.lives = ch.lives ?? 3);
   if (objective) objective.onFail = (why) => (failed || window.setTimeout(() => showMissionFailed(why), 4200), (failed = true));
   if (objective) objective.onComplete = () => {

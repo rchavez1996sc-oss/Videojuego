@@ -6,6 +6,12 @@ const CHORDS = [
   [110.0, 138.6, 164.8],
   [146.8, 174.6, 220.0],
 ];
+/** Cold, suspended chords for a conspiracy: minor with added seconds, a tritone, resolving nowhere. */
+const INTRIGUE = [
+  [110.0, 123.5, 164.8],
+  [103.8, 130.8, 155.6],
+  [98.0, 138.6, 146.8],
+];
 
 export class IntroMusic {
   private ctx = new AudioContext();
@@ -14,7 +20,7 @@ export class IntroMusic {
   private voices: OscillatorNode[] = [];
   private chordGain: GainNode | null = null;
 
-  constructor() {
+  constructor(private score: 'war' | 'intrigue' = 'war') {
     const c = this.ctx;
     this.out = c.createGain();
     this.out.gain.value = 0.9;
@@ -53,8 +59,10 @@ export class IntroMusic {
   /** New plate: a timpani hit (soft at first, building towards the title) and the next chord swelling in. */
   plate(i: number): void {
     const c = this.ctx, t = c.currentTime;
-    this.timpani(t, 0.18 + i * 0.16);
-    this.skirmish(i);
+    const intrigue = this.score === 'intrigue';
+    this.timpani(t, intrigue ? 0.3 + i * 0.12 : 0.18 + i * 0.16);
+    if (intrigue) this.clock(t, 9);
+    else this.skirmish(i);
     if (this.chordGain) {
       this.chordGain.gain.cancelScheduledValues(t);
       this.chordGain.gain.setTargetAtTime(0, t, 0.8);
@@ -68,7 +76,8 @@ export class IntroMusic {
     lp.connect(g);
     g.connect(this.out);
     g.connect(this.verb);
-    for (const f of CHORDS[i % CHORDS.length]) for (const det of [-6, 0, 7]) {
+    const chords = intrigue ? INTRIGUE : CHORDS;
+    for (const f of chords[i % chords.length]) for (const det of [-6, 0, 7]) {
       const o = c.createOscillator();
       o.type = 'sawtooth';
       o.frequency.value = f;
@@ -78,6 +87,11 @@ export class IntroMusic {
       o.stop(t + 14);
     }
     this.chordGain = g;
+  }
+
+  /** A dry, low clock tick every second (the intrigue score's pulse). */
+  private clock(t0: number, beats: number): void {
+    for (let k = 0; k < beats; k++) this.shot(t0 + 0.5 + k, 0.05 * (k % 2 ? 0.6 : 1), 1800);
   }
 
   /** Distant gunfire during plate `i`: a few faint, muffled shots at first, closer and busier towards the end. */

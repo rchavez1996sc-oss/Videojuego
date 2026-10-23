@@ -2,18 +2,18 @@ import { Cast, Stage } from './stage';
 import { SCENES } from './scenes';
 
 const BASE = `${import.meta.env.BASE_URL}assets/`;
-/** Manifest `art` keys for the scenes, in order. */
+/** Manifest `art` keys for the 3D fallback scenes, in order (chapter 1). */
 const KEYS = ['general', 'tanks', 'detentions', 'voices', 'barrio'];
 
 /**
  * Prologue plates: hand-made art listed in the manifest (`art.general`, `art.tanks`, …) replaces its scene and is delivered at once,
  * the rest are rendered one by one off-screen, then the renderer is freed.
  */
-export async function renderPlates(onPlate: (i: number, url: string) => void): Promise<void> {
+export async function renderPlates(onPlate: (i: number, url: string) => void, keys = KEYS): Promise<void> {
   const manifest = await (await fetch(`${BASE}manifest.json`, { cache: 'no-cache' })).json();
   const art: Record<string, string> = manifest.art ?? {};
-  KEYS.forEach((k, i) => art[k] && onPlate(i, `${BASE}${art[k]}?v=${manifest.version ?? 0}`));
-  if (KEYS.every((k) => art[k])) return;
+  keys.forEach((k, i) => art[k] && onPlate(i, `${BASE}${art[k]}?v=${manifest.version ?? 0}`));
+  if (keys !== KEYS || KEYS.every((k) => art[k])) return;
   const cast = new Cast();
   await cast.load();
   const stage = new Stage();

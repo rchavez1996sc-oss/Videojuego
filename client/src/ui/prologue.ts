@@ -11,7 +11,7 @@ const HOLD = 4200;
  * Click advances, Esc skips; after the last plate the chapter title appears. Resolves when it closes
  * (the game loop only starts then).
  */
-export function showPrologue(kicker: string, title: string, paragraphs: string[]): Promise<void> {
+export function showPrologue(kicker: string, title: string, paragraphs: string[], plateKeys?: string[], score: 'war' | 'intrigue' = 'war'): Promise<void> {
   if (!paragraphs.length) return Promise.resolve();
   let finished = () => {};
   const over = new Promise<void>((r) => (finished = r));
@@ -21,13 +21,13 @@ export function showPrologue(kicker: string, title: string, paragraphs: string[]
   document.body.appendChild(el);
   const plates = el.querySelector('.plates')!, line = el.querySelector('.line')!, head = el.querySelector('h3')!;
   const urls: string[] = [];
-  const music = new IntroMusic();
+  const music = new IntroMusic(score);
   let i = -1, shown = -1, timer = 0, started = false;
   let typing: Typewriter | null = null;
   renderPlates((k, url) => {
     urls[k] = url;
     if (k === i) reveal();
-  }).catch((e) => {
+  }, plateKeys).catch((e) => {
     console.warn('prologue art', e);
     if (i >= 0) reveal(true);
   });

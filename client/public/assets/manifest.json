@@ -1,5 +1,5 @@
 {
- "version": 11,
+ "version": 12,
  "characters": {
   "pnp": {
    "near": "characters/pnp.glb",
@@ -37,7 +37,10 @@
   "tanks": "art/tanks.webp",
   "detentions": "art/detentions.webp",
   "voices": "art/voices.webp",
-  "barrio": "art/barrio.webp"
+  "barrio": "art/barrio.webp",
+  "forum": "art/forum.webp",
+  "alliance": "art/alliance.webp",
+  "dinner": "art/dinner.webp"
  },
  "textures": {
   "concrete": {

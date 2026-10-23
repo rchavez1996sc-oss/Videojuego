@@ -5,8 +5,10 @@ import type { Enemy } from '../entities/enemy';
 import type { Input } from '../core/input';
 import type { Lighting } from '../render/lighting';
 import { Vip } from './vip';
+import { Extraction, type ExtractionDef } from './extraction';
+import type { Mixer } from '../audio/mixer';
 
-export interface ObjectiveDef { title: string; detail: string; defendRadius: number; hold: number; complete: string; reward: string; loot?: string[]; unlock?: string; action?: string; doing?: string; capture?: { x: number; z: number; y: number; yaw: number; failed: string } }
+export interface ObjectiveDef { title: string; detail: string; defendRadius: number; hold: number; complete: string; reward: string; loot?: string[]; unlock?: string; action?: string; doing?: string; capture?: { x: number; z: number; y: number; yaw: number; failed: string; name?: string; extraction?: ExtractionDef } }
 
 /**
  * Chapter goal: storm the site and hold E in its hall (defenders need not all be dead); with `capture`, the goal is
@@ -22,18 +24,39 @@ export class Objective {
   onComplete: () => void = () => {};
   onFail: (why: string) => void = () => {};
   readonly vip: Vip | null = null;
+  private extraction: Extraction | null = null;
+  private alert = document.createElement('div');
 
-  constructor(readonly def: ObjectiveDef, readonly site: StationInfo, private camera: THREE.Camera, deps?: { lighting: Lighting; world: RAPIER.World; scene: THREE.Scene }) {
+  /** `cinematic` takes over the camera for a closing shot (the helicopter landing). */
+  constructor(readonly def: ObjectiveDef, readonly site: StationInfo, private camera: THREE.Camera, deps?: { lighting: Lighting; world: RAPIER.World; scene: THREE.Scene; mixer: Mixer; cinematic: (eye: THREE.Vector3, look: THREE.Vector3) => void }) {
     const c = def.capture;
     if (c && deps) {
       this.vip = new Vip(new THREE.Vector3(c.x, c.y, c.z), c.yaw, deps.lighting, deps.world);
       deps.scene.add(this.vip.rig.root);
-      this.vip.onKilled = () => this.onFail(c.failed);
+      this.vip.onKilled = () => (this.extraction?.stop(), this.onFail(c.failed));
+      if (c.extraction) {
+        const ex = (this.extraction = new Extraction(c.extraction, this.vip.position.clone(), deps.scene, deps.lighting, deps.mixer));
+        ex.onAlert = (text) => this.flash(text);
+        ex.onArrived = (text, eye, look) => {
+          this.done = true;
+          deps.cinematic(eye, look);
+          this.onFail(text);
+        };
+      }
     }
+    this.alert.id = 'op-alert';
+    document.body.appendChild(this.alert);
     this.panel.id = 'objective';
     this.marker.id = 'obj-marker';
     this.prompt.className = 'prompt';
     document.body.append(this.panel, this.marker, this.prompt);
+  }
+
+  /** Red banner across the top of the screen for a few seconds. */
+  private flash(text: string): void {
+    this.alert.textContent = text;
+    this.alert.classList.add('on');
+    setTimeout(() => this.alert.classList.remove('on'), 7000);
   }
 
   get position(): THREE.Vector3 {
@@ -52,10 +75,11 @@ export class Objective {
 
   update(dt: number, player: THREE.Vector3, enemies: Enemy[], input: Input, alive: boolean): void {
     this.vip?.update(dt, enemies.some((e) => e.engaged));
+    this.extraction?.update(dt, player, this.camera.position);
     if (this.done || (this.vip && !this.vip.alive)) return;
     const goal = this.position, dist = Math.round(player.distanceTo(goal));
     const left = this.defenders(enemies);
-    this.panel.innerHTML = `<span class="k">OBJETIVO</span><b>${this.def.title}</b><span class="d">${left ? `DEFENSORES ${left} · ` : ''}${dist} m</span>`;
+    this.panel.innerHTML = `<span class="k">OBJETIVO</span><b>${this.def.title}</b><span class="d">${this.extraction?.running ? `<em>HELICÓPTERO ${clock(this.extraction.left)}</em> · ` : ''}${left ? `DEFENSORES ${left} · ` : ''}${dist} m</span>`;
     this.camera.updateMatrixWorld();
     const ahead = this.v.copy(goal).sub(this.camera.position).dot(this.camera.getWorldDirection(new THREE.Vector3())) > 0;
     this.v.copy(goal).setY(goal.y + (this.vip ? 2.4 : 5)).project(this.camera);
@@ -75,9 +99,12 @@ export class Objective {
     this.prompt.innerHTML = this.holdT > 0 ? `${this.def.doing ?? 'SAQUEANDO CARGAMENTO'} <span>${Math.round((this.holdT / this.def.hold) * 100)}%</span>` : `<kbd>E</kbd> MANTÉN PARA ${this.def.action ?? 'SAQUEAR EL CARGAMENTO'}`;
     if (this.holdT < this.def.hold) return;
     this.done = true;
+    this.extraction?.stop();
     this.vip?.capture();
     this.prompt.style.opacity = this.marker.style.opacity = '0';
     this.panel.innerHTML = `<span class="k">OBJETIVO CUMPLIDO</span><b>${this.def.title}</b>`;
     this.onComplete();
   }
 }
+
+const clock = (s: number) => `${Math.floor(Math.ceil(s) / 60)}:${String(Math.ceil(s) % 60).padStart(2, '0')}`;
