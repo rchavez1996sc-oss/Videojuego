@@ -135,3 +135,7 @@ body.jolt::after { content: ''; position: fixed; inset: 0; pointer-events: none;
 #overlay .confirm p { max-width: 520px; text-align: center; font: 600 22px 'Barlow Condensed', sans-serif; letter-spacing: 0.05em; }
 #overlay { padding-right: calc(min(46vh, 30vw) + 3vw); box-sizing: border-box; }
 #overlay h1 { font-size: min(72px, 4.6vw); }
+#countdown { position: fixed; left: 50%; top: 40%; transform: translate(-50%, -50%); z-index: 40; pointer-events: none; font: italic 800 140px 'Barlow Condensed', sans-serif; color: #f2ede2; text-shadow: 0 4px 30px rgba(0, 0, 0, 0.8); white-space: nowrap; }
+#countdown.go { font-size: 84px; color: #ffcf3f; letter-spacing: 0.06em; }
+#countdown.pop { animation: count-pop 0.95s ease-out forwards; }
+@keyframes count-pop { 0% { opacity: 0; scale: 1.6; } 15% { opacity: 1; scale: 1; } 75% { opacity: 1; } 100% { opacity: 0; scale: 0.92; } }

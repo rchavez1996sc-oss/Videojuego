@@ -60,10 +60,10 @@ import { Objective } from './systems/objective';
 import { showMissionComplete } from './ui/missionComplete';
 import { showPrologue } from './ui/prologue';
 import { showLauncher } from './ui/launcher';
+import { counting } from './ui/countdown';
 import allyDef from './data/allies.json';
 
 const CHAPTERS: Record<string, unknown> = { '1': ch01, '2': ch02, '3': ch03 };
-
 const status = document.getElementById('status')!;
 const overlay = document.getElementById('overlay')!;
 const stats = document.getElementById('stats')!;
@@ -289,7 +289,7 @@ async function boot(): Promise<void> {
     input.endFrame();
     fps.update(dt, (n) => `${n} fps · ${quality} · res ${Math.round(dynRes.scale * 100)}% · ${renderer.gl.info.render.calls} draws · ${(renderer.gl.info.render.triangles / 1e6).toFixed(2)}M tris · ${gpu}${stats.dataset.errors ? ` · err ${stats.dataset.errors}` : ''}`);
   };
-  const safeFrame = guardFrame(() => (document.pointerLockElement === canvas ? frame(Math.min(clock.getDelta(), 1 / 20)) : (clock.getDelta(), renderer.render(0))), (n) => stats.dataset.errors = String(n));
+  const safeFrame = guardFrame(() => (document.pointerLockElement === canvas && !counting ? frame(Math.min(clock.getDelta(), 1 / 20)) : (clock.getDelta(), renderer.render(0))), (n) => stats.dataset.errors = String(n));
   if (!shotMode) void prologue.then(() => renderer.gl.setAnimationLoop(() => !failed && safeFrame()));
 }
 

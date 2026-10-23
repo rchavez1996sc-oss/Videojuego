@@ -2,6 +2,7 @@ import { truce } from '../systems/truce';
 import { DIFFICULTIES, difficulty, type DifficultyId } from '../core/difficulty';
 import { chooseQuality, quality } from '../core/settings';
 import { QUALITIES, type ChapterCard } from './launcher';
+import { startCountdown } from './countdown';
 
 export interface PauseExtras { chapters: ChapterCard[]; current: string; drawMap: (c: HTMLCanvasElement) => void }
 
@@ -60,6 +61,9 @@ export function setupStartMenu(overlay: HTMLElement, status: HTMLElement, canvas
       extras.drawMap(map);
       ask.classList.remove('on');
     }
-    if (playing && !truce.until) truce.until = performance.now() + 3000;
+    if (playing && !truce.until) {
+      truce.until = Infinity;
+      startCountdown(() => (truce.until = performance.now() + 2000));
+    }
   });
 }
