@@ -36,18 +36,31 @@ function stored(): Quality | null {
     return null;
   }
 }
-export const quality: Quality = (params.get('q') as Quality) ?? stored() ?? (integrated ? 'medium' : 'high');
+export let quality: Quality = (params.get('q') as Quality) ?? stored() ?? (integrated ? 'medium' : 'high');
 
-/** Remembers the chosen quality and reloads, since presets size render targets and geometry at startup. */
-export function setQuality(q: Quality): void {
+export const preset: QualityPreset = { ...(PRESETS[quality] ?? PRESETS.high) };
+const listeners: (() => void)[] = [];
+
+/** Runs `fn` whenever the quality changes mid-game (shadow maps, AO, grass density adapt without a restart). */
+export function onQuality(fn: () => void): void {
+  listeners.push(fn);
+}
+
+/** Switches the preset in place and remembers it; systems already built adapt through `onQuality`. */
+export function chooseQuality(q: Quality): void {
+  if (q === quality) return;
+  quality = q;
+  Object.assign(preset, PRESETS[q]);
   try {
     localStorage.setItem('tq-quality', q);
-  } catch { /* private mode: the URL still carries it */ }
+  } catch { /* private mode */ }
   const url = new URL(location.href);
-  url.searchParams.set('q', q);
-  location.href = url.toString();
+  if (url.searchParams.has('q')) {
+    url.searchParams.set('q', q);
+    history.replaceState(null, '', url);
+  }
+  for (const fn of listeners) fn();
 }
-export const preset = PRESETS[quality] ?? PRESETS.high;
 export const shotMode = params.has('shot');
 
 /** Chapter reached in a previous session (set when one is completed). */

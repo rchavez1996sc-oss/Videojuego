@@ -6,7 +6,7 @@ import ch03 from './data/chapters/ch03_aldea.json';
 import type { ChapterDef } from './data/types';
 import { Input } from './core/input';
 import { ThirdPersonCamera } from './core/camera';
-import { preset, quality, shotMode, gpuName, savedChapter } from './core/settings';
+import { preset, PRESETS, quality, shotMode, gpuName, savedChapter } from './core/settings';
 import { guardFrame } from './core/guard';
 import { FpsMeter } from './core/fpsMeter';
 import { Renderer } from './render/renderer';
@@ -59,6 +59,7 @@ import { Loot } from './systems/loot';
 import { Objective } from './systems/objective';
 import { showMissionComplete } from './ui/missionComplete';
 import { showPrologue } from './ui/prologue';
+import { showLauncher } from './ui/launcher';
 import allyDef from './data/allies.json';
 
 const CHAPTERS: Record<string, unknown> = { '1': ch01, '2': ch02, '3': ch03 };
@@ -70,9 +71,11 @@ const step = (msg: string) => new Promise<void>((r) => { status.textContent = ms
 
 async function boot(): Promise<void> {
   if (shotMode) document.body.classList.add('shot');
-  const ch = (CHAPTERS[new URLSearchParams(location.search).get('ch') ?? savedChapter() ?? '1'] ?? ch01) as ChapterDef;
+  const asked = new URLSearchParams(location.search).get('ch') ?? savedChapter() ?? '1';
+  const cards = (['1', '2'] as const).map((id) => ({ id, number: (CHAPTERS[id] as ChapterDef).number ?? +id, title: (CHAPTERS[id] as ChapterDef).title }));
+  const chId = shotMode ? asked : await showLauncher(cards, asked), ch = (CHAPTERS[chId] ?? ch01) as ChapterDef;
   document.querySelector('#overlay .sub')!.textContent = `Capítulo ${ch.number ?? 1} — ${ch.title}`;
-  const prologue = shotMode ? Promise.resolve() : showPrologue(`CAPÍTULO ${ch.number ?? 1}`, ch.title.toUpperCase(), ch.intro ?? [], ch.introPlates, ch.introScore);
+  const prologue = shotMode ? Promise.resolve() : showPrologue(`CAPÍTULO ${ch.number ?? 1}`, ch.title.toUpperCase(), ch.intro ?? [], ch.introPlates, ch.introScore, true);
   await RAPIER.init();
   const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
   const canvas = document.getElementById('game') as HTMLCanvasElement;
@@ -82,8 +85,7 @@ async function boot(): Promise<void> {
   const lighting = new Lighting(scene, camera, renderer.gl, ch.biome);
 
   await loadPhotoTextures();
-  const env = photoEnvironment();
-  if (env) lighting.useEnvironment(env.texture, env.gain);
+  for (const env of [photoEnvironment()]) if (env) lighting.useEnvironment(env.texture, env.gain);
   await step('Generando terreno…');
   const hf = new Heightfield(ch.terrain);
   const terrain = new Terrain(hf, ch.biome, lighting, world);
@@ -107,7 +109,7 @@ async function boot(): Promise<void> {
   await step('Poblando el paisaje…');
   const nearBuilding = (x: number, z: number) => blockers.some((f) => f(x, z));
   scene.add(buildScatter(hf, lighting, world, ch.scatter, nearBuilding));
-  const grass = new Grass(hf, ch.biome, lighting, preset.grassBlades);
+  const grass = new Grass(hf, ch.biome, lighting, preset.grassBlades, Math.max(preset.grassBlades, PRESETS.high.grassBlades));
   scene.add(grass.mesh);
   const minimap = new Minimap(renderer.gl, scene, ch.terrain.playable, ['asphalt', 'asphaltWorn'].flatMap((k) => barrio?.materials[k] ?? []), ch.barrio && barrio ? { ...barrio.graph, width: ch.barrio.street } : undefined);
 
@@ -206,11 +208,7 @@ async function boot(): Promise<void> {
     traffic: () => life?.trafficEvents,
   });
 
-  setupStartMenu(overlay, status, canvas, () => {
-    if (failed) return;
-    mixer.resume();
-    input.lock();
-  });
+  setupStartMenu(overlay, status, canvas, () => !failed && (mixer.resume(), input.lock()), { chapters: cards, current: chId, drawMap: (c) => minimap.drawFull(c) });
 
   const gpu = gpuName.replace(/^ANGLE \((.*)\)$/, '$1').slice(0, 60);
   const melee = new Melee(player, enemies, sfx, tpc);

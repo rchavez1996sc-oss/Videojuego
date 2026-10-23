@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { onQuality, preset } from '../core/settings';
 import type { Heightfield } from './heightfield';
 import type { BiomeDef } from '../data/types';
 import type { Lighting } from '../render/lighting';
@@ -39,12 +40,13 @@ export class Grass {
   readonly mesh: THREE.Mesh;
   private uniforms: Record<string, THREE.IUniform>;
 
-  constructor(hf: Heightfield, biome: BiomeDef, lighting: Lighting, count: number) {
+  constructor(hf: Heightfield, biome: BiomeDef, lighting: Lighting, initial: number, count = initial) {
     const base = bladeGeometry();
     const geo = new THREE.InstancedBufferGeometry();
     geo.index = base.index;
     geo.attributes = base.attributes;
-    geo.instanceCount = count;
+    geo.instanceCount = initial;
+    onQuality(() => (geo.instanceCount = Math.min(count, preset.grassBlades)));
     const rand = mulberry32(99);
     const data = new Float32Array(count * 4);
     for (let i = 0; i < count; i++) data.set([rand() * TILE, rand() * TILE, rand() * Math.PI * 2, rand()], i * 4);

@@ -114,3 +114,24 @@ body.jolt::after { content: ''; position: fixed; inset: 0; pointer-events: none;
 #hud .reload-hint.on { opacity: 1; animation: hint-pulse 1.2s ease-in-out infinite; }
 #hud .reload-hint kbd { display: inline-block; margin-right: 6px; padding: 0 5px; border: 1px solid #ffcf3f; border-radius: 3px; font: inherit; letter-spacing: 0; }
 @keyframes hint-pulse { 50% { opacity: 0.55; } }
+#launcher { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: radial-gradient(ellipse at center, #2a2420 0%, #0c0a09 75%); color: var(--fg); font-family: 'Barlow Condensed', sans-serif; transition: opacity 0.6s; }
+#launcher.out { opacity: 0; pointer-events: none; }
+#launcher h1 { margin: 0; font: italic 800 72px 'Barlow Condensed', sans-serif; letter-spacing: 0.06em; }
+#launcher .sub { margin: 0 0 18px; letter-spacing: 0.4em; color: var(--accent); }
+#launcher h4 { margin: 14px 0 4px; font-weight: 600; letter-spacing: 0.3em; color: var(--dim); }
+#launcher .chapters, #launcher .qualities { display: flex; gap: 10px; }
+#launcher button { font: 600 18px 'Barlow Condensed', sans-serif; letter-spacing: 0.12em; color: var(--fg); background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.18); padding: 10px 22px; cursor: pointer; }
+#launcher button:hover { background: rgba(255, 255, 255, 0.12); }
+#launcher button.on { border-color: var(--accent); background: rgba(201, 97, 43, 0.22); }
+#launcher .chapters button { min-width: 190px; text-align: left; font-size: 22px; }
+#launcher .chapters small { display: block; font-size: 12px; letter-spacing: 0.3em; color: var(--dim); }
+#launcher .go { margin-top: 26px; padding: 14px 54px; font-size: 24px; letter-spacing: 0.3em; background: var(--accent); border-color: var(--accent); color: #fff; }
+#launcher .go:hover { background: #e0743b; }
+#overlay .levels::before { content: 'NIVEL'; align-self: center; margin-right: 6px; font: 600 13px 'Barlow Condensed', 'Arial Narrow', sans-serif; letter-spacing: 0.25em; color: var(--dim); }
+#overlay .levels { margin-top: 10px; }
+#overlay .bigmap { position: absolute; right: 3vw; top: 50%; transform: translateY(-50%); width: min(46vh, 30vw); height: min(46vh, 30vw); border: 1px solid rgba(232, 226, 212, 0.35); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6); }
+#overlay .confirm { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; background: rgba(8, 7, 6, 0.86); }
+#overlay .confirm.on { display: flex; }
+#overlay .confirm p { max-width: 520px; text-align: center; font: 600 22px 'Barlow Condensed', sans-serif; letter-spacing: 0.05em; }
+#overlay { padding-right: calc(min(46vh, 30vw) + 3vw); box-sizing: border-box; }
+#overlay h1 { font-size: min(72px, 4.6vw); }

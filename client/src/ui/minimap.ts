@@ -14,6 +14,7 @@ export class Minimap {
   private map = document.createElement('canvas');
   private half: number;
   private frame = 0;
+  private last: { player: THREE.Vector3; yaw: number; threats: Threat[] } | null = null;
 
   /**
    * `roads`: asphalt materials, rendered alone in a mask pass to draw the street plan; `streets`: centre lines
@@ -112,6 +113,7 @@ export class Minimap {
 
   /** `yaw`: camera yaw (0 looks towards −z). Threat angles are relative to the camera heading. */
   update(player: THREE.Vector3, yaw: number, threats: Threat[]): void {
+    this.last = { player: player.clone(), yaw, threats };
     if (++this.frame % 2) return;
     const c = this.ctx, cx = W / 2, cy = H * 0.6, k = W / 2 / SPAN, img = SHOT / (this.half * 2);
     c.clearRect(0, 0, W, H);
@@ -162,6 +164,49 @@ export class Minimap {
     c.closePath();
     c.fill();
     c.stroke();
+  }
+
+  /** North-up map of the whole level for the pause screen: squad, supplies, the objective and the player's arrow (no enemies). */
+  drawFull(target: HTMLCanvasElement): void {
+    const size = target.width, c = target.getContext('2d')!, k = size / (this.half * 2), l = this.last;
+    c.drawImage(this.map, 0, 0, size, size);
+    if (!l) return;
+    const at = (t: Threat) => {
+      const sx = Math.sin(t.angle) * t.dist, sy = -Math.cos(t.angle) * t.dist, cs = Math.cos(-l.yaw), sn = Math.sin(-l.yaw);
+      return [(l.player.x + sx * cs - sy * sn + this.half) * k, (l.player.z + sx * sn + sy * cs + this.half) * k];
+    };
+    const mark = (x: number, y: number, color: string, r: number, diamond = false) => {
+      c.fillStyle = color;
+      c.strokeStyle = 'rgba(0,0,0,0.8)';
+      c.lineWidth = 2;
+      c.beginPath();
+      if (diamond) [[0, -r], [r, 0], [0, r], [-r, 0]].forEach(([a, b], i) => (i ? c.lineTo(x + a, y + b) : c.moveTo(x + a, y + b)));
+      else c.arc(x, y, r, 0, Math.PI * 2);
+      c.closePath();
+      c.fill();
+      c.stroke();
+    };
+    for (const t of l.threats) {
+      if (t.supply) mark(...(at(t) as [number, number]), t.supply === 'medkit' ? '#3fdf6a' : '#f0b43a', 5);
+      else if (t.ally) mark(...(at(t) as [number, number]), '#5aa8ff', 5);
+      else if (t.objective) mark(...(at(t) as [number, number]), '#ffb547', 11, true);
+    }
+    const px = (l.player.x + this.half) * k, pz = (l.player.z + this.half) * k;
+    c.save();
+    c.translate(px, pz);
+    c.rotate(-l.yaw);
+    c.fillStyle = '#f2ede2';
+    c.strokeStyle = 'rgba(0,0,0,0.9)';
+    c.lineWidth = 2;
+    c.beginPath();
+    c.moveTo(0, -12);
+    c.lineTo(8, 8);
+    c.lineTo(0, 3);
+    c.lineTo(-8, 8);
+    c.closePath();
+    c.fill();
+    c.stroke();
+    c.restore();
   }
 
   set visible(v: boolean) {

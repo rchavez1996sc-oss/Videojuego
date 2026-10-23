@@ -11,7 +11,7 @@ const HOLD = 3200;
  * Click advances, Esc skips; after the last plate the chapter title appears. Resolves when it closes
  * (the game loop only starts then).
  */
-export function showPrologue(kicker: string, title: string, paragraphs: string[], plateKeys?: string[], score: 'war' | 'intrigue' = 'war'): Promise<void> {
+export function showPrologue(kicker: string, title: string, paragraphs: string[], plateKeys?: string[], score: 'war' | 'intrigue' = 'war', autostart = false): Promise<void> {
   if (!paragraphs.length) return Promise.resolve();
   let finished = () => {};
   const over = new Promise<void>((r) => (finished = r));
@@ -70,8 +70,7 @@ export function showPrologue(kicker: string, title: string, paragraphs: string[]
   };
   const onKey = (e: KeyboardEvent) => e.code === 'Escape' && close();
   addEventListener('keydown', onKey);
-  el.addEventListener('click', (ev) => {
-    ev.stopPropagation();
+  const advance = () => {
     if (!started) {
       started = true;
       el.classList.add('started');
@@ -79,6 +78,11 @@ export function showPrologue(kicker: string, title: string, paragraphs: string[]
     }
     if (typing?.active) typing.finish();
     else next();
+  };
+  el.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    advance();
   });
+  if (autostart) advance();
   return over;
 }

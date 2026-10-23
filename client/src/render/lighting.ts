@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { CSM } from 'three/examples/jsm/csm/CSM.js';
-import { preset, quality } from '../core/settings';
+import { onQuality, preset, quality } from '../core/settings';
 import { weathering } from './weathering';
 import type { BiomeDef } from '../data/types';
 
@@ -55,6 +55,15 @@ export class Lighting {
       l.color.set(biome.sunColor);
       l.shadow.normalBias = 0.04;
     }
+    onQuality(() => {
+      this.csm.maxFar = preset.shadowFar;
+      this.csm.updateFrustums();
+      for (const l of this.csm.lights) {
+        l.shadow.mapSize.setScalar(preset.shadowMapSize);
+        l.shadow.map?.dispose();
+        l.shadow.map = null;
+      }
+    });
   }
 
   /** Registers a material with CSM; optional hook runs after CSM's own shader patch. */

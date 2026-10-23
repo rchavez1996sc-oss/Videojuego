@@ -6,7 +6,7 @@ import {
 import { cinematicLut } from './grade';
 import { SharpenEffect } from './sharpen';
 import { N8AOPostPass } from 'n8ao';
-import { preset, quality } from '../core/settings';
+import { onQuality, preset, quality } from '../core/settings';
 
 /** Very faint animated film grain over everything. */
 function grain(): NoiseEffect {
@@ -28,7 +28,7 @@ export class Renderer {
     this.gl.toneMappingExposure = exposure;
     this.composer = new EffectComposer(this.gl, { frameBufferType: THREE.HalfFloatType });
     this.composer.addPass(new RenderPass(scene, camera));
-    if (preset.ao) {
+    {
       const ao = new N8AOPostPass(scene, camera);
       ao.configuration.aoRadius = 2.5;
       ao.configuration.distanceFalloff = 1.2;
@@ -38,6 +38,8 @@ export class Renderer {
       ao.setQualityMode(quality === 'ultra' ? 'Medium' : 'Low');
       Object.assign(ao, { autoDetectTransparency: false });
       ao.configuration.transparencyAware = false;
+      ao.enabled = preset.ao;
+      onQuality(() => (ao.enabled = preset.ao));
       this.composer.addPass(ao);
     }
     this.composer.addPass(new EffectPass(
