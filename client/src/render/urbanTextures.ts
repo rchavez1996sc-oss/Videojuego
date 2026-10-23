@@ -1,9 +1,10 @@
 import { makePbr, type PbrSet } from './textures';
+import { photo } from './photoTextures';
 import { cracks, fbmField, grainField, paintPixels } from './noiseTex';
 
 /** Exposed clay brick with mortar lines, the typical unplastered wall of a Lima settlement. */
 export const brick = (): PbrSet =>
-  makePbr(512, 71, 4, (c, h, s, r) => {
+  photo('brick') ?? makePbr(512, 71, 4, (c, h, s, r) => {
     c.fillStyle = '#8f8576';
     c.fillRect(0, 0, s, s);
     h.fillStyle = '#404040';
@@ -34,7 +35,7 @@ const ss = (a: number, b: number, x: number) => Math.min(1, Math.max(0, (x - a) 
 
 /** Cast concrete for columns, slabs, stairs and sidewalks: cloudy tone, sand grain, exposed aggregate, pores, hairline cracks. */
 export const concrete = (): PbrSet =>
-  makePbr(1024, 83, 2.2, (c, h, s, r) => {
+  photo('concrete') ?? makePbr(1024, 83, 2.2, (c, h, s, r) => {
     const big = fbmField(s, 831, 4, 64), stain = fbmField(s, 832, 2, 16, 0.7), agg = fbmField(s, 833, 128, 512, 0.6), grain = grainField(s, 834);
     paintPixels(c, h, s, (i) => {
       const peb = ss(0.28, 0.42, agg[i]), pore = grain[i] > 0.994 ? 1 : 0;
@@ -46,7 +47,7 @@ export const concrete = (): PbrSet =>
 
 /** Plastered wall, pale so material colour can tint it into blues, yellows and pinks: trowel waves, sand grain, cracks, patches of brick. */
 export const plaster = (): PbrSet =>
-  makePbr(1024, 97, 1.6, (c, h, s, r) => {
+  photo('plaster') ?? makePbr(1024, 97, 1.6, (c, h, s, r) => {
     const big = fbmField(s, 971, 3, 32), trowel = fbmField(s, 972, 32, 256, 0.6), grain = grainField(s, 973);
     paintPixels(c, h, s, (i) => {
       const v = 0.9 + big[i] * 0.05 + trowel[i] * 0.025 + grain[i] * 0.014;
@@ -119,3 +120,6 @@ export function signTexture(text: string, bg: string | null, fg: string, w = 512
   }
   return c;
 }
+
+/** Scored concrete pavement slabs for sidewalks. */
+export const slabs = (): PbrSet => photo('slabs') ?? concrete();

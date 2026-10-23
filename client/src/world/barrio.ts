@@ -18,7 +18,7 @@ import { flsMarks, poleMarks } from './flsMarks';
 import { alleyLife } from './alleys';
 import { STREET_COLORS, stall, trashPile, roadMarkings } from './streetLife';
 import { brick, concrete, plaster, corrugated, estera } from '../render/urbanTextures';
-import { rock, wood } from '../render/textures';
+import { asphalt, rock, wood } from '../render/textures';
 import { bakeGroups } from './bake';
 
 export interface BarrioDef {
@@ -63,7 +63,7 @@ export function materials(lighting: Lighting, atlas: SignAtlas): Record<string, 
     wood: std('beam', { map: co.map, normalMap: co.normalMap, roughness: 0.95, color: '#cfcac0' }),
     calamina: std('calamina', { map: ca.map, normalMap: ca.normalMap, roughness: 0.6, metalness: 0.5 }),
     estera: std('estera', { map: es.map, normalMap: es.normalMap, roughness: 1 }),
-    asphalt: std('asphalt', { map: st.map, normalMap: st.normalMap, roughness: 0.95, color: '#4a4744' }),
+    asphalt: std('asphalt', { map: asphalt().map, normalMap: asphalt().normalMap, roughness: 0.95, color: '#4a4744' }),
     asphaltWorn: std('asphaltWorn', { map: co.map, normalMap: st.normalMap, roughness: 1, color: '#8d8982' }),
     stone: std('stone-b', { map: st.map, normalMap: st.normalMap, roughness: 0.9, color: '#a59c90' }),
     door: std('door', { map: ca.map, roughness: 0.55, metalness: 0.6, color: '#3d5a52' }),

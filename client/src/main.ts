@@ -39,6 +39,7 @@ import { coverSeeker } from './systems/takeCover';
 import { Grenades } from './weapons/grenades';
 import { detonate, BLAST_RADIUS } from './weapons/explosion';
 import { Minimap } from './ui/minimap';
+import { loadPhotoTextures } from './render/photoTextures';
 import { installDebug } from './core/debug';
 import { ShadowCull } from './render/shadowCull';
 import { buildBarrio } from './world/barrio';
@@ -80,6 +81,7 @@ async function boot(): Promise<void> {
   const renderer = new Renderer(canvas, scene, camera, ch.biome.exposure);
   const lighting = new Lighting(scene, camera, renderer.gl, ch.biome);
 
+  await loadPhotoTextures();
   await step('Generando terreno…');
   const hf = new Heightfield(ch.terrain);
   const terrain = new Terrain(hf, ch.biome, lighting, world);

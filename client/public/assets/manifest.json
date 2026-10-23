@@ -1,38 +1,76 @@
 {
-  "version": 10,
-  "characters": {
-    "pnp": {
-      "near": "characters/pnp.glb",
-      "far": "characters/pnp.lod.glb",
-      "source": "Mixamo: SWAT"
-    },
-    "fls": {
-      "near": "characters/fls.glb",
-      "far": "characters/fls.lod.glb",
-      "source": "Mixamo: Ch28 (ropa oscura)"
-    },
-    "civ_a": {
-      "near": "characters/civ_a.glb",
-      "far": "characters/civ_a.lod.glb",
-      "source": "Mixamo: Ch07 (traje)"
-    },
-    "civ_b": {
-      "near": "characters/civ_b.glb",
-      "far": "characters/civ_b.lod.glb",
-      "source": "Mixamo: Ch02 (polera naranja)"
-    },
-    "civ_c": {
-      "near": "characters/civ_c.glb",
-      "far": "characters/civ_c.lod.glb",
-      "source": "Mixamo: Ch42 (polo rojo)"
-    }
+ "version": 10,
+ "characters": {
+  "pnp": {
+   "near": "characters/pnp.glb",
+   "far": "characters/pnp.lod.glb",
+   "source": "Mixamo: SWAT"
   },
-  "animations": "characters/anims.glb",
-  "art": {
-    "general": "art/general.webp",
-    "tanks": "art/tanks.webp",
-    "detentions": "art/detentions.webp",
-    "voices": "art/voices.webp",
-    "barrio": "art/barrio.webp"
+  "fls": {
+   "near": "characters/fls.glb",
+   "far": "characters/fls.lod.glb",
+   "source": "Mixamo: Ch28 (ropa oscura)"
+  },
+  "civ_a": {
+   "near": "characters/civ_a.glb",
+   "far": "characters/civ_a.lod.glb",
+   "source": "Mixamo: Ch07 (traje)"
+  },
+  "civ_b": {
+   "near": "characters/civ_b.glb",
+   "far": "characters/civ_b.lod.glb",
+   "source": "Mixamo: Ch02 (polera naranja)"
+  },
+  "civ_c": {
+   "near": "characters/civ_c.glb",
+   "far": "characters/civ_c.lod.glb",
+   "source": "Mixamo: Ch42 (polo rojo)"
   }
+ },
+ "animations": "characters/anims.glb",
+ "art": {
+  "general": "art/general.webp",
+  "tanks": "art/tanks.webp",
+  "detentions": "art/detentions.webp",
+  "voices": "art/voices.webp",
+  "barrio": "art/barrio.webp"
+ },
+ "textures": {
+  "concrete": {
+   "map": "textures/concrete_col.jpg",
+   "normal": "textures/concrete_nrm.jpg"
+  },
+  "slabs": {
+   "map": "textures/slabs_col.jpg",
+   "normal": "textures/slabs_nrm.jpg"
+  },
+  "plaster": {
+   "map": "textures/plaster_col.jpg",
+   "normal": "textures/plaster_nrm.jpg"
+  },
+  "brick": {
+   "map": "textures/brick_col.jpg",
+   "normal": "textures/brick_nrm.jpg"
+  },
+  "rock": {
+   "map": "textures/rock_col.jpg",
+   "normal": "textures/rock_nrm.jpg"
+  },
+  "asphalt": {
+   "map": "textures/asphalt_col.jpg",
+   "normal": "textures/asphalt_nrm.jpg"
+  },
+  "roofTiles": {
+   "map": "textures/roofTiles_col.jpg",
+   "normal": "textures/roofTiles_nrm.jpg"
+  },
+  "deck": {
+   "map": "textures/deck_col.jpg",
+   "normal": "textures/deck_nrm.jpg"
+  },
+  "parquet": {
+   "map": "textures/parquet_col.jpg",
+   "normal": "textures/parquet_nrm.jpg"
+  }
+ }
 }

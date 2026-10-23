@@ -9,8 +9,8 @@ import { materials as barrioMaterials, type Barrio } from '../barrio';
 import { bakeGroups } from '../bake';
 import { SignAtlas } from '../signs';
 import { PAINTS } from '../houses';
-import { concrete, plaster, brick } from '../../render/urbanTextures';
-import { rock, wood, type PbrSet } from '../../render/textures';
+import { concrete, plaster, brick, slabs } from '../../render/urbanTextures';
+import { deck, parquet, rock, wood, type PbrSet } from '../../render/textures';
 import { edgeZ } from '../coast';
 import { buildOcean } from '../ocean';
 import { Paragliders } from '../../fx/paragliders';
@@ -73,11 +73,15 @@ function maleconMaterials(lighting: Lighting, { apt, co, pl, br, wd, fo }: Tex):
     barrierWhite: std('barrierWhite', { color: '#e8e4dc', roughness: 0.8 }),
     fenceMesh: std('fenceMesh', { map: chainLink(), alphaTest: 0.4, side: THREE.DoubleSide, metalness: 0.5, roughness: 0.5 }),
     glassClear: std('glassClear', { color: '#cfe3ea', roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.22, depthWrite: false }),
+    chairGreen: std('chairGreen', { color: '#2e3a2b', roughness: 0.6 }),
+    cushionOrange: std('cushionOrange', { color: '#b8662e', roughness: 0.9 }),
+    greenTrim: std('greenTrim', { color: '#2b3527', roughness: 0.55 }),
+    columnWood: std('columnWood', { map: wd.map, color: '#c0603a', roughness: 0.5 }),
+    lampShade: std('lampShade', { color: '#f4efe4', emissive: '#fff2d6', emissiveIntensity: 0.35, roughness: 0.6 }),
     ceilingWhite: std('ceilingWhite', { color: '#cfc9bc', roughness: 0.85 }),
     linen: std('linen', { color: '#dcd8ce', roughness: 0.9 }),
-    chairGrey: std('chairGrey', { color: '#9a9c9a', roughness: 0.85 }),
     lampGold: std('lampGold', { color: '#d9a640', emissive: '#ffb84a', emissiveIntensity: 0.55, roughness: 0.4 }),
-    parquet: std('parquet', { map: wd.map, color: '#5e3a20', roughness: 0.5 }),
+    parquet: std('parquet', { map: parquet().map, normalMap: parquet().normalMap, color: '#b08a70', roughness: 0.45 }),
     lanternGlass: std('lanternGlass', { color: '#e8e2c8', roughness: 0.1, metalness: 0.4, emissive: '#fff4c0', emissiveIntensity: 0.5 }),
     mosaic: std('mosaic', { map: mo.map, normalMap: mo.normalMap, roughness: 0.45 }),
     poolRim: std('poolRim', { map: co.map, color: '#d6d0c2', roughness: 0.85 }),
@@ -124,12 +128,14 @@ export function buildMalecon(hf: Heightfield, def: MaleconDef, lighting: Lightin
   const mats = { ...barrioMaterials(lighting, atlas), ...maleconMaterials(lighting, tex) };
   const textured = (key: string, set: PbrSet, keys: string[], roughness: number) => ({ material: lighting.setup(new THREE.MeshStandardMaterial({ map: set.map, normalMap: set.normalMap, roughness, vertexColors: true }), key), keys });
   const bake = [
-    ...bakeGroups(lighting, ['alu', 'railGreen', 'lampPole', 'chair', 'awningRed', 'lobby', 'steelDark', 'columnGreen', 'flagMast', 'fenceIron', 'benchGreen', 'bollardGreen', 'lhBlack', 'lhWhite', 'roofTile', 'poolWater', 'roofSlate', 'awningStripe', 'flatRoof', 'ceilingWhite', 'linen', 'chairGrey', 'barrierRed', 'barrierWhite']),
+    ...bakeGroups(lighting, ['alu', 'railGreen', 'lampPole', 'chair', 'awningRed', 'lobby', 'steelDark', 'columnGreen', 'flagMast', 'fenceIron', 'benchGreen', 'bollardGreen', 'lhBlack', 'lhWhite', 'roofTile', 'poolWater', 'roofSlate', 'awningStripe', 'flatRoof', 'ceilingWhite', 'linen', 'chairGreen', 'cushionOrange', 'greenTrim', 'barrierRed', 'barrierWhite']),
     textured('apt-baked', tex.apt, [...new Set(FACADES)], 0.85),
     textured('plaster-baked', tex.pl, ['houseWhite', 'houseCream', 'houseGray', 'houseWarm', 'mallWhite', 'terracotta', 'creamWall'], 0.85),
-    textured('concrete-baked', tex.co, ['slab', 'pavement', 'paving', 'bridgeConcrete', 'granite', 'poolRim', 'planter', 'kerbYellow', 'concrete'], 0.9),
+    textured('slabs-baked', slabs(), ['pavement'], 0.9),
+    textured('concrete-baked', tex.co, ['slab', 'paving', 'bridgeConcrete', 'granite', 'poolRim', 'planter', 'kerbYellow', 'concrete'], 0.9),
     textured('brick-baked', tex.br, ['lhRed', 'houseBrick', 'brickRed', 'brick'], 0.9),
-    textured('wood-baked', tex.wd, ['benchWood', 'woodSlat', 'woodGate', 'pole'], 0.8),
+    textured('deck-baked', deck(), ['benchWood', 'woodSlat'], 0.75),
+    textured('wood-baked', tex.wd, ['woodGate', 'pole'], 0.8),
     textured('foliage-baked', tex.fo, ['hedge', 'flowers', 'lawnRoof'], 0.95),
   ];
   const gardens: THREE.Vector3[] = [];

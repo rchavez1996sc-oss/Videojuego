@@ -5,14 +5,27 @@ const Q = new THREE.Quaternion();
 const at = (x: number, y: number, z: number) => new THREE.Matrix4().makeTranslation(x, y, z);
 const yaw = (a: number) => new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), a);
 
-/** Round dining table with a white cloth and `seats` grey tub chairs around it. */
+/** Dark green chairs with orange cushions round a white-clothed table (as in the photos). */
 export function diningTable(b: Builder, x: number, y: number, z: number, seats: number, turn: number): void {
   b.geometry('linen', new THREE.CylinderGeometry(0.62, 0.66, 0.74, 14).translate(0, 0.37, 0), at(x, y, z), { size: [1.2, 0.8, 1.2], pos: new THREE.Vector3(x, y + 0.4, z), quat: Q });
   b.geometry('lampGold', new THREE.CylinderGeometry(0.03, 0.03, 0.2, 6).translate(0, 0.84, 0), at(x, y, z));
   for (let i = 0; i < seats; i++) {
     const a = turn + (i / seats) * Math.PI * 2, cx = x + Math.sin(a) * 1.05, cz = z + Math.cos(a) * 1.05, q = yaw(a);
-    b.box('chairGrey', [0.6, 0.45, 0.55], new THREE.Vector3(cx, y + 0.23, cz), q, false);
-    b.box('chairGrey', [0.62, 0.5, 0.14], new THREE.Vector3(cx + Math.sin(a) * 0.24, y + 0.68, cz + Math.cos(a) * 0.24), q, false);
+    b.box('chairGreen', [0.48, 0.42, 0.46], new THREE.Vector3(cx, y + 0.21, cz), q, false);
+    b.box('cushionOrange', [0.5, 0.07, 0.48], new THREE.Vector3(cx, y + 0.45, cz), q, false);
+    b.box('chairGreen', [0.48, 0.55, 0.06], new THREE.Vector3(cx + Math.sin(a) * 0.22, y + 0.75, cz + Math.cos(a) * 0.22), q, false);
+  }
+}
+
+/** Reddish timber column on a dark green plinth with a green capital and two white lamp sconces; collides. */
+function column(b: Builder, x: number, y: number, z: number, h: number, turn: number): void {
+  b.box('greenTrim', [0.5, 0.95, 0.5], new THREE.Vector3(x, y + 0.48, z), Q, true);
+  b.geometry('columnWood', new THREE.CylinderGeometry(0.15, 0.17, h - 1.5, 10).translate(0, (h - 1.5) / 2, 0), at(x, y + 0.95, z), { size: [0.34, h, 0.34], pos: new THREE.Vector3(x, y + h / 2, z), quat: Q });
+  b.box('greenTrim', [0.42, 0.55, 0.42], new THREE.Vector3(x, y + h - 0.3, z), Q, false);
+  for (const s of [-1, 1]) {
+    const dx = Math.cos(turn) * s * 0.45, dz = -Math.sin(turn) * s * 0.45;
+    b.box('greenTrim', [0.05, 0.05, 0.05], new THREE.Vector3(x + dx * 0.6, y + h - 0.9, z + dz * 0.6), Q, false);
+    b.geometry('lampShade', new THREE.CylinderGeometry(0.12, 0.2, 0.26, 6), at(x + dx, y + h - 0.75, z + dz));
   }
 }
 
@@ -44,10 +57,12 @@ export function wingHall(b: Builder, x0: number, x1: number, z0: number, z1: num
   b.box('creamWall', [0.3, h - 2.5, door], new THREE.Vector3(x0, y + 2.5 + (h - 2.5) / 2, cz), Q, true);
   b.box('ceilingWhite', [len, 0.12, z1 - z0], new THREE.Vector3(cx, y + h, cz), Q, false);
   b.box('parquet', [len, 0.04, z1 - z0], new THREE.Vector3(cx, y + 0.02, cz), Q, false);
+  for (let x = x0 + 1.2; x < x1; x += 2.4) b.box('greenTrim', [0.16, 0.22, z1 - z0], new THREE.Vector3(x, y + h - 0.12, cz), Q, false);
   for (let x = x0 + 3; x < x1 - 2; x += 4.2) {
     for (const s of [-1, 1]) diningTable(b, x, y, cz + s * 3.6, 3, s > 0 ? Math.PI / 3 : 0);
     chandelier(b, x + 2.1, y + h, cz, 3, 0.5);
   }
+  for (let x = x0 + 5.1; x < x1 - 3; x += 8.4) for (const s of [-1, 1]) column(b, x, y, cz + s * 1.7, h, 0);
 }
 
 /**
@@ -62,6 +77,7 @@ export function diningPavilion(b: Builder, x: number, y: number, z: number, r: n
     if (openTo.some((o) => Math.abs(Math.atan2(Math.sin(a - o), Math.cos(a - o))) < 0.3)) continue;
     const q = yaw(a), p = (dy: number, inset = 0) => new THREE.Vector3(x + Math.sin(a) * (ap - inset), y + dy, z + Math.cos(a) * (ap - inset));
     b.box('lattice', [fw, 0.9, 0.08], p(0.45, 0.4), q, false);
+    b.box('greenTrim', [fw, 0.08, 0.16], p(0.94, 0.4), q, false);
     b.box('creamWall', [fw, 0.9, 0.2], p(0.45), q, false);
     b.box('glassClear', [fw, 2.4, 0.05], p(2.1), q, false);
     b.box('lhWhite', [0.14, 2.4, 0.14], p(2.1).add(new THREE.Vector3(Math.cos(a), 0, -Math.sin(a)).multiplyScalar(fw / 2)), q, false);
@@ -79,8 +95,11 @@ export function diningPavilion(b: Builder, x: number, y: number, z: number, r: n
   b.geometry('roofSlate', new THREE.ConeGeometry(r * 0.5, 1.2, 8).translate(0, 0.6, 0), at(x, y + h + 6.6, z));
   for (let k = 0; k < 4; k++) {
     const a = Math.PI / 4 + (k * Math.PI) / 2, cx = x + Math.sin(a) * r * 0.42, cz = z + Math.cos(a) * r * 0.42;
-    b.geometry('parquet', new THREE.CylinderGeometry(0.17, 0.2, h, 10).translate(0, h / 2, 0), at(cx, y, cz), { size: [0.4, h, 0.4], pos: new THREE.Vector3(cx, y + h / 2, cz), quat: Q });
-    b.box('lhWhite', [0.42, 0.9, 0.42], new THREE.Vector3(cx, y + 0.45, cz), Q, false);
+    column(b, cx, y, cz, h, a + Math.PI / 2);
+  }
+  for (let k = 0; k < 8; k++) {
+    const a = (k * Math.PI) / 4 + Math.PI / 8;
+    b.box('greenTrim', [0.16, 0.24, r - 0.3], new THREE.Vector3(x + Math.sin(a) * r * 0.5, y + h - 0.14, z + Math.cos(a) * r * 0.5), yaw(a), false);
   }
   chandelier(b, x, y + h, z, 9, 1.3);
   diningTable(b, x, y, z, 4, Math.PI / 4);

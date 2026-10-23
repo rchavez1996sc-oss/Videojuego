@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import { mulberry32 } from '../core/rng';
 import { fbmField, grainField, paintPixels } from './noiseTex';
+import { photo } from './photoTextures';
 
 type Painter = (color: CanvasRenderingContext2D, height: CanvasRenderingContext2D, size: number, rand: () => number) => void;
 
 export interface PbrSet {
-  map: THREE.CanvasTexture;
-  normalMap: THREE.CanvasTexture;
+  map: THREE.Texture;
+  normalMap: THREE.Texture;
 }
 
 function heightToNormal(src: HTMLCanvasElement, strength: number): HTMLCanvasElement {
@@ -97,7 +98,7 @@ export const adobe = (): PbrSet =>
   });
 
 export const roofTiles = (): PbrSet =>
-  makePbr(512, 23, 5, (c, h, s, r) => {
+  photo('roofTiles') ?? makePbr(512, 23, 5, (c, h, s, r) => {
     c.fillStyle = '#7e3b22';
     c.fillRect(0, 0, s, s);
     const rows = 16, cols = 12;
@@ -136,7 +137,7 @@ export const wood = (): PbrSet =>
 
 /** Weathered stone / asphalt base: mottled tone, mid-scale relief and a coarse aggregate of light and dark grains. */
 export const rock = (): PbrSet =>
-  makePbr(1024, 47, 3, (c, h, s) => {
+  photo('rock') ?? makePbr(1024, 47, 3, (c, h, s) => {
     const big = fbmField(s, 471, 4, 32), mid = fbmField(s, 472, 16, 128), agg = fbmField(s, 473, 256, 512, 0.7), grain = grainField(s, 474);
     paintPixels(c, h, s, (i) => {
       const light = Math.max(0, agg[i] - 0.3) * 1.6, dark = Math.max(0, -agg[i] - 0.3) * 1.4;
@@ -162,3 +163,10 @@ export const soil = (): PbrSet =>
       h.beginPath(); h.arc(x, y, rad, 0, Math.PI * 2); h.fill();
     }
   });
+
+/** Road surface (photographic when available, else the stone/aggregate texture). */
+export const asphalt = (): PbrSet => photo('asphalt') ?? rock();
+/** Timber decking and benches. */
+export const deck = (): PbrSet => photo('deck') ?? wood();
+/** Herringbone parquet floor. */
+export const parquet = (): PbrSet => photo('parquet') ?? wood();
