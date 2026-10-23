@@ -864,7 +864,7 @@
   "title": "ASALTA LA COMISARÍA",
   "detail": "Entra a la comisaría y saquea el cargamento de armas",
   "defendRadius": 32,
-  "hold": 2.5,
+  "hold": 4.5,
   "complete": "CAPÍTULO 1 COMPLETADO",
   "reward": "La comisaría ha caído. Lo incautado financiará los gastos de la guerra y armará a las primeras columnas del Frente. En Nueva Esperanza, el FLS ya no es un rumor.",
   "loot": [

@@ -30,7 +30,7 @@ export class Hud {
       <div class="crosshair"><i class="t"></i><i class="b"></i><i class="l"></i><i class="r"></i><b></b></div>
       <div class="hitmarker"><i></i><i></i><i></i><i></i></div>
       <div class="reload"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="20"/><circle class="fg" cx="24" cy="24" r="20"/></svg><span>RECARGANDO</span></div>
-      <div class="reload-hint"><kbd>R</kbd>RECARGAR</div>
+      <div class="reload-hint"><kbd>R<svg viewBox="0 0 24 24" preserveAspectRatio="none"><rect x="1" y="1" width="22" height="22" pathLength="100"/></svg></kbd>MANTÉN PARA RECARGAR</div>
       <div class="toast"></div>
       <div class="zoom"></div>
       <div class="counter"><span class="k">ENEMIGOS</span><b>0</b><span class="civ"></span></div>
@@ -75,7 +75,7 @@ export class Hud {
     this.root.style.display = v ? '' : 'none';
   }
 
-  update(dt: number, s: { spreadPx: number; ammo: number; mag: number; reserve: number; carry: number; mode: string; weapon: string; hp: number; cap: number; stamina: number; grenades: number; zoom: number; reload: number; aiming: boolean; slot: 'rifle' | 'grenade' }): void {
+  update(dt: number, s: { spreadPx: number; ammo: number; mag: number; reserve: number; carry: number; mode: string; weapon: string; hp: number; cap: number; stamina: number; grenades: number; zoom: number; reload: number; reloadHold?: number; aiming: boolean; slot: 'rifle' | 'grenade' }): void {
     const gap = Math.round(5 + s.spreadPx);
     this.set('gap', String(gap), () => {
       this.cross[0].style.transform = `translate(-50%, ${-gap - 10}px)`;
@@ -126,8 +126,13 @@ export class Hud {
       this.reload.classList.toggle('on', s.reload > 0);
       (this.reload.querySelector('.fg') as SVGCircleElement).style.strokeDashoffset = String(125.7 * (1 - s.reload));
     });
-    const hint = s.slot === 'rifle' && s.reload === 0 && s.reserve > 0 && s.ammo <= s.mag * 0.25;
-    this.set('rh', String(hint), () => this.root.querySelector('.reload-hint')!.classList.toggle('on', hint));
+    const held = s.reloadHold ?? 0, hint = s.slot === 'rifle' && s.reload === 0 && s.reserve > 0 && (s.ammo <= s.mag * 0.25 || held > 0);
+    this.set('rh', `${hint}${held.toFixed(2)}`, () => {
+      const el = this.root.querySelector('.reload-hint')!;
+      el.classList.toggle('on', hint);
+      el.classList.toggle('held', held > 0);
+      (el.querySelector('rect') as SVGRectElement).style.strokeDashoffset = String(100 * (1 - held));
+    });
     this.hitT = Math.max(0, this.hitT - dt);
     this.toastT = Math.max(0, this.toastT - dt);
     const hitO = Math.min(1, this.hitT * 5).toFixed(2), toastO = Math.min(1, this.toastT * 3).toFixed(2);

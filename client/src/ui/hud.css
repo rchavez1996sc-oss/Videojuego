@@ -109,3 +109,18 @@
 #complete button.next { margin-right: 10px; }
 #complete button.again { background: transparent; color: #ffb547; border: 1px solid #ffb547; }
 body.ended #overlay { display: none; }
+.prompt .bar { display: block; position: absolute; left: 0; right: 0; bottom: -5px; height: 3px; background: rgba(255, 255, 255, 0.15); }
+.prompt .bar b { display: block; height: 100%; background: #ffb547; box-shadow: 0 0 8px rgba(255, 181, 71, 0.8); }
+#obj-done { position: fixed; inset: 0; z-index: 45; pointer-events: none; display: flex; align-items: center; justify-content: center; }
+#obj-done .flash { position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(255, 214, 120, 0.55), rgba(255, 170, 60, 0.15) 60%, transparent); opacity: 0; }
+#obj-done.on .flash { animation: done-flash 1.6s ease-out forwards; }
+#obj-done .stamp { position: relative; overflow: hidden; padding: 18px 46px; text-align: center; background: rgba(10, 9, 8, 0.72); border-top: 2px solid #ffb547; border-bottom: 2px solid #ffb547; opacity: 0; transform: scale(1.8); }
+#obj-done.on .stamp { animation: done-stamp 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) forwards; }
+#obj-done .stamp small { display: block; font: 700 16px 'Barlow Condensed', sans-serif; letter-spacing: 0.5em; color: #ffcf3f; }
+#obj-done .stamp b { display: block; margin-top: 4px; font: italic 800 46px 'Barlow Condensed', sans-serif; letter-spacing: 0.06em; color: #f4efe4; }
+#obj-done .stamp i { position: absolute; top: 0; bottom: 0; width: 40%; left: -60%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.35), transparent); }
+#obj-done.on .stamp i { animation: done-sweep 1.1s 0.35s ease-in-out forwards; }
+#obj-done.out { transition: opacity 0.7s; opacity: 0; }
+@keyframes done-flash { 0% { opacity: 0; } 12% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes done-stamp { to { opacity: 1; transform: scale(1); } }
+@keyframes done-sweep { to { left: 120%; } }

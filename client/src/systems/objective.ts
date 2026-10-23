@@ -5,6 +5,7 @@ import type { Enemy } from '../entities/enemy';
 import type { Input } from '../core/input';
 import type { Lighting } from '../render/lighting';
 import { Vip } from './vip';
+import { celebrate } from '../ui/objectiveDone';
 import { Extraction, type ExtractionDef } from './extraction';
 import type { Mixer } from '../audio/mixer';
 
@@ -96,14 +97,15 @@ export class Objective {
       return;
     }
     this.holdT = input.down('KeyE') ? this.holdT + dt : 0;
-    this.prompt.innerHTML = this.holdT > 0 ? `${this.def.doing ?? 'SAQUEANDO CARGAMENTO'} <span>${Math.round((this.holdT / this.def.hold) * 100)}%</span>` : `<kbd>E</kbd> MANTÉN PARA ${this.def.action ?? 'SAQUEAR EL CARGAMENTO'}`;
+    const pct = Math.min(100, Math.round((this.holdT / this.def.hold) * 100));
+    this.prompt.innerHTML = this.holdT > 0 ? `${this.def.doing ?? 'SAQUEANDO CARGAMENTO'} <span>${pct}%</span><i class="bar"><b style="width:${pct}%"></b></i>` : `<kbd>E</kbd> MANTÉN PARA ${this.def.action ?? 'SAQUEAR EL CARGAMENTO'}`;
     if (this.holdT < this.def.hold) return;
     this.done = true;
     this.extraction?.stop();
     this.vip?.capture();
     this.prompt.style.opacity = this.marker.style.opacity = '0';
     this.panel.innerHTML = `<span class="k">OBJETIVO CUMPLIDO</span><b>${this.def.title}</b>`;
-    this.onComplete();
+    celebrate(this.def.title, () => this.onComplete());
   }
 }
 

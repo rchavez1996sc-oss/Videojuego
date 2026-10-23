@@ -713,7 +713,7 @@
   "title": "SECUESTRA A GIACOMO MIRÓ QUESADA",
   "detail": "Gerente general del BCB. Cena en el comedor de la Rosa Náutica. Lo queremos vivo.",
   "defendRadius": 45,
-  "hold": 2.5,
+  "hold": 4.5,
   "action": "APREHENDERLO",
   "doing": "APREHENDIENDO A MIRÓ QUESADA",
   "capture": {

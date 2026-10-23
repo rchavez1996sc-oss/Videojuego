@@ -139,3 +139,8 @@ body.jolt::after { content: ''; position: fixed; inset: 0; pointer-events: none;
 #overlay.intro .difficulty { display: none; }
 #overlay.intro #status { font: 600 22px 'Barlow Condensed', sans-serif; letter-spacing: 0.35em; color: var(--fg); animation: hint-pulse 1.4s ease-in-out infinite; }
 body.paused #obj-marker, body.paused .prompt, body.paused #healthbars, body.paused #hud .crosshair, body.paused #hud .hitmarker, body.paused #hud .reload, body.paused #hud .reload-hint, body.paused #hud .toast, body.paused #countdown { visibility: hidden; }
+#hud .reload-hint kbd { position: relative; }
+#hud .reload-hint kbd svg { position: absolute; inset: -3px; width: calc(100% + 6px); height: calc(100% + 6px); overflow: visible; }
+#hud .reload-hint kbd rect { fill: none; stroke: #fff; stroke-width: 2.5; stroke-dasharray: 100; stroke-dashoffset: 100; }
+#hud .reload-hint.held { animation: none; opacity: 1; }
+#hud .reload-hint.held kbd { background: rgba(255, 207, 63, 0.25); }

@@ -58,7 +58,7 @@ import { characters } from './render/characters';
 import { Loot } from './systems/loot';
 import { Objective } from './systems/objective';
 import { showMissionComplete } from './ui/missionComplete';
-import { showPrologue } from './ui/prologue';
+import { prologueQuiet, showPrologue } from './ui/prologue';
 import { showLauncher } from './ui/launcher';
 import { counting } from './ui/countdown';
 import allyDef from './data/allies.json';
@@ -67,7 +67,7 @@ const CHAPTERS: Record<string, unknown> = { '1': ch01, '2': ch02, '3': ch03 };
 const status = document.getElementById('status')!;
 const overlay = document.getElementById('overlay')!;
 const stats = document.getElementById('stats')!;
-const step = (msg: string) => new Promise<void>((r) => { status.textContent = msg; requestAnimationFrame(() => r()); });
+const step = (msg: string) => prologueQuiet().then(() => new Promise<void>((r) => { status.textContent = msg; requestAnimationFrame(() => r()); }));
 
 async function boot(): Promise<void> {
   if (shotMode) document.body.classList.add('shot');
@@ -76,7 +76,7 @@ async function boot(): Promise<void> {
   const chId = shotMode ? asked : await showLauncher(cards, asked), ch = (CHAPTERS[chId] ?? ch01) as ChapterDef;
   document.querySelector('#overlay .sub')!.textContent = `Capítulo ${ch.number ?? 1} — ${ch.title}`;
   const prologue = shotMode ? Promise.resolve() : showPrologue(`CAPÍTULO ${ch.number ?? 1}`, ch.title.toUpperCase(), ch.intro ?? [], ch.introPlates, ch.introScore, true);
-  await RAPIER.init();
+  await prologueQuiet().then(() => RAPIER.init());
   const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
   const canvas = document.getElementById('game') as HTMLCanvasElement;
   const scene = new THREE.Scene();
@@ -277,7 +277,7 @@ async function boot(): Promise<void> {
     hud.update(dt, {
       spreadPx: (Math.tan(cone) / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) * innerHeight * 0.5,
       ammo: g.ammo, mag: g.def.magazine, reserve: g.reserve, carry: g.carry, mode: g.mode, weapon: g.def.name,
-      hp: player.hp, cap: player.regenCap, grenades: grenades.count, zoom: tpc.zoom, stamina: player.stamina, reload: g.reloadProgress, aiming: input.aiming, slot: nadeMode.equipped ? 'grenade' : 'rifle',
+      hp: player.hp, cap: player.regenCap, grenades: grenades.count, zoom: tpc.zoom, stamina: player.stamina, reload: g.reloadProgress, reloadHold: combat.reloadHold, aiming: input.aiming, slot: nadeMode.equipped ? 'grenade' : 'rifle',
     });
     if (!shotMode) dynRes.update(dt);
     camera.updateMatrixWorld();

@@ -5,6 +5,17 @@ import { Typewriter } from './typewriter';
 /** How long a plate stays once its paragraph has been typed out. */
 const HOLD = 3200;
 
+let calm = true, waiting: (() => void)[] = [];
+const setCalm = (v: boolean) => {
+  calm = v;
+  if (v) for (const w of waiting.splice(0)) w();
+};
+
+/** Resolves when nothing is being typed (between paragraphs, on the title card or with no prologue): heavy loading waits for it. */
+export function prologueQuiet(): Promise<void> {
+  return calm ? Promise.resolve() : new Promise((r) => waiting.push(r));
+}
+
 /**
  * Cinematic prologue shown while the chapter loads. A title card asks for a click (browsers need one before
  * audio), then each paragraph appears together with its illustrated plate and a beat of the score.
@@ -15,6 +26,7 @@ export function showPrologue(kicker: string, title: string, paragraphs: string[]
   if (!paragraphs.length) return Promise.resolve();
   let finished = () => {};
   const over = new Promise<void>((r) => (finished = r));
+  setCalm(false);
   const el = document.createElement('div');
   el.id = 'prologue';
   el.innerHTML = `<div class="plates"></div><p class="line"></p><h3><small>${kicker}</small>${title}<i></i></h3><div class="begin">CLIC PARA COMENZAR</div><span>CLIC: CONTINUAR · ESC: SALTAR</span>`;
@@ -45,13 +57,14 @@ export function showPrologue(kicker: string, title: string, paragraphs: string[]
     }
     music.plate(i);
     line.classList.add('on');
-    typing = new Typewriter(line as HTMLElement, paragraphs[i], (ch) => music.key(ch === ' '), () => (timer = window.setTimeout(next, HOLD)));
+    typing = new Typewriter(line as HTMLElement, paragraphs[i], (ch) => music.key(ch === ' '), () => (setCalm(true), (timer = window.setTimeout(next, HOLD))));
   };
   const close = () => {
     clearTimeout(timer);
     typing?.stop();
     removeEventListener('keydown', onKey);
     music.stop();
+    setCalm(true);
     el.classList.add('out');
     setTimeout(() => el.remove(), 1000);
     finished();
@@ -64,8 +77,10 @@ export function showPrologue(kicker: string, title: string, paragraphs: string[]
       if (i > paragraphs.length) return close();
       head.classList.add('on');
       music.title();
+      setCalm(true);
       return;
     }
+    setCalm(false);
     setTimeout(() => reveal(), 600);
   };
   const onKey = (e: KeyboardEvent) => e.code === 'Escape' && close();

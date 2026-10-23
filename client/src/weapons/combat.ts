@@ -14,6 +14,8 @@ import { Shells } from '../fx/shells';
 import { Blast } from '../fx/blast';
 import { SURFACE_FX, hitHandler, pierceChance, surfaceOf, type Surface } from '../world/surfaces';
 
+const RELOAD_HOLD = 0.45;
+
 import type { Lighting } from '../render/lighting';
 import type { Heightfield } from '../world/heightfield';
 
@@ -42,8 +44,16 @@ export class Combat {
     this.group.add(this.dust.points, this.sparks.points, this.decals.mesh, this.tracers.group, this.flash.group, this.shells.mesh, this.blast.group);
   }
 
+  /** 0..1 while R is held: reloading needs a short deliberate hold, not a tap. */
+  reloadHold = 0;
+
   update(dt: number, input: Input, aiming: boolean, airborne: boolean): void {
-    if (input.hit('KeyR') && this.gun.startReload()) this.reloadFx();
+    const g = this.gun, canReload = g.reloading <= 0 && g.ammo < g.def.magazine && g.reserve > 0;
+    this.reloadHold = input.down('KeyR') && canReload ? this.reloadHold + dt / RELOAD_HOLD : 0;
+    if (this.reloadHold >= 1 && g.startReload()) {
+      this.reloadHold = 0;
+      this.reloadFx();
+    }
     if (input.hit('KeyB')) this.gun.toggleMode();
     const result = this.gun.update(dt, input.firing, input.hit('Mouse0'));
     if (result === 'dry') {
