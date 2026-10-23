@@ -3,7 +3,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { Enemy, type EnemyDef } from '../entities/enemy';
 import type { Outfit } from '../entities/rig';
 import { allyAct, allyThink, slotPosition, type Ally, type AllyContext } from '../ai/allyBrain';
-import { onHit, surfaceOf } from '../world/surfaces';
+import { onHit, pierceChance, surfaceOf } from '../world/surfaces';
 import { HealthBars } from '../ui/healthbars';
 import type { Heightfield } from '../world/heightfield';
 import type { Lighting } from '../render/lighting';
@@ -57,7 +57,7 @@ export class Squad {
     }
     const ray = (from: THREE.Vector3, to: THREE.Vector3, self: number) => {
       const dir = to.clone().sub(from), len = dir.length();
-      return { hit: d.world.castRay(new RAPIER.Ray(from, dir.divideScalar(len)), len, true, undefined, undefined, undefined, undefined, (c) => c.handle !== self && !this.handles.has(c.handle) && c.handle !== d.player.collisionHandle && c.isEnabled()), len };
+      return { hit: d.world.castRay(new RAPIER.Ray(from, dir.divideScalar(len)), len, true, undefined, undefined, undefined, undefined, (c) => c.handle !== self && !this.handles.has(c.handle) && c.handle !== d.player.collisionHandle && c.isEnabled() && pierceChance(c.handle) < 1), len };
     };
     this.ctx = {
       leader: new THREE.Vector3(), leaderYaw: yaw, leaderAlive: true, foes: d.enemies.list,
@@ -198,7 +198,7 @@ export class Squad {
     const r = Math.sqrt(Math.random()) * Math.tan(cone), ang = Math.random() * Math.PI * 2;
     const uu = new THREE.Vector3(0, 1, 0).cross(dir).normalize(), vv = dir.clone().cross(uu);
     dir.addScaledVector(uu, Math.cos(ang) * r).addScaledVector(vv, Math.sin(ang) * r).normalize();
-    const hit = world.castRayAndGetNormal(new RAPIER.Ray(muzzle, dir), 300, true, undefined, undefined, undefined, undefined, (c) => c.handle !== u.handle && !this.handles.has(c.handle) && c.handle !== player.collisionHandle && c.isEnabled());
+    const hit = world.castRayAndGetNormal(new RAPIER.Ray(muzzle, dir), 300, true, undefined, undefined, undefined, undefined, (c) => c.handle !== u.handle && !this.handles.has(c.handle) && c.handle !== player.collisionHandle && c.isEnabled() && pierceChance(c.handle) < 1);
     const end = muzzle.clone().addScaledVector(dir, hit ? hit.timeOfImpact : 300);
     const cam = camera.position;
     if (Math.random() < 0.4) combat.tracer(muzzle, end);

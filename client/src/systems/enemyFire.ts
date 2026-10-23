@@ -7,7 +7,7 @@ import type { Enemies } from './enemies';
 import type { Combat } from '../weapons/combat';
 import type { Sfx } from '../audio/sfx';
 import type { Player } from '../entities/player';
-import { surfaceOf, isPorous } from '../world/surfaces';
+import { surfaceOf, pierceChance } from '../world/surfaces';
 import { difficulty } from '../core/difficulty';
 
 /** One enemy round: accurate attackers aim at the target's chest, the rest suppress around it. */
@@ -34,7 +34,7 @@ export function enemyFire(e: Enemy, en: Enemies, ctx: AIContext, attacker: boole
   let hit = null;
   for (let i = 0; i < 4; i++) {
     hit = world.castRayAndGetNormal(new RAPIER.Ray(muzzle, dir), 400, true, undefined, undefined, undefined, undefined, (c) => c.handle !== e.handle && c.isEnabled() && !pass.has(c.handle));
-    if (!hit || !isPorous(hit.collider.handle) || Math.random() >= 0.45) break;
+    if (!hit || Math.random() >= pierceChance(hit.collider.handle)) break;
     pass.add(hit.collider.handle);
   }
   const end = muzzle.clone().addScaledVector(dir, hit ? hit.timeOfImpact : 400);

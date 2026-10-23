@@ -24,7 +24,7 @@ export class Builder {
     this.tmp.quaternion.copy(quat);
     this.tmp.updateMatrix();
     g.applyMatrix4(this.tmp.matrix);
-    if (mat !== 'none' && mat !== 'grate') (this.parts.get(mat) ?? this.parts.set(mat, []).get(mat)!).push(g);
+    if (mat !== 'none' && mat !== 'grate' && mat !== 'glasswall') (this.parts.get(mat) ?? this.parts.set(mat, []).get(mat)!).push(g);
     if (collide && this.world && this.body) {
       const col = this.world.createCollider(
         RAPIER.ColliderDesc.cuboid(size[0] / 2, size[1] / 2, size[2] / 2)
@@ -33,8 +33,8 @@ export class Builder {
         this.body,
       );
       setSurface(col.handle, mat === 'grate' ? 'metal' : SURFACE[mat] ?? (mat.startsWith('paint') ? 'adobe' : 'rock'));
-      if (mat === 'grate') setPorous(col.handle);
-      else if (mat !== 'roof') cover.addBox(pos, size, quat);
+      if (mat === 'grate' || mat === 'glasswall') setPorous(col.handle, mat === 'grate' ? 0.45 : 1);
+      else if (mat !== 'roof' && mat !== 'glasswall') cover.addBox(pos, size, quat);
     }
   }
 

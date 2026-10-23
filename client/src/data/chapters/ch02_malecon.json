@@ -427,7 +427,7 @@
   {
    "type": "marksman",
    "x": 140,
-   "z": -60
+   "z": -54.5
   },
   {
    "type": "rifleman",
@@ -502,7 +502,7 @@
   {
    "type": "marksman",
    "x": 120,
-   "z": 160
+   "z": 148.6
   },
   {
    "type": "marksman",
@@ -714,8 +714,8 @@
   "detail": "Gerente general del BCB. Cena en el comedor de la Rosa Náutica. Lo queremos vivo.",
   "defendRadius": 45,
   "hold": 2.5,
-  "action": "SOMETERLO",
-  "doing": "SOMETIENDO A MIRÓ QUESADA",
+  "action": "APREHENDERLO",
+  "doing": "APREHENDIENDO A MIRÓ QUESADA",
   "capture": {
    "x": 111,
    "z": 313.5,
@@ -724,10 +724,10 @@
    "failed": "Miró Quesada está muerto. Sin rehén no hay rescate, y la Junta tendrá a su mártir. La operación fracasó.",
    "name": "Giacomo Miró Quesada",
    "extraction": {
-    "radius": 100,
+    "radius": 120,
     "seconds": 180,
     "warn": 30,
-    "alert": "¡NOS DETECTARON! La Junta envía un helicóptero para evacuar a Miró Quesada. Tienen 3 minutos para capturarlo.",
+    "alert": "¡YA SABEN A QUIÉN VENIMOS A BUSCAR! La Junta envía un helicóptero para evacuar a Miró Quesada. Tienen 3 minutos para aprehenderlo.",
     "arrived": "El helicóptero de rescate llegó a la Rosa Náutica y se llevó a Miró Quesada. La operación fracasó."
    }
   },

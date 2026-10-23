@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { pickDeath } from './deathFall';
+import { CLIMBS, findLedge, mantlePath, type Ledge } from './mantle';
 import type { Palette } from './mannequin';
 import { Rig, type Outfit } from './rig';
 import type { CharKind } from '../render/characters';
@@ -56,6 +57,8 @@ export class Enemy {
   private ctrl: RAPIER.KinematicCharacterController;
   private crouchK = 0;
   private stuckT = 0;
+  private frozen = 0;
+  private hop: { ledge: Ledge; start: THREE.Vector3; t: number; dur: number } | null = null;
   private detour: THREE.Vector3 | null = null;
   private progT = 0;
   private progD = Infinity;
@@ -104,6 +107,7 @@ export class Enemy {
       this.collider.setHalfHeight(this.crouched ? HALF - 0.28 : HALF);
       this.collider.setTranslationWrtParent({ x: 0, y: this.crouched ? -0.28 : 0, z: 0 });
     }
+    if (this.hop) return this.updateHop(dt, aimPitch);
     const target = this.detour ?? this.path[0] ?? this.moveTarget;
     const wish = new THREE.Vector3();
     if (target && !this.isStatic) {
@@ -131,15 +135,41 @@ export class Enemy {
     this.stuckT += dt;
     if (this.stuckT > 0.8) {
       if (wish.lengthSq() > 0.5 && this.position.distanceTo(this.lastPos) < 0.3) {
+        const ledge = findLedge(this.world, this.position, Math.atan2(-wish.x, -wish.z), this.collider.handle, 1.9);
+        if (ledge) {
+          this.hop = { ledge, start: this.position.clone(), t: 0, dur: ledge.vault ? 0.7 : 0.7 + ledge.height * 0.3 };
+          this.yaw = Math.atan2(-wish.x, -wish.z);
+          this.stuckT = 0;
+          return;
+        }
+        if (++this.frozen > 5) {
+          this.body.setNextKinematicTranslation({ x: p.x + m.x, y: p.y + 0.6, z: p.z + m.z });
+          this.frozen = 0;
+        }
         const side = new THREE.Vector3(-wish.z, 0, wish.x).normalize().multiplyScalar((Math.random() < 0.5 ? -1 : 1) * 4);
         this.detour = this.position.clone().add(side).addScaledVector(wish.normalize(), -1);
-      }
+      } else this.frozen = 0;
       this.lastPos.copy(this.position);
       this.stuckT = 0;
     }
     const speed = Math.hypot(this.vel.x, this.vel.z);
     this.model.aiming = this.state === 'combat';
     this.model.animate(dt, speed, this.crouchK, aimPitch);
+  }
+
+  /** Vaulting or climbing over a fence, railing or low wall in the way, with the player's clips. */
+  private updateHop(dt: number, aimPitch: number): void {
+    const h = this.hop!, c = h.ledge.vault || h.ledge.height < 1.6 ? CLIMBS.vault : CLIMBS.low;
+    h.t = Math.min(1, h.t + dt / h.dur);
+    const feet = mantlePath(h.start, h.ledge, h.t, c.lift);
+    this.body.setNextKinematicTranslation({ x: feet.x, y: feet.y + HALF + RADIUS, z: feet.z });
+    this.model.hold(c.key, (this.model.durationOf(c.key) * c.span) / h.dur, true, c.from);
+    this.model.animate(dt, 0, 0, aimPitch);
+    if (h.t < 1) return;
+    this.model.release();
+    this.hop = null;
+    this.vel.set(0, -1, 0);
+    this.lastPos.copy(feet);
   }
 
   /** Drops the current waypoint when a few seconds of walking haven't brought it any closer. */

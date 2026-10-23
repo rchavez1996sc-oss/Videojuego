@@ -3,7 +3,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { Enemy, type EnemyDef } from '../entities/enemy';
 import { think, act, type AIContext } from '../ai/brain';
 import { cover } from '../ai/cover';
-import { onHit } from '../world/surfaces';
+import { onHit, pierceChance } from '../world/surfaces';
 import type { Heightfield } from '../world/heightfield';
 import type { Lighting } from '../render/lighting';
 import type { Player } from '../entities/player';
@@ -57,11 +57,11 @@ export class Enemies {
       onHit(e.handle, (dmg, p) => this.hit(e, dmg, new THREE.Vector3(p.x, p.y, p.z)));
       this.byCollider.set(e.handle, e);
     });
-    const ray = (from: THREE.Vector3, to: THREE.Vector3, self: number) => {
+    const ray = (from: THREE.Vector3, to: THREE.Vector3, self: number, glass = true) => {
       const dir = to.clone().sub(from);
       const len = dir.length();
       dir.divideScalar(len);
-      return { hit: world.castRay(new RAPIER.Ray(from, dir), len, true, undefined, undefined, undefined, undefined, (c) => c.handle !== self && c.isEnabled()), len };
+      return { hit: world.castRay(new RAPIER.Ray(from, dir), len, true, undefined, undefined, undefined, undefined, (c) => c.handle !== self && c.isEnabled() && (!glass || pierceChance(c.handle) < 1)), len };
     };
     this.ctx = {
       time: 0,
@@ -80,7 +80,7 @@ export class Enemies {
       route: (from, to, self) => {
         if (!nav) return [];
         const a = from.clone().setY(from.y + 0.8), b = to.clone().setY(to.y + 0.8);
-        const r = ray(a, b, self);
+        const r = ray(a, b, self, false);
         if (!r.hit || r.hit.collider.handle === player.collisionHandle || r.hit.timeOfImpact > r.len - 0.5) return [];
         const path = nav.route(from, to);
         if (path.length > 1 && path[0].distanceTo(to) > from.distanceTo(to) + 5) path.shift();

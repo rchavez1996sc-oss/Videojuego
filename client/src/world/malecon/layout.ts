@@ -150,3 +150,14 @@ export function maleconGraph(def: MaleconDef, c: CoastDef, hf: Heightfield): Str
   };
   return { nodes, edges, exits: ends, ground };
 }
+
+/** Appends a walkway (pier, hall, dining rooms) to the graph, joined to its nearest node; its floor height overrides the ground. */
+export function linkWalk(g: StreetGraph, walk: THREE.Vector3[]): void {
+  const first = g.nodes.length, a = walk[0], floor = walk[1].y, ground = g.ground;
+  const near = g.nodes.reduce((best, n, k) => (n.distanceTo(a) < g.nodes[best].distanceTo(a) ? k : best), 0);
+  g.nodes.push(...walk);
+  g.edges.push([near, first], ...walk.slice(1).map((_, i) => [first + i, first + i + 1] as [number, number]));
+  const xs = walk.slice(1).map((p) => p.x), zs = walk.slice(1).map((p) => p.z);
+  const [x0, x1, z0, z1] = [Math.min(...xs) - 6, Math.max(...xs) + 6, Math.min(...zs) - 3, Math.max(...zs) + 8];
+  g.ground = (x, z) => (x > x0 && x < x1 && z > z0 && z < z1 ? floor : ground ? ground(x, z) : 0);
+}

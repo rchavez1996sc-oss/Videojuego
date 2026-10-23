@@ -51,7 +51,9 @@ export function wingHall(b: Builder, x0: number, x1: number, z0: number, z1: num
     b.box('glassClear', [len, 2.3, 0.05], new THREE.Vector3(cx, y + 2.05, z), Q, false);
     b.box('creamWall', [len, 0.9, 0.25], new THREE.Vector3(cx, y + 3.65, z), Q, false);
     for (let x = x0; x <= x1; x += 2.4) b.box('lhWhite', [0.12, 2.3, 0.12], new THREE.Vector3(x, y + 2.05, z), Q, false);
-    b.box('none', [len, h, 0.3], new THREE.Vector3(cx, y + h / 2, z), Q, true);
+    b.box('none', [len, 0.9, 0.3], new THREE.Vector3(cx, y + 0.45, z), Q, true);
+    b.box('glasswall', [len, 2.3, 0.3], new THREE.Vector3(cx, y + 2.05, z), Q, true);
+    b.box('none', [len, h - 3.2, 0.3], new THREE.Vector3(cx, y + (h + 3.2) / 2, z), Q, true);
   }
   const door = 1.8, side = (z1 - z0 - door) / 2;
   for (const s of [-1, 1]) b.box('creamWall', [0.3, h, side], new THREE.Vector3(x0, y + h / 2, cz + s * (door / 2 + side / 2)), Q, true);
@@ -83,7 +85,9 @@ export function diningPavilion(b: Builder, x: number, y: number, z: number, r: n
     b.box('glassClear', [fw, 2.4, 0.05], p(2.1), q, false);
     b.box('lhWhite', [0.14, 2.4, 0.14], p(2.1).add(new THREE.Vector3(Math.cos(a), 0, -Math.sin(a)).multiplyScalar(fw / 2)), q, false);
     b.box('creamWall', [fw, 0.5, 0.2], p(3.55), q, false);
-    b.box('none', [fw + 0.2, h, 0.3], p(h / 2), q, true);
+    b.box('none', [fw + 0.2, 0.9, 0.3], p(0.45), q, true);
+    b.box('glasswall', [fw + 0.2, 2.4, 0.3], p(2.1), q, true);
+    b.box('none', [fw + 0.2, h - 3.3, 0.3], p((h + 3.3) / 2), q, true);
   }
   b.geometry('parquet', new THREE.CylinderGeometry(r, r, 0.04, 8).rotateY(Math.PI / 8), at(x, y + 0.02, z));
   b.geometry('ceilingWhite', new THREE.CylinderGeometry(r, r, 0.12, 8).rotateY(Math.PI / 8), at(x, y + h, z));

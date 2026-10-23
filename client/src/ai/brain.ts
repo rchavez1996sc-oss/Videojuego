@@ -99,7 +99,10 @@ function thinkCombat(e: Enemy, ctx: AIContext): void {
     const side = new THREE.Vector3(-away.z, 0, away.x).multiplyScalar(Math.random() < 0.5 ? -6 : 6);
     goTo(e, ctx, e.lastKnown.clone().addScaledVector(away, e.def.preferredRange).add(side), true);
   }
-  if (e.moveTarget) return;
+  if (e.moveTarget) {
+    if (!e.peek) e.running = true;
+    return;
+  }
   if (e.peek) return endPeek(e, ctx);
   e.coverT += THINK;
   if (unseen > 1.2 && unseen < 25 && e.cover && e.coverT > rand(1.5, 3) && Math.random() < 0.6 && startPeek(e, ctx)) return;
@@ -145,7 +148,16 @@ function hunt(e: Enemy, ctx: AIContext): void {
     return;
   }
   if (dist > 60) {
-    goTo(e, ctx, e.position.clone().addScaledVector(toPlayer.normalize(), Math.min(70, dist - 35)), true);
+    const leg = Math.min(90, dist - 35), path = ctx.route(e.position, e.lastKnown, e.handle), keep: THREE.Vector3[] = [];
+    for (let acc = 0, prev = e.position; keep.length < path.length && acc < leg; prev = keep[keep.length - 1]) {
+      keep.push(path[keep.length]);
+      acc += prev.distanceTo(keep[keep.length - 1]);
+    }
+    if (keep.length) {
+      e.moveTarget = keep.pop()!;
+      e.path = keep;
+      e.running = true;
+    } else goTo(e, ctx, e.position.clone().addScaledVector(toPlayer.normalize(), leg), true);
     return;
   }
   const side = new THREE.Vector3(-toPlayer.z, 0, toPlayer.x).normalize().multiplyScalar(Math.random() < 0.5 ? -1 : 1);
@@ -173,7 +185,7 @@ export function think(e: Enemy, ctx: AIContext, dt: number): void {
       e.path = [];
     }
     if (!e.isStatic && !e.moveTarget && e.position.distanceTo(e.lastKnown) > 3) {
-      goTo(e, ctx, e.lastKnown.clone().add(new THREE.Vector3(rand(-4, 4), 0, rand(-4, 4))), e.awareness > 0.7);
+      goTo(e, ctx, e.lastKnown.clone().add(new THREE.Vector3(rand(-4, 4), 0, rand(-4, 4))), e.engaged || e.awareness > 0.7);
     }
     if (!e.isStatic && !e.moveTarget && e.position.distanceTo(e.lastKnown) <= 3) {
       goTo(e, ctx, e.lastKnown.clone().add(new THREE.Vector3(rand(-12, 12), 0, rand(-12, 12))), false);

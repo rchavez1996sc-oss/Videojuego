@@ -9,15 +9,16 @@ export function setSurface(handle: number, s: Surface): void {
   byCollider.set(handle, s);
 }
 
-const porous = new Set<number>();
+const porous = new Map<number, number>();
 
-/** Fences, railings and mesh: a bullet sometimes slips through instead of stopping. */
-export function setPorous(handle: number): void {
-  porous.add(handle);
+/** Fences, railings and mesh (a bullet sometimes slips through) or glass (`chance` 1: always, and the AI sees through). */
+export function setPorous(handle: number, chance = 0.45): void {
+  porous.set(handle, chance);
 }
 
-export function isPorous(handle: number): boolean {
-  return porous.has(handle);
+/** Chance a bullet passes this collider (0 for solid ones). */
+export function pierceChance(handle: number): number {
+  return porous.get(handle) ?? 0;
 }
 
 export function surfaceOf(handle: number): Surface {

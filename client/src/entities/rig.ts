@@ -20,6 +20,7 @@ const HOLD_FIX: Record<string, { yaw: number; y: number }> = { ladder: { yaw: Ma
 /** Skinned Mixamo character with layered animation: legs from speed/direction, torso from stance and gestures. */
 export class Rig {
   readonly root = new THREE.Group();
+
   readonly muzzle: THREE.Object3D;
   readonly ejector: THREE.Object3D;
   readonly weapon: THREE.Object3D;
@@ -51,6 +52,8 @@ export class Rig {
   private idleKey = ['civ_idle', 'civ_idle', 'texting', 'look_around'].filter((k) => characters.clips.has(k))[Math.floor(Math.random() * 4)] ?? 'civ_stand';
 
   constructor(kind: CharKind, private lighting: Lighting, private armed = true, detailedGun = false, outfit?: Outfit) {
+    const update = this.root.updateMatrixWorld.bind(this.root);
+    this.root.updateMatrixWorld = (force) => void (this.root.visible && update(force));
     this.inst = characters.create(kind);
     this.root.add(this.inst.model);
     this.mixer = new THREE.AnimationMixer(this.inst.model);

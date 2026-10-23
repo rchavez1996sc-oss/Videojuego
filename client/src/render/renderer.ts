@@ -36,6 +36,8 @@ export class Renderer {
       ao.configuration.halfRes = true;
       ao.configuration.depthAwareUpsampling = true;
       ao.setQualityMode(quality === 'ultra' ? 'Medium' : 'Low');
+      Object.assign(ao, { autoDetectTransparency: false });
+      ao.configuration.transparencyAware = false;
       this.composer.addPass(ao);
     }
     this.composer.addPass(new EffectPass(

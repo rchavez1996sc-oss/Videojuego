@@ -12,9 +12,8 @@ import { Tracers } from '../fx/tracers';
 import { MuzzleFlash } from '../fx/muzzleFlash';
 import { Shells } from '../fx/shells';
 import { Blast } from '../fx/blast';
-import { SURFACE_FX, hitHandler, isPorous, surfaceOf, type Surface } from '../world/surfaces';
+import { SURFACE_FX, hitHandler, pierceChance, surfaceOf, type Surface } from '../world/surfaces';
 
-const PIERCE = 0.45;
 import type { Lighting } from '../render/lighting';
 import type { Heightfield } from '../world/heightfield';
 
@@ -85,10 +84,10 @@ export class Combat {
     const exclude = this.player.collisionHandle;
     for (let i = 0; i < 4; i++) {
       const hit = this.world.castRayAndGetNormal(new RAPIER.Ray(origin, dir), max, true, undefined, undefined, undefined, undefined, (c) => c.handle !== exclude && !through?.get(c.handle));
-      if (!hit || !through || !isPorous(hit.collider.handle)) return hit;
+      if (!hit || !through || !pierceChance(hit.collider.handle)) return hit;
       const h = hit.collider.handle;
       if (!through.has(h)) {
-        through.set(h, Math.random() < PIERCE);
+        through.set(h, Math.random() < pierceChance(h));
         if (through.get(h)) this.graze(origin.clone().addScaledVector(dir, hit.timeOfImpact), dir);
       }
       if (!through.get(h)) return hit;

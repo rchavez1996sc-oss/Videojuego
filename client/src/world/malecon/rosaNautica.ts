@@ -73,13 +73,15 @@ function gazebo(b: Builder, x: number, y: number, z: number, r: number): void {
  * lattice railings, lamps and blue-roofed kiosks, ending in the cream restaurant whose wing stands on stilts over the
  * sea (dormered slate mansard, spired towers, an octagonal two-storey pavilion). The main hall is the chapter's goal.
  */
-export function rosaNautica(b: Builder, hf: Heightfield, def: MaleconDef, c: CoastDef, extras: Extra[]): StationInfo | null {
+export function rosaNautica(b: Builder, hf: Heightfield, def: MaleconDef, c: CoastDef, extras: Extra[]): (StationInfo & { walk: THREE.Vector3[] }) | null {
   const p = def.pier;
   if (!p) return null;
   const X = p.x, D = c.sea + 2.6, z0 = def.beachRoad.z + def.beachRoad.half + 4, zE = c.shore + p.length, r = mulberry32(83);
   const g0 = hf.heightAt(X, z0), walkEnd = zE - 34;
   const steps = Math.max(1, Math.round((D - g0) / 0.17)), rise = (D - g0) / steps;
-  for (let i = 0; i < steps; i++) b.box('deckPier', [5.2, rise * (i + 1), 0.32], new THREE.Vector3(X, g0 + rise * (i + 1) / 2, z0 - 1.6 + i * 0.32), Q, true);
+  for (let i = 0; i < steps; i++) b.box('deckPier', [5.2, rise * (i + 1), 0.32], new THREE.Vector3(X, g0 + rise * (i + 1) / 2, z0 - 1.6 + i * 0.32), Q, false);
+  const run = steps * 0.32, tilt = Math.atan2(D - g0, run);
+  b.box('none', [5.2, 0.1, Math.hypot(run, D - g0)], new THREE.Vector3(X, (g0 + D) / 2 + 0.03, z0 - 1.6 - 0.16 + run / 2), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -tilt), true);
   b.box('deckPier', [5.2, 0.5, walkEnd - z0 + 1.6 - steps * 0.32], new THREE.Vector3(X, D - 0.25, (z0 - 1.6 + steps * 0.32 + walkEnd) / 2), Q, true);
   b.box('none', [14, 1.4, zE + 36 - z0], new THREE.Vector3(X, D - 1.5, (z0 + zE + 36) / 2), Q, true);
   const top = D - 0.7, foot = c.sea - 3, slope = (top - foot) / 4.5;
@@ -143,5 +145,8 @@ export function rosaNautica(b: Builder, hf: Heightfield, def: MaleconDef, c: Coa
   pavilion(b, wx0 + 5, D + 4.2, wz - 3, 1.8, 0, 2.6);
   diningPavilion(b, wx1 + 2, D, wz, 7.5, [-Math.PI / 2, -Math.PI * 0.75, -Math.PI / 4]);
   const entrance = new THREE.Vector3(X, D, hz0 - 1);
-  return { entrance, hall: { x0: hx0 + 0.5, x1: hx1 - 0.5, z0: hz0 + 0.5, z1: hz1 - 0.5, y: D }, cache: new THREE.Vector3(X, D + 0.8, hz1 - 6) };
+  const walk = [new THREE.Vector3(X, g0, z0 - 1.5)];
+  for (let z = z0 + 6; z < hz0 - 2; z += 12) walk.push(new THREE.Vector3(X, D, z));
+  walk.push(...[[X, hz0 - 1.5], [X + 1.5, hz0 + 1.5], [X + 4.5, hz0 + 6], [hx1 - 1, hz0 + 6], [hx1 + 1, hz0 + 6], [wx0 + 1, wz], [wx0 + 4, wz], [(wx0 + wx1) / 2, wz], [wx1 - 3, wz], [wx1 + 2, wz]].map(([x, z]) => new THREE.Vector3(x, D, z)));
+  return { walk, entrance, hall: { x0: hx0 + 0.5, x1: hx1 - 0.5, z0: hz0 + 0.5, z1: hz1 - 0.5, y: D }, cache: new THREE.Vector3(X, D + 0.8, hz1 - 6) };
 }
