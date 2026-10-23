@@ -25,6 +25,7 @@ import { buildMonuments } from './monuments';
 import { buildPropaganda } from './propaganda';
 import { crowd, surfers } from './people';
 import { buildLandmarks } from './landmarks';
+import { rosaNautica } from './rosaNautica';
 import { buildLarcomar } from './larcomar';
 import { buildVegetation } from './vegetation';
 
@@ -52,6 +53,7 @@ function maleconMaterials(lighting: Lighting, { apt, co, pl, br, wd, fo }: Tex):
     roofGreen: std('roofGreen', { color: '#3f7a5a', roughness: 0.6 }),
     bikeRed: std('bikeRed', { map: rk.map, normalMap: rk.normalMap, color: '#b25a48', roughness: 0.9 }),
     boulder: std('boulder', { map: rk.map, normalMap: rk.normalMap, color: '#8f8a83', roughness: 0.95 }),
+    breakRock: std('breakRock', { map: rk.map, normalMap: rk.normalMap, color: '#5e564d', roughness: 0.95 }),
     railGreen: std('railGreen', { color: '#24503f', roughness: 0.45, metalness: 0.5 }),
     lampPole: std('lampPole', { color: '#1d3129', roughness: 0.5, metalness: 0.5 }),
     globe: std('globe', { color: '#f7f2e4', roughness: 0.3, emissive: '#fff1d0', emissiveIntensity: 0.35 }),
@@ -62,6 +64,10 @@ function maleconMaterials(lighting: Lighting, { apt, co, pl, br, wd, fo }: Tex):
     lhRed: std('lhRed', { map: br.map, normalMap: br.normalMap, color: '#c0604a', roughness: 0.9 }),
     lhBlack: std('lhBlack', { color: '#19191b', roughness: 0.5, metalness: 0.2 }),
     lhWhite: std('lhWhite', { color: '#f3f2ee', roughness: 0.7 }),
+    creamWall: std('creamWall', { map: pl.map, normalMap: pl.normalMap, color: '#efe6cf', roughness: 0.85 }),
+    roofSlate: std('roofSlate', { color: '#5f7389', roughness: 0.6 }),
+    awningStripe: std('awningStripe', { color: '#d8c27a', roughness: 0.8 }),
+    flatRoof: std('flatRoof', { color: '#a7a49c', roughness: 0.9 }),
     lanternGlass: std('lanternGlass', { color: '#e8e2c8', roughness: 0.1, metalness: 0.4, emissive: '#fff4c0', emissiveIntensity: 0.5 }),
     mosaic: std('mosaic', { map: mo.map, normalMap: mo.normalMap, roughness: 0.45 }),
     poolRim: std('poolRim', { map: co.map, color: '#d6d0c2', roughness: 0.85 }),
@@ -108,9 +114,9 @@ export function buildMalecon(hf: Heightfield, def: MaleconDef, lighting: Lightin
   const mats = { ...barrioMaterials(lighting, atlas), ...maleconMaterials(lighting, tex) };
   const textured = (key: string, set: PbrSet, keys: string[], roughness: number) => ({ material: lighting.setup(new THREE.MeshStandardMaterial({ map: set.map, normalMap: set.normalMap, roughness, vertexColors: true }), key), keys });
   const bake = [
-    ...bakeGroups(lighting, ['alu', 'railGreen', 'lampPole', 'chair', 'awningRed', 'lobby', 'steelDark', 'columnGreen', 'flagMast', 'fenceIron', 'benchGreen', 'bollardGreen', 'lhBlack', 'lhWhite', 'roofTile', 'poolWater']),
+    ...bakeGroups(lighting, ['alu', 'railGreen', 'lampPole', 'chair', 'awningRed', 'lobby', 'steelDark', 'columnGreen', 'flagMast', 'fenceIron', 'benchGreen', 'bollardGreen', 'lhBlack', 'lhWhite', 'roofTile', 'poolWater', 'roofSlate', 'awningStripe', 'flatRoof']),
     textured('apt-baked', tex.apt, [...new Set(FACADES)], 0.85),
-    textured('plaster-baked', tex.pl, ['houseWhite', 'houseCream', 'houseGray', 'houseWarm', 'mallWhite', 'terracotta'], 0.85),
+    textured('plaster-baked', tex.pl, ['houseWhite', 'houseCream', 'houseGray', 'houseWarm', 'mallWhite', 'terracotta', 'creamWall'], 0.85),
     textured('concrete-baked', tex.co, ['slab', 'pavement', 'paving', 'bridgeConcrete', 'granite', 'poolRim', 'planter', 'kerbYellow', 'concrete'], 0.9),
     textured('brick-baked', tex.br, ['lhRed', 'houseBrick', 'brickRed', 'brick'], 0.9),
     textured('wood-baked', tex.wd, ['benchWood', 'woodSlat', 'woodGate', 'pole'], 0.8),
@@ -125,6 +131,7 @@ export function buildMalecon(hf: Heightfield, def: MaleconDef, lighting: Lightin
   buildBoulevard(b, hf, def, plants, rand);
   plants.standing.push(...guards.map((g) => ({ ...g, key: rand() < 0.5 ? 'civ_idle' : 'texting' })));
   buildLandmarks(b, hf, def, c, plants.palms);
+  const station = rosaNautica(b, hf, def, c);
   const group = new THREE.Group();
   group.add(buildLarcomar(b, def, c, lighting, plants, rand));
   group.add(buildMonuments(b, hf, def, lighting, plants.seats, (at, yaw) => bench(b, at, yaw)));
@@ -139,5 +146,5 @@ export function buildMalecon(hf: Heightfield, def: MaleconDef, lighting: Lightin
   const fliers = new Paragliders(def.paragliders, c.edge, lighting, world, (x, z) => Math.max(hf.heightAt(x, z), c.sea));
   fliers.onDown = (p) => bystanders.onHurt(p);
   group.add(fliers.group);
-  return { group, materials: mats, bake, station: null, graph: maleconGraph(def, c, hf), blocked: (x, z) => z < edgeZ(c, x) + 2, bystanders };
+  return { group, materials: mats, bake, station, graph: maleconGraph(def, c, hf), blocked: (x, z) => z < edgeZ(c, x) + 2, bystanders };
 }

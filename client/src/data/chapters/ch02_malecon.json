@@ -5,6 +5,7 @@
  "terrain": {
   "size": 1024,
   "playable": 450,
+  "seaReach": 300,
   "resolution": 513,
   "seed": 2036,
   "rolling": 0,
@@ -277,7 +278,7 @@
   ],
   "pier": {
    "x": 55,
-   "length": 70
+   "length": 95
   }
  },
  "farCity": {
@@ -534,5 +535,15 @@
    35
   ]
  ],
- "shadowRange": 60
+ "shadowRange": 60,
+ "objective": {
+  "title": "LLEGA A LA ROSA NÁUTICA",
+  "detail": "Cruza el malecón y entra al salón de la Rosa Náutica",
+  "defendRadius": 40,
+  "hold": 2.5,
+  "action": "ASEGURAR EL SALÓN",
+  "doing": "ASEGURANDO EL SALÓN",
+  "complete": "CAPÍTULO 2 COMPLETADO",
+  "reward": "La Rosa Náutica está en manos del Frente. (Texto provisional: falta definir la misión del capítulo.)"
+ }
 }

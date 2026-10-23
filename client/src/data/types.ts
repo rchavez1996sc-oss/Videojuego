@@ -1,6 +1,8 @@
 export interface TerrainDef {
   size: number;
   playable: number;
+  /** z of the seaward (+z) invisible wall when it lies beyond the playable square (a pier reaching out). */
+  seaReach?: number;
   resolution: number;
   seed: number;
   rolling: number;

@@ -3,7 +3,7 @@ import type { StationInfo } from '../world/station';
 import type { Enemy } from '../entities/enemy';
 import type { Input } from '../core/input';
 
-export interface ObjectiveDef { title: string; detail: string; defendRadius: number; hold: number; complete: string; reward: string; loot?: string[]; unlock?: string }
+export interface ObjectiveDef { title: string; detail: string; defendRadius: number; hold: number; complete: string; reward: string; loot?: string[]; unlock?: string; action?: string; doing?: string }
 
 /** Chapter goal: storm the station and hold E in the lobby to loot the arms cache (defenders need not all be dead). */
 export class Objective {
@@ -56,7 +56,7 @@ export class Objective {
       return;
     }
     this.holdT = input.down('KeyE') ? this.holdT + dt : 0;
-    this.prompt.innerHTML = this.holdT > 0 ? `SAQUEANDO CARGAMENTO <span>${Math.round((this.holdT / this.def.hold) * 100)}%</span>` : '<kbd>E</kbd> MANTÉN PARA SAQUEAR EL CARGAMENTO';
+    this.prompt.innerHTML = this.holdT > 0 ? `${this.def.doing ?? 'SAQUEANDO CARGAMENTO'} <span>${Math.round((this.holdT / this.def.hold) * 100)}%</span>` : `<kbd>E</kbd> MANTÉN PARA ${this.def.action ?? 'SAQUEAR EL CARGAMENTO'}`;
     if (this.holdT < this.def.hold) return;
     this.done = true;
     this.prompt.style.opacity = this.marker.style.opacity = '0';
