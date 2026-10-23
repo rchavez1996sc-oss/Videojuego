@@ -70,6 +70,6 @@ export interface ChapterDef {
   range?: [number, number][];
   medkits?: [number, number][];
   ammo?: [number, number][];
-  enemies?: { type: string; x: number; z: number; y?: number; at?: number; patrol?: [number, number][] }[];
+  enemies?: { type: string; x: number; z: number; y?: number; at?: number; patrol?: [number, number][]; leash?: number }[];
   structures?: import('../world/structures').StructureDef[];
 }

@@ -46,6 +46,8 @@ export class Enemy {
   patrolIndex = 0;
   /** Seconds spent holding the current cover; triggers a peek or a push forward. */
   coverT = 0;
+  /** Garrison post: never strays farther than `r` from `at`. */
+  leash: { at: THREE.Vector3; r: number } | null = null;
   /** Side step out of cover to shoot from, then back; null when not peeking. */
   peek: THREE.Vector3 | null = null;
   peekT = 0;

@@ -21,6 +21,8 @@ export interface AIContext {
 
 /** Sets a destination, routing along the streets when buildings are in the way. */
 export function goTo(e: Enemy, ctx: Pick<AIContext, 'route'>, to: THREE.Vector3, run: boolean): void {
+  const off = e.leash && to.clone().sub(e.leash.at).setY(0);
+  if (e.leash && off && off.length() > e.leash.r) to = e.leash.at.clone().add(off.setLength(e.leash.r * 0.9)).setY(to.y);
   e.moveTarget = to;
   e.running = run;
   e.path = ctx.route(e.position, to, e.handle);
@@ -67,6 +69,7 @@ function setState(e: Enemy, s: Enemy['state'], ctx: AIContext): void {
 function pickCover(e: Enemy, ctx: AIContext, preferred: number, radius = 30, anchor = e.position): boolean {
   const threat = e.lastKnown.clone().setY(e.lastKnown.y + 1.3);
   for (const c of ctx.cover.candidates(anchor, threat, radius, preferred, e.id)) {
+    if (e.leash && c.pos.distanceTo(e.leash.at) > e.leash.r) continue;
     const spot = c.pos.clone().setY(ctx.groundY(c.pos.x, c.pos.z));
     if (!ctx.blocked(spot.clone().setY(spot.y + 1.0), threat, e.handle)) continue;
     if (e.cover) e.cover.owner = -1;

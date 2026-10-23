@@ -14,7 +14,8 @@ import type { StreetNav } from '../ai/nav';
 import { difficulty } from '../core/difficulty';
 import { enemyFire } from './enemyFire';
 
-export interface SpawnDef { type: string; x: number; z: number; y?: number; at?: number; patrol?: [number, number][] }
+/** `leash`: a garrison post — the enemy fights and takes cover but never goes farther than this from its spawn. */
+export interface SpawnDef { type: string; x: number; z: number; y?: number; at?: number; patrol?: [number, number][]; leash?: number }
 
 export interface KillEvent { headshot: boolean; distance: number }
 
@@ -52,6 +53,7 @@ export class Enemies {
       }
       const patrol = (s.patrol ?? []).map(([x, z]) => new THREE.Vector3(x, hf.heightAt(x, z), z));
       const e = new Enemy(i, def, world, lighting, new THREE.Vector3(spot.x, s.at ?? spot.y + (s.y ?? 0), spot.z), patrol, s.y !== undefined || s.at !== undefined);
+      if (s.leash) e.leash = { at: e.position.clone(), r: s.leash };
       this.list.push(e);
       this.group.add(e.model.root, e.flash.group);
       onHit(e.handle, (dmg, p) => this.hit(e, dmg, new THREE.Vector3(p.x, p.y, p.z)));
