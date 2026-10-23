@@ -100,6 +100,8 @@ export function dropLoot(pickups: Pickups, at: THREE.Vector3, ground: number): v
 }
 
 let fullT = 0;
+/** Rounds in a fixed ammo crate (a couple of magazines, never a full refill). */
+const CRATE_ROUNDS = 60;
 
 /** Picks up whatever the player needs (and says so when walking over one that is not needed): medkit heals fully, corpse rounds add to the reserve, crates refill it and add a grenade. */
 export function collectSupplies(dt: number, pickups: Pickups, d: { player: Player; gun: Gun; grenades: Grenades; sfx: Sfx; hud: Hud; alive: boolean }): void {
@@ -124,8 +126,9 @@ export function collectSupplies(dt: number, pickups: Pickups, d: { player: Playe
     d.gun.addAmmo(got.rounds);
     d.hud.showToast(`${d.gun.reserve - before} BALAS`);
   } else {
-    d.gun.addAmmo(d.gun.reserveMax);
+    const before = d.gun.reserve;
+    d.gun.addAmmo(CRATE_ROUNDS);
     d.grenades.count = Math.min(d.grenades.count + 1, 5);
-    d.hud.showToast('MUNICIÓN Y GRANADA');
+    d.hud.showToast(`${d.gun.reserve - before} BALAS Y GRANADA`);
   }
 }

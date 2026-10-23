@@ -170,7 +170,7 @@ async function boot(): Promise<void> {
   grenades.onSettled = (at) => enemies.fleeFrom(at);
   const nadeMode = new GrenadeMode(grenades, world, camera, player, sfx, hud);
   scene.add(nadeMode.group);
-  const corpses = new Loot(pickups, world, hf, (at) => combat.bloodStain(at));
+  const corpses = new Loot(pickups, (at) => combat.bloodStain(at));
   const objective = ch.objective && barrio?.station ? new Objective(ch.objective, barrio.station, camera, { lighting, world, scene, mixer, cinematic: (eye, look) => (freeCam = true, tpc.place(eye, look)) }) : null;
   let lives = (hud.lives = ch.lives ?? 3);
   if (objective) objective.onFail = (why) => (failed || window.setTimeout(() => showMissionFailed(why), 4200), (failed = true));
@@ -266,7 +266,7 @@ async function boot(): Promise<void> {
     squad?.sync();
     collectSupplies(dt, pickups, { player, gun: combat.gun, grenades, sfx, hud, alive: deadT <= 0 });
     objective?.update(dt, player.position, enemies.list, input, deadT <= 0);
-    corpses.update(dt, { dead: enemies.list.filter((e) => !e.alive), fallen: squad?.fallen ?? [], player, gun: combat.gun, hud, alive: deadT <= 0 });
+    corpses.update(dt, { dead: enemies.list.filter((e) => !e.alive), fallen: squad?.fallen ?? [] });
     const threats = gatherThreats(enemies, civilians, pickups.markers, player.position, camera, squad?.positions, objective?.position);
     minimap.update(player.position, tpc.yaw, threats);
     damageFx.update(dt, player.hp / 100);
