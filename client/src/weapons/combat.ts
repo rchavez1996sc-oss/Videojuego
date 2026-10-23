@@ -14,7 +14,6 @@ import { Shells } from '../fx/shells';
 import { Blast } from '../fx/blast';
 import { SURFACE_FX, hitHandler, pierceChance, surfaceOf, type Surface } from '../world/surfaces';
 
-const RELOAD_HOLD = 0.8;
 
 import type { Lighting } from '../render/lighting';
 import type { Heightfield } from '../world/heightfield';
@@ -44,21 +43,28 @@ export class Combat {
     this.group.add(this.dust.points, this.sparks.points, this.decals.mesh, this.tracers.group, this.flash.group, this.shells.mesh, this.blast.group);
   }
 
-  /** 0..1 while R is held: reloading needs a short deliberate hold, not a tap. */
+  /** Progress 0..1 of a manual reload: it runs only while R is held and is abandoned if R is let go. */
   reloadHold = 0;
+  private manual = false;
 
   update(dt: number, input: Input, aiming: boolean, airborne: boolean): void {
-    const g = this.gun, canReload = g.reloading <= 0 && g.ammo < g.def.magazine && g.reserve > 0;
-    this.reloadHold = input.down('KeyR') && canReload ? this.reloadHold + dt / RELOAD_HOLD : 0;
-    if (this.reloadHold >= 1 && g.startReload()) {
-      this.reloadHold = 0;
-      this.reloadFx();
+    const g = this.gun;
+    if (input.down('KeyR')) {
+      if (g.reloading <= 0 && g.startReload()) {
+        this.manual = true;
+        this.reloadFx();
+      }
+    } else if (this.manual && g.reloading > 0) {
+      g.cancelReload();
+      this.sfx.cancelReload();
+      this.player.model.stopGesture('reload');
     }
+    if (g.reloading <= 0) this.manual = false;
+    this.reloadHold = this.manual ? g.reloadProgress : 0;
     if (input.hit('KeyB')) this.gun.toggleMode();
     const result = this.gun.update(dt, input.firing, input.hit('Mouse0'));
     if (result === 'dry') {
       this.sfx.dryFire();
-      if (this.gun.startReload()) this.reloadFx();
     } else if (result === 'fire') {
       this.fire(aiming, airborne);
     } else if (!input.firing) {
@@ -78,12 +84,13 @@ export class Combat {
   }
 
   private reloadFx(): void {
-    this.sfx.reload(this.gun.ammo === 0);
+    this.sfx.reload(this.gun.ammo === 0, this.gun.reloading);
     this.player.model.gesture('reload', this.gun.reloading);
   }
 
   /** Test hook for automated screenshots. */
   debugShoot(): void {
+    if (this.gun.ammo === 0) this.gun.ammo = this.gun.def.magazine;
     if (this.gun.ammo > 0) {
       this.gun.ammo--;
       this.fire(true, false);
@@ -142,7 +149,6 @@ export class Combat {
     const [kUp, kSide] = this.gun.recoil(aiming);
     const k = this.cam.steady;
     this.cam.kick(kUp * k, kSide * k, (aiming ? 0.012 : 0.02) * k);
-    if (this.gun.ammo === 0 && this.gun.startReload()) this.reloadFx();
 
     if (!hit) return;
     const normal = new THREE.Vector3(hit.normal.x, hit.normal.y, hit.normal.z);

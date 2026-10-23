@@ -117,7 +117,7 @@ async function boot(): Promise<void> {
   await characters.load(lighting);
   world.step();
   const respawnPts = barrio ? streetPoints(barrio.graph) : undefined;
-  const start = respawnPts && barrio?.station && !shotMode ? startSpot(world, hf, respawnPts, barrio.station.entrance, ch.enemies ?? [], barrio.inside) : null;
+  const start = respawnPts && barrio?.station && !shotMode ? startSpot(world, hf, respawnPts, ch.objective?.capture ?? barrio.station.entrance, ch.enemies ?? [], barrio.inside) : null;
   const spawn = start?.pos ?? new THREE.Vector3(ch.spawn.x, hf.heightAt(ch.spawn.x, ch.spawn.z), ch.spawn.z), startYaw = start?.yaw ?? ch.spawn.yaw;
   const player = new Player(world, lighting, spawn, startYaw);
   scene.add(player.model.root);

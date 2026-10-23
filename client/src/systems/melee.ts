@@ -6,7 +6,7 @@ import type { Sfx } from '../audio/sfx';
 import type { ThirdPersonCamera } from '../core/camera';
 import type { Input } from '../core/input';
 
-const REACH = 1.8, DAMAGE = 110, SWING = 0.75, STRIKE = 0.32, COOLDOWN = 1;
+const REACH = 1.8, DAMAGE = 140, SWING = 0.75, STRIKE = 0.32, COOLDOWN = 1;
 
 /** Rifle-butt strike: pulling the trigger with an enemy within arm's reach in front swings the stock instead of firing. */
 export class Melee {

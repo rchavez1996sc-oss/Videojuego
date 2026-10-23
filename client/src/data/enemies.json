@@ -1,6 +1,6 @@
 {
   "rifleman": {
-    "hp": 100,
+    "hp": 130,
     "damage": 7,
     "rpm": 520,
     "burst": [
@@ -30,7 +30,7 @@
     "rig": "pnp"
   },
   "marksman": {
-    "hp": 80,
+    "hp": 105,
     "damage": 18,
     "rpm": 70,
     "burst": [

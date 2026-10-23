@@ -137,6 +137,11 @@ export class Rig {
     this.mixer.clipAction(parts(key).upper).timeScale = seconds ? (dur - from) / seconds : 1;
   }
 
+  /** Ends a torso gesture early (a reload let go of). */
+  stopGesture(key: 'reload' | 'throw' | 'hit'): void {
+    if (this.overlay?.key === key) this.overlay.t = 0;
+  }
+
   /** Torso frozen at `at` seconds of `key` until `clearPose` (grenade held ready or cocked). */
   pose(key: string, at: number): void {
     if (this.dead || this.held || (this.overlay?.key === key && this.overlay.from === at && this.overlay.t === Infinity)) return;

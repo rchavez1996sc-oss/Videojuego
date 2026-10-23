@@ -194,25 +194,34 @@ export class Sfx {
   }
 
   /** AK reload: catch, mag out, pouch, mag in with a slap and, from empty, the charging handle racked back and slammed home. */
-  reload(empty: boolean): void {
-    const t = this.m.ctx.currentTime;
+  private reloadBus: GainNode | null = null;
+
+  /** Magazine out, new one in, bolt (empty), spread over `dur` seconds; `cancelReload` silences what is still to come. */
+  reload(empty: boolean, dur = empty ? 2.3 : 2.0): void {
+    const t = this.m.ctx.currentTime, k = dur / (empty ? 2.3 : 2.0), bus = (this.reloadBus = this.m.ctx.createGain());
+    bus.connect(this.m.sfx);
     const clack = (dt: number, f: number, p: number, body = 0) => {
-      this.filtered(t + dt, 'bandpass', f, 3, p, 0.001, 0.07, 0.15);
-      this.filtered(t + dt, 'bandpass', f * 2.3, 5, p * 0.7, 0.001, 0.04);
-      this.filtered(t + dt, 'lowpass', 600, 1, p * 0.5, 0.001, 0.05);
-      if (body) this.tone(t + dt, 'triangle', 170, 90, body, 0.14);
+      this.filtered(t + dt * k, 'bandpass', f, 3, p, 0.001, 0.07, 0, bus);
+      this.filtered(t + dt * k, 'bandpass', f * 2.3, 5, p * 0.7, 0.001, 0.04, 0, bus);
+      this.filtered(t + dt * k, 'lowpass', 600, 1, p * 0.5, 0.001, 0.05, 0, bus);
+      if (body) this.tone(t + dt * k, 'triangle', 170, 90, body, 0.14, 0, bus);
     };
     clack(0.25, 2100, 3.6, 0.9);
-    this.filtered(t + 0.3, 'bandpass', 2400, 1.2, 0.9, 0.05, 0.25);
-    this.filtered(t + 0.75, 'bandpass', 900, 0.8, 0.7, 0.08, 0.3);
-    this.filtered(t + 1.25, 'bandpass', 3000, 1.4, 0.8, 0.05, 0.14);
+    this.filtered(t + 0.3 * k, 'bandpass', 2400, 1.2, 0.9, 0.05, 0.25, 0, bus);
+    this.filtered(t + 0.75 * k, 'bandpass', 900, 0.8, 0.7, 0.08, 0.3, 0, bus);
+    this.filtered(t + 1.25 * k, 'bandpass', 3000, 1.4, 0.8, 0.05, 0.14, 0, bus);
     clack(1.42, 1400, 4.6, 2.0);
-    this.filtered(t + 1.55, 'lowpass', 480, 1, 2.0, 0.002, 0.1);
+    this.filtered(t + 1.55 * k, 'lowpass', 480, 1, 2.0, 0.002, 0.1, 0, bus);
     if (empty) {
       clack(1.9, 2300, 3.8, 0.7);
-      this.filtered(t + 1.93, 'bandpass', 3600, 1.6, 0.8, 0.02, 0.1);
+      this.filtered(t + 1.93 * k, 'bandpass', 3600, 1.6, 0.8, 0.02, 0.1, 0, bus);
       clack(2.12, 1200, 4.8, 2.2);
     }
+  }
+
+  cancelReload(): void {
+    this.reloadBus?.gain.setTargetAtTime(0, this.m.ctx.currentTime, 0.02);
+    this.reloadBus = null;
   }
 
   /** Muffled heel thud plus a surface layer: grass swish, dirt grit, stone tap or hollow wood. */

@@ -48,6 +48,11 @@ export class Gun {
     return true;
   }
 
+  /** Abandons a reload in progress (the magazine stays as it was). */
+  cancelReload(): void {
+    this.reloading = 0;
+  }
+
   /** Current cone half-angle in degrees. */
   coneDeg(aiming: boolean, moveSpeed: number, airborne: boolean): number {
     const base = aiming ? this.def.spreadAim : this.def.spreadHip;

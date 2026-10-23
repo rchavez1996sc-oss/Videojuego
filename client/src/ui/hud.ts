@@ -126,11 +126,12 @@ export class Hud {
       this.reload.classList.toggle('on', s.reload > 0);
       (this.reload.querySelector('.fg') as SVGCircleElement).style.strokeDashoffset = String(125.7 * (1 - s.reload));
     });
-    const held = s.reloadHold ?? 0, hint = s.slot === 'rifle' && s.reload === 0 && s.reserve > 0 && (s.ammo <= s.mag * 0.25 || held > 0);
-    this.set('rh', `${hint}${held.toFixed(2)}`, () => {
+    const held = s.reloadHold ?? 0, hint = s.slot === 'rifle' && s.reserve > 0 && (s.ammo <= s.mag * 0.25 || held > 0);
+    this.set('rh', `${hint}${held.toFixed(2)}${s.ammo === 0}`, () => {
       const el = this.root.querySelector('.reload-hint')!;
       el.classList.toggle('on', hint);
       el.classList.toggle('held', held > 0);
+      el.classList.toggle('empty', s.ammo === 0 && held === 0);
       (el.querySelector('rect') as SVGRectElement).style.strokeDashoffset = String(100 * (1 - held));
     });
     this.hitT = Math.max(0, this.hitT - dt);

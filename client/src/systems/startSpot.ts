@@ -3,10 +3,10 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import type { Heightfield } from '../world/heightfield';
 import { roomy } from './respawn';
 
-const NEAR = 400, FAR = Infinity, FOE_GAP = 60;
+const NEAR = 370, FAR = Infinity, FOE_GAP = 60;
 
 /**
- * Where a level starts: a random open street (or hillside) spot at least 400 m from the objective, well clear of enemy posts,
+ * Where a level starts: a random walkable street or open spot at least 370 m from the objective, well clear of enemy posts,
  * with no roof overhead and no car or wall around, facing the objective. Null if nothing qualifies.
  */
 export function startSpot(world: RAPIER.World, hf: Heightfield, streets: THREE.Vector3[], goal: { x: number; z: number }, foes: { x: number; z: number }[], inside: (x: number, z: number) => boolean = () => true): { pos: THREE.Vector3; yaw: number } | null {
