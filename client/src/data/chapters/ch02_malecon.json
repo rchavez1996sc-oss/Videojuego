@@ -58,7 +58,7 @@
   "sunIntensity": 1.8,
   "ambient": 0.78,
   "fogColor": "#c2c6c9",
-  "fogDensity": 0.0024,
+  "fogDensity": 0.0017,
   "colors": {
    "grassLush": "#4d7d2a",
    "grassDry": "#6d8a38",

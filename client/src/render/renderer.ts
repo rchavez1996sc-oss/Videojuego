@@ -4,6 +4,7 @@ import {
   RenderPass, SMAAEffect, ToneMappingEffect, ToneMappingMode, VignetteEffect,
 } from 'postprocessing';
 import { cinematicLut } from './grade';
+import { SharpenEffect } from './sharpen';
 import { N8AOPostPass } from 'n8ao';
 import { preset, quality } from '../core/settings';
 
@@ -17,6 +18,7 @@ function grain(): NoiseEffect {
 export class Renderer {
   readonly gl: THREE.WebGLRenderer;
   readonly composer: EffectComposer;
+  private sharpen = new SharpenEffect(0.35);
 
   constructor(canvas: HTMLCanvasElement, scene: THREE.Scene, camera: THREE.PerspectiveCamera, exposure: number) {
     this.gl = new THREE.WebGLRenderer({ canvas, powerPreference: 'high-performance', antialias: false, stencil: false, depth: true });
@@ -45,11 +47,14 @@ export class Renderer {
       grain(),
     ));
     this.composer.addPass(new EffectPass(camera, new SMAAEffect()));
+    this.composer.addPass(new EffectPass(camera, this.sharpen));
     this.resize(camera);
     addEventListener('resize', () => this.resize(camera));
   }
 
+  /** Internal resolution scale; sharpening rises as it drops to offset the upscale blur. */
   setScale(scale: number): void {
+    this.sharpen.strength = 0.35 + (1 - scale) * 2;
     this.gl.setPixelRatio(preset.pixelRatio * scale);
     this.composer.setSize(innerWidth, innerHeight, false);
   }
