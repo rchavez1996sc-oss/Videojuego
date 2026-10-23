@@ -81,7 +81,7 @@ export class Lighting {
     this.csm.update();
     const e = camera.matrixWorld.elements, l = this.lastCam.elements;
     let moved = false;
-    for (let i = 0; i < 16 && !moved; i++) moved = Math.abs(e[i] - l[i]) > (i >= 12 ? 0.02 : 0.0015);
+    for (let i = 0; i < 16 && !moved; i++) moved = Math.abs(e[i] - l[i]) > (i >= 12 ? 0.6 : 0.004);
     if (moved) this.lastCam.copy(camera.matrixWorld);
     const odd = ++this.tick % 2 === 1;
     this.csm.lights.forEach((l, i) => {

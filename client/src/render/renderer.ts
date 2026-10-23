@@ -35,7 +35,7 @@ export class Renderer {
       ao.configuration.intensity = 2.2;
       ao.configuration.halfRes = true;
       ao.configuration.depthAwareUpsampling = true;
-      ao.setQualityMode(quality === 'medium' ? 'Low' : 'Medium');
+      ao.setQualityMode(quality === 'ultra' ? 'Medium' : 'Low');
       this.composer.addPass(ao);
     }
     this.composer.addPass(new EffectPass(
