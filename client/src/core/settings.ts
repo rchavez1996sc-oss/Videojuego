@@ -29,6 +29,23 @@ function detectGpu(): string {
 export const gpuName = detectGpu();
 const integrated = /intel|uhd|iris|basic render|swiftshader|llvmpipe|mali|adreno|powervr/i.test(gpuName) && !/arc/i.test(gpuName);
 const params = new URLSearchParams(location.search);
-export const quality: Quality = (params.get('q') as Quality) ?? (integrated ? 'medium' : 'high');
+function stored(): Quality | null {
+  try {
+    return localStorage.getItem('tq-quality') as Quality | null;
+  } catch {
+    return null;
+  }
+}
+export const quality: Quality = (params.get('q') as Quality) ?? stored() ?? (integrated ? 'medium' : 'high');
+
+/** Remembers the chosen quality and reloads, since presets size render targets and geometry at startup. */
+export function setQuality(q: Quality): void {
+  try {
+    localStorage.setItem('tq-quality', q);
+  } catch { /* private mode: the URL still carries it */ }
+  const url = new URL(location.href);
+  url.searchParams.set('q', q);
+  location.href = url.toString();
+}
 export const preset = PRESETS[quality] ?? PRESETS.high;
 export const shotMode = params.has('shot');
