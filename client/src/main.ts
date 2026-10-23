@@ -6,7 +6,7 @@ import ch03 from './data/chapters/ch03_aldea.json';
 import type { ChapterDef } from './data/types';
 import { Input } from './core/input';
 import { ThirdPersonCamera } from './core/camera';
-import { preset, quality, shotMode, gpuName } from './core/settings';
+import { preset, quality, shotMode, gpuName, savedChapter } from './core/settings';
 import { guardFrame } from './core/guard';
 import { FpsMeter } from './core/fpsMeter';
 import { Renderer } from './render/renderer';
@@ -70,7 +70,7 @@ const step = (msg: string) => new Promise<void>((r) => { status.textContent = ms
 
 async function boot(): Promise<void> {
   if (shotMode) document.body.classList.add('shot');
-  const ch = (CHAPTERS[new URLSearchParams(location.search).get('ch') ?? '1'] ?? ch01) as ChapterDef;
+  const ch = (CHAPTERS[new URLSearchParams(location.search).get('ch') ?? savedChapter() ?? '1'] ?? ch01) as ChapterDef;
   document.querySelector('#overlay .sub')!.textContent = `Capítulo ${ch.number ?? 1} — ${ch.title}`;
   const prologue = shotMode ? Promise.resolve() : showPrologue(`CAPÍTULO ${ch.number ?? 1}`, ch.title.toUpperCase(), ch.intro ?? [], ch.introPlates, ch.introScore);
   await RAPIER.init();
@@ -176,7 +176,7 @@ async function boot(): Promise<void> {
   if (objective) objective.onFail = (why) => (failed || window.setTimeout(() => showMissionFailed(why), 4200), (failed = true));
   if (objective) objective.onComplete = () => {
     failed = true;
-    showMissionComplete(objective.def.complete, objective.def.reward, `ENEMIGOS ABATIDOS ${enemies.list.length - enemies.aliveCount}/${enemies.list.length} · BAJAS CIVILES ${populace.casualties} · VIDAS ${lives}`, objective.def.loot, objective.def.unlock);
+    showMissionComplete(objective.def.complete, objective.def.reward, `ENEMIGOS ABATIDOS ${enemies.list.length - enemies.aliveCount}/${enemies.list.length} · BAJAS CIVILES ${populace.casualties} · VIDAS ${lives}`, objective.def.loot, objective.def.unlock, ch.next);
   };
   grenades.onExplode = (at) => {
     detonate(at, { combat, sfx, tpc, enemies, player, world, playerAlive: deadT <= 0 });

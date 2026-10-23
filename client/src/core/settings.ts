@@ -49,3 +49,12 @@ export function setQuality(q: Quality): void {
 }
 export const preset = PRESETS[quality] ?? PRESETS.high;
 export const shotMode = params.has('shot');
+
+/** Chapter reached in a previous session (set when one is completed). */
+export function savedChapter(): string | null {
+  try {
+    return localStorage.getItem('tq-chapter');
+  } catch {
+    return null;
+  }
+}

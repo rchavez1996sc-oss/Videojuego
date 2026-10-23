@@ -49,6 +49,8 @@ export interface ChapterDef {
   malecon?: import('../world/malecon/layout').MaleconDef;
   /** Once a shot is heard, every mobile enemy on the map converges on the player. */
   alertAll?: boolean;
+  /** `?ch=` value of the chapter that follows this one. */
+  next?: string;
   /** Manifest `art` keys for the prologue plates (default: chapter 1's) and the score's mood. */
   introPlates?: string[];
   introScore?: 'war' | 'intrigue';
