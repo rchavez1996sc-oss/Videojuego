@@ -93,11 +93,12 @@ export class Player {
     if (this.hp < 50) this.regenCap = 50;
   }
 
-  heal(): void {
-    this.hp = 100;
-    this.regenCap = 100;
+  /** Medkit: +`amount` health (capped at 100); regeneration may then refill up to that level, not beyond. */
+  heal(amount = 50): number {
+    const before = this.hp;
+    this.regenCap = Math.max(this.regenCap, (this.hp = Math.min(100, this.hp + amount)));
+    return this.hp - before;
   }
-
   /** Regenerates after the difficulty's delay without damage, up to `regenCap`. */
   regen(dt: number): void {
     this.sinceHit += dt;

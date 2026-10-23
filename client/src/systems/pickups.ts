@@ -120,8 +120,7 @@ export function collectSupplies(dt: number, pickups: Pickups, d: { player: Playe
   if (got.kind === 'medkit') d.sfx.pickupMedkit();
   else d.sfx.pickupAmmo();
   if (got.kind === 'medkit') {
-    d.player.heal();
-    d.hud.showToast('BOTIQUÍN');
+    d.hud.showToast(`BOTIQUÍN  +${Math.round(d.player.heal(50))} VIDA`);
   } else if (got.rounds) {
     const before = d.gun.reserve;
     d.gun.addAmmo(got.rounds);
