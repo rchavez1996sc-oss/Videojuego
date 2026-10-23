@@ -732,10 +732,9 @@
    }
   },
   "complete": "CAPÍTULO 2 COMPLETADO",
-  "reward": "Giacomo Miró Quesada está en manos del Frente. Su rescate llenará las arcas de la guerra, y el rostro del milagro económico de la Junta aparecerá mañana en todos los noticieros, vendado y bajo la bandera roja.",
+  "reward": "Giacomo Miró Quesada está en manos del Frente. Su agenda revela los nombres y las cuentas de la cúpula militar, y el rostro del milagro económico de la Junta aparecerá mañana en todos los noticieros, vendado y bajo la bandera roja.",
   "loot": [
    "Giacomo Miró Quesada, gerente general del BCB (rehén)",
-   "Rescate exigido: US$ 25 millones",
    "Agenda y contactos de la cúpula militar"
   ]
  },
@@ -743,7 +742,7 @@
  "intro": [
   "Giacomo Miró Quesada, gerente general del BCB. El rostro amable del milagro económico de la Junta: mientras los barrios pasan hambre, él habla de «crecimiento con orden» en los foros de inversión.",
   "Fue el primero en darle la mano al general Angobaldo. El BCB financia la represión, y a cambio la Junta le entrega las concesiones, los bonos del Estado y los ahorros de un país entero.",
-  "Esta noche cena con la cúpula militar en la Rosa Náutica, como cada viernes. El Frente lo quiere vivo: su rescate pagará las armas de la próxima ofensiva. Y su captura le recordará a la Junta que nadie está a salvo."
+  "Esta noche cena con la cúpula militar en la Rosa Náutica, como cada viernes. El Frente lo quiere vivo: en su cabeza y en su agenda están los secretos de la Junta. Y su captura le recordará al régimen que nadie está a salvo."
  ],
  "introPlates": [
   "forum",
