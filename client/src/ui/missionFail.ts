@@ -13,6 +13,7 @@ export function showMissionFailed(reason: string): void {
   const button = el.querySelector('button')!;
   button.addEventListener('click', () => location.reload());
   el.classList.add('on');
+  document.body.classList.add('ended');
   document.exitPointerLock();
   const keys = new IntroMusic();
   setTimeout(() => new Typewriter(el!.querySelector('p')!, reason, (ch) => keys.key(ch === ' '), () => button.classList.add('on')), 900);

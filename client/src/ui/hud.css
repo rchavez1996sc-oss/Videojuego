@@ -107,3 +107,4 @@
 #op-alert.on { opacity: 1; }
 #complete button.next { margin-right: 10px; }
 #complete button.again { background: transparent; color: #ffb547; border: 1px solid #ffb547; }
+body.ended #overlay { display: none; }

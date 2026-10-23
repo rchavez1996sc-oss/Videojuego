@@ -25,5 +25,6 @@ export function showMissionComplete(title: string, text: string, stats: string, 
     });
   }
   el.classList.add('on');
+  document.body.classList.add('ended');
   document.exitPointerLock();
 }
