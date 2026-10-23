@@ -70,15 +70,23 @@ export class Lighting {
     return mat;
   }
 
+  private lastCam = new THREE.Matrix4();
   private tick = 0;
 
-  /** Outer cascades re-render every other frame: they cover distant, mostly static geometry. */
-  update(): void {
+  /**
+   * Outer cascades re-render every other frame only while the camera holds still: CSM moves their light frustums
+   * every frame, so a skipped re-render while turning would sample a stale map and make the shadows jump.
+   */
+  update(camera: THREE.Camera): void {
     this.csm.update();
+    const e = camera.matrixWorld.elements, l = this.lastCam.elements;
+    let moved = false;
+    for (let i = 0; i < 16 && !moved; i++) moved = Math.abs(e[i] - l[i]) > (i >= 12 ? 0.02 : 0.0015);
+    if (moved) this.lastCam.copy(camera.matrixWorld);
     const odd = ++this.tick % 2 === 1;
     this.csm.lights.forEach((l, i) => {
       l.shadow.autoUpdate = i === 0;
-      if (i > 0) l.shadow.needsUpdate = odd;
+      if (i > 0) l.shadow.needsUpdate = moved || odd;
     });
   }
 

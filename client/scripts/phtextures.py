@@ -18,6 +18,10 @@ SETS = {
     'roofTiles': ('clay_roof_tiles_02', (115, 54, 34)),
     'deck': ('wood_floor_deck', None),
     'parquet': ('herringbone_parquet', None),
+    'flagstone': ('stone_tiles_02', None),
+    'stucco': ('white_stucco_02', (236, 235, 230)),
+    'bark': ('bark_platanus', (90, 67, 48)),
+    'palmBark': ('palm_bark', (100, 88, 74)),
 }
 
 def fetch(asset, kind):
@@ -25,7 +29,11 @@ def fetch(asset, kind):
         return Image.open(io.BytesIO(r.read())).convert('RGB')
 
 os.makedirs(OUT, exist_ok=True)
+import sys
+only = sys.argv[1:]
 for key, (asset, target) in SETS.items():
+    if only and key not in only:
+        continue
     col = fetch(asset, 'diff')
     if target:
         mean = ImageStat.Stat(col).mean

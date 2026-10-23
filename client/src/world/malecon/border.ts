@@ -14,8 +14,8 @@ function jersey(b: Builder, p: THREE.Vector3, q: THREE.Quaternion, red: boolean)
 }
 
 /**
- * Military cordon along the edge of the playable district (west, east and inland): jersey barriers across every
- * street and pavement with a mesh fence behind, so the invisible wall reads as a closed checkpoint line.
+ * Military cordon along the edge of the playable district (west, east and inland): a low line of jersey barriers
+ * across every street and pavement, so the invisible wall reads as a closed checkpoint without hiding the view.
  * Stretches down the cliff face are skipped.
  */
 export function buildBorder(b: Builder, hf: Heightfield, def: MaleconDef, c: CoastDef, half: number): void {
@@ -34,28 +34,6 @@ export function buildBorder(b: Builder, hf: Heightfield, def: MaleconDef, c: Coa
       if (Math.abs(g1 - g0) > 1.2) continue;
       p.y = Math.min(g0, g1);
       jersey(b, p, q, i % 2 === 0);
-      const f = p.clone().addScaledVector(inward, -0.7);
-      b.box('fenceMesh', [3, 2.2, 0.03], f.clone().setY(p.y + 1.1), q, false);
-      b.box('fenceIron', [0.07, 2.4, 0.07], f.clone().addScaledVector(dir, -1.5).setY(p.y + 1.2), q, false);
-      b.box('fenceIron', [3, 0.05, 0.05], f.clone().setY(p.y + 2.2), q, false);
     }
   }
-}
-
-/** Galvanised chain-link: a diamond wire pattern on transparent ground, for an alpha-tested fence panel. */
-export function chainLink(): THREE.CanvasTexture {
-  const s = 64, cv = document.createElement('canvas');
-  cv.width = cv.height = s;
-  const ctx = cv.getContext('2d')!;
-  ctx.strokeStyle = '#c9ccd0';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(0, s / 2); ctx.lineTo(s / 2, 0); ctx.lineTo(s, s / 2); ctx.lineTo(s / 2, s); ctx.closePath();
-  ctx.stroke();
-  const t = new THREE.CanvasTexture(cv);
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = 8;
-  t.repeat.set(5, 5);
-  return t;
 }

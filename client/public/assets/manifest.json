@@ -71,6 +71,22 @@
   "parquet": {
    "map": "textures/parquet_col.jpg",
    "normal": "textures/parquet_nrm.jpg"
+  },
+  "flagstone": {
+   "map": "textures/flagstone_col.jpg",
+   "normal": "textures/flagstone_nrm.jpg"
+  },
+  "stucco": {
+   "map": "textures/stucco_col.jpg",
+   "normal": "textures/stucco_nrm.jpg"
+  },
+  "bark": {
+   "map": "textures/bark_col.jpg",
+   "normal": "textures/bark_nrm.jpg"
+  },
+  "palmBark": {
+   "map": "textures/palmBark_col.jpg",
+   "normal": "textures/palmBark_nrm.jpg"
   }
  }
 }

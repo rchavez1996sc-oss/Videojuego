@@ -170,3 +170,7 @@ export const asphalt = (): PbrSet => photo('asphalt') ?? rock();
 export const deck = (): PbrSet => photo('deck') ?? wood();
 /** Herringbone parquet floor. */
 export const parquet = (): PbrSet => photo('parquet') ?? wood();
+/** Broadleaf tree bark. */
+export const bark = (): PbrSet => photo('bark') ?? wood();
+/** Palm trunk. */
+export const palmBark = (): PbrSet => photo('palmBark') ?? wood();

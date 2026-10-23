@@ -1,12 +1,15 @@
 import * as THREE from 'three';
 import { makePbr, type PbrSet } from '../../render/textures';
+import { photo } from '../../render/photoTextures';
 
 /** Apartment facade, 2 bays × 2 floors (6 m): slab bands, recessed windows with blinds and sky glints. Pale for tinting. */
 export const apartment = (): PbrSet =>
   makePbr(512, 211, 3, (c, h, s, r) => {
     c.fillStyle = '#ecebe6';
     c.fillRect(0, 0, s, s);
-    for (let i = 0; i < 1800; i++) {
+    const stucco = photo('stucco')?.map.image as CanvasImageSource | undefined;
+    if (stucco) for (let i = 0; i < 9; i++) for (const ctx of [c, h]) ctx.drawImage(stucco, (i % 3) * (s / 3), Math.floor(i / 3) * (s / 3), s / 3, s / 3);
+    for (let i = 0; i < (stucco ? 0 : 1800); i++) {
       c.fillStyle = `rgba(${r() < 0.5 ? '255,255,255' : '120,116,108'},${0.04 + r() * 0.06})`;
       c.fillRect(r() * s, r() * s, 1 + r() * 4, 1 + r() * 4);
     }
@@ -68,7 +71,7 @@ export const curtain = (): PbrSet =>
 
 /** Irregular grey flagstones with mortar joints (park paths). */
 export const flagstone = (): PbrSet =>
-  makePbr(512, 233, 3, (c, h, s, r) => {
+  photo('flagstone') ?? makePbr(512, 233, 3, (c, h, s, r) => {
     c.fillStyle = '#7d7a73';
     c.fillRect(0, 0, s, s);
     h.fillStyle = '#404040';

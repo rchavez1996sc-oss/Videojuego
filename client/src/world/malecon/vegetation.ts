@@ -4,7 +4,7 @@ import { mulberry32 } from '../../core/rng';
 import type { Lighting } from '../../render/lighting';
 import type { Builder } from '../buildingKit';
 import { treeParts } from '../trees';
-import { wood } from '../../render/textures';
+import { palmBark } from '../../render/textures';
 import type { Plants } from './park';
 
 function frondTexture(): THREE.CanvasTexture {
@@ -95,7 +95,7 @@ function instanced(geo: THREE.BufferGeometry, mat: THREE.Material, mats: THREE.M
 
 /** Palms, shade trees, Norfolk pines and sea-wind-bent trees, instanced; trunks get small colliders. */
 export function buildVegetation(b: Builder, plants: Plants, streetTrees: THREE.Vector3[], lighting: Lighting): THREE.Group {
-  const g = new THREE.Group(), r = mulberry32(91), bark = wood();
+  const g = new THREE.Group(), r = mulberry32(91), bark = palmBark();
   const barkMat = lighting.setup(new THREE.MeshStandardMaterial({ map: bark.map, normalMap: bark.normalMap, color: '#9a8b78', roughness: 0.95 }), 'palm-bark');
   const frondMat = lighting.setup(new THREE.MeshStandardMaterial({ map: frondTexture(), alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.75, color: '#c9d3a0' }), 'frond');
   const pineMat = lighting.setup(new THREE.MeshStandardMaterial({ map: frondTexture(), alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.85, color: '#6f8a5a' }), 'pine');

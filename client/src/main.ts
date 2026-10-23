@@ -283,7 +283,7 @@ async function boot(): Promise<void> {
     grass.update(t, camera.position, player.position);
     terrain.update(camera.position);
     shadowCull.update(dt, camera.position);
-    lighting.update();
+    lighting.update(camera);
     if (!skipRender) renderer.render(dt);
     input.endFrame();
     fps.update(dt, (n) => `${n} fps · ${quality} · res ${Math.round(dynRes.scale * 100)}% · ${renderer.gl.info.render.calls} draws · ${(renderer.gl.info.render.triangles / 1e6).toFixed(2)}M tris · ${gpu}${stats.dataset.errors ? ` · err ${stats.dataset.errors}` : ''}`);

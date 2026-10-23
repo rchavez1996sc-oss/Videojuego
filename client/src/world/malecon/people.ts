@@ -54,7 +54,7 @@ function shootable(world: RAPIER.World, rig: Rig, floor: number, seated: boolean
   });
 }
 
-/** Seated and standing extras (benches, café tables, chats, railing); built once characters load; animated only up close. */
+/** Seated and standing extras (benches, café tables, chats, railing); built a few per frame once characters load; animated only up close. */
 export function crowd(seats: { pos: THREE.Vector3; yaw: number }[], standing: Extra[], lighting: Lighting, world: RAPIER.World, hurt: Bystanders): THREE.Group {
   const g = new THREE.Group(), r = mulberry32(12);
   let rigs: Rig[] | null = null, last = 0, prev = performance.now();
@@ -64,12 +64,16 @@ export function crowd(seats: { pos: THREE.Vector3; yaw: number }[], standing: Ex
     prev = now;
     if (!rigs) {
       if (!characters.ready || !characters.clips.has('sit')) return;
-      rigs = [...seats.map((s) => extra(lighting, r, s.pos, s.yaw, SEATED[Math.floor(r() * SEATED.length)])), ...standing.map((s) => extra(lighting, r, s.pos, s.yaw, s.key))];
-      rigs.forEach((x, i) => {
-        x.root.updateMatrixWorld(true);
-        shootable(world, x, (seats[i] ?? standing[i - seats.length]).pos.y, i < seats.length, hurt);
-      });
-      if (rigs.length) g.add(...rigs.map((x) => x.root));
+      rigs = [];
+    }
+    for (let n = 0; n < 4 && rigs.length < seats.length + standing.length; n++) {
+      const i = rigs.length, seated = i < seats.length, spot = seated ? seats[i] : standing[i - seats.length];
+      const x = extra(lighting, r, spot.pos, spot.yaw, seated ? SEATED[Math.floor(r() * SEATED.length)] : (spot as Extra).key);
+      x.root.updateMatrixWorld(true);
+      shootable(world, x, spot.pos.y, seated, hurt);
+      x.root.visible = false;
+      rigs.push(x);
+      g.add(x.root);
     }
     for (const x of near) x.tick(dt);
     if (now - last < 400) return;

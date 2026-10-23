@@ -26,7 +26,7 @@ import { buildPropaganda } from './propaganda';
 import { crowd, surfers } from './people';
 import { buildLandmarks } from './landmarks';
 import { rosaNautica } from './rosaNautica';
-import { buildBorder, chainLink } from './border';
+import { buildBorder } from './border';
 import { buildLarcomar } from './larcomar';
 import { buildVegetation } from './vegetation';
 
@@ -71,7 +71,6 @@ function maleconMaterials(lighting: Lighting, { apt, co, pl, br, wd, fo }: Tex):
     flatRoof: std('flatRoof', { color: '#a7a49c', roughness: 0.9 }),
     barrierRed: std('barrierRed', { color: '#b8322a', roughness: 0.8 }),
     barrierWhite: std('barrierWhite', { color: '#e8e4dc', roughness: 0.8 }),
-    fenceMesh: std('fenceMesh', { map: chainLink(), alphaTest: 0.4, side: THREE.DoubleSide, metalness: 0.5, roughness: 0.5 }),
     glassClear: std('glassClear', { color: '#cfe3ea', roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.22, depthWrite: false }),
     chairGreen: std('chairGreen', { color: '#2e3a2b', roughness: 0.6 }),
     cushionOrange: std('cushionOrange', { color: '#b8662e', roughness: 0.9 }),

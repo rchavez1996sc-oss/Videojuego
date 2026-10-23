@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { mulberry32 } from '../core/rng';
 import type { Lighting } from '../render/lighting';
-import { wood } from '../render/textures';
+import { bark as barkTex } from '../render/textures';
 
 function leafTexture(): THREE.CanvasTexture {
   const s = 256, c = document.createElement('canvas');
@@ -53,7 +53,7 @@ function canopy(centers: THREE.Vector3[], r: () => number, radius: number): THRE
 export interface TreePart { trunk: THREE.BufferGeometry; canopy: THREE.BufferGeometry; barkMat: THREE.Material; leafMat: THREE.Material }
 
 export function treeParts(lighting: Lighting): TreePart[] {
-  const bark = wood();
+  const bark = barkTex();
   const barkMat = lighting.setup(new THREE.MeshStandardMaterial({ map: bark.map, normalMap: bark.normalMap, color: '#8a7a6a', roughness: 0.95 }), 'bark');
   const leafMat = lighting.setup(new THREE.MeshStandardMaterial({
     map: leafTexture(), alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.8, color: '#a8b890',
