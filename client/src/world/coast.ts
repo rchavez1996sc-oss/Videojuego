@@ -10,7 +10,7 @@ export interface CoastDef {
   /** Stretches where the edge juts out to sea: centre x, half width, extra z. */
   bulges?: { x: number; w: number; dz: number }[];
   /** Green ravines cutting the plateau down to the beach: centre x, head z, mouth width. */
-  ravines?: { x: number; head: number; width: number }[];
+  ravines?: { x: number; head: number; width: number; skew?: number }[];
   /** Sunken floors (plazas cut into the cliff top); they only ever lower the ground. */
   carves?: { x0: number; x1: number; z0: number; z1: number; y: number }[];
 }
@@ -27,16 +27,39 @@ export function greenCliff(x: number, noise: Noise): number {
   return smoothstep(-0.05, 0.12, noise.fbm(x, 0, 1 / 70, 3) + 0.08);
 }
 
-function ravineCut(c: CoastDef, r: NonNullable<CoastDef['ravines']>[number], x: number, z: number, h: number): number {
+type Ravine = NonNullable<CoastDef['ravines']>[number];
+
+/** Ravine cross-section: flat road floor, a 1.3 m stone wall, a 46° grass bank, a 2.5 m retaining wall at the top. */
+export const RAVINE = { floor: 8, lip: 1.3, lipRun: 0.8, slope: 1.05, top: -2.5, topRun: 1.5 };
+
+/** Centre line of the ravine at z (it can run askew to the coast). */
+export function ravineCentre(r: Ravine, z: number): number {
+  return r.x + (z - r.head) * (r.skew ?? 0);
+}
+
+/** Height of the road on the ravine floor at z: street level at the head, beach level at the mouth. */
+export function ravineFloor(c: CoastDef, r: Ravine, z: number): number {
   const mouth = edgeZ(c, r.x) + c.run;
-  if (z < r.head - 12) return h;
-  const t = smoothstep(r.head, mouth, z);
-  const half = r.width / 2 * (0.32 + 0.68 * t);
-  const floor = lerp(-5, -c.drop, Math.pow(t, 0.85));
-  const k = Math.abs(x - r.x) / half;
-  const headFade = smoothstep(r.head - 12, r.head + 6, z);
-  if (k >= 1) return h;
-  return Math.min(h, lerp(0, floor + (0 - floor) * smoothstep(0.18, 1, k), headFade));
+  return z <= r.head ? 0 : lerp(0, -c.drop, Math.pow(smoothstep(r.head, mouth, z), 0.85));
+}
+
+/** Half width of the cut at z, from the centre line to the top of the retaining wall. */
+export function ravineHalf(c: CoastDef, r: Ravine, z: number): number {
+  const f = ravineFloor(c, r, z), R = RAVINE;
+  if (z < r.head) return 0;
+  return R.floor + R.lipRun + Math.max(0, R.top - f - R.lip) / R.slope + R.topRun;
+}
+
+function ravineCut(c: CoastDef, r: Ravine, x: number, z: number, h: number): number {
+  if (z < r.head - 1) return h;
+  const R = RAVINE, f = ravineFloor(c, r, z), d = Math.abs(x - ravineCentre(r, z));
+  const dTop = R.floor + R.lipRun + Math.max(0, R.top - f - R.lip) / R.slope;
+  let v: number;
+  if (d <= R.floor) v = f;
+  else if (d <= R.floor + R.lipRun) v = f + R.lip * (d - R.floor) / R.lipRun;
+  else if (d <= dTop) v = f + R.lip + (d - R.floor - R.lipRun) * R.slope;
+  else v = lerp(Math.max(R.top, f + R.lip), 0, smoothstep(dTop, dTop + R.topRun, d));
+  return Math.min(h, v);
 }
 
 export function coastHeight(c: CoastDef, x: number, z: number, noise: Noise): number {
@@ -70,7 +93,7 @@ export function coastMask(c: CoastDef, x: number, z: number, noise: Noise): [num
   let ivy = t > 0 && t < 1.05 ? Math.max(greenCliff(x, noise), smoothstep(0.3, 0.05, t)) : 0;
   for (const r of c.ravines ?? []) {
     const mouth = edgeZ(c, r.x) + c.run;
-    if (z > r.head - 14 && z < mouth && Math.abs(x - r.x) < r.width / 2 + 4) ivy = 1;
+    if (z > r.head && z < mouth && Math.abs(x - ravineCentre(r, z)) < ravineHalf(c, r, z) + 2) ivy = 1;
   }
   const beach = t >= 1 ? 1 : 0;
   return [0, ivy, beach, 1 - ivy];

@@ -3,7 +3,7 @@ import type { Builder } from '../buildingKit';
 import type { Heightfield } from '../heightfield';
 import { edgeZ, type CoastDef } from '../coast';
 import { bridgeSpan, type MaleconDef } from './layout';
-import { bench, lamp, ribbon } from './park';
+import { bench } from './park';
 
 const Q = new THREE.Quaternion(), UP = new THREE.Vector3(0, 1, 0);
 const at = (x: number, y: number, z: number) => new THREE.Matrix4().makeTranslation(x, y, z);
@@ -117,23 +117,8 @@ function bridge(b: Builder, hf: Heightfield, def: MaleconDef, c: CoastDef): void
   }
 }
 
-/** Road winding down the ravine floor under the bridge to the beach, lined with palms and lamps. */
-function bajada(b: Builder, hf: Heightfield, c: CoastDef, palms: THREE.Vector3[]): void {
-  for (const r of c.ravines ?? []) {
-    const pts: THREE.Vector2[] = [], mouth = edgeZ(c, r.x) + c.run + 6;
-    for (let z = r.head + 4; z <= mouth; z += 3) pts.push(new THREE.Vector2(r.x + Math.sin(z / 14) * 1.2, z));
-    ribbon(b, hf, pts, 5.5, 'asphalt', 0.1);
-    pts.forEach((p, i) => {
-      if (i % 4 !== 2) return;
-      for (const s of [-1, 1]) palms.push(new THREE.Vector3(p.x + s * 4.2, hf.heightAt(p.x + s * 4.2, p.y), p.y));
-      if (i % 8 === 2) lamp(b, new THREE.Vector3(p.x + 3.3, hf.heightAt(p.x + 3.3, p.y), p.y));
-    });
-  }
-}
-
-export function buildLandmarks(b: Builder, hf: Heightfield, def: MaleconDef, c: CoastDef, palms: THREE.Vector3[]): void {
+export function buildLandmarks(b: Builder, hf: Heightfield, def: MaleconDef, c: CoastDef): void {
   lighthouse(b, hf, def.lighthouse.x, def.lighthouse.z);
   amorPark(b, hf, def, c);
   bridge(b, hf, def, c);
-  bajada(b, hf, c, palms);
 }

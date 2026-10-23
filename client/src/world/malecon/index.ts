@@ -10,6 +10,7 @@ import { bakeGroups } from '../bake';
 import { SignAtlas } from '../signs';
 import { PAINTS } from '../houses';
 import { concrete, plaster, brick, slabs } from '../../render/urbanTextures';
+import { photo } from '../../render/photoTextures';
 import { deck, parquet, rock, wood, type PbrSet } from '../../render/textures';
 import { edgeZ } from '../coast';
 import { buildOcean } from '../ocean';
@@ -27,6 +28,7 @@ import { crowd, surfers } from './people';
 import { buildLandmarks } from './landmarks';
 import { rosaNautica } from './rosaNautica';
 import { buildBorder } from './border';
+import { buildBajada } from './bajada';
 import { buildLarcomar } from './larcomar';
 import { buildVegetation } from './vegetation';
 
@@ -34,6 +36,7 @@ type Tex = Record<'apt' | 'co' | 'pl' | 'br' | 'wd' | 'fo', PbrSet>;
 
 function maleconMaterials(lighting: Lighting, { apt, co, pl, br, wd, fo }: Tex): Record<string, THREE.Material> {
   const std = (key: string, p: THREE.MeshStandardMaterialParameters) => lighting.setup(new THREE.MeshStandardMaterial(p), key);
+  const photoStd = (key: string, roughness: number) => std(key, { map: (photo(key) ?? rk).map, normalMap: (photo(key) ?? rk).normalMap, roughness });
   const cw = curtain(), fs = flagstone(), mo = mosaic(), la = lattice(), cf = confetti(), rk = rock();
   const m: Record<string, THREE.Material> = {
     glassWall: std('glassWall', { map: cw.map, normalMap: cw.normalMap, roughness: 0.12, metalness: 0.65 }),
@@ -72,6 +75,9 @@ function maleconMaterials(lighting: Lighting, { apt, co, pl, br, wd, fo }: Tex):
     barrierRed: std('barrierRed', { color: '#b8322a', roughness: 0.8 }),
     barrierWhite: std('barrierWhite', { color: '#e8e4dc', roughness: 0.8 }),
     glassClear: std('glassClear', { color: '#cfe3ea', roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.22, depthWrite: false }),
+    cobble: photoStd('cobble', 0.85),
+    pirca: photoStd('pirca', 0.95),
+    stoneWall: photoStd('stoneWall', 0.9),
     chairGreen: std('chairGreen', { color: '#2e3a2b', roughness: 0.6 }),
     cushionOrange: std('cushionOrange', { color: '#b8662e', roughness: 0.9 }),
     greenTrim: std('greenTrim', { color: '#2b3527', roughness: 0.55 }),
@@ -145,7 +151,8 @@ export function buildMalecon(hf: Heightfield, def: MaleconDef, lighting: Lightin
   const plants = buildPark(b, hf, def, c, rand);
   buildBoulevard(b, hf, def, plants, rand);
   plants.standing.push(...guards.map((g) => ({ ...g, key: rand() < 0.5 ? 'civ_idle' : 'texting' })));
-  buildLandmarks(b, hf, def, c, plants.palms);
+  buildLandmarks(b, hf, def, c);
+  buildBajada(b, hf, def, c, plants);
   const station = rosaNautica(b, hf, def, c);
   buildBorder(b, hf, def, c, hf.def.playable / 2);
   const group = new THREE.Group();

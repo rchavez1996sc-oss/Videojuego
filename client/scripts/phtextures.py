@@ -22,6 +22,9 @@ SETS = {
     'stucco': ('white_stucco_02', (236, 235, 230)),
     'bark': ('bark_platanus', (90, 67, 48)),
     'palmBark': ('palm_bark', (100, 88, 74)),
+    'cobble': ('cobblestone_05', None),
+    'pirca': ('old_stone_wall', None),
+    'stoneWall': ('yellow_stone_wall', (168, 150, 122)),
 }
 
 def fetch(asset, kind):

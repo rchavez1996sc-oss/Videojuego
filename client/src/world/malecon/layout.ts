@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { edgeZ, type CoastDef } from '../coast';
+import { edgeZ, ravineCentre, ravineHalf, type CoastDef } from '../coast';
 import type { Heightfield } from '../heightfield';
 import type { StreetGraph } from '../barrio';
 
@@ -76,13 +76,13 @@ export function innerPathZ(def: MaleconDef, x: number): number {
 
 /** Does x fall on the ravine (where only the bridge crosses)? */
 export function overRavine(c: CoastDef, x: number, z: number, margin = 0): boolean {
-  return (c.ravines ?? []).some((r) => z > r.head - 14 && Math.abs(x - r.x) < r.width / 2 * (0.32 + 0.68 * Math.max(0, Math.min(1, (z - r.head) / (edgeZ(c, r.x) + c.run - r.head)))) + margin);
+  return (c.ravines ?? []).some((r) => z > r.head && Math.abs(x - ravineCentre(r, z)) < ravineHalf(c, r, z) + margin);
 }
 
 /** Ravine half width where the bridge crosses. */
 export function bridgeSpan(c: CoastDef, def: MaleconDef): { x0: number; x1: number } {
   const r = c.ravines![0];
-  let x0 = r.x, x1 = r.x;
+  let x0 = ravineCentre(r, def.bridge.z), x1 = x0;
   while (overRavine(c, x0, def.bridge.z, 3)) x0 -= 1;
   while (overRavine(c, x1, def.bridge.z, 3)) x1 += 1;
   return { x0, x1 };

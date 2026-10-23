@@ -87,6 +87,18 @@
   "palmBark": {
    "map": "textures/palmBark_col.jpg",
    "normal": "textures/palmBark_nrm.jpg"
+  },
+  "cobble": {
+   "map": "textures/cobble_col.jpg",
+   "normal": "textures/cobble_nrm.jpg"
+  },
+  "pirca": {
+   "map": "textures/pirca_col.jpg",
+   "normal": "textures/pirca_nrm.jpg"
+  },
+  "stoneWall": {
+   "map": "textures/stoneWall_col.jpg",
+   "normal": "textures/stoneWall_nrm.jpg"
   }
  }
 }

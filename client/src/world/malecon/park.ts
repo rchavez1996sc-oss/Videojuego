@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { Builder } from '../buildingKit';
 import type { Heightfield } from '../heightfield';
-import { edgeZ, type CoastDef } from '../coast';
+import { edgeZ, ravineCentre, ravineHalf, type CoastDef } from '../coast';
 import { EXTENT, SIDEWALK, inLarcomar, innerPathZ, overRavine, promenadeZ, type MaleconDef } from './layout';
 
 const UP = new THREE.Vector3(0, 1, 0), Q = new THREE.Quaternion();
@@ -172,8 +172,8 @@ export function buildPark(b: Builder, hf: Heightfield, def: MaleconDef, c: Coast
   }
   for (const r of c.ravines ?? []) for (const s of [-1, 1]) {
     const pts: THREE.Vector3[] = [];
-    for (let z = r.head - 10; z < edgeZ(c, r.x + s * r.width / 2) - 1; z += 2.5) {
-      let x = r.x;
+    for (let z = r.head + 1; z < edgeZ(c, ravineCentre(r, z) + s * ravineHalf(c, r, z)) - 1; z += 2.5) {
+      let x = ravineCentre(r, z);
       while (overRavine(c, x, z, 3)) x += s;
       if (Math.abs(z - def.bridge.z) < 3) { if (pts.length) railing(b, pts.splice(0)); continue; }
       pts.push(new THREE.Vector3(x, hf.heightAt(x, z), z));

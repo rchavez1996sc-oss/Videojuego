@@ -34,6 +34,12 @@ function extra(lighting: Lighting, rand: () => number, at: THREE.Vector3, yaw: n
   }
   rig.root.position.set(at.x, at.y + (seated ? seat - hips.y + 0.06 : 0), at.z);
   rig.root.rotation.y = yaw - turn;
+  if (seated) {
+    rig.root.updateMatrixWorld(true);
+    const h = rig.hips(), back = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw)).multiplyScalar(-0.08);
+    rig.root.position.x += at.x + back.x - h.x;
+    rig.root.position.z += at.z + back.z - h.z;
+  }
   rig.castShadow = false;
   return rig;
 }
