@@ -33,7 +33,7 @@ export function buildBeach(b: Builder, hf: Heightfield, def: MaleconDef, c: Coas
     const g = Math.min(y(x, fz), y(x + 3, fz));
     b.box('steelDark', [0.08, 2.7, 0.08], new THREE.Vector3(x, g + 1.35, fz), Q, false);
     b.box('cliffMesh', [3, 2.4, 0.03], new THREE.Vector3(x + 1.5, g + 1.3, fz), Q, false);
-    b.box('none', [3, 2.6, 0.3], new THREE.Vector3(x + 1.5, g + 1.3, fz), Q, true);
+    b.box('grate', [3, 2.6, 0.3], new THREE.Vector3(x + 1.5, g + 1.3, fz), Q, true);
   }
   for (let x = -L + 10; x < L; x += 34) roadLight(b, new THREE.Vector3(x, y(x, br.z + br.half + 1.4), br.z + br.half + 1.4));
   const shore: THREE.Vector2[] = [];

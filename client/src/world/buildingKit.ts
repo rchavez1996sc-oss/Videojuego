@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
-import { setSurface, type Surface } from './surfaces';
+import { setPorous, setSurface, type Surface } from './surfaces';
 import { cover } from '../ai/cover';
 
 const SURFACE: Record<string, Surface> = {
@@ -24,7 +24,7 @@ export class Builder {
     this.tmp.quaternion.copy(quat);
     this.tmp.updateMatrix();
     g.applyMatrix4(this.tmp.matrix);
-    if (mat !== 'none') (this.parts.get(mat) ?? this.parts.set(mat, []).get(mat)!).push(g);
+    if (mat !== 'none' && mat !== 'grate') (this.parts.get(mat) ?? this.parts.set(mat, []).get(mat)!).push(g);
     if (collide && this.world && this.body) {
       const col = this.world.createCollider(
         RAPIER.ColliderDesc.cuboid(size[0] / 2, size[1] / 2, size[2] / 2)
@@ -32,8 +32,9 @@ export class Builder {
           .setRotation({ x: quat.x, y: quat.y, z: quat.z, w: quat.w }),
         this.body,
       );
-      setSurface(col.handle, SURFACE[mat] ?? (mat.startsWith('paint') ? 'adobe' : 'rock'));
-      if (mat !== 'roof') cover.addBox(pos, size, quat);
+      setSurface(col.handle, mat === 'grate' ? 'metal' : SURFACE[mat] ?? (mat.startsWith('paint') ? 'adobe' : 'rock'));
+      if (mat === 'grate') setPorous(col.handle);
+      else if (mat !== 'roof') cover.addBox(pos, size, quat);
     }
   }
 

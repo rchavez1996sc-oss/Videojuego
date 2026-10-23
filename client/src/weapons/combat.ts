@@ -12,7 +12,9 @@ import { Tracers } from '../fx/tracers';
 import { MuzzleFlash } from '../fx/muzzleFlash';
 import { Shells } from '../fx/shells';
 import { Blast } from '../fx/blast';
-import { SURFACE_FX, hitHandler, surfaceOf, type Surface } from '../world/surfaces';
+import { SURFACE_FX, hitHandler, isPorous, surfaceOf, type Surface } from '../world/surfaces';
+
+const PIERCE = 0.45;
 import type { Lighting } from '../render/lighting';
 import type { Heightfield } from '../world/heightfield';
 
@@ -79,9 +81,28 @@ export class Combat {
     }
   }
 
-  private ray(origin: THREE.Vector3, dir: THREE.Vector3, max: number) {
+  private ray(origin: THREE.Vector3, dir: THREE.Vector3, max: number, through?: Map<number, boolean>) {
     const exclude = this.player.collisionHandle;
-    return this.world.castRayAndGetNormal(new RAPIER.Ray(origin, dir), max, true, undefined, undefined, undefined, undefined, (c) => c.handle !== exclude);
+    for (let i = 0; i < 4; i++) {
+      const hit = this.world.castRayAndGetNormal(new RAPIER.Ray(origin, dir), max, true, undefined, undefined, undefined, undefined, (c) => c.handle !== exclude && !through?.get(c.handle));
+      if (!hit || !through || !isPorous(hit.collider.handle)) return hit;
+      const h = hit.collider.handle;
+      if (!through.has(h)) {
+        through.set(h, Math.random() < PIERCE);
+        if (through.get(h)) this.graze(origin.clone().addScaledVector(dir, hit.timeOfImpact), dir);
+      }
+      if (!through.get(h)) return hit;
+    }
+    return null;
+  }
+
+  /** A round clipping a wire or bar on its way through: a few sparks and a ping. */
+  private graze(point: THREE.Vector3, dir: THREE.Vector3): void {
+    for (let i = 0; i < 5; i++) {
+      this.tmp.copy(dir).multiplyScalar(3 + Math.random() * 4).add(new THREE.Vector3((Math.random() - 0.5) * 3, Math.random() * 2, (Math.random() - 0.5) * 3));
+      this.sparks.emit({ pos: point.clone(), vel: this.tmp.clone(), color: new THREE.Color(6, 3.5, 1.2), size: 0.018, grow: -0.02, life: 0.12 + Math.random() * 0.12, gravity: 9.8, drag: 1, alpha: 1 });
+    }
+    this.sfx.impact('metal', point.distanceTo(this.cam.camera.position));
   }
 
   private fire(aiming: boolean, airborne: boolean): void {
@@ -93,13 +114,14 @@ export class Combat {
     const up = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
     dir.addScaledVector(right, Math.cos(a) * r).addScaledVector(up, Math.sin(a) * r).normalize();
 
-    const camHit = this.ray(camera.position, dir, def.range);
+    const through = new Map<number, boolean>();
+    const camHit = this.ray(camera.position, dir, def.range, through);
     const aimPoint = camera.position.clone().addScaledVector(dir, camHit ? camHit.timeOfImpact : def.range);
     const muzzle = this.player.model.muzzle.getWorldPosition(new THREE.Vector3());
     const toAim = aimPoint.clone().sub(muzzle);
     const dist = toAim.length();
     toAim.normalize();
-    const hit = this.ray(muzzle, toAim, dist + 0.5);
+    const hit = this.ray(muzzle, toAim, dist + 0.5, through);
     const end = hit ? muzzle.clone().addScaledVector(toAim, hit.timeOfImpact) : aimPoint;
 
     this.flash.fire(this.player.model.muzzle);

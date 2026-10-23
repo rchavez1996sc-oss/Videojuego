@@ -7,7 +7,7 @@ import type { Enemies } from './enemies';
 import type { Combat } from '../weapons/combat';
 import type { Sfx } from '../audio/sfx';
 import type { Player } from '../entities/player';
-import { surfaceOf } from '../world/surfaces';
+import { surfaceOf, isPorous } from '../world/surfaces';
 import { difficulty } from '../core/difficulty';
 
 /** One enemy round: accurate attackers aim at the target's chest, the rest suppress around it. */
@@ -30,7 +30,13 @@ export function enemyFire(e: Enemy, en: Enemies, ctx: AIContext, attacker: boole
   const r = Math.sqrt(Math.random()) * Math.tan(cone), a = Math.random() * Math.PI * 2;
   const u = new THREE.Vector3(0, 1, 0).cross(dir).normalize(), v = dir.clone().cross(u);
   dir.addScaledVector(u, Math.cos(a) * r).addScaledVector(v, Math.sin(a) * r).normalize();
-  const hit = world.castRayAndGetNormal(new RAPIER.Ray(muzzle, dir), 400, true, undefined, undefined, undefined, undefined, (c) => c.handle !== e.handle && c.isEnabled());
+  const pass = new Set<number>();
+  let hit = null;
+  for (let i = 0; i < 4; i++) {
+    hit = world.castRayAndGetNormal(new RAPIER.Ray(muzzle, dir), 400, true, undefined, undefined, undefined, undefined, (c) => c.handle !== e.handle && c.isEnabled() && !pass.has(c.handle));
+    if (!hit || !isPorous(hit.collider.handle) || Math.random() >= 0.45) break;
+    pass.add(hit.collider.handle);
+  }
   const end = muzzle.clone().addScaledVector(dir, hit ? hit.timeOfImpact : 400);
   if (Math.random() < 0.5) combat.tracer(muzzle, end);
   const cam = camera.position;

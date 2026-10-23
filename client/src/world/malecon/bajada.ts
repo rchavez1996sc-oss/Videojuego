@@ -35,7 +35,7 @@ export function buildBajada(b: Builder, hf: Heightfield, def: MaleconDef, c: Coa
   for (const r of c.ravines ?? []) {
     const z0 = def.avenue.z + def.avenue.half, z1 = def.beachRoad.z - def.beachRoad.half, mouth = edgeZ(c, r.x) + c.run;
     const centre: THREE.Vector2[] = [];
-    for (let z = z0; z <= z1; z += 1.5) centre.push(new THREE.Vector2(ravineCentre(r, Math.min(z, mouth)) + Math.max(0, z - mouth) * (r.skew ?? 0) + Math.max(0, z - mouth + 6) ** 2 * 0.045, z));
+    for (let z = z0; z <= z1 - road; z += 1.5) centre.push(new THREE.Vector2(ravineCentre(r, Math.min(z, mouth)) + Math.max(0, z - mouth) * (r.skew ?? 0) + Math.max(0, z - mouth + 6) ** 2 * 0.045, z));
     ribbon(b, hf, centre, road * 2, 'cobble', 0.1);
     for (let z = r.head + 6; z < mouth - 2; z += 3.2) {
       const x = ravineCentre(r, z), f = ravineFloor(c, r, z), w = road * 2 * Math.hypot(1, r.skew ?? 0) - 0.1;

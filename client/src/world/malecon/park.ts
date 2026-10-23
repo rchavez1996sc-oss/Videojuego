@@ -53,7 +53,7 @@ export function railing(b: Builder, pts: THREE.Vector3[], mat = 'railGreen'): vo
       const qd = qs.clone().multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), s * Math.atan2(0.6, len)));
       b.box(mat, [0.04, 0.04, Math.hypot(len, 0.6)], mid.clone().setY(mid.y + 0.75), qd, false);
     }
-    b.box('none', [0.1, 1.2, len], mid.clone().setY(mid.y + 0.6), qs, true);
+    b.box('grate', [0.1, 1.2, len], mid.clone().setY(mid.y + 0.6), qs, true);
   }
 }
 

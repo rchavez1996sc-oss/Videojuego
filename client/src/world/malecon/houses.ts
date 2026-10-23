@@ -42,7 +42,7 @@ export function house(b: Builder, x0: number, w: number, zFace: number, s: 1 | -
     b.box(paint, [w, 0.5, 0.25], at(w / 2, 0.25, 0.12), Q);
     for (let x = 0.15; x < w; x += 0.2) b.box('fenceIron', [0.04, 1.7, 0.04], at(x, 1.35, 0.12), Q, false);
     for (const y of [0.6, 2.15]) b.box('fenceIron', [w, 0.06, 0.06], at(w / 2, y, 0.12), Q, false);
-    b.box('none', [w, 2.2, 0.3], at(w / 2, 1.1, 0.12), Q, true);
+    b.box('grate', [w, 2.2, 0.3], at(w / 2, 1.1, 0.12), Q, true);
   }
   return rand() < 0.4 ? at(w * (0.2 + rand() * 0.6), 0, 1.6) : null;
 }

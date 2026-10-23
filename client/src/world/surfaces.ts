@@ -9,6 +9,17 @@ export function setSurface(handle: number, s: Surface): void {
   byCollider.set(handle, s);
 }
 
+const porous = new Set<number>();
+
+/** Fences, railings and mesh: a bullet sometimes slips through instead of stopping. */
+export function setPorous(handle: number): void {
+  porous.add(handle);
+}
+
+export function isPorous(handle: number): boolean {
+  return porous.has(handle);
+}
+
 export function surfaceOf(handle: number): Surface {
   return byCollider.get(handle) ?? 'dirt';
 }

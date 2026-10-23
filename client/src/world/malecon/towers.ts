@@ -31,7 +31,7 @@ function frontage(b: Builder, x0: number, w: number, zFace: number, s: 1 | -1, r
   for (const [a, e] of [[x0, gate - 1.6], [gate + 1.6, x0 + w]]) {
     b.box('slab', [e - a, 0.3, 0.3], new THREE.Vector3((a + e) / 2, 0.15, fz), Q, true);
     for (const y of [0.4, 1.7]) b.box('fenceIron', [e - a, 0.05, 0.05], new THREE.Vector3((a + e) / 2, y, fz), Q, false);
-    b.box('none', [e - a, 1.8, 0.2], new THREE.Vector3((a + e) / 2, 0.9, fz), Q, true);
+    b.box('grate', [e - a, 1.8, 0.2], new THREE.Vector3((a + e) / 2, 0.9, fz), Q, true);
   }
   if (rand() < 0.4) return null;
   const bx = gate + 2.6 * (rand() < 0.5 ? -1 : 1), bz = zFace + s * 0.95;

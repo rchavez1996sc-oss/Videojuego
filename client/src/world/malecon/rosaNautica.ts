@@ -24,7 +24,7 @@ function railing(b: Builder, x0: number, z0: number, x1: number, z1: number, y: 
   const mid = new THREE.Vector3((x0 + x1) / 2, y, (z0 + z1) / 2);
   b.box('lattice', [len, 0.85, 0.05], mid.clone().setY(y + 0.5), q, false);
   b.box('lhWhite', [len, 0.08, 0.14], mid.clone().setY(y + 0.97), q, false);
-  b.box('none', [len, 1.3, 0.25], mid.clone().setY(y + 0.65), q, true);
+  b.box('grate', [len, 1.3, 0.25], mid.clone().setY(y + 0.65), q, true);
 }
 
 /** Octagonal pavilion: cream walls, lattice balcony band, striped awning ring and a slate roof with a lantern or spire. */
