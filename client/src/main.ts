@@ -113,7 +113,7 @@ async function boot(): Promise<void> {
   await characters.load(lighting);
   world.step();
   const respawnPts = barrio ? streetPoints(barrio.graph) : undefined;
-  const start = respawnPts && barrio?.station && !shotMode ? startSpot(world, hf, respawnPts, barrio.station.entrance, ch.enemies ?? []) : null;
+  const start = respawnPts && barrio?.station && !shotMode ? startSpot(world, hf, respawnPts, barrio.station.entrance, ch.enemies ?? [], barrio.inside) : null;
   const spawn = start?.pos ?? new THREE.Vector3(ch.spawn.x, hf.heightAt(ch.spawn.x, ch.spawn.z), ch.spawn.z), startYaw = start?.yaw ?? ch.spawn.yaw;
   const player = new Player(world, lighting, spawn, startYaw);
   scene.add(player.model.root);
@@ -144,7 +144,7 @@ async function boot(): Promise<void> {
     failed = true;
   }, 2600);
   combat.onShot = (p) => {
-    enemies.hearShot(p);
+    enemies.hearShot(p, ch.alertAll);
     alarm(p, 90);
   };
   enemies.onEnemyShot = (p) => alarm(p, 60);
@@ -171,8 +171,9 @@ async function boot(): Promise<void> {
   const nadeMode = new GrenadeMode(grenades, world, camera, player, sfx, hud);
   scene.add(nadeMode.group);
   const corpses = new Loot(pickups, world, hf, (at) => combat.bloodStain(at));
-  const objective = ch.objective && barrio?.station ? new Objective(ch.objective, barrio.station, camera) : null;
+  const objective = ch.objective && barrio?.station ? new Objective(ch.objective, barrio.station, camera, { lighting, world, scene }) : null;
   let lives = (hud.lives = ch.lives ?? 3);
+  if (objective) objective.onFail = (why) => (failed || window.setTimeout(() => showMissionFailed(why), 2600), (failed = true));
   if (objective) objective.onComplete = () => {
     failed = true;
     showMissionComplete(objective.def.complete, objective.def.reward, `ENEMIGOS ABATIDOS ${enemies.list.length - enemies.aliveCount}/${enemies.list.length} · BAJAS CIVILES ${populace.casualties} · VIDAS ${lives}`, objective.def.loot, objective.def.unlock);

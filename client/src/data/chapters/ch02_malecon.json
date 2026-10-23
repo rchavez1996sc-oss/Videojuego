@@ -83,7 +83,6 @@
   },
   "streets": {
    "z": [
-    -150,
     -70
    ],
    "x": [
@@ -232,7 +231,7 @@
    30,
    115
   ],
-  "north": -160,
+  "north": -89,
   "flowerBeds": [
    [
     32,
@@ -290,7 +289,7 @@
   "seed": 4,
   "avenueHalf": 0,
   "tall": true,
-  "innerNorth": 168
+  "innerNorth": 95
  },
  "life": {
   "traffic": 40,
@@ -337,19 +336,6 @@
      "wagon",
      "combi",
      "sedan"
-    ]
-   },
-   {
-    "z": -150,
-    "lane": 2.5,
-    "half": 5,
-    "count": 3,
-    "kinds": [
-     "sedan",
-     "tico",
-     "wagon",
-     "pickup",
-     "delivery"
     ]
    },
    {
@@ -405,7 +391,197 @@
    55
   ]
  ],
- "enemies": [],
+ "enemies": [
+  {
+   "type": "rifleman",
+   "x": -190,
+   "z": -60
+  },
+  {
+   "type": "rifleman",
+   "x": -110,
+   "z": -58
+  },
+  {
+   "type": "rifleman",
+   "x": -20,
+   "z": -82
+  },
+  {
+   "type": "rifleman",
+   "x": 40,
+   "z": -58
+  },
+  {
+   "type": "marksman",
+   "x": 140,
+   "z": -60
+  },
+  {
+   "type": "rifleman",
+   "x": 205,
+   "z": -62
+  },
+  {
+   "type": "rifleman",
+   "x": -170,
+   "z": -70
+  },
+  {
+   "type": "rifleman",
+   "x": -60,
+   "z": -64
+  },
+  {
+   "type": "rifleman",
+   "x": 60,
+   "z": -76
+  },
+  {
+   "type": "marksman",
+   "x": 170,
+   "z": -70
+  },
+  {
+   "type": "rifleman",
+   "x": -150,
+   "z": 30
+  },
+  {
+   "type": "rifleman",
+   "x": -30,
+   "z": 30
+  },
+  {
+   "type": "rifleman",
+   "x": 90,
+   "z": 30
+  },
+  {
+   "type": "rifleman",
+   "x": 180,
+   "z": 30
+  },
+  {
+   "type": "marksman",
+   "x": -160,
+   "z": 60
+  },
+  {
+   "type": "rifleman",
+   "x": -60,
+   "z": 62
+  },
+  {
+   "type": "rifleman",
+   "x": 120,
+   "z": 62
+  },
+  {
+   "type": "rifleman",
+   "x": 200,
+   "z": 64
+  },
+  {
+   "type": "rifleman",
+   "x": -100,
+   "z": 160
+  },
+  {
+   "type": "marksman",
+   "x": 120,
+   "z": 160
+  },
+  {
+   "type": "marksman",
+   "x": 65,
+   "z": 182,
+   "at": -40.6
+  },
+  {
+   "type": "rifleman",
+   "x": 64.5,
+   "z": 198,
+   "at": -40.6
+  },
+  {
+   "type": "rifleman",
+   "x": 65.5,
+   "z": 214,
+   "at": -40.6
+  },
+  {
+   "type": "marksman",
+   "x": 64.5,
+   "z": 230,
+   "at": -40.6
+  },
+  {
+   "type": "rifleman",
+   "x": 64,
+   "z": 244,
+   "at": -40.6
+  },
+  {
+   "type": "rifleman",
+   "x": 65,
+   "z": 248,
+   "at": -40.6
+  },
+  {
+   "type": "rifleman",
+   "x": 82,
+   "z": 257,
+   "at": -40.6
+  },
+  {
+   "type": "rifleman",
+   "x": 100,
+   "z": 257,
+   "at": -40.6
+  },
+  {
+   "type": "marksman",
+   "x": 90,
+   "z": 275.5,
+   "at": -40.6
+  },
+  {
+   "type": "rifleman",
+   "x": 65,
+   "z": 163
+  },
+  {
+   "type": "rifleman",
+   "x": 62.5,
+   "z": 263,
+   "at": -40.6
+  },
+  {
+   "type": "rifleman",
+   "x": 67.5,
+   "z": 280,
+   "at": -40.6
+  },
+  {
+   "type": "rifleman",
+   "x": 84,
+   "z": 266,
+   "at": -40.6
+  },
+  {
+   "type": "rifleman",
+   "x": 101,
+   "z": 266,
+   "at": -40.6
+  },
+  {
+   "type": "rifleman",
+   "x": 109.5,
+   "z": 263.4,
+   "at": -40.6
+  }
+ ],
  "views": [
   [
    -150,
@@ -512,22 +688,6 @@
    -70
   ],
   [
-   -112.5,
-   1.7,
-   -110,
-   -112.5,
-   4,
-   -150
-  ],
-  [
-   -150,
-   1.7,
-   -146,
-   -110,
-   4,
-   -150
-  ],
-  [
    0,
    6,
    45,
@@ -538,13 +698,21 @@
  ],
  "shadowRange": 60,
  "objective": {
-  "title": "LLEGA A LA ROSA NÁUTICA",
-  "detail": "Cruza el malecón y entra al salón de la Rosa Náutica",
-  "defendRadius": 40,
+  "title": "CAPTURA AL HOMBRE DE TERNO",
+  "detail": "Está en el comedor de la Rosa Náutica. Lo queremos vivo.",
+  "defendRadius": 45,
   "hold": 2.5,
-  "action": "ASEGURAR EL SALÓN",
-  "doing": "ASEGURANDO EL SALÓN",
+  "action": "CAPTURARLO",
+  "doing": "CAPTURANDO",
+  "capture": {
+   "x": 111,
+   "z": 268.5,
+   "y": -40.6,
+   "yaw": 3.1416,
+   "failed": "El hombre de terno debía ser capturado con vida. Sin él, la operación no sirve de nada."
+  },
   "complete": "CAPÍTULO 2 COMPLETADO",
-  "reward": "La Rosa Náutica está en manos del Frente. (Texto provisional: falta definir la misión del capítulo.)"
- }
+  "reward": "El hombre de terno está en manos del Frente. (Texto provisional: falta definir quién es y qué sabe.)"
+ },
+ "alertAll": true
 }

@@ -1,11 +1,17 @@
 import * as THREE from 'three';
+import type RAPIER from '@dimforge/rapier3d-compat';
 import type { StationInfo } from '../world/station';
 import type { Enemy } from '../entities/enemy';
 import type { Input } from '../core/input';
+import type { Lighting } from '../render/lighting';
+import { Vip } from './vip';
 
-export interface ObjectiveDef { title: string; detail: string; defendRadius: number; hold: number; complete: string; reward: string; loot?: string[]; unlock?: string; action?: string; doing?: string }
+export interface ObjectiveDef { title: string; detail: string; defendRadius: number; hold: number; complete: string; reward: string; loot?: string[]; unlock?: string; action?: string; doing?: string; capture?: { x: number; z: number; y: number; yaw: number; failed: string } }
 
-/** Chapter goal: storm the station and hold E in the lobby to loot the arms cache (defenders need not all be dead). */
+/**
+ * Chapter goal: storm the site and hold E in its hall (defenders need not all be dead); with `capture`, the goal is
+ * instead to reach a man and hold E beside him to take him alive (killing him fails the mission).
+ */
 export class Objective {
   private panel = document.createElement('div');
   private marker = document.createElement('div');
@@ -14,8 +20,16 @@ export class Objective {
   private v = new THREE.Vector3();
   done = false;
   onComplete: () => void = () => {};
+  onFail: (why: string) => void = () => {};
+  readonly vip: Vip | null = null;
 
-  constructor(readonly def: ObjectiveDef, readonly site: StationInfo, private camera: THREE.Camera) {
+  constructor(readonly def: ObjectiveDef, readonly site: StationInfo, private camera: THREE.Camera, deps?: { lighting: Lighting; world: RAPIER.World; scene: THREE.Scene }) {
+    const c = def.capture;
+    if (c && deps) {
+      this.vip = new Vip(new THREE.Vector3(c.x, c.y, c.z), c.yaw, deps.lighting, deps.world);
+      deps.scene.add(this.vip.rig.root);
+      this.vip.onKilled = () => this.onFail(c.failed);
+    }
     this.panel.id = 'objective';
     this.marker.id = 'obj-marker';
     this.prompt.className = 'prompt';
@@ -23,7 +37,7 @@ export class Objective {
   }
 
   get position(): THREE.Vector3 {
-    return this.site.entrance;
+    return this.vip?.position ?? this.site.entrance;
   }
 
   private defenders(enemies: Enemy[]): number {
@@ -31,18 +45,20 @@ export class Objective {
   }
 
   private inside(p: THREE.Vector3): boolean {
+    if (this.vip) return this.vip.alive && p.distanceTo(this.vip.position) < 2.4;
     const h = this.site.hall;
     return p.x > h.x0 && p.x < h.x1 && p.z > h.z0 && p.z < h.z1 && Math.abs(p.y - h.y) < 2;
   }
 
   update(dt: number, player: THREE.Vector3, enemies: Enemy[], input: Input, alive: boolean): void {
-    if (this.done) return;
-    const dist = Math.round(player.distanceTo(this.site.entrance));
+    this.vip?.update(dt, enemies.some((e) => e.engaged));
+    if (this.done || (this.vip && !this.vip.alive)) return;
+    const goal = this.position, dist = Math.round(player.distanceTo(goal));
     const left = this.defenders(enemies);
     this.panel.innerHTML = `<span class="k">OBJETIVO</span><b>${this.def.title}</b><span class="d">${left ? `DEFENSORES ${left} · ` : ''}${dist} m</span>`;
     this.camera.updateMatrixWorld();
-    const ahead = this.v.copy(this.site.entrance).sub(this.camera.position).dot(this.camera.getWorldDirection(new THREE.Vector3())) > 0;
-    this.v.copy(this.site.entrance).setY(this.site.entrance.y + 5).project(this.camera);
+    const ahead = this.v.copy(goal).sub(this.camera.position).dot(this.camera.getWorldDirection(new THREE.Vector3())) > 0;
+    this.v.copy(goal).setY(goal.y + (this.vip ? 2.4 : 5)).project(this.camera);
     const onScreen = ahead && Math.abs(this.v.x) < 0.95 && Math.abs(this.v.y) < 0.95 && dist > 6;
     this.marker.style.opacity = onScreen ? '1' : '0';
     if (onScreen) {
@@ -59,6 +75,7 @@ export class Objective {
     this.prompt.innerHTML = this.holdT > 0 ? `${this.def.doing ?? 'SAQUEANDO CARGAMENTO'} <span>${Math.round((this.holdT / this.def.hold) * 100)}%</span>` : `<kbd>E</kbd> MANTÉN PARA ${this.def.action ?? 'SAQUEAR EL CARGAMENTO'}`;
     if (this.holdT < this.def.hold) return;
     this.done = true;
+    this.vip?.capture();
     this.prompt.style.opacity = this.marker.style.opacity = '0';
     this.panel.innerHTML = `<span class="k">OBJETIVO CUMPLIDO</span><b>${this.def.title}</b>`;
     this.onComplete();

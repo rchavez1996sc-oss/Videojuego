@@ -14,7 +14,7 @@ import type { StreetNav } from '../ai/nav';
 import { difficulty } from '../core/difficulty';
 import { enemyFire } from './enemyFire';
 
-export interface SpawnDef { type: string; x: number; z: number; y?: number; patrol?: [number, number][] }
+export interface SpawnDef { type: string; x: number; z: number; y?: number; at?: number; patrol?: [number, number][] }
 
 export interface KillEvent { headshot: boolean; distance: number }
 
@@ -40,18 +40,18 @@ export class Enemies {
   private attackers = new Set<number>();
   private intelT = 8;
   private intelHold = 0;
+  private alerted = false;
 
   constructor(defs: Record<string, EnemyDef>, spawns: SpawnDef[], private world: RAPIER.World, private hf: Heightfield, lighting: Lighting, private player: Player, private combat: Combat, private sfx: Sfx, private camera: THREE.PerspectiveCamera, nav: StreetNav | null = null) {
     spawns.forEach((s, i) => {
       const def = defs[s.type];
       const spot = new THREE.Vector3(s.x, hf.heightAt(s.x, s.z), s.z);
-      if (s.y === undefined && nav && world.castRay(new RAPIER.Ray({ x: spot.x, y: spot.y + 0.6, z: spot.z }, { x: 0, y: 1, z: 0 }), 40, true)) {
+      if (s.y === undefined && s.at === undefined && nav && world.castRay(new RAPIER.Ray({ x: spot.x, y: spot.y + 0.6, z: spot.z }, { x: 0, y: 1, z: 0 }), 40, true)) {
         const n = nav.route(spot, spot)[0];
         spot.set(n.x, hf.heightAt(n.x, n.z), n.z);
       }
-      const y = s.y !== undefined ? spot.y + s.y : spot.y;
       const patrol = (s.patrol ?? []).map(([x, z]) => new THREE.Vector3(x, hf.heightAt(x, z), z));
-      const e = new Enemy(i, def, world, lighting, new THREE.Vector3(spot.x, y, spot.z), patrol, s.y !== undefined);
+      const e = new Enemy(i, def, world, lighting, new THREE.Vector3(spot.x, s.at ?? spot.y + (s.y ?? 0), spot.z), patrol, s.y !== undefined || s.at !== undefined);
       this.list.push(e);
       this.group.add(e.model.root, e.flash.group);
       onHit(e.handle, (dmg, p) => this.hit(e, dmg, new THREE.Vector3(p.x, p.y, p.z)));
@@ -123,7 +123,7 @@ export class Enemies {
     const spotted = this.list.some((e) => e.alive && e.canSee && e.state === 'combat');
     const periodic = this.intelT <= 0 && this.intelHold <= 0;
     if (!spotted && !periodic) return;
-    const last = this.lastStand;
+    const last = this.lastStand || this.alerted;
     if (periodic) this.intelT = last ? 5 : 8;
     for (const e of this.list) {
       if (last && e.alive && periodic && !e.isStatic) {
@@ -136,16 +136,16 @@ export class Enemies {
     }
   }
 
-  /** Player gunshot: everyone in earshot learns roughly where it came from. */
-  hearShot(at: THREE.Vector3): void {
+  /** Player gunshot: everyone in earshot learns roughly where it came from; with `global`, the whole force starts hunting. */
+  hearShot(at: THREE.Vector3, global = false): void {
+    this.alerted ||= global;
     for (const e of this.list) {
       if (!e.alive) continue;
       const d = e.position.distanceTo(at);
       if (d > e.def.hearing) continue;
       e.awareness = Math.max(e.awareness, d < 70 ? 1 : 0.6);
       e.engaged = true;
-      const err = d * 0.12;
-      e.lastKnown.copy(at).add(new THREE.Vector3((Math.random() - 0.5) * err, 0, (Math.random() - 0.5) * err));
+      e.lastKnown.copy(at).add(new THREE.Vector3((Math.random() - 0.5) * d * 0.12, 0, (Math.random() - 0.5) * d * 0.12));
     }
   }
 

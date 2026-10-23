@@ -16,7 +16,7 @@ import { edgeZ } from '../coast';
 import { buildOcean } from '../ocean';
 import { Paragliders } from '../../fx/paragliders';
 import { apartment, curtain, flagstone, mosaic, lattice, confetti, foliage, checker } from './textures';
-import { maleconGraph, type MaleconDef } from './layout';
+import { maleconGraph, northZ, type MaleconDef } from './layout';
 import { buildTowers, FACADES } from './towers';
 import { buildBoulevard } from './boulevard';
 import { streetDetail } from './streetDetail';
@@ -169,5 +169,6 @@ export function buildMalecon(hf: Heightfield, def: MaleconDef, lighting: Lightin
   const fliers = new Paragliders(def.paragliders, c.edge, lighting, world, (x, z) => Math.max(hf.heightAt(x, z), c.sea));
   fliers.onDown = (p) => bystanders.onHurt(p);
   group.add(fliers.group);
-  return { group, materials: mats, bake, station, graph: maleconGraph(def, c, hf), blocked: (x, z) => z < edgeZ(c, x) + 2, bystanders };
+  return { group, materials: mats, bake, station, graph: maleconGraph(def, c, hf), blocked: (x, z) => z < edgeZ(c, x) + 2, bystanders,
+    inside: (x, z) => z > northZ(def) + 4 && z < edgeZ(c, x) - 3 && Math.abs(x) < hf.def.playable / 2 - 4 };
 }

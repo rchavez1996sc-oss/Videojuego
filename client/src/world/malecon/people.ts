@@ -47,15 +47,33 @@ function extra(lighting: Lighting, rand: () => number, at: THREE.Vector3, yaw: n
 /** Called when a bystander (extra, paraglider) is shot; set by the populace. */
 export interface Bystanders { onHurt: (p: THREE.Vector3) => void }
 
-/** Static capsule collider on an extra; a hit plays a death clip on the ground below and reports it. */
-function shootable(world: RAPIER.World, rig: Rig, floor: number, seated: boolean, hurt: Bystanders): void {
+/** A seated body going limp: it keeps the sitting pose and keels over sideways, pivoting on the hips. */
+interface Slump { rig: Rig; t: number; pivot: THREE.Vector3; from: THREE.Vector3; q0: THREE.Quaternion; axis: THREE.Vector3 }
+
+function slumpStep(s: Slump, dt: number): boolean {
+  s.t = Math.min(1, s.t + dt * 1.4);
+  const a = (1 - (1 - s.t) ** 3) * 1.35, turn = new THREE.Quaternion().setFromAxisAngle(s.axis, a);
+  s.rig.root.position.copy(s.from).sub(s.pivot).applyQuaternion(turn).add(s.pivot);
+  s.rig.root.quaternion.copy(turn).multiply(s.q0);
+  return s.t < 1;
+}
+
+/** Static capsule collider on an extra; standing ones play a death clip on the ground, seated ones slump on the seat. */
+function shootable(world: RAPIER.World, rig: Rig, floor: number, seated: boolean, hurt: Bystanders, slumps: Slump[], limp: Set<Rig>): void {
   const p = rig.root.position, y = seated ? rig.hips().y : floor + 0.9;
   const col = world.createCollider(RAPIER.ColliderDesc.capsule(seated ? 0.3 : 0.55, 0.32).setTranslation(p.x, y, p.z));
   onHit(col.handle, () => {
     col.setEnabled(false);
-    rig.root.position.y = floor;
     rig.far = false;
-    rig.die(Math.random() < 0.5 ? 'fall_back' : 'dying');
+    if (seated) {
+      rig.dead = true;
+      limp.add(rig);
+      const side = new THREE.Vector3(1, 0, 0).applyQuaternion(rig.root.quaternion).multiplyScalar(Math.random() < 0.5 ? 1 : -1);
+      slumps.push({ rig, t: 0, pivot: rig.hips(), from: rig.root.position.clone(), q0: rig.root.quaternion.clone(), axis: new THREE.Vector3(side.z, 0, -side.x).normalize() });
+    } else {
+      rig.root.position.y = floor;
+      rig.die(Math.random() < 0.5 ? 'fall_back' : 'dying');
+    }
     hurt.onHurt(new THREE.Vector3(p.x, y, p.z));
   });
 }
@@ -64,7 +82,7 @@ function shootable(world: RAPIER.World, rig: Rig, floor: number, seated: boolean
 export function crowd(seats: { pos: THREE.Vector3; yaw: number }[], standing: Extra[], lighting: Lighting, world: RAPIER.World, hurt: Bystanders): THREE.Group {
   const g = new THREE.Group(), r = mulberry32(12);
   let rigs: Rig[] | null = null, last = 0, prev = performance.now();
-  const near = new Set<Rig>();
+  const near = new Set<Rig>(), slumps: Slump[] = [], limp = new Set<Rig>();
   g.add(ticker((camera) => {
     const now = performance.now(), dt = Math.min(0.1, (now - prev) / 1000);
     prev = now;
@@ -76,12 +94,13 @@ export function crowd(seats: { pos: THREE.Vector3; yaw: number }[], standing: Ex
       const i = rigs.length, seated = i < seats.length, spot = seated ? seats[i] : standing[i - seats.length];
       const x = extra(lighting, r, spot.pos, spot.yaw, seated ? SEATED[Math.floor(r() * SEATED.length)] : (spot as Extra).key);
       x.root.updateMatrixWorld(true);
-      shootable(world, x, spot.pos.y, seated, hurt);
+      shootable(world, x, spot.pos.y, seated, hurt, slumps, limp);
       x.root.visible = false;
       rigs.push(x);
       g.add(x.root);
     }
-    for (const x of near) x.tick(dt);
+    for (let i = slumps.length - 1; i >= 0; i--) if (!slumpStep(slumps[i], dt)) slumps.splice(i, 1);
+    for (const x of near) if (!limp.has(x)) x.tick(dt);
     if (now - last < 400) return;
     last = now;
     near.clear();

@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { Lighting } from './lighting';
+import { LOOKS, variants } from './outfitTint';
 
 export type CharKind = 'pnp' | 'fls' | 'civ_a' | 'civ_b' | 'civ_c';
 
@@ -40,6 +41,8 @@ function still(clip: THREE.AnimationClip, name: string, time: number): THREE.Ani
 class CharacterLibrary {
   readonly clips = new Map<string, THREE.AnimationClip>();
   private protos = new Map<CharKind, { near: THREE.Object3D; far: THREE.SkinnedMesh[] }>();
+  /** Clothing variants of each civilian material, keyed by the base (first) variant. */
+  private looks = new Map<THREE.Material, THREE.Material[]>();
   ready = false;
 
   async load(lighting: Lighting): Promise<void> {
@@ -57,7 +60,11 @@ class CharacterLibrary {
         if (!(m instanceof THREE.SkinnedMesh)) return;
         const mat = m.material as THREE.MeshStandardMaterial;
         mat.envMapIntensity = 0.6;
-        m.material = lighting.setup(mat, `char-${kind}-${mat.name}`);
+        if (kind.startsWith('civ')) {
+          const looks = variants(mat, `char-${kind}-${mat.name}`, lighting);
+          this.looks.set(looks[0], looks);
+          m.material = looks[0];
+        } else m.material = lighting.setup(mat, `char-${kind}-${mat.name}`);
         mats.set(mat.name, m.material as THREE.Material);
       });
       const far: THREE.SkinnedMesh[] = [];
@@ -69,6 +76,12 @@ class CharacterLibrary {
       this.protos.set(kind as CharKind, { near, far });
     });
     this.ready = true;
+  }
+
+  /** The dark-suit variant of a civilian material (or the material itself for other characters). */
+  suit(m: THREE.Material): THREE.Material {
+    for (const looks of this.looks.values()) if (looks.includes(m)) return looks[LOOKS];
+    return m;
   }
 
   create(kind: CharKind): CharInstance {
@@ -92,6 +105,8 @@ class CharacterLibrary {
       m.visible = false;
       return m;
     });
+    const look = Math.floor(Math.random() * LOOKS);
+    for (const m of [...near, ...far]) m.material = this.looks.get(m.material as THREE.Material)?.[look] ?? m.material;
     return { model, near, far, bones };
   }
 }

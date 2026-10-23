@@ -50,6 +50,8 @@ export interface Barrio {
   station: StationInfo | null;
   /** Shootable decor people (seated extras, paragliders); the populace sets `onHurt`. */
   bystanders?: import('./malecon/people').Bystanders;
+  /** Where the player may start (inside the playable district); everywhere when absent. */
+  inside?: (x: number, z: number) => boolean;
 }
 
 const PAINT_COLORS = ['#9fc3d6', '#e3c46a', '#d9a3a0', '#9cc29a', '#e6dac0', '#d99a63'];
