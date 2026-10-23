@@ -158,17 +158,19 @@ export class Sfx {
   /** Brass rounds rattling into a pouch, then a magazine seated with a solid click. */
   pickupAmmo(): void {
     const t = this.m.ctx.currentTime;
-    for (let i = 0; i < 6; i++) this.filtered(t + i * 0.035 + Math.random() * 0.02, 'bandpass', 3200 + Math.random() * 2600, 9, 0.16, 0.001, 0.06);
-    this.filtered(t + 0.26, 'bandpass', 1800, 3, 0.4, 0.001, 0.05);
-    this.filtered(t + 0.27, 'lowpass', 500, 1, 0.3, 0.001, 0.07);
+    for (let i = 0; i < 8; i++) this.filtered(t + i * 0.035 + Math.random() * 0.02, 'bandpass', 3000 + Math.random() * 2600, 8, 0.45, 0.001, 0.07);
+    this.filtered(t + 0.3, 'bandpass', 1800, 3, 0.9, 0.001, 0.06);
+    this.filtered(t + 0.31, 'lowpass', 500, 1, 0.8, 0.001, 0.09);
+    this.tone(t + 0.3, 'triangle', 220, 160, 0.35, 0.1);
   }
 
-  /** Medkit: a velcro rip, then a soft rising two-note chime. */
+  /** Medkit: a velcro rip, then a bright rising three-note chime. */
   pickupMedkit(): void {
     const t = this.m.ctx.currentTime;
-    for (let i = 0; i < 5; i++) this.filtered(t + i * 0.03, 'highpass', 2500, 0.7, 0.12, 0.002, 0.03);
-    this.tone(t + 0.18, 'sine', 523, 523, 0.1, 0.25);
-    this.tone(t + 0.3, 'sine', 784, 784, 0.1, 0.4);
+    for (let i = 0; i < 6; i++) this.filtered(t + i * 0.03, 'highpass', 2500, 0.7, 0.35, 0.002, 0.035);
+    this.tone(t + 0.2, 'sine', 523, 523, 0.32, 0.3);
+    this.tone(t + 0.32, 'sine', 659, 659, 0.32, 0.3);
+    this.tone(t + 0.44, 'sine', 1047, 1047, 0.3, 0.55);
   }
 
   hurt(): void {

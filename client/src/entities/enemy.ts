@@ -43,6 +43,11 @@ export class Enemy {
   thinkT = Math.random() * 0.2;
   stateT = 0;
   patrolIndex = 0;
+  /** Seconds spent holding the current cover; triggers a peek or a push forward. */
+  coverT = 0;
+  /** Side step out of cover to shoot from, then back; null when not peeking. */
+  peek: THREE.Vector3 | null = null;
+  peekT = 0;
   shownT = 0;
   shadowed = true;
   private vel = new THREE.Vector3();

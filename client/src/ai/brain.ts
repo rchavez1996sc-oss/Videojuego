@@ -71,6 +71,8 @@ function pickCover(e: Enemy, ctx: AIContext, preferred: number, radius = 30, anc
     if (!ctx.blocked(spot.clone().setY(spot.y + 1.0), threat, e.handle)) continue;
     if (e.cover) e.cover.owner = -1;
     c.owner = e.id;
+    e.peek = null;
+    e.coverT = 0;
     e.cover = c;
     goTo(e, ctx, spot, true);
     return true;
@@ -97,11 +99,45 @@ function thinkCombat(e: Enemy, ctx: AIContext): void {
     const side = new THREE.Vector3(-away.z, 0, away.x).multiplyScalar(Math.random() < 0.5 ? -6 : 6);
     goTo(e, ctx, e.lastKnown.clone().addScaledVector(away, e.def.preferredRange).add(side), true);
   }
-  if (unseen > 2.5 && !e.moveTarget) hunt(e, ctx);
+  if (e.moveTarget) return;
+  if (e.peek) return endPeek(e, ctx);
+  e.coverT += THINK;
+  if (unseen > 1.2 && unseen < 25 && e.cover && e.coverT > rand(1.5, 3) && Math.random() < 0.6 && startPeek(e, ctx)) return;
+  if (unseen > 4 || e.coverT > rand(7, 11)) {
+    e.coverT = 0;
+    hunt(e, ctx);
+  }
+}
+
+/** Steps sideways (or stands) out of cover to a spot that sees the threat, fires from there, then ducks back. */
+function startPeek(e: Enemy, ctx: AIContext): boolean {
+  const base = e.cover!.pos.clone().setY(ctx.groundY(e.cover!.pos.x, e.cover!.pos.z));
+  const to = e.lastKnown.clone().sub(base).setY(0).normalize();
+  const side = new THREE.Vector3(-to.z, 0, to.x);
+  for (const d of Math.random() < 0.5 ? [1.6, -1.6, 2.8, -2.8] : [-1.6, 1.6, -2.8, 2.8]) {
+    const spot = base.clone().addScaledVector(side, d).addScaledVector(to, 0.4);
+    spot.y = ctx.groundY(spot.x, spot.z);
+    if (ctx.blocked(spot.clone().setY(spot.y + 1.0), spot.clone().setY(spot.y + 0.3), e.handle)) continue;
+    if (ctx.blocked(spot.clone().setY(spot.y + 1.5), ctx.playerChest, e.handle)) continue;
+    e.peek = base;
+    e.peekT = 0;
+    goTo(e, ctx, spot, true);
+    return true;
+  }
+  return false;
+}
+
+function endPeek(e: Enemy, ctx: AIContext): void {
+  e.peekT += THINK;
+  if (e.peekT < (e.canSee ? rand(2.2, 3.6) : 1.4)) return;
+  goTo(e, ctx, e.peek!, true);
+  e.peek = null;
+  e.coverT = rand(-1.5, 0);
 }
 
 /** Closes in on the last known position cover-to-cover, sometimes swinging wide to flank; searches around it on arrival. */
 function hunt(e: Enemy, ctx: AIContext): void {
+  e.peek = null;
   const toPlayer = e.lastKnown.clone().sub(e.position).setY(0);
   const dist = toPlayer.length();
   if (dist < 6) {
@@ -160,11 +196,11 @@ export function act(e: Enemy, ctx: AIContext, dt: number): boolean {
     e.faceTowards(e.canSee ? ctx.playerFeet : e.lastKnown, dt, 9);
     if (e.pauseT > 0) {
       e.pauseT -= dt;
-      e.crouched = atCover;
+      e.crouched = atCover && !e.peek;
       if (e.pauseT <= 0) e.burstLeft = Math.round(rand(e.def.burst[0], e.def.burst[1]));
       return false;
     }
-    if (atCover) e.crouched = !ctx.sees(eye(e, true), ctx.playerChest, e.handle) ? true : false;
+    if (atCover) e.crouched = !e.peek && !ctx.sees(eye(e, true), ctx.playerChest, e.handle);
     if (!e.canSee || e.burstLeft <= 0) {
       if (e.burstLeft <= 0) e.pauseT = rand(e.def.burstPause[0], e.def.burstPause[1]);
       return false;

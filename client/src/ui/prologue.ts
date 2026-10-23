@@ -3,7 +3,7 @@ import { IntroMusic } from '../audio/introMusic';
 import { Typewriter } from './typewriter';
 
 /** How long a plate stays once its paragraph has been typed out. */
-const HOLD = 4200;
+const HOLD = 3200;
 
 /**
  * Cinematic prologue shown while the chapter loads. A title card asks for a click (browsers need one before
