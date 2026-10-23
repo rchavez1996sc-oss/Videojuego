@@ -24,7 +24,7 @@ export class Renderer {
     this.gl = new THREE.WebGLRenderer({ canvas, powerPreference: 'high-performance', antialias: false, stencil: false, depth: true });
     this.gl.setPixelRatio(preset.pixelRatio);
     this.gl.shadowMap.enabled = true;
-    this.gl.shadowMap.type = quality === 'high' || quality === 'ultra' ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+    this.gl.shadowMap.type = quality === 'ultra' ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
     this.gl.toneMappingExposure = exposure;
     this.composer = new EffectComposer(this.gl, { frameBufferType: THREE.HalfFloatType });
     this.composer.addPass(new RenderPass(scene, camera));

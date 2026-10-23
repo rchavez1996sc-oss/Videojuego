@@ -119,17 +119,27 @@ export function installDebug(c: DebugContext): void {
     },
     /** Calls/triangles each top-level scene child costs in the current view (toggled off one at a time). */
     breakdown() {
-      const info = c.renderer.gl.info.render, out: string[] = [];
-      c.frame(1 / 60);
-      const base = [info.calls, info.triangles];
-      for (const o of c.scene?.children ?? []) {
-        if (!o.visible) continue;
-        o.visible = false;
-        c.frame(1 / 60);
-        out.push(`${o.name || o.type}#${o.children.length}: calls ${base[0] - info.calls} tris ${base[1] - info.triangles}`);
-        o.visible = true;
-      }
-      return `total calls ${base[0]} tris ${base[1]}\n` + out.filter((l) => !/calls 0 tris 0/.test(l)).join('\n');
+      const gl = c.renderer.gl, info = gl.info, out: string[] = [];
+      gl.info.autoReset = false;
+      const draw = () => { info.reset(); gl.render(c.scene!, c.tpc.camera); return [info.render.calls, info.render.triangles]; };
+      draw();
+      const base = draw();
+      const walk = (o: THREE.Object3D, depth: number) => {
+        for (const ch of o.children) {
+          if (!ch.visible) continue;
+          ch.visible = false;
+          const [k, t] = draw();
+          ch.visible = true;
+          const dk = base[0] - k, dt = base[1] - t;
+          if (dk >= 15 || dt > 150000) {
+            out.push(`${'  '.repeat(depth)}${ch.name || ch.type}#${ch.children.length}: calls ${dk} tris ${dt}`);
+            if (depth < 1 && ch.children.length > 1) walk(ch, depth + 1);
+          }
+        }
+      };
+      walk(c.scene!, 0);
+      gl.info.autoReset = true;
+      return `total calls ${base[0]} tris ${base[1]}\n` + out.join('\n');
     },
     /** Grenade in hand with the throw arc drawn, rendered from the player's camera. */
     aimGrenade(pitch: number) {

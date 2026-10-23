@@ -125,9 +125,9 @@ export function crowd(seats: { pos: THREE.Vector3; yaw: number }[], standing: Ex
     near.clear();
     for (const x of rigs) {
       const d = x.root.position.distanceTo(camera.position);
-      x.root.visible = d < 48;
+      x.root.visible = d < 40;
       if (!x.dead) x.far = d > 16;
-      if (d < 28) near.add(x);
+      if (d < 22) near.add(x);
     }
   }));
   return g;

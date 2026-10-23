@@ -368,7 +368,7 @@
   ]
  },
  "civilians": {
-  "count": 80,
+  "count": 65,
   "seed": 8
  },
  "squad": 4,
@@ -708,7 +708,7 @@
    35
   ]
  ],
- "shadowRange": 60,
+ "shadowRange": 45,
  "objective": {
   "title": "CAPTURA AL HOMBRE DE TERNO",
   "detail": "Está en el comedor de la Rosa Náutica. Lo queremos vivo.",
