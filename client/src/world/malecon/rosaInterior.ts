@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { Builder } from '../buildingKit';
+import type { Extra } from './park';
 
 const Q = new THREE.Quaternion();
 const at = (x: number, y: number, z: number) => new THREE.Matrix4().makeTranslation(x, y, z);
@@ -107,5 +108,37 @@ export function diningPavilion(b: Builder, x: number, y: number, z: number, r: n
     const a = (k * Math.PI) / 4 + Math.PI / 8;
     if (openTo.some((o) => Math.abs(Math.atan2(Math.sin(a - o), Math.cos(a - o))) < 0.5)) continue;
     diningTable(b, x + Math.sin(a) * r * 0.68, y, z + Math.cos(a) * r * 0.68, 3, a + Math.PI / 3);
+  }
+}
+
+/**
+ * Main hall dressing (as in the photos): sea windows with white frames in the side walls, a bar counter with bottles,
+ * gold-lit chandeliers, potted palms, tables with white cloths; waiters standing by the bar and frightened diners
+ * crouched against the walls (`extras`, animated by the crowd).
+ */
+export function hallDecor(b: Builder, x0: number, x1: number, z0: number, z1: number, y: number, h: number, extras: Extra[]): void {
+  const cx = (x0 + x1) / 2;
+  for (const x of [x0 + 0.17, x1 - 0.17]) for (let z = z0 + 9; z < z1 - 2; z += 3) {
+    b.box('glassClear', [0.05, 2.2, 2.4], new THREE.Vector3(x, y + 2.3, z), Q, false);
+    b.box('lhWhite', [0.08, 2.3, 0.12], new THREE.Vector3(x, y + 2.3, z - 1.25), Q, false);
+    b.box('lhWhite', [0.08, 0.1, 2.5], new THREE.Vector3(x, y + 3.45, z), Q, false);
+  }
+  b.box('ceilingWhite', [x1 - x0 - 0.4, 0.1, z1 - z0 - 0.4], new THREE.Vector3(cx, y + h * 0.62, (z0 + z1) / 2), Q, false);
+  const bz = z0 + 3;
+  b.box('columnWood', [6, 1.1, 0.7], new THREE.Vector3(cx - 3.2, y + 0.55, bz), Q, true);
+  b.box('lhWhite', [6.2, 0.06, 0.85], new THREE.Vector3(cx - 3.2, y + 1.13, bz), Q, false);
+  b.box('columnWood', [6, 2.2, 0.35], new THREE.Vector3(cx - 3.2, y + 1.1, z0 + 0.6), Q, false);
+  for (let i = 0; i < 18; i++) b.geometry(i % 3 ? 'glassClear' : 'lampGold', new THREE.CylinderGeometry(0.04, 0.05, 0.3, 6), new THREE.Matrix4().makeTranslation(cx - 5.9 + i * 0.32, y + 1.5 + (i % 2) * 0.55, z0 + 0.8));
+  for (let z = z0 + 9; z < z1 - 3; z += 6) {
+    for (const x of [-5, 0, 5]) diningTable(b, cx + x, y, z, 4, x * 0.2);
+    chandelier(b, cx, y + h * 0.62 - 0.05, z, 7, 1.1);
+  }
+  for (const [x, z] of [[x0 + 0.9, z0 + 1], [x1 - 0.9, z0 + 1], [x0 + 0.9, z1 - 1], [x1 - 0.9, z1 - 1]]) {
+    b.geometry('lhWhite', new THREE.CylinderGeometry(0.35, 0.28, 0.7, 10).translate(0, 0.35, 0), new THREE.Matrix4().makeTranslation(x, y, z), { size: [0.7, 0.7, 0.7], pos: new THREE.Vector3(x, y + 0.35, z), quat: Q });
+    b.geometry('hedge', new THREE.SphereGeometry(0.6, 10, 8).scale(0.9, 1.4, 0.9), new THREE.Matrix4().makeTranslation(x, y + 1.4, z));
+  }
+  for (const x of [-5.5, -2.5]) extras.push({ pos: new THREE.Vector3(cx + x, y, bz + 1), yaw: 0, key: 'civ_idle' });
+  for (const [x, z, yaw] of [[x0 + 0.7, z0 + 8, Math.PI / 2], [x0 + 0.7, z0 + 17.5, Math.PI / 2], [x1 - 0.7, z0 + 12, -Math.PI / 2], [x1 - 0.7, z1 - 4, -Math.PI / 2], [cx + 2, z1 - 0.8, Math.PI]] as const) {
+    extras.push({ pos: new THREE.Vector3(x, y, z), yaw, key: 'terrified' });
   }
 }

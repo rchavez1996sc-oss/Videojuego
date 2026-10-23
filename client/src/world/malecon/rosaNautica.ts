@@ -5,7 +5,8 @@ import type { Heightfield } from '../heightfield';
 import type { CoastDef } from '../coast';
 import type { StationInfo } from '../station';
 import type { MaleconDef } from './layout';
-import { diningPavilion, diningTable, wingHall } from './rosaInterior';
+import { diningPavilion, hallDecor, wingHall } from './rosaInterior';
+import type { Extra } from './park';
 
 const Q = new THREE.Quaternion();
 const at = (x: number, y: number, z: number) => new THREE.Matrix4().makeTranslation(x, y, z);
@@ -72,19 +73,20 @@ function gazebo(b: Builder, x: number, y: number, z: number, r: number): void {
  * lattice railings, lamps and blue-roofed kiosks, ending in the cream restaurant whose wing stands on stilts over the
  * sea (dormered slate mansard, spired towers, an octagonal two-storey pavilion). The main hall is the chapter's goal.
  */
-export function rosaNautica(b: Builder, hf: Heightfield, def: MaleconDef, c: CoastDef): StationInfo | null {
+export function rosaNautica(b: Builder, hf: Heightfield, def: MaleconDef, c: CoastDef, extras: Extra[]): StationInfo | null {
   const p = def.pier;
   if (!p) return null;
   const X = p.x, D = c.sea + 2.6, z0 = def.beachRoad.z + def.beachRoad.half + 4, zE = c.shore + p.length, r = mulberry32(83);
   const g0 = hf.heightAt(X, z0), walkEnd = zE - 34;
-  b.box('bridgeConcrete', [5, 0.4, Math.hypot(6, D - g0)], new THREE.Vector3(X, (g0 + D) / 2, z0 + 3), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.atan2(g0 - D, 6)), true);
-  b.box('deckPier', [5.2, 0.5, walkEnd - z0 - 6], new THREE.Vector3(X, D - 0.25, (z0 + 6 + walkEnd) / 2), Q, true);
+  const steps = Math.max(1, Math.round((D - g0) / 0.17)), rise = (D - g0) / steps;
+  for (let i = 0; i < steps; i++) b.box('deckPier', [5.2, rise * (i + 1), 0.32], new THREE.Vector3(X, g0 + rise * (i + 1) / 2, z0 - 1.6 + i * 0.32), Q, true);
+  b.box('deckPier', [5.2, 0.5, walkEnd - z0 + 1.6 - steps * 0.32], new THREE.Vector3(X, D - 0.25, (z0 - 1.6 + steps * 0.32 + walkEnd) / 2), Q, true);
   b.box('none', [14, 1.4, zE + 36 - z0], new THREE.Vector3(X, D - 1.5, (z0 + zE + 36) / 2), Q, true);
   const top = D - 0.7, foot = c.sea - 3, slope = (top - foot) / 4.5;
   const mound = new THREE.Shape([new THREE.Vector2(-8, foot), new THREE.Vector2(8, foot), new THREE.Vector2(3.5, top), new THREE.Vector2(-3.5, top)]);
-  b.geometry('breakRock', new THREE.ExtrudeGeometry(mound, { depth: zE + 40 - z0, bevelEnabled: false }), at(X, 0, z0));
-  for (let z = z0; z < zE + 40; z += 0.9) for (const s of [-1, 1]) for (let k = 0; k < 3; k++) {
-    const off = 3 + r() * 5, rad = 0.5 + r() * 0.9, y = Math.min(top - Math.max(0, off - 3.5) * slope + rad * 0.2, D - 0.35 - rad * 0.75);
+  b.geometry('breakRock', new THREE.ExtrudeGeometry(mound, { depth: zE + 40 - z0 - 6, bevelEnabled: false }), at(X, 0, z0 + 6));
+  for (let z = z0 + 6; z < zE + 40; z += 0.9) for (const s of [-1, 1]) for (let k = 0; k < 3; k++) {
+    const off = 3 + r() * 5, rad = 0.5 + r() * 0.9, y = Math.min(top - Math.max(0, off - 3.5) * slope + rad * 0.2, D - 0.55 - rad * 1.3);
     b.geometry('breakRock', new THREE.DodecahedronGeometry(rad, 0).scale(1.3, 0.75, 1), new THREE.Matrix4().compose(new THREE.Vector3(X + s * off, y, z + r() * 0.9), new THREE.Quaternion().setFromEuler(new THREE.Euler(r() * 3, r() * 3, r() * 3)), new THREE.Vector3(1, 1, 1)));
   }
   for (let k = 0; k < 40; k++) {
@@ -98,7 +100,7 @@ export function rosaNautica(b: Builder, hf: Heightfield, def: MaleconDef, c: Coa
   for (let z = z0 + 14; z < walkEnd; z += 16) pierLamp(b, X + 2.15, D, z);
   for (let z = z0 + 18; z < walkEnd - 4; z += 9) pot(b, X + (Math.round((z - z0) / 9) % 2 ? -1.9 : 1.9), D, z);
   gazebo(b, X, D, z0 + 9, 3.2);
-  b.box('deckPier', [7, 0.5, walkEnd - kiosk0], new THREE.Vector3(X - 5.6, D - 0.25, (kiosk0 + walkEnd) / 2), Q, true);
+  b.box('deckPier', [6.5, 0.5, walkEnd - kiosk0], new THREE.Vector3(X - 5.85, D - 0.25, (kiosk0 + walkEnd) / 2), Q, true);
   for (let z = kiosk0 + 4; z < walkEnd - 2; z += 6.5) {
     b.box('creamWall', [4, 2.8, 5.4], new THREE.Vector3(X - 6.4, D + 1.4, z), Q, true);
     b.box('lobby', [0.05, 1.5, 3.4], new THREE.Vector3(X - 4.37, D + 1.5, z), Q, false);
@@ -107,7 +109,7 @@ export function rosaNautica(b: Builder, hf: Heightfield, def: MaleconDef, c: Coa
   gazebo(b, X, D, kiosk0 - 6, 3.2);
   // Main hall on the breakwater: two storeys, door facing the promenade.
   const hx0 = X - 8, hx1 = X + 8, hz0 = walkEnd, hz1 = zE + 2, H = 6.4, T = 0.3;
-  b.box('benchWood', [hx1 - hx0 + 4, 0.5, hz1 - hz0 + 4], new THREE.Vector3(X, D - 0.25, (hz0 + hz1) / 2), Q, true);
+  b.box('parquet', [hx1 - hx0, 0.5, hz1 - hz0], new THREE.Vector3(X, D - 0.24, (hz0 + hz1) / 2), Q, true);
   for (const s of [-1, 1]) b.box('creamWall', [(hx1 - hx0) / 2 - 1.6, H, T], new THREE.Vector3(X + s * ((hx1 - hx0) / 4 + 0.8), D + H / 2, hz0), Q, true);
   b.box('creamWall', [3.2, H - 3, T], new THREE.Vector3(X, D + 3 + (H - 3) / 2, hz0), Q, true);
   b.box('creamWall', [hx1 - hx0, H, T], new THREE.Vector3(X, D + H / 2, hz1), Q, true);
@@ -118,9 +120,8 @@ export function rosaNautica(b: Builder, hf: Heightfield, def: MaleconDef, c: Coa
   b.box('slab', [hx1 - hx0, 0.3, hz1 - hz0], new THREE.Vector3(X, D + H, (hz0 + hz1) / 2), Q, true);
   for (let z = hz0 + 3; z < hz1 - 2; z += 4) b.box('lobby', [0.05, 1.6, 2.4], new THREE.Vector3(hx0 - 0.17, D + 4.4, z), Q, false);
   for (const x of [-5, 5]) b.box('lobby', [2.4, 1.6, 0.05], new THREE.Vector3(X + x, D + 4.4, hz0 - 0.17), Q, false);
-  b.box('lobby', [2.4, 2.6, 0.05], new THREE.Vector3(X, D + 1.5, hz0 - 0.4), Q, false);
   hip(b, 'roofSlate', hx1 - hx0 + 1.4, hz1 - hz0 + 1.4, 2.6, 0.7, X, D + H, (hz0 + hz1) / 2);
-  for (let x = -5; x <= 5; x += 5) for (let z = hz0 + 9; z < hz1 - 3; z += 6) diningTable(b, X + x, D, z, 4, x * 0.2);
+  hallDecor(b, hx0, hx1, hz0, hz1, D, H, extras);
   // Wing on stilts out over the sea to the east.
   const wx0 = hx1, wx1 = X + 44, wz0 = walkEnd + 6, wz1 = walkEnd + 24, wz = (wz0 + wz1) / 2;
   b.box('benchWood', [wx1 - wx0 + 6, 0.4, wz1 - wz0 + 4], new THREE.Vector3((wx0 + wx1) / 2 + 3, D - 0.2, wz), Q, true);

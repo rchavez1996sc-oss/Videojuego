@@ -173,7 +173,7 @@ async function boot(): Promise<void> {
   const corpses = new Loot(pickups, world, hf, (at) => combat.bloodStain(at));
   const objective = ch.objective && barrio?.station ? new Objective(ch.objective, barrio.station, camera, { lighting, world, scene }) : null;
   let lives = (hud.lives = ch.lives ?? 3);
-  if (objective) objective.onFail = (why) => (failed || window.setTimeout(() => showMissionFailed(why), 2600), (failed = true));
+  if (objective) objective.onFail = (why) => (failed || window.setTimeout(() => showMissionFailed(why), 4200), (failed = true));
   if (objective) objective.onComplete = () => {
     failed = true;
     showMissionComplete(objective.def.complete, objective.def.reward, `ENEMIGOS ABATIDOS ${enemies.list.length - enemies.aliveCount}/${enemies.list.length} · BAJAS CIVILES ${populace.casualties} · VIDAS ${lives}`, objective.def.loot, objective.def.unlock);

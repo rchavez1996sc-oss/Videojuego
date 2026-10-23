@@ -161,7 +161,7 @@ export function buildMalecon(hf: Heightfield, def: MaleconDef, lighting: Lightin
   buildLandmarks(b, hf, def, c);
   buildBajada(b, hf, def, c, plants);
   buildBeach(b, hf, def, c, rand);
-  const station = rosaNautica(b, hf, def, c);
+  const station = rosaNautica(b, hf, def, c, plants.standing);
   buildBorder(b, hf, def, c, hf.def.playable / 2);
   const group = new THREE.Group();
   group.add(buildLarcomar(b, def, c, lighting, plants, rand));
