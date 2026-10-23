@@ -41,7 +41,7 @@ export class Rig {
   private lockT = 0;
   private aimT = 0;
   private kick = 0;
-  private dead = false;
+  dead = false;
   private isFar = false;
   private skip = 0;
   private acc = 0;

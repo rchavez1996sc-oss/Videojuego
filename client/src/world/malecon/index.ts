@@ -13,8 +13,8 @@ import { concrete, plaster, brick } from '../../render/urbanTextures';
 import { rock, wood, type PbrSet } from '../../render/textures';
 import { edgeZ } from '../coast';
 import { buildOcean } from '../ocean';
-import { paragliders } from '../../fx/paragliders';
-import { apartment, curtain, flagstone, mosaic, lattice, confetti, foliage } from './textures';
+import { Paragliders } from '../../fx/paragliders';
+import { apartment, curtain, flagstone, mosaic, lattice, confetti, foliage, checker } from './textures';
 import { maleconGraph, type MaleconDef } from './layout';
 import { buildTowers, FACADES } from './towers';
 import { buildBoulevard } from './boulevard';
@@ -43,6 +43,13 @@ function maleconMaterials(lighting: Lighting, { apt, co, pl, br, wd, fo }: Tex):
     pavement: std('pavement', { map: co.map, normalMap: co.normalMap, color: '#c9c4ba', roughness: 0.9 }),
     paving: std('paving', { map: co.map, normalMap: co.normalMap, color: '#b3aea4', roughness: 0.9 }),
     flagstone: std('flagstone', { map: fs.map, normalMap: fs.normalMap, roughness: 0.9 }),
+    greenGlass: std('greenGlass', { color: '#5fa88a', roughness: 0.08, metalness: 0.4, transparent: true, opacity: 0.6, emissive: '#1e4a3a', emissiveIntensity: 0.4 }),
+    pathChecker: std('pathChecker', { map: checker().map, roughness: 0.8 }),
+    gravel: std('gravel', { map: co.map, color: '#d9cbb0', roughness: 0.95 }),
+    flowerRed: std('flowerRed', { map: fo.map, normalMap: fo.normalMap, color: '#ff6a6a', emissive: '#3a0606', roughness: 0.95 }),
+    flowerPurple: std('flowerPurple', { map: fo.map, normalMap: fo.normalMap, color: '#c87ae8', emissive: '#22062e', roughness: 0.95 }),
+    roofRed: std('roofRed', { color: '#b8483a', roughness: 0.7 }),
+    roofGreen: std('roofGreen', { color: '#3f7a5a', roughness: 0.6 }),
     bikeRed: std('bikeRed', { map: rk.map, normalMap: rk.normalMap, color: '#b25a48', roughness: 0.9 }),
     boulder: std('boulder', { map: rk.map, normalMap: rk.normalMap, color: '#8f8a83', roughness: 0.95 }),
     railGreen: std('railGreen', { color: '#24503f', roughness: 0.45, metalness: 0.5 }),
@@ -117,17 +124,20 @@ export function buildMalecon(hf: Heightfield, def: MaleconDef, lighting: Lightin
   const plants = buildPark(b, hf, def, c, rand);
   buildBoulevard(b, hf, def, plants, rand);
   plants.standing.push(...guards.map((g) => ({ ...g, key: rand() < 0.5 ? 'civ_idle' : 'texting' })));
-  buildLandmarks(b, hf, def, c);
+  buildLandmarks(b, hf, def, c, plants.palms);
   const group = new THREE.Group();
   group.add(buildLarcomar(b, def, c, lighting, plants, rand));
   group.add(buildMonuments(b, hf, def, lighting, plants.seats, (at, yaw) => bench(b, at, yaw)));
   group.add(buildPropaganda(b, hf, def, lighting, fronts, rand));
   group.add(buildVegetation(b, plants, streetTrees, lighting));
-  group.add(crowd(plants.seats, plants.standing, lighting));
+  const bystanders = { onHurt: (_p: THREE.Vector3) => {} };
+  group.add(crowd(plants.seats, plants.standing, lighting, world, bystanders));
   group.add(surfers(def.surfers ?? 0, c, lighting));
   group.add(...b.build(mats, 0.5, bake, 128), ...t.build(mats, 1 / 6, bake, 128));
   if (atlas.geometries.length) group.add(Object.assign(new THREE.Mesh(mergeGeometries(atlas.geometries), mats.signs), { receiveShadow: true }));
   group.add(buildOcean(hf, c, lighting));
-  group.add(paragliders(def.paragliders, c.edge, lighting));
-  return { group, materials: mats, bake, station: null, graph: maleconGraph(def, c, hf), blocked: (x, z) => z < edgeZ(c, x) + 2 };
+  const fliers = new Paragliders(def.paragliders, c.edge, lighting, world, (x, z) => Math.max(hf.heightAt(x, z), c.sea));
+  fliers.onDown = (p) => bystanders.onHurt(p);
+  group.add(fliers.group);
+  return { group, materials: mats, bake, station: null, graph: maleconGraph(def, c, hf), blocked: (x, z) => z < edgeZ(c, x) + 2, bystanders };
 }

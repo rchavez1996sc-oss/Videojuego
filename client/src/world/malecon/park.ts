@@ -119,7 +119,7 @@ export function buildPark(b: Builder, hf: Heightfield, def: MaleconDef, c: Coast
       pts.push(new THREE.Vector2(xx, z));
     }
     if (pts.some((p) => blocked(p.x, p.y, 3) || Math.hypot(p.x - lh.x, p.y - lh.z) < 14)) continue;
-    ribbon(b, hf, pts, 2.4, 'paving', 0.035);
+    ribbon(b, hf, pts, 2.4, 'pathChecker', 0.035);
     links.push(pts);
   }
   const ring: THREE.Vector2[] = [];
@@ -129,7 +129,20 @@ export function buildPark(b: Builder, hf: Heightfield, def: MaleconDef, c: Coast
     const a = (k / 6) * Math.PI * 2 + 0.5, x = lh.x + Math.cos(a) * 12.5, z = lh.z + Math.sin(a) * 12.5;
     if (!blocked(x, z, 2) && z < edgeZ(c, x) - 3) seat(new THREE.Vector3(x, hf.heightAt(x, z), z), Math.atan2(lh.x - x, lh.z - z));
   }
+  for (const [x, z, r] of def.flowerBeds ?? []) {
+    const y = hf.heightAt(x, z), k = Math.round(x + z) % 2 ? 'flowerRed' : 'flowerPurple';
+    b.geometry(k, new THREE.CircleGeometry(r, 40).rotateX(-Math.PI / 2), new THREE.Matrix4().makeTranslation(x, y + 0.09, z));
+    b.geometry('brickRed', new THREE.TorusGeometry(r + 0.1, 0.12, 4, 48).rotateX(Math.PI / 2), new THREE.Matrix4().makeTranslation(x, y + 0.04, z));
+  }
+  for (const [x, z, r] of def.geoglyphs ?? []) {
+    const pts: THREE.Vector2[] = [];
+    for (let a = 0.6; a < Math.PI * 5; a += 0.15) pts.push(new THREE.Vector2(x + Math.cos(a) * (r * a) / (Math.PI * 5), z + Math.sin(a) * (r * a) / (Math.PI * 5)));
+    const end = pts[pts.length - 1];
+    for (let k = 1; k <= 8; k++) pts.push(new THREE.Vector2(end.x + k * r * 0.12, end.y));
+    ribbon(b, hf, pts, 0.45, 'gravel', 0.1);
+  }
   paintLawns(hf, (x, z) => {
+    if ((def.flowerBeds ?? []).some(([bx, bz, r]) => Math.hypot(x - bx, z - bz) < r + 0.6)) return 0;
     if (z < parkStart + 0.5 || z > edgeZ(c, x) - 0.6 || blocked(x, z, 1)) return 0;
     if (Math.abs(z - promenadeZ(c, x)) < 3 || Math.abs(z - promenadeZ(c, x) + BIKE) < 1.8 || Math.abs(z - innerPathZ(def, x)) < 2.4) return 0;
     if (Math.hypot(x - lh.x, z - lh.z) < 11.5) return 0;

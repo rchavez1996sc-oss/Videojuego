@@ -34,6 +34,12 @@ export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world
       casualty();
     };
   }
+  if (barrio?.bystanders) barrio.bystanders.onHurt = (p) => {
+    d.hud.showToast('CIVIL HERIDO');
+    d.sfx.hurt();
+    alarm(p, 60);
+    casualty();
+  };
   if (life) {
     d.scene.add(life.group);
     const tr = life.trafficEvents;

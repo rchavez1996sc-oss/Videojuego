@@ -3,7 +3,7 @@ import type { Builder } from '../buildingKit';
 import type { Heightfield } from '../heightfield';
 import { edgeZ, type CoastDef } from '../coast';
 import { bridgeSpan, type MaleconDef } from './layout';
-import { bench } from './park';
+import { bench, lamp, ribbon } from './park';
 
 const Q = new THREE.Quaternion(), UP = new THREE.Vector3(0, 1, 0);
 const at = (x: number, y: number, z: number) => new THREE.Matrix4().makeTranslation(x, y, z);
@@ -117,8 +117,50 @@ function bridge(b: Builder, hf: Heightfield, def: MaleconDef, c: CoastDef): void
   }
 }
 
-export function buildLandmarks(b: Builder, hf: Heightfield, def: MaleconDef, c: CoastDef): void {
+/** Road winding down the ravine floor under the bridge to the beach, lined with palms and lamps. */
+function bajada(b: Builder, hf: Heightfield, c: CoastDef, palms: THREE.Vector3[]): void {
+  for (const r of c.ravines ?? []) {
+    const pts: THREE.Vector2[] = [], mouth = edgeZ(c, r.x) + c.run + 6;
+    for (let z = r.head + 4; z <= mouth; z += 3) pts.push(new THREE.Vector2(r.x + Math.sin(z / 14) * 1.2, z));
+    ribbon(b, hf, pts, 5.5, 'asphalt', 0.1);
+    pts.forEach((p, i) => {
+      if (i % 4 !== 2) return;
+      for (const s of [-1, 1]) palms.push(new THREE.Vector3(p.x + s * 4.2, hf.heightAt(p.x + s * 4.2, p.y), p.y));
+      if (i % 8 === 2) lamp(b, new THREE.Vector3(p.x + 3.3, hf.heightAt(p.x + 3.3, p.y), p.y));
+    });
+  }
+}
+
+/** Long pier from the beach out over the surf to a white seaside restaurant with red gabled roofs (La Rosa Náutica style). */
+function pier(b: Builder, hf: Heightfield, def: MaleconDef, c: CoastDef): void {
+  const p = def.pier;
+  if (!p) return;
+  const z0 = def.beachRoad.z + def.beachRoad.half + 4, z1 = c.shore + p.length, deck = c.sea + 2.4, mid = (z0 + 6 + z1) / 2;
+  const g0 = hf.heightAt(p.x, z0), ramp = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.atan2(g0 - deck, 6));
+  b.box('bridgeConcrete', [5, 0.4, Math.hypot(6, deck - g0)], new THREE.Vector3(p.x, (g0 + deck) / 2, z0 + 3), ramp, true);
+  b.box('benchWood', [5, 0.35, z1 - z0 - 6], new THREE.Vector3(p.x, deck, mid), Q, true);
+  for (let z = z0 + 8; z < z1; z += 6) for (const s of [-1, 1]) b.geometry('bridgeConcrete', new THREE.CylinderGeometry(0.25, 0.3, deck - c.sea + 6, 8), new THREE.Matrix4().makeTranslation(p.x + s * 2.1, (deck + c.sea - 6) / 2, z));
+  for (const s of [-1, 1]) {
+    b.box('lhWhite', [0.08, 1, z1 - z0 - 6], new THREE.Vector3(p.x + s * 2.45, deck + 0.65, mid), Q, false);
+    b.box('none', [0.2, 1.2, z1 - z0 - 6], new THREE.Vector3(p.x + s * 2.45, deck + 0.6, mid), Q, true);
+    for (let z = z0 + 6; z < z1; z += 2.4) b.box('lhWhite', [0.1, 1, 0.1], new THREE.Vector3(p.x + s * 2.45, deck + 0.5, z), Q, false);
+  }
+  for (let z = z0 + 12; z < z1; z += 18) lamp(b, new THREE.Vector3(p.x + 2.1, deck + 0.17, z));
+  const rz = z1 + 9, w = 24, d = 18;
+  b.box('benchWood', [w + 6, 0.4, d + 6], new THREE.Vector3(p.x, deck, rz), Q, true);
+  b.box('lhWhite', [w, 4.2, d], new THREE.Vector3(p.x, deck + 2.3, rz), Q, true);
+  for (let k = -2; k <= 2; k++) b.box('lobby', [2.6, 2.4, 0.1], new THREE.Vector3(p.x + k * 4.4, deck + 2.2, rz - d / 2 - 0.05), Q, false);
+  b.gable('roofRed', w + 1, 4, d + 1, new THREE.Vector3(p.x, deck + 4.4, rz), Q);
+  b.gable('roofRed', 8, 3, 8, new THREE.Vector3(p.x, deck + 7.6, rz - d / 2 + 2), Q, true);
+  b.box('lhWhite', [8, 3.2, 6], new THREE.Vector3(p.x, deck + 6, rz - d / 2 + 2), Q, false);
+  b.geometry('roofGreen', new THREE.ConeGeometry(1.4, 2.6, 8).translate(0, 1.3, 0), new THREE.Matrix4().makeTranslation(p.x + w / 2 - 2, deck + 8.4, rz + d / 2 - 2));
+  b.box('lhWhite', [2.6, 4, 2.6], new THREE.Vector3(p.x + w / 2 - 2, deck + 6.4, rz + d / 2 - 2), Q, false);
+}
+
+export function buildLandmarks(b: Builder, hf: Heightfield, def: MaleconDef, c: CoastDef, palms: THREE.Vector3[]): void {
   lighthouse(b, hf, def.lighthouse.x, def.lighthouse.z);
   amorPark(b, hf, def, c);
   bridge(b, hf, def, c);
+  bajada(b, hf, c, palms);
+  pier(b, hf, def, c);
 }

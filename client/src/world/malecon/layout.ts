@@ -15,6 +15,11 @@ export interface MaleconDef {
   brickEdge?: [number, number];
   /** z of the inland wall: the city beyond is only the decorative far city. */
   north?: number;
+  /** Pier out to the seaside restaurant: x and length past the shoreline. */
+  pier?: { x: number; length: number };
+  /** Round flower beds [x, z, radius] and Nazca-style spiral geoglyphs [x, z, radius] drawn in gravel on the lawns. */
+  flowerBeds?: [number, number, number][];
+  geoglyphs?: [number, number, number][];
   beachRoad: { z: number; half: number };
   lighthouse: { x: number; z: number };
   amor: { x: number; w: number };
@@ -30,6 +35,24 @@ export interface MaleconDef {
 
 export const EXTENT = 232;
 export const SIDEWALK = 4.5;
+
+/** Asphalt bands of the street along x at `z` (a boulevard has two, either side of its median). */
+export function carriageways(def: MaleconDef, z: number): [number, number][] {
+  const h = streetHalf(def, z), bv = def.boulevard;
+  return bv?.z === z ? [[z - h, z - bv.median / 2], [z + bv.median / 2, z + h]] : [[z - h, z + h]];
+}
+
+/** Complement of `cuts` within [a, e]: the stretches left between them. */
+export function between(a: number, e: number, cuts: [number, number][]): [number, number][] {
+  const out: [number, number][] = [];
+  let p = a;
+  for (const [c0, c1] of [...cuts].sort((x, y) => x[0] - y[0])) {
+    if (c0 > p) out.push([p, Math.min(c0, e)]);
+    p = Math.max(p, c1);
+  }
+  if (e > p) out.push([p, e]);
+  return out;
+}
 
 /** Inland limit of the playable district. */
 export function northZ(def: MaleconDef): number {

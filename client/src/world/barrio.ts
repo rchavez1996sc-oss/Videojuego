@@ -48,6 +48,8 @@ export interface Barrio {
   materials: Record<string, THREE.Material>;
   bake: { material: THREE.Material; keys: string[] }[];
   station: StationInfo | null;
+  /** Shootable decor people (seated extras, paragliders); the populace sets `onHurt`. */
+  bystanders?: import('./malecon/people').Bystanders;
 }
 
 const PAINT_COLORS = ['#9fc3d6', '#e3c46a', '#d9a3a0', '#9cc29a', '#e6dac0', '#d99a63'];

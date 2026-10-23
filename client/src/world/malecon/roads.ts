@@ -3,7 +3,7 @@ import type { Builder } from '../buildingKit';
 import type { Heightfield } from '../heightfield';
 import { car, type CarKind } from '../urbanProps';
 import type { CoastDef } from '../coast';
-import { EXTENT, SIDEWALK, northZ, streetHalf, type MaleconDef } from './layout';
+import { EXTENT, SIDEWALK, between, carriageways, northZ, streetHalf, type MaleconDef } from './layout';
 
 const Q = new THREE.Quaternion();
 const L = EXTENT + 30;
@@ -50,19 +50,22 @@ export function buildRoads(b: Builder, hf: Heightfield, def: MaleconDef, c: Coas
   const flat = () => 0;
   b.box('asphalt', [L * 2, 0.1, av.half * 2], new THREE.Vector3(0, -0.02, av.z), Q, false);
   laneLines(b, flat, av.z, av.half, def.streets.x, true);
-  for (const s of [-1, 1]) pavement(b, -L, L, av.z + s * av.half + (s < 0 ? -SIDEWALK : 0), av.z + s * av.half + (s > 0 ? SIDEWALK : 0));
+  const xRuns = between(-L, L, def.streets.x.map((x) => [x - sh, x + sh] as [number, number]));
+  pavement(b, -L, L, av.z + av.half, av.z + av.half + SIDEWALK);
+  for (const [a, e] of xRuns) pavement(b, a, e, av.z - av.half - SIDEWALK, av.z - av.half);
   for (const z of def.streets.z) {
     const h = streetHalf(def, z);
     if (def.boulevard?.z !== z) {
       b.box('asphalt', [L * 2, 0.1, sh * 2], new THREE.Vector3(0, -0.03, z), Q, false);
       laneLines(b, flat, z, sh, def.streets.x, true);
     }
-    for (const s of [-1, 1]) pavement(b, -L, L, z + (s < 0 ? -h - SIDEWALK : h), z + (s < 0 ? -h : h + SIDEWALK));
+    for (const [a, e] of xRuns) for (const s of [-1, 1]) pavement(b, a, e, z + (s < 0 ? -h - SIDEWALK : h), z + (s < 0 ? -h : h + SIDEWALK));
   }
   const zMax = av.z - av.half, nz = northZ(def);
   for (const x of def.streets.x) {
-    b.box('asphalt', [sh * 2, 0.1, zMax - nz], new THREE.Vector3(x, -0.025, (zMax + nz) / 2), Q, false);
-    for (const s of [-1, 1]) pavement(b, x + (s < 0 ? -sh - SIDEWALK : sh), x + (s < 0 ? -sh : sh + SIDEWALK), nz, zMax - SIDEWALK);
+    for (const [a, e] of between(nz, zMax, def.streets.z.flatMap((z) => carriageways(def, z)))) b.box('asphalt', [sh * 2, 0.1, e - a], new THREE.Vector3(x, -0.025, (a + e) / 2), Q, false);
+    const walks = between(nz, zMax - SIDEWALK, def.streets.z.map((z) => [z - streetHalf(def, z) - SIDEWALK, z + streetHalf(def, z) + SIDEWALK] as [number, number]));
+    for (const [a, e] of walks) for (const s of [-1, 1]) pavement(b, x + (s < 0 ? -sh - SIDEWALK : sh), x + (s < 0 ? -sh : sh + SIDEWALK), a, e);
     for (const z of [...def.streets.z, av.z]) {
       const h = z === av.z ? av.half : streetHalf(def, z);
       zebra(b, x, z + (z === av.z ? -av.half - 2 : h + 2), sh, true);
@@ -89,7 +92,8 @@ export function buildRoads(b: Builder, hf: Heightfield, def: MaleconDef, c: Coas
       }
     }
   }
-  b.box('none', [L * 2, 6, 1], new THREE.Vector3(0, c.sea + 1, c.shore + 1.5), Q, true);
+  const gap = def.pier?.x ?? L * 3;
+  for (const [a, e] of [[-L, gap - 3.5], [gap + 3.5, L]]) if (e > a) b.box('none', [e - a, 6, 1], new THREE.Vector3((a + e) / 2, c.sea + 1, c.shore + 1.5), Q, true);
   if (def.north !== undefined) b.box('none', [L * 2, 12, 1], new THREE.Vector3(0, 5, nz - 0.5), Q, true);
   parkedCars(b, def, rand);
   return trees;

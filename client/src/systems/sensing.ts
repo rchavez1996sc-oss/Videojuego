@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
-import type { Threat } from '../ui/threatGrid';
 import type { Enemies } from './enemies';
 import type { Civilians } from './civilians';
 import type { Player } from '../entities/player';
@@ -9,6 +8,8 @@ import { surfaceOf } from '../world/surfaces';
 import type { SupplyKind } from './pickups';
 
 /** Directions/distances of nearby enemies (and bystanders, as neutral marks) relative to the camera heading. */
+export interface Threat { angle: number; dist: number; aware: boolean; neutral?: boolean; supply?: 'medkit' | 'ammo'; ally?: boolean; objective?: boolean }
+
 export function gatherThreats(enemies: Enemies, civilians: Civilians | null, supplies: { pos: THREE.Vector3; kind: SupplyKind }[], player: THREE.Vector3, camera: THREE.Camera, allies: THREE.Vector3[] = [], objective?: THREE.Vector3): Threat[] {
   const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).setY(0).normalize();
   const right = new THREE.Vector3(-fwd.z, 0, fwd.x);

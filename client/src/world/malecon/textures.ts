@@ -148,6 +148,18 @@ export const confetti = (): PbrSet =>
     }
   });
 
+/** White and pale-grey checkerboard paving (the malecón's diagonal paths), 4 × 4 tiles. */
+export const checker = (): PbrSet =>
+  makePbr(256, 281, 2, (c, h, s, r) => {
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
+      const v = (i + j) % 2 ? 236 : 168 + r() * 10;
+      c.fillStyle = `rgb(${v},${v},${v - 4})`;
+      c.fillRect((i * s) / 4, (j * s) / 4, s / 4, s / 4);
+      h.fillStyle = '#9a9a9a';
+      h.fillRect((i * s) / 4 + 2, (j * s) / 4 + 2, s / 4 - 4, s / 4 - 4);
+    }
+  });
+
 /** Clipped hedge / creeper foliage. */
 export const foliage = (): PbrSet =>
   makePbr(256, 271, 5, (c, h, s, r) => {

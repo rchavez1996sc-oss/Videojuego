@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import RAPIER from '@dimforge/rapier3d-compat';
+import { onHit } from '../surfaces';
 import { mulberry32 } from '../../core/rng';
 import type { Lighting } from '../../render/lighting';
 import { Rig } from '../../entities/rig';
@@ -36,8 +38,24 @@ function extra(lighting: Lighting, rand: () => number, at: THREE.Vector3, yaw: n
   return rig;
 }
 
+/** Called when a bystander (extra, paraglider) is shot; set by the populace. */
+export interface Bystanders { onHurt: (p: THREE.Vector3) => void }
+
+/** Static capsule collider on an extra; a hit plays a death clip on the ground below and reports it. */
+function shootable(world: RAPIER.World, rig: Rig, floor: number, seated: boolean, hurt: Bystanders): void {
+  const p = rig.root.position, y = seated ? rig.hips().y : floor + 0.9;
+  const col = world.createCollider(RAPIER.ColliderDesc.capsule(seated ? 0.3 : 0.55, 0.32).setTranslation(p.x, y, p.z));
+  onHit(col.handle, () => {
+    col.setEnabled(false);
+    rig.root.position.y = floor;
+    rig.far = false;
+    rig.die(Math.random() < 0.5 ? 'fall_back' : 'dying');
+    hurt.onHurt(new THREE.Vector3(p.x, y, p.z));
+  });
+}
+
 /** Seated and standing extras (benches, café tables, chats, railing); built once characters load; animated only up close. */
-export function crowd(seats: { pos: THREE.Vector3; yaw: number }[], standing: Extra[], lighting: Lighting): THREE.Group {
+export function crowd(seats: { pos: THREE.Vector3; yaw: number }[], standing: Extra[], lighting: Lighting, world: RAPIER.World, hurt: Bystanders): THREE.Group {
   const g = new THREE.Group(), r = mulberry32(12);
   let rigs: Rig[] | null = null, last = 0, prev = performance.now();
   const near = new Set<Rig>();
@@ -47,6 +65,10 @@ export function crowd(seats: { pos: THREE.Vector3; yaw: number }[], standing: Ex
     if (!rigs) {
       if (!characters.ready || !characters.clips.has('sit')) return;
       rigs = [...seats.map((s) => extra(lighting, r, s.pos, s.yaw, SEATED[Math.floor(r() * SEATED.length)])), ...standing.map((s) => extra(lighting, r, s.pos, s.yaw, s.key))];
+      rigs.forEach((x, i) => {
+        x.root.updateMatrixWorld(true);
+        shootable(world, x, (seats[i] ?? standing[i - seats.length]).pos.y, i < seats.length, hurt);
+      });
       if (rigs.length) g.add(...rigs.map((x) => x.root));
     }
     for (const x of near) x.tick(dt);
@@ -56,7 +78,7 @@ export function crowd(seats: { pos: THREE.Vector3; yaw: number }[], standing: Ex
     for (const x of rigs) {
       const d = x.root.position.distanceTo(camera.position);
       x.root.visible = d < 48;
-      x.far = d > 16;
+      if (!x.dead) x.far = d > 16;
       if (d < 28) near.add(x);
     }
   }));

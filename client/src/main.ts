@@ -31,7 +31,6 @@ import type { EnemyDef } from './entities/enemy';
 import { Enemies } from './systems/enemies';
 import { DamageFx } from './ui/damage';
 import { Pickups, collectSupplies } from './systems/pickups';
-import { Music } from './audio/music';
 import { wireRoad } from './systems/roadHits';
 import { respawnPlayer, streetPoints } from './systems/respawn';
 import { startSpot } from './systems/startSpot';
@@ -39,7 +38,7 @@ import { Melee } from './systems/melee';
 import { coverSeeker } from './systems/takeCover';
 import { Grenades } from './weapons/grenades';
 import { detonate, BLAST_RADIUS } from './weapons/explosion';
-import { ThreatGrid } from './ui/threatGrid';
+import { Minimap } from './ui/minimap';
 import { installDebug } from './core/debug';
 import { ShadowCull } from './render/shadowCull';
 import { buildBarrio } from './world/barrio';
@@ -106,6 +105,7 @@ async function boot(): Promise<void> {
   scene.add(buildScatter(hf, lighting, world, ch.scatter, nearBuilding));
   const grass = new Grass(hf, ch.biome, lighting, preset.grassBlades);
   scene.add(grass.mesh);
+  const minimap = new Minimap(renderer.gl, scene, ch.terrain.playable, ['asphalt', 'asphaltWorn'].flatMap((k) => barrio?.materials[k] ?? []), ch.barrio && barrio ? { ...barrio.graph, width: ch.barrio.street } : undefined);
 
   await step('Cargando personajes…');
   await characters.load(lighting);
@@ -117,7 +117,7 @@ async function boot(): Promise<void> {
   scene.add(player.model.root);
   const input = new Input(canvas);
   const tpc = new ThirdPersonCamera(camera, world, startYaw);
-  const mixer = new Mixer(), sfx = new Sfx(mixer), music = new Music(mixer), hud = new Hud();
+  const mixer = new Mixer(), sfx = new Sfx(mixer), hud = new Hud();
   const combat = new Combat(weapons.ak as WeaponDef, world, player, tpc, sfx, lighting, hf);
   scene.add(combat.group);
   const rangeOrigin = { ...ch.spawn, yaw: ch.rangeYaw ?? ch.spawn.yaw };
@@ -130,7 +130,7 @@ async function boot(): Promise<void> {
   scene.add(range.group);
   scene.add(buildStructures(hf, lighting, world, rangeOrigin, ch.structures ?? []));
   player.onMantle = () => sfx.footstep(1.3, 'rock');
-  const dynRes = new DynamicResolution(renderer), damageFx = new DamageFx();
+  const dynRes = new DynamicResolution(renderer), damageFx = new DamageFx((k) => (sfx.thud(k), tpc.kick(0, 0, 0.12 + 0.2 * k)));
   const nav = barrio ? new StreetNav(barrio.graph) : null;
   world.step();
   const enemies = new Enemies(enemyDefs as unknown as Record<string, EnemyDef>, ch.enemies ?? [], world, hf, lighting, player, combat, sfx, camera, nav);
@@ -163,7 +163,6 @@ async function boot(): Promise<void> {
   };
   const pickups = new Pickups(lighting, hf, ch.medkits ?? [], ch.ammo ?? []);
   scene.add(pickups.group);
-  const threatGrid = new ThreatGrid();
   const grenades = new Grenades(world, hf, lighting, () => player.collisionHandle);
   scene.add(grenades.group);
   grenades.onSettled = (at) => enemies.fleeFrom(at);
@@ -250,7 +249,6 @@ async function boot(): Promise<void> {
       civilians?.update(dt, player.position);
       const inCombat = enemies.list.some((e) => e.alive && e.state === 'combat');
       life?.update(dt, player.position, inCombat);
-      music.update(dt, inCombat, player.hp);
       world.timestep = dt;
       world.step();
       player.syncPosition();
@@ -267,7 +265,7 @@ async function boot(): Promise<void> {
     objective?.update(dt, player.position, enemies.list, input, deadT <= 0);
     corpses.update(dt, { dead: enemies.list.filter((e) => !e.alive), fallen: squad?.fallen ?? [], player, gun: combat.gun, hud, alive: deadT <= 0 });
     const threats = gatherThreats(enemies, civilians, pickups.markers, player.position, camera, squad?.positions, objective?.position);
-    threatGrid.update(dt, threats);
+    minimap.update(player.position, tpc.yaw, threats);
     damageFx.update(dt, player.hp / 100);
     hud.enemies = enemies.aliveCount;
     range.update(dt);

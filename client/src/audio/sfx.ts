@@ -168,6 +168,15 @@ export class Sfx {
     this.filtered(t, 'lowpass', 400, 1, 0.4, 0.002, 0.12);
   }
 
+  /** Body slamming into the ground after a long fall, `k` 0..1. */
+  thud(k: number): void {
+    const t = this.m.ctx.currentTime;
+    this.tone(t, 'sine', 70, 32, 0.6 + 0.4 * k, 0.35);
+    this.filtered(t, 'lowpass', 900, 0.8, 0.5 + 0.4 * k, 0.001, 0.18);
+    this.filtered(t + 0.02, 'bandpass', 2400, 1.5, 0.15 * k, 0.001, 0.08);
+    this.hurt();
+  }
+
   dryFire(): void {
     const t = this.m.ctx.currentTime;
     this.filtered(t, 'bandpass', 3200, 6, 0.4, 0.001, 0.03);

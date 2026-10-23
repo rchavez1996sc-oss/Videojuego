@@ -78,8 +78,8 @@ export class Traffic {
         speed: cruise, cruise, len, honkT: 3 + rand() * 10, panic: false, state: 'drive', hp: HP, spin: 0, drift: 0, smokeT: 0,
       };
       this.list.push(v);
-      onHit(collider.handle, (dmg) => {
-        this.damage(v, dmg);
+      onHit(collider.handle, (dmg, p) => {
+        this.damage(v, (kind === 'moto' || kind === 'delivery') && p.y - g.position.y > 1 ? HP : dmg);
         return false;
       });
     }

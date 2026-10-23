@@ -59,9 +59,19 @@ function storefronts(b: Builder, x0: number, w: number, zFace: number, s: 1 | -1
 /** Residential tower: facade box (one collider), sea-facing balconies with glass rails, lobby (or shops), roof plant. */
 function tower(t: Builder, b: Builder, x0: number, w: number, zFace: number, d: number, s: 1 | -1, floors: number, style: string, rand: () => number, shop?: ShopSign): { pos: THREE.Vector3; yaw: number } | null {
   const H = floors * FLOOR, cx = x0 + w / 2, cz = zFace - s * d / 2;
-  t.box(style, [w, H + 0.6, d], new THREE.Vector3(cx, H / 2 - 0.3, cz), Q);
+  const banded = style !== 'glassWall' && rand() < 0.4;
+  t.box(banded ? 'glassWall' : style, [w, H + 0.6, d], new THREE.Vector3(cx, H / 2 - 0.3, cz), Q);
   const glass = style === 'glassWall';
-  if (!glass) {
+  if (banded) {
+    for (let f = 1; f < floors; f++) {
+      const y = f * FLOOR;
+      for (const k of [-1, 1]) {
+        b.box('slab', [w + 1.1, 0.34, 0.55], new THREE.Vector3(cx, y, cz + k * (d / 2 + 0.27)), Q, false);
+        b.box('slab', [0.55, 0.34, d], new THREE.Vector3(cx + k * (w / 2 + 0.27), y, cz), Q, false);
+      }
+      b.box('railGlass', [w, 0.95, 0.05], new THREE.Vector3(cx, y + 0.65, zFace + s * 0.5), Q, false);
+    }
+  } else if (!glass) {
     const rail = rand() < 0.35 ? 'railBlue' : 'railGlass';
     const deep = 1.1 + rand() * 0.5, bw = w * (rand() < 0.4 ? 0.62 : 1) + 0.4, bx = cx + (bw < w ? (rand() - 0.5) * (w - bw) : 0);
     for (let f = 1; f < floors; f++) {

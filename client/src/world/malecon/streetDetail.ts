@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { Builder } from '../buildingKit';
 import type { Heightfield } from '../heightfield';
 import { powerLine } from '../urbanProps';
-import { EXTENT, SIDEWALK, northZ, streetHalf, type MaleconDef } from './layout';
+import { EXTENT, SIDEWALK, between, northZ, streetHalf, type MaleconDef } from './layout';
 import { bin } from './boulevard';
 
 const Q = new THREE.Quaternion(), L = EXTENT + 30;
@@ -34,7 +34,8 @@ export function streetDetail(b: Builder, hf: Heightfield, def: MaleconDef, rand:
   kerbX(av.z - av.half - 0.08);
   b.box('kerbYellow', [L * 2, 0.18, 0.16], new THREE.Vector3(0, 0.05, av.z + av.half + 0.08), Q, false);
   const zMax = av.z - av.half - SIDEWALK;
-  for (const x of xs) for (const s of [-1, 1]) b.box('kerbYellow', [0.16, 0.18, zMax - northZ(def)], new THREE.Vector3(x + s * (sh + 0.08), 0.05, (zMax + northZ(def)) / 2), Q, false);
+  const walks = between(northZ(def), zMax, def.streets.z.map((z) => [z - streetHalf(def, z) - SIDEWALK, z + streetHalf(def, z) + SIDEWALK] as [number, number]));
+  for (const x of xs) for (const s of [-1, 1]) for (const [a, e] of walks) b.box('kerbYellow', [0.16, 0.18, e - a], new THREE.Vector3(x + s * (sh + 0.08), 0.05, (a + e) / 2), Q, false);
 
   for (const z of def.streets.z) {
     if (def.boulevard?.z === z) continue;
@@ -65,7 +66,8 @@ export function streetDetail(b: Builder, hf: Heightfield, def: MaleconDef, rand:
     if (near(x, sh + 4)) continue;
     const m = new THREE.Matrix4().makeTranslation(x, 0, av.z + av.half - 1.5);
     b.geometry('bollardGreen', new THREE.CylinderGeometry(0.07, 0.08, 0.9, 10).translate(0, 0.45, 0), m);
-    b.geometry('tail', new THREE.CylinderGeometry(0.075, 0.075, 0.08, 10).translate(0, 0.8, 0), m);
+    for (const y of [0.25, 0.55]) b.geometry('lhBlack', new THREE.CylinderGeometry(0.076, 0.078, 0.12, 10).translate(0, y, 0), m);
+    b.geometry('roadWhite', new THREE.CylinderGeometry(0.075, 0.075, 0.06, 10).translate(0, 0.78, 0), m);
   }
   for (let x = -L; x < L; x += 3) if (!near(x, sh + 4)) b.box('roadWhite', [2, 0.02, 0.12], new THREE.Vector3(x + 1, 0.04, av.z + av.half - 1.95), Q, false);
   for (let x = -L + 20; x < L; x += 36) bin(b, new THREE.Vector3(x, 0.08, av.z - av.half - SIDEWALK + 0.6));

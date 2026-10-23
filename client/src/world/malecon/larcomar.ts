@@ -95,6 +95,12 @@ export function buildLarcomar(b: Builder, def: MaleconDef, c: CoastDef, lighting
     b.box('planter', [2.2, 0.8, 2.2], p.clone().setY(y0 + 0.4), Q, true);
     plants.palms.push(p.clone().setY(y0 + 0.8));
   }
+  for (const s of [-1, 1]) for (let k = 0; k < 3; k++) {
+    const x = cx + s * (9 + k * 9), m = new THREE.Matrix4().makeTranslation(x, 0, l.z0 - 0.9);
+    b.geometry('greenGlass', new THREE.CylinderGeometry(0.55, 0.55, 4.2, 16).translate(0, 2.1, 0), m);
+    b.geometry('lampPole', new THREE.CylinderGeometry(0.6, 0.6, 0.2, 16).translate(0, 4.25, 0), m);
+    b.box('none', [1.1, 4.2, 1.1], new THREE.Vector3(x, 2.1, l.z0 - 0.9), Q, true);
+  }
   for (const s of [-1, 1]) for (let k = 0; k < 3; k++) pergola(b, new THREE.Vector3(cx + s * (8 + k * 9), 0, l.z0 - 16 - (k % 2) * 6));
   return signs;
 }

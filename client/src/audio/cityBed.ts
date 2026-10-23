@@ -22,12 +22,6 @@ function moto(m: Mixer, vol: number): void {
   o.stop(t + dur + 0.1);
 }
 
-/** The ice-cream seller's toy trumpet, a street or two away. */
-function heladero(m: Mixer, vol: number): void {
-  const t = m.ctx.currentTime;
-  [[0, 880, 0.14], [0.2, 880, 0.14], [0.4, 1046, 0.42]].forEach(([dt, f, d]) => tone(m, t + dt, 'square', f, d, 0.012 * vol, 1800));
-}
-
 /** Somebody building a second floor: a short run of hammer blows. */
 function hammering(m: Mixer, vol: number): void {
   const t = m.ctx.currentTime, n = Math.floor(rnd(4, 9)), gap = rnd(0.35, 0.55);
@@ -85,7 +79,6 @@ function noise(m: Mixer, t: number, f: number, q: number, vol: number, dur: numb
 export class CityBed {
   private layers: Layer[] = [
     { every: [6, 14], t: 3, play: moto },
-    { every: [35, 70], t: 20, play: heladero },
     { every: [18, 40], t: 9, play: hammering },
     { every: [8, 20], t: 5, play: sparrows },
     { every: [12, 25], t: 7, play: wind },

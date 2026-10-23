@@ -4,8 +4,11 @@ export class DamageFx {
   private arcs = document.createElement('div');
   private death = document.createElement('div');
   private pain = 0;
+  private lastHp = 1;
+  private struck = false;
 
-  constructor() {
+  /** `onImpact(k)`: health lost without a hit from someone (a fall), `k` 0..1 by severity. */
+  constructor(private onImpact: (k: number) => void = () => {}) {
     this.vignette.id = 'pain';
     this.arcs.id = 'hit-arcs';
     this.death.id = 'death';
@@ -16,6 +19,7 @@ export class DamageFx {
   /** `angle` in radians: 0 = in front, positive = to the right. */
   hit(angle: number, damage: number): void {
     this.pain = Math.min(1, this.pain + damage / 30);
+    this.struck = true;
     const arc = document.createElement('i');
     arc.style.transform = `rotate(${angle}rad)`;
     this.arcs.appendChild(arc);
@@ -24,9 +28,24 @@ export class DamageFx {
   }
 
   update(dt: number, hpFrac: number): void {
+    const lost = this.lastHp - hpFrac;
+    if (lost > 0.05 && !this.struck && hpFrac > 0) this.impact(Math.min(1, lost * 2));
+    this.lastHp = hpFrac;
+    this.struck = false;
     this.pain = Math.max(0, this.pain - dt * 1.5);
     const low = hpFrac < 0.35 ? (0.35 - hpFrac) * 2 : 0;
     this.vignette.style.opacity = Math.min(1, this.pain * 0.8 + low).toFixed(2);
+  }
+
+  private impact(k: number): void {
+    this.pain = 1;
+    this.onImpact(k);
+    for (const el of [document.body, document.getElementById('hud')]) {
+      el?.classList.remove('jolt');
+      void el?.offsetWidth;
+      el?.classList.add('jolt');
+    }
+    setTimeout(() => document.body.classList.remove('jolt'), 700);
   }
 
   set dead(v: boolean) {
