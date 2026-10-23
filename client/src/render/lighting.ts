@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { CSM } from 'three/examples/jsm/csm/CSM.js';
-import { preset } from '../core/settings';
+import { preset, quality } from '../core/settings';
+import { weathering } from './weathering';
 import type { BiomeDef } from '../data/types';
 
 type Hook = (shader: THREE.WebGLProgramParametersWithUniforms, renderer: THREE.WebGLRenderer) => void;
@@ -60,13 +61,12 @@ export class Lighting {
   setup<T extends THREE.Material>(mat: T, key: string, hook?: Hook): T {
     this.csm.setupMaterial(mat);
     mat.customProgramCacheKey = () => key;
-    if (hook) {
-      const csmHook = mat.onBeforeCompile.bind(mat);
-      mat.onBeforeCompile = (shader, r) => {
-        csmHook(shader, r);
-        hook(shader, r);
-      };
-    }
+    const csmHook = mat.onBeforeCompile.bind(mat), wear = quality !== 'low';
+    mat.onBeforeCompile = (shader, r) => {
+      csmHook(shader, r);
+      hook?.(shader, r);
+      if (wear) weathering(shader, key);
+    };
     return mat;
   }
 

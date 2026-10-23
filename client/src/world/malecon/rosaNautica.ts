@@ -6,6 +6,7 @@ import type { CoastDef } from '../coast';
 import type { StationInfo } from '../station';
 import type { MaleconDef } from './layout';
 import { lamp } from './park';
+import { diningPavilion, diningTable, wingHall } from './rosaInterior';
 
 const Q = new THREE.Quaternion();
 const at = (x: number, y: number, z: number) => new THREE.Matrix4().makeTranslation(x, y, z);
@@ -92,7 +93,7 @@ export function rosaNautica(b: Builder, hf: Heightfield, def: MaleconDef, c: Coa
   for (const x of [-5, 5]) b.box('lobby', [2.4, 1.6, 0.05], new THREE.Vector3(X + x, D + 4.4, hz0 - 0.17), Q, false);
   b.box('lobby', [2.4, 2.6, 0.05], new THREE.Vector3(X, D + 1.5, hz0 - 0.4), Q, false);
   hip(b, 'roofSlate', hx1 - hx0 + 1.4, hz1 - hz0 + 1.4, 2.6, 0.7, X, D + H, (hz0 + hz1) / 2);
-  for (let x = -6; x <= 6; x += 3) b.box('lhWhite', [1.1, 0.06, 1.1], new THREE.Vector3(X + x, D + 0.78, hz1 - 6), Q, false);
+  for (let x = -5; x <= 5; x += 5) for (let z = hz0 + 9; z < hz1 - 3; z += 6) diningTable(b, X + x, D, z, 4, x * 0.2);
   // Wing on stilts out over the sea to the east.
   const wx0 = hx1, wx1 = X + 44, wz0 = walkEnd + 6, wz1 = walkEnd + 24, wz = (wz0 + wz1) / 2;
   b.box('benchWood', [wx1 - wx0 + 6, 0.4, wz1 - wz0 + 4], new THREE.Vector3((wx0 + wx1) / 2 + 3, D - 0.2, wz), Q, true);
@@ -102,8 +103,7 @@ export function rosaNautica(b: Builder, hf: Heightfield, def: MaleconDef, c: Coa
   }
   railing(b, wx0, wz0 - 2, wx1 + 6, wz0 - 2, D);
   railing(b, wx0, wz1 + 2, wx1 + 6, wz1 + 2, D);
-  b.box('creamWall', [wx1 - wx0 - 4, 4.2, wz1 - wz0 - 4], new THREE.Vector3((wx0 + wx1) / 2, D + 2.1, wz), Q, true);
-  for (let x = wx0 + 2; x < wx1 - 4; x += 3.2) for (const s of [-1, 1]) b.box('lobby', [2.2, 2, 0.05], new THREE.Vector3(x + 1, D + 2, wz + s * ((wz1 - wz0) / 2 - 1.97)), Q, false);
+  wingHall(b, wx0 + 2, wx1 - 2, wz0 + 2, wz1 - 2, D);
   for (let x = wx0 + 2; x < wx1 - 4; x += 3.2) b.box('awningStripe', [2.6, 0.08, 1.1], new THREE.Vector3(x + 1, D + 3.4, wz - (wz1 - wz0) / 2 + 1.5), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), 0.4), false);
   hip(b, 'roofSlate', wx1 - wx0 - 3, wz1 - wz0 - 3, 2.2, 0.62, (wx0 + wx1) / 2, D + 4.2, wz);
   for (let x = wx0 + 3; x < (wx0 + wx1) / 2; x += 3.4) {
@@ -113,7 +113,7 @@ export function rosaNautica(b: Builder, hf: Heightfield, def: MaleconDef, c: Coa
   }
   pavilion(b, (wx0 + wx1) / 2 + 6, D + 4.2, wz, 2.4, 1, 6);
   pavilion(b, wx0 + 5, D + 4.2, wz - 3, 1.8, 0, 2.6);
-  pavilion(b, wx1 + 2, D, wz, 7.5, 2, 0);
+  diningPavilion(b, wx1 + 2, D, wz, 7.5, [-Math.PI / 2, -Math.PI * 0.75, -Math.PI / 4]);
   const entrance = new THREE.Vector3(X, D, hz0 - 1);
   return { entrance, hall: { x0: hx0 + 0.5, x1: hx1 - 0.5, z0: hz0 + 0.5, z1: hz1 - 0.5, y: D }, cache: new THREE.Vector3(X, D + 0.8, hz1 - 6) };
 }
