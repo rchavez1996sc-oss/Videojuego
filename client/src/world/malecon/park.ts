@@ -5,6 +5,8 @@ import { edgeZ, type CoastDef } from '../coast';
 import { EXTENT, SIDEWALK, inLarcomar, innerPathZ, overRavine, promenadeZ, type MaleconDef } from './layout';
 
 const UP = new THREE.Vector3(0, 1, 0), Q = new THREE.Quaternion();
+/** The red bike lane runs this far inland of the promenade. */
+const BIKE = 4.6;
 /** A standing extra: where, facing, which looping clip. */
 export interface Extra { pos: THREE.Vector3; yaw: number; key: string }
 
@@ -107,6 +109,7 @@ export function buildPark(b: Builder, hf: Heightfield, def: MaleconDef, c: Coast
   };
   const prom = runs((x) => promenadeZ(c, x), 2), inner = runs((x) => innerPathZ(def, x), 2);
   for (const r of prom) ribbon(b, hf, r, 4.2, 'flagstone');
+  for (const r of runs((x) => promenadeZ(c, x) - BIKE, 3)) ribbon(b, hf, r, 2.2, 'bikeRed', 0.035);
   for (const r of inner) ribbon(b, hf, r, 3, 'paving');
   const links: THREE.Vector2[][] = [];
   for (let x = -EXTENT + 24; x < EXTENT; x += 48) {
@@ -128,7 +131,7 @@ export function buildPark(b: Builder, hf: Heightfield, def: MaleconDef, c: Coast
   }
   paintLawns(hf, (x, z) => {
     if (z < parkStart + 0.5 || z > edgeZ(c, x) - 0.6 || blocked(x, z, 1)) return 0;
-    if (Math.abs(z - promenadeZ(c, x)) < 3 || Math.abs(z - innerPathZ(def, x)) < 2.4) return 0;
+    if (Math.abs(z - promenadeZ(c, x)) < 3 || Math.abs(z - promenadeZ(c, x) + BIKE) < 1.8 || Math.abs(z - innerPathZ(def, x)) < 2.4) return 0;
     if (Math.hypot(x - lh.x, z - lh.z) < 11.5) return 0;
     if (def.brickEdge && x > def.brickEdge[0] - 2 && x < def.brickEdge[1] + 2 && z > edgeZ(c, x) - 7.5) return 0;
     for (const l of links) for (const p of l) if (Math.abs(p.x - x) < 2.2 && Math.abs(p.y - z) < 2.2) return 0;
@@ -189,7 +192,7 @@ export function buildPark(b: Builder, hf: Heightfield, def: MaleconDef, c: Coast
   for (let i = 0; i < 260; i++) {
     const x = (rand() * 2 - 1) * (EXTENT + 10), e = edgeZ(c, x);
     const z = THREE.MathUtils.lerp(parkStart + 4, e - 3, rand());
-    if (blocked(x, z, 6) || Math.abs(z - promenadeZ(c, x)) < 4 || Math.abs(z - innerPathZ(def, x)) < 3.5) continue;
+    if (blocked(x, z, 6) || Math.abs(z - promenadeZ(c, x)) < 6.5 || Math.abs(z - innerPathZ(def, x)) < 3.5) continue;
     if (Math.hypot(x - lh.x, z - lh.z) < 14 || Math.abs(x - def.launch.x) < def.launch.w / 2 || Math.abs(x - def.amor.x) < def.amor.w / 2 + 4) continue;
     const p = new THREE.Vector3(x, hf.heightAt(x, z), z), k = rand();
     if (e - z < 9) plants.bent.push(p);

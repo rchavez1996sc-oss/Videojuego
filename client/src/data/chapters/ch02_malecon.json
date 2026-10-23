@@ -47,16 +47,16 @@
  "biome": {
   "sunElevation": 32,
   "sunAzimuth": 282,
-  "turbidity": 4,
-  "rayleigh": 1.1,
-  "mieCoefficient": 0.006,
+  "turbidity": 8,
+  "rayleigh": 0.9,
+  "mieCoefficient": 0.012,
   "mieDirectionalG": 0.8,
   "exposure": 0.95,
   "sunColor": "#ffe4c2",
-  "sunIntensity": 2.3,
-  "ambient": 0.62,
-  "fogColor": "#b8c2ca",
-  "fogDensity": 0.002,
+  "sunIntensity": 1.8,
+  "ambient": 0.78,
+  "fogColor": "#c2c6c9",
+  "fogDensity": 0.0024,
   "colors": {
    "grassLush": "#4d7d2a",
    "grassDry": "#6d8a38",
@@ -229,16 +229,18 @@
   "brickEdge": [
    -78,
    12
-  ]
+  ],
+  "north": -160
  },
  "farCity": {
   "inner": 238,
   "outer": 700,
-  "count": 1400,
+  "count": 1700,
   "maxHeight": 10,
   "seed": 4,
   "avenueHalf": 0,
-  "tall": true
+  "tall": true,
+  "innerNorth": 168
  },
  "life": {
   "traffic": 40,
@@ -249,7 +251,7 @@
     "z": 30,
     "lane": 3.5,
     "half": 7,
-    "count": 20,
+    "count": 14,
     "kinds": [
      "sedan",
      "wagon",
@@ -265,7 +267,7 @@
     "z": -70,
     "lane": 8,
     "half": 13,
-    "count": 6,
+    "count": 5,
     "kinds": [
      "sedan",
      "tico",
@@ -279,7 +281,7 @@
     "z": -70,
     "lane": 11,
     "half": 13,
-    "count": 4,
+    "count": 3,
     "kinds": [
      "sedan",
      "wagon",
@@ -291,7 +293,7 @@
     "z": -150,
     "lane": 2.5,
     "half": 5,
-    "count": 5,
+    "count": 3,
     "kinds": [
      "sedan",
      "tico",
@@ -304,7 +306,7 @@
     "z": 158,
     "lane": 3.5,
     "half": 7,
-    "count": 16,
+    "count": 10,
     "kinds": [
      "sedan",
      "wagon",
@@ -318,7 +320,7 @@
   ]
  },
  "civilians": {
-  "count": 120,
+  "count": 80,
   "seed": 8
  },
  "squad": 4,
@@ -483,5 +485,6 @@
    0,
    35
   ]
- ]
+ ],
+ "shadowRange": 60
 }

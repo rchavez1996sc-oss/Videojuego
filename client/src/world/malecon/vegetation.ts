@@ -75,13 +75,22 @@ function araucaria(): { trunk: THREE.BufferGeometry; crown: THREE.BufferGeometry
   return { trunk, crown: mergeGeometries(cards) };
 }
 
-function instanced(geo: THREE.BufferGeometry, mat: THREE.Material, mats: THREE.Matrix4[]): THREE.InstancedMesh {
-  const m = new THREE.InstancedMesh(geo, mat, Math.max(1, mats.length));
-  mats.forEach((x, i) => m.setMatrixAt(i, x));
-  m.count = mats.length;
-  m.castShadow = m.receiveShadow = true;
-  m.computeBoundingSphere();
-  return m;
+/** One InstancedMesh per 128 m tile, so frustum and shadow culling can skip distant groups of trees. */
+function instanced(geo: THREE.BufferGeometry, mat: THREE.Material, mats: THREE.Matrix4[]): THREE.Group {
+  const g = new THREE.Group(), tiles = new Map<string, THREE.Matrix4[]>(), p = new THREE.Vector3();
+  for (const x of mats) {
+    p.setFromMatrixPosition(x);
+    const k = `${Math.floor(p.x / 128)},${Math.floor(p.z / 128)}`;
+    (tiles.get(k) ?? tiles.set(k, []).get(k)!).push(x);
+  }
+  for (const list of tiles.values()) {
+    const m = new THREE.InstancedMesh(geo, mat, list.length);
+    list.forEach((x, i) => m.setMatrixAt(i, x));
+    m.castShadow = m.receiveShadow = true;
+    m.computeBoundingSphere();
+    g.add(m);
+  }
+  return g;
 }
 
 /** Palms, shade trees, Norfolk pines and sea-wind-bent trees, instanced; trunks get small colliders. */

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { mulberry32 } from '../../core/rng';
 import type { Heightfield } from '../heightfield';
@@ -9,13 +10,13 @@ import { bakeGroups } from '../bake';
 import { SignAtlas } from '../signs';
 import { PAINTS } from '../houses';
 import { concrete, plaster, brick } from '../../render/urbanTextures';
-import { rock, wood } from '../../render/textures';
+import { rock, wood, type PbrSet } from '../../render/textures';
 import { edgeZ } from '../coast';
 import { buildOcean } from '../ocean';
 import { paragliders } from '../../fx/paragliders';
 import { apartment, curtain, flagstone, mosaic, lattice, confetti, foliage } from './textures';
 import { maleconGraph, type MaleconDef } from './layout';
-import { buildTowers } from './towers';
+import { buildTowers, FACADES } from './towers';
 import { buildBoulevard } from './boulevard';
 import { streetDetail } from './streetDetail';
 import { buildRoads } from './roads';
@@ -27,9 +28,11 @@ import { buildLandmarks } from './landmarks';
 import { buildLarcomar } from './larcomar';
 import { buildVegetation } from './vegetation';
 
-function maleconMaterials(lighting: Lighting): Record<string, THREE.Material> {
+type Tex = Record<'apt' | 'co' | 'pl' | 'br' | 'wd' | 'fo', PbrSet>;
+
+function maleconMaterials(lighting: Lighting, { apt, co, pl, br, wd, fo }: Tex): Record<string, THREE.Material> {
   const std = (key: string, p: THREE.MeshStandardMaterialParameters) => lighting.setup(new THREE.MeshStandardMaterial(p), key);
-  const apt = apartment(), cw = curtain(), co = concrete(), pl = plaster(), fs = flagstone(), mo = mosaic(), la = lattice(), cf = confetti(), fo = foliage(), rk = rock(), wd = wood(), br = brick();
+  const cw = curtain(), fs = flagstone(), mo = mosaic(), la = lattice(), cf = confetti(), rk = rock();
   const m: Record<string, THREE.Material> = {
     glassWall: std('glassWall', { map: cw.map, normalMap: cw.normalMap, roughness: 0.12, metalness: 0.65 }),
     slab: std('slab', { map: co.map, normalMap: co.normalMap, color: '#eceae4', roughness: 0.85 }),
@@ -40,6 +43,7 @@ function maleconMaterials(lighting: Lighting): Record<string, THREE.Material> {
     pavement: std('pavement', { map: co.map, normalMap: co.normalMap, color: '#c9c4ba', roughness: 0.9 }),
     paving: std('paving', { map: co.map, normalMap: co.normalMap, color: '#b3aea4', roughness: 0.9 }),
     flagstone: std('flagstone', { map: fs.map, normalMap: fs.normalMap, roughness: 0.9 }),
+    bikeRed: std('bikeRed', { map: rk.map, normalMap: rk.normalMap, color: '#b25a48', roughness: 0.9 }),
     boulder: std('boulder', { map: rk.map, normalMap: rk.normalMap, color: '#8f8a83', roughness: 0.95 }),
     railGreen: std('railGreen', { color: '#24503f', roughness: 0.45, metalness: 0.5 }),
     lampPole: std('lampPole', { color: '#1d3129', roughness: 0.5, metalness: 0.5 }),
@@ -92,14 +96,27 @@ export function buildMalecon(hf: Heightfield, def: MaleconDef, lighting: Lightin
   const body = world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
   const b = new Builder(world, body), t = new Builder(world, body);
   const rand = mulberry32(def.seed);
-  const mats = { ...barrioMaterials(lighting, new SignAtlas()), ...maleconMaterials(lighting) };
-  const bake = bakeGroups(lighting, ['alu', 'railGreen', 'lampPole', 'chair', 'awningRed', 'lobby', 'steelDark', 'columnGreen', 'flagMast', 'fenceIron', 'benchGreen', 'bollardGreen']);
+  const tex: Tex = { apt: apartment(), co: concrete(), pl: plaster(), br: brick(), wd: wood(), fo: foliage() };
+  const atlas = new SignAtlas(), brands = atlas.brands;
+  const mats = { ...barrioMaterials(lighting, atlas), ...maleconMaterials(lighting, tex) };
+  const textured = (key: string, set: PbrSet, keys: string[], roughness: number) => ({ material: lighting.setup(new THREE.MeshStandardMaterial({ map: set.map, normalMap: set.normalMap, roughness, vertexColors: true }), key), keys });
+  const bake = [
+    ...bakeGroups(lighting, ['alu', 'railGreen', 'lampPole', 'chair', 'awningRed', 'lobby', 'steelDark', 'columnGreen', 'flagMast', 'fenceIron', 'benchGreen', 'bollardGreen', 'lhBlack', 'lhWhite', 'roofTile', 'poolWater']),
+    textured('apt-baked', tex.apt, [...new Set(FACADES)], 0.85),
+    textured('plaster-baked', tex.pl, ['houseWhite', 'houseCream', 'houseGray', 'houseWarm', 'mallWhite', 'terracotta'], 0.85),
+    textured('concrete-baked', tex.co, ['slab', 'pavement', 'paving', 'bridgeConcrete', 'granite', 'poolRim', 'planter', 'kerbYellow', 'concrete'], 0.9),
+    textured('brick-baked', tex.br, ['lhRed', 'houseBrick', 'brickRed', 'brick'], 0.9),
+    textured('wood-baked', tex.wd, ['benchWood', 'woodSlat', 'woodGate', 'pole'], 0.8),
+    textured('foliage-baked', tex.fo, ['hedge', 'flowers', 'lawnRoof'], 0.95),
+  ];
   const gardens: THREE.Vector3[] = [];
-  const fronts = buildTowers(t, b, def, PAINTS, rand, gardens);
+  const guards: { pos: THREE.Vector3; yaw: number }[] = [];
+  const fronts = buildTowers(t, b, def, PAINTS, rand, gardens, guards, (pos, q, w) => atlas.add(pos, q, w, 'shop', rand, rand() < 0.7 ? brands[Math.floor(rand() * brands.length)] : undefined));
   const streetTrees = [...buildRoads(b, hf, def, c, rand), ...gardens];
   streetDetail(b, hf, def, rand);
   const plants = buildPark(b, hf, def, c, rand);
   buildBoulevard(b, hf, def, plants, rand);
+  plants.standing.push(...guards.map((g) => ({ ...g, key: rand() < 0.5 ? 'civ_idle' : 'texting' })));
   buildLandmarks(b, hf, def, c);
   const group = new THREE.Group();
   group.add(buildLarcomar(b, def, c, lighting, plants, rand));
@@ -109,6 +126,7 @@ export function buildMalecon(hf: Heightfield, def: MaleconDef, lighting: Lightin
   group.add(crowd(plants.seats, plants.standing, lighting));
   group.add(surfers(def.surfers ?? 0, c, lighting));
   group.add(...b.build(mats, 0.5, bake, 128), ...t.build(mats, 1 / 6, bake, 128));
+  if (atlas.geometries.length) group.add(Object.assign(new THREE.Mesh(mergeGeometries(atlas.geometries), mats.signs), { receiveShadow: true }));
   group.add(buildOcean(hf, c, lighting));
   group.add(paragliders(def.paragliders, c.edge, lighting));
   return { group, materials: mats, bake, station: null, graph: maleconGraph(def, c, hf), blocked: (x, z) => z < edgeZ(c, x) + 2 };

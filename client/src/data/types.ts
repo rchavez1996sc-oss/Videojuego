@@ -45,6 +45,8 @@ export interface ChapterDef {
   barrio?: import('../world/barrio').BarrioDef;
   farCity?: import('../world/farCity').FarCityDef;
   malecon?: import('../world/malecon/layout').MaleconDef;
+  /** Static tiles and tree groups farther than this (m) stop casting shadows. */
+  shadowRange?: number;
   life?: import('../systems/cityLife').LifeDef;
   civilians?: { count: number; seed: number };
   squad?: number;

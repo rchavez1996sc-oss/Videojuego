@@ -13,6 +13,8 @@ export interface MaleconDef {
   boulevard?: { z: number; median: number };
   /** Stretch of the clifftop (x0, x1) edged by a brick parapet instead of the green railing. */
   brickEdge?: [number, number];
+  /** z of the inland wall: the city beyond is only the decorative far city. */
+  north?: number;
   beachRoad: { z: number; half: number };
   lighthouse: { x: number; z: number };
   amor: { x: number; w: number };
@@ -28,6 +30,11 @@ export interface MaleconDef {
 
 export const EXTENT = 232;
 export const SIDEWALK = 4.5;
+
+/** Inland limit of the playable district. */
+export function northZ(def: MaleconDef): number {
+  return def.north ?? -EXTENT - 30;
+}
 
 /** Half width of the street along x at `z` (a boulevard counts both carriageways and the median). */
 export function streetHalf(def: MaleconDef, z: number): number {

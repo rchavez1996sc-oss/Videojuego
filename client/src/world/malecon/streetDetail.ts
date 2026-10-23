@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { Builder } from '../buildingKit';
 import type { Heightfield } from '../heightfield';
 import { powerLine } from '../urbanProps';
-import { EXTENT, SIDEWALK, streetHalf, type MaleconDef } from './layout';
+import { EXTENT, SIDEWALK, northZ, streetHalf, type MaleconDef } from './layout';
 import { bin } from './boulevard';
 
 const Q = new THREE.Quaternion(), L = EXTENT + 30;
@@ -34,7 +34,7 @@ export function streetDetail(b: Builder, hf: Heightfield, def: MaleconDef, rand:
   kerbX(av.z - av.half - 0.08);
   b.box('kerbYellow', [L * 2, 0.18, 0.16], new THREE.Vector3(0, 0.05, av.z + av.half + 0.08), Q, false);
   const zMax = av.z - av.half - SIDEWALK;
-  for (const x of xs) for (const s of [-1, 1]) b.box('kerbYellow', [0.16, 0.18, zMax + L], new THREE.Vector3(x + s * (sh + 0.08), 0.05, (zMax - L) / 2), Q, false);
+  for (const x of xs) for (const s of [-1, 1]) b.box('kerbYellow', [0.16, 0.18, zMax - northZ(def)], new THREE.Vector3(x + s * (sh + 0.08), 0.05, (zMax + northZ(def)) / 2), Q, false);
 
   for (const z of def.streets.z) {
     if (def.boulevard?.z === z) continue;
@@ -50,7 +50,7 @@ export function streetDetail(b: Builder, hf: Heightfield, def: MaleconDef, rand:
   }
   for (const x of xs) {
     const poles: THREE.Vector3[] = [];
-    for (let z = zMax - 8; z > -L; z -= 30) if (!def.streets.z.some((sz) => Math.abs(sz - z) < streetHalf(def, sz) + 5)) poles.push(new THREE.Vector3(x + sh + 0.6, 0, z));
+    for (let z = zMax - 8; z > northZ(def); z -= 30) if (!def.streets.z.some((sz) => Math.abs(sz - z) < streetHalf(def, sz) + 5)) poles.push(new THREE.Vector3(x + sh + 0.6, 0, z));
     powerLine(b, hf, poles, rand);
   }
 

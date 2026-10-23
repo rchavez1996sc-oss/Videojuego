@@ -92,7 +92,7 @@ async function boot(): Promise<void> {
     scene.add(village.group);
     blockers.push((x, z) => village.footprints.some((f) => Math.hypot(f.x - x, f.z - z) < f.r + 2));
   }
-  const shadowCull = new ShadowCull(90);
+  const shadowCull = new ShadowCull(ch.shadowRange ?? 90);
   const barrio = ch.barrio ? buildBarrio(hf, ch.barrio, lighting, world) : ch.malecon ? buildMalecon(hf, ch.malecon, lighting, world) : null;
   if (barrio) {
     scene.add(barrio.group);

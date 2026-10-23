@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { Builder } from '../world/buildingKit';
 import { car, mototaxi, type CarKind } from '../world/urbanProps';
@@ -56,12 +57,15 @@ export class Traffic {
       else car(b, new THREE.Vector3(), 0, kind === 'combi' ? 'car5' : kind === 'tico' ? 'car3' : `car${i % 6}`, kind);
       const g = new THREE.Group();
       g.add(...b.build(mats, 0.5, bakeNoGlass));
+      const riders: THREE.BufferGeometry[] = [];
+      let riderMat: THREE.Material | null = null;
       SEATS[kind].forEach(([x, y, z], k) => {
         if (k > 0 && rand() < 0.45) return;
         const p = seatedPerson(lighting, rand);
-        p.position.set(x, y - 0.95, z);
-        g.add(p);
+        riderMat = p.material as THREE.Material;
+        riders.push(p.geometry.clone().translate(x, y - 0.95, z));
       });
+      if (riders.length) g.add(new THREE.Mesh(mergeGeometries(riders), riderMat!));
       this.group.add(g);
       const len = kind === 'delivery' ? 1.9 : kind === 'moto' ? 2.3 : kind === 'combi' ? 4.8 : 4.4;
       const body = this.world.createRigidBody(RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(0, -50, 0));

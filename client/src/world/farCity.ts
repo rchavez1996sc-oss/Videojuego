@@ -3,7 +3,7 @@ import { mulberry32 } from '../core/rng';
 import type { Heightfield } from './heightfield';
 import type { Lighting } from '../render/lighting';
 
-export interface FarCityDef { inner: number; outer: number; count: number; maxHeight: number; seed: number; avenueHalf: number; tall?: boolean }
+export interface FarCityDef { inner: number; outer: number; count: number; maxHeight: number; seed: number; avenueHalf: number; tall?: boolean; innerNorth?: number }
 
 const TALL_COLORS = ['#ebe8e1', '#ddd5c4', '#cfd1d3', '#c8d5e2', '#e6dccb', '#b7c4cc'];
 
@@ -62,7 +62,7 @@ export function buildFarCity(hf: Heightfield, def: FarCityDef, lighting: Lightin
   let n = 0;
   for (let tries = 0; n < def.count && tries < def.count * 6; tries++) {
     const x = (rand() * 2 - 1) * def.outer, z = (rand() * 2 - 1) * def.outer;
-    if (Math.max(Math.abs(x), Math.abs(z)) < def.inner) continue;
+    if (Math.max(Math.abs(x), Math.abs(z)) < def.inner && !(def.innerNorth && z < -def.innerNorth)) continue;
     if (Math.abs(z) < def.avenueHalf && Math.abs(x) > def.inner - 10) continue;
     if (coast && z > coast.edge - 25) continue;
     const ground = hf.heightAt(x, z);
