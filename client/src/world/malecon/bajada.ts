@@ -5,7 +5,6 @@ import { RAVINE, edgeZ, ravineCentre, ravineFloor, type CoastDef } from '../coas
 import type { MaleconDef } from './layout';
 import { ribbon } from './park';
 import type { Plants } from './park';
-import { buildFlight, planFlights } from './bajadaStairs';
 
 const UP = new THREE.Vector3(0, 1, 0);
 
@@ -36,10 +35,12 @@ export function buildBajada(b: Builder, hf: Heightfield, def: MaleconDef, c: Coa
   for (const r of c.ravines ?? []) {
     const z0 = def.avenue.z + def.avenue.half, z1 = def.beachRoad.z - def.beachRoad.half, mouth = edgeZ(c, r.x) + c.run;
     const centre: THREE.Vector2[] = [];
-    for (let z = z0; z <= z1; z += 2) centre.push(new THREE.Vector2(ravineCentre(r, Math.min(z, mouth)) + Math.max(0, z - mouth) * (r.skew ?? 0), z));
+    for (let z = z0; z <= z1; z += 1.5) centre.push(new THREE.Vector2(ravineCentre(r, Math.min(z, mouth)) + Math.max(0, z - mouth) * (r.skew ?? 0) + Math.max(0, z - mouth + 6) ** 2 * 0.045, z));
     ribbon(b, hf, centre, road * 2, 'cobble', 0.1);
-    const flights = planFlights(c, r);
-    for (const fl of flights) buildFlight(b, c, r, fl);
+    for (let z = r.head + 6; z < mouth - 2; z += 3.2) {
+      const x = ravineCentre(r, z), f = ravineFloor(c, r, z), q = new THREE.Quaternion().setFromAxisAngle(UP, Math.atan2(r.skew ?? 0, 1));
+      b.box('pirca', [road * 2 - 0.1, 0.16, 0.32], new THREE.Vector3(x, f + 0.12, z), q, false);
+    }
     for (const s of [-1, 1]) ribbon(b, hf, centre.map((p) => new THREE.Vector2(p.x + s * (road + 0.12), p.y)), 0.25, 'kerbYellow', 0.16);
     for (let z = r.head + 2, i = 0; z < mouth - 2; z += 4, i++) {
       const x = ravineCentre(r, z), f = ravineFloor(c, r, z), zn = z + 4, fn = ravineFloor(c, r, zn), xn = ravineCentre(r, zn);
@@ -48,7 +49,7 @@ export function buildBajada(b: Builder, hf: Heightfield, def: MaleconDef, c: Coa
         run(b, 'pirca', new THREE.Vector3(x + s * off, f + R.lip / 2, z), new THREE.Vector3(xn + s * off, fn + R.lip / 2, zn), 1.0, R.lip + 0.4, true);
         const top = R.floor + R.lipRun + Math.max(0, R.top - f - R.lip) / R.slope + R.topRun * 0.5;
         const street = Math.min(hf.heightAt(x + s * (top + 2), z), hf.heightAt(xn + s * (top + 2), zn));
-        if (f + R.lip < R.top - 0.5 && street > -0.6 && Math.abs(z + 2 - def.bridge.z) > def.bridge.width / 2 + 3 && !flights.some((fl) => fl.side === s && Math.abs(fl.z0 - z - 2) < 3)) {
+        if (f + R.lip < R.top - 0.5 && street > -0.6 && Math.abs(z + 2 - def.bridge.z) > def.bridge.width / 2 + 3) {
           const topN = R.floor + R.lipRun + Math.max(0, R.top - fn - R.lip) / R.slope + R.topRun * 0.5;
           run(b, 'stoneWall', new THREE.Vector3(x + s * top, R.top + 1.5, z), new THREE.Vector3(xn + s * topN, R.top + 1.5, zn), 0.7, 4.2, true);
         }

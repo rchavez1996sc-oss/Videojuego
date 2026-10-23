@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import type { Builder } from '../buildingKit';
 import type { Heightfield } from '../heightfield';
 import { edgeZ, ravineCentre, ravineHalf, type CoastDef } from '../coast';
-import { planFlights } from './bajadaStairs';
 import { EXTENT, SIDEWALK, inLarcomar, innerPathZ, overRavine, promenadeZ, type MaleconDef } from './layout';
 
 const UP = new THREE.Vector3(0, 1, 0), Q = new THREE.Quaternion();
@@ -116,7 +115,7 @@ export function buildPark(b: Builder, hf: Heightfield, def: MaleconDef, c: Coast
   for (let x = -EXTENT + 24; x < EXTENT; x += 48) {
     const pts: THREE.Vector2[] = [];
     for (let t = 0; t <= 1.001; t += 0.1) {
-      const xx = x + Math.sin(t * Math.PI) * 6, z = THREE.MathUtils.lerp(parkStart, promenadeZ(c, xx), t);
+      const xx = x + Math.sin(t * Math.PI) * 6, z = THREE.MathUtils.lerp(parkStart, promenadeZ(c, xx) - 1.9, t);
       pts.push(new THREE.Vector2(xx, z));
     }
     if (pts.some((p) => blocked(p.x, p.y, 3) || Math.hypot(p.x - lh.x, p.y - lh.z) < 14)) continue;
@@ -176,7 +175,7 @@ export function buildPark(b: Builder, hf: Heightfield, def: MaleconDef, c: Coast
     for (let z = r.head + 1; z < edgeZ(c, ravineCentre(r, z) + s * ravineHalf(c, r, z)) - 1; z += 2.5) {
       let x = ravineCentre(r, z);
       while (overRavine(c, x, z, 3)) x += s;
-      if (Math.abs(z - def.bridge.z) < 3 || planFlights(c, r).some((fl) => fl.side === s && Math.abs(z - fl.z0) < 2.5)) { if (pts.length) railing(b, pts.splice(0)); continue; }
+      if (Math.abs(z - def.bridge.z) < 3) { if (pts.length) railing(b, pts.splice(0)); continue; }
       pts.push(new THREE.Vector3(x, hf.heightAt(x, z), z));
     }
     railing(b, pts);

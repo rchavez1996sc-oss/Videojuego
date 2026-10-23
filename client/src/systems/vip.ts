@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { Rig } from '../entities/rig';
-import { characters } from '../render/characters';
 import { onHit } from '../world/surfaces';
 import type { Lighting } from '../render/lighting';
 
@@ -18,10 +17,7 @@ export class Vip {
   private col: RAPIER.Collider;
 
   constructor(at: THREE.Vector3, yaw: number, lighting: Lighting, world: RAPIER.World) {
-    this.rig = new Rig('civ_a', lighting, false);
-    this.rig.root.traverse((o) => {
-      if (o instanceof THREE.SkinnedMesh) o.material = characters.suit(o.material as THREE.Material);
-    });
+    this.rig = new Rig('vip', lighting, false);
     this.rig.root.position.copy(at);
     this.rig.root.rotation.y = yaw;
     this.rig.loop('civ_idle');

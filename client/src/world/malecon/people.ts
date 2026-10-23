@@ -67,7 +67,7 @@ function slumpStep(s: Slump, dt: number): boolean {
 }
 
 /** Static capsule collider on an extra; standing ones play a death clip on the ground, seated ones slump on the seat. */
-function shootable(world: RAPIER.World, rig: Rig, floor: number, seated: boolean, hurt: Bystanders, slumps: Slump[], limp: Set<Rig>): void {
+function shootable(world: RAPIER.World, rig: Rig, floor: number, seated: boolean, hurt: Bystanders, slumps: Slump[], limp: Set<Rig>, dying: Map<Rig, number>): void {
   const p = rig.root.position, y = seated ? rig.hips().y : floor + 0.9;
   const col = world.createCollider(RAPIER.ColliderDesc.capsule(seated ? 0.3 : 0.55, 0.32).setTranslation(p.x, y, p.z));
   onHit(col.handle, () => {
@@ -86,6 +86,7 @@ function shootable(world: RAPIER.World, rig: Rig, floor: number, seated: boolean
     } else {
       rig.root.position.y = floor;
       rig.die(Math.random() < 0.5 ? 'fall_back' : 'dying');
+      dying.set(rig, 4);
     }
     hurt.onHurt(new THREE.Vector3(p.x, y, p.z));
   });
@@ -95,7 +96,7 @@ function shootable(world: RAPIER.World, rig: Rig, floor: number, seated: boolean
 export function crowd(seats: { pos: THREE.Vector3; yaw: number }[], standing: Extra[], lighting: Lighting, world: RAPIER.World, hurt: Bystanders): THREE.Group {
   const g = new THREE.Group(), r = mulberry32(12);
   let rigs: Rig[] | null = null, last = 0, prev = performance.now();
-  const near = new Set<Rig>(), slumps: Slump[] = [], limp = new Set<Rig>();
+  const near = new Set<Rig>(), slumps: Slump[] = [], limp = new Set<Rig>(), dying = new Map<Rig, number>();
   g.add(ticker((camera) => {
     const now = performance.now(), dt = Math.min(0.1, (now - prev) / 1000);
     prev = now;
@@ -107,13 +108,18 @@ export function crowd(seats: { pos: THREE.Vector3; yaw: number }[], standing: Ex
       const i = rigs.length, seated = i < seats.length, spot = seated ? seats[i] : standing[i - seats.length];
       const x = extra(lighting, r, spot.pos, spot.yaw, seated ? SEATED[Math.floor(r() * SEATED.length)] : (spot as Extra).key);
       x.root.updateMatrixWorld(true);
-      shootable(world, x, spot.pos.y, seated, hurt, slumps, limp);
+      shootable(world, x, spot.pos.y, seated, hurt, slumps, limp, dying);
       x.root.visible = false;
       rigs.push(x);
       g.add(x.root);
     }
     for (let i = slumps.length - 1; i >= 0; i--) if (!slumpStep(slumps[i], dt)) slumps.splice(i, 1);
-    for (const x of near) if (!limp.has(x)) x.tick(dt);
+    for (const x of near) if (!limp.has(x) && !dying.has(x)) x.tick(dt);
+    for (const [x, t] of dying) {
+      x.tick(dt);
+      if (t - dt <= 0) dying.delete(x);
+      else dying.set(x, t - dt);
+    }
     if (now - last < 400) return;
     last = now;
     near.clear();

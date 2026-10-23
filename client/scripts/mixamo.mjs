@@ -5,7 +5,7 @@ import { chromium } from 'playwright';
 
 // Converts the Mixamo FBX sources in ../assets_src/mixamo into compressed, LOD'd glTF under public/assets/characters.
 const SRC = resolve('../assets_src/mixamo'), OUT = resolve('public/assets/characters');
-const CHARACTERS = { pnp: 'Swat.fbx', fls: 'T-Pose.5.fbx', civ_a: 'T-Pose.2.fbx', civ_b: 'T-Pose.3.fbx', civ_c: 'T-Pose.4.fbx' };
+const CHARACTERS = { pnp: 'Swat.fbx', fls: 'T-Pose.5.fbx', civ_a: 'T-Pose.2.fbx', civ_b: 'T-Pose.3.fbx', civ_c: 'T-Pose.4.fbx', vip: 'Ch33_nonPBR.fbx' };
 const P = (f) => `pack/${f}.fbx`;
 const ANIMS = [
   ['idle', P('idle'), 1], ['aim', P('idle aiming'), 1],

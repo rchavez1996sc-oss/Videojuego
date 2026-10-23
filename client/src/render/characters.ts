@@ -5,7 +5,7 @@ import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { Lighting } from './lighting';
 import { LOOKS, variants } from './outfitTint';
 
-export type CharKind = 'pnp' | 'fls' | 'civ_a' | 'civ_b' | 'civ_c';
+export type CharKind = 'pnp' | 'fls' | 'civ_a' | 'civ_b' | 'civ_c' | 'vip';
 
 interface Manifest { version?: number; characters: Record<CharKind, { near: string; far: string }>; animations: string }
 
@@ -76,12 +76,6 @@ class CharacterLibrary {
       this.protos.set(kind as CharKind, { near, far });
     });
     this.ready = true;
-  }
-
-  /** The dark-suit variant of a civilian material (or the material itself for other characters). */
-  suit(m: THREE.Material): THREE.Material {
-    for (const looks of this.looks.values()) if (looks.includes(m)) return looks[LOOKS];
-    return m;
   }
 
   create(kind: CharKind): CharInstance {

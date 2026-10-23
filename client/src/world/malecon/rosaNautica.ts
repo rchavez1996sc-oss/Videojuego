@@ -5,7 +5,6 @@ import type { Heightfield } from '../heightfield';
 import type { CoastDef } from '../coast';
 import type { StationInfo } from '../station';
 import type { MaleconDef } from './layout';
-import { lamp } from './park';
 import { diningPavilion, diningTable, wingHall } from './rosaInterior';
 
 const Q = new THREE.Quaternion();
@@ -43,15 +42,29 @@ function pavilion(b: Builder, x: number, y: number, z: number, r: number, floors
   }
 }
 
-/** Open octagonal gazebo you walk through: white posts, a lattice frieze and a slate roof with a finial. */
+/** Blue lamp post with a pair of white globes. */
+function pierLamp(b: Builder, x: number, y: number, z: number): void {
+  b.geometry('lampBlue', new THREE.CylinderGeometry(0.07, 0.11, 3.6, 8).translate(0, 1.8, 0), at(x, y, z), { size: [0.2, 3.6, 0.2], pos: new THREE.Vector3(x, y + 1.8, z), quat: Q });
+  for (const dy of [3.45, 3.95]) b.geometry('globe', new THREE.SphereGeometry(0.2, 12, 8), at(x, y + dy, z));
+}
+
+/** Big white planter with a clipped shrub. */
+function pot(b: Builder, x: number, y: number, z: number): void {
+  b.geometry('lhWhite', new THREE.CylinderGeometry(0.42, 0.32, 0.8, 12).translate(0, 0.4, 0), at(x, y, z), { size: [0.8, 0.8, 0.8], pos: new THREE.Vector3(x, y + 0.4, z), quat: Q });
+  b.geometry('hedge', new THREE.SphereGeometry(0.55, 10, 8).scale(1, 0.9, 1), at(x, y + 1.15, z));
+}
+
+/** Open octagonal gazebo you walk through: white posts, a lattice frieze and a white two-tier roof with a finial. */
 function gazebo(b: Builder, x: number, y: number, z: number, r: number): void {
   for (let k = 0; k < 8; k++) {
     const a = (k * Math.PI) / 4 + Math.PI / 8, px = x + Math.sin(a) * r, pz = z + Math.cos(a) * r;
     b.geometry('lhWhite', new THREE.CylinderGeometry(0.09, 0.11, 2.8, 8).translate(0, 1.4, 0), at(px, y, pz), { size: [0.22, 2.8, 0.22], pos: new THREE.Vector3(px, y + 1.4, pz), quat: Q });
   }
   b.geometry('lattice', new THREE.CylinderGeometry(r, r, 0.5, 8, 1, true).rotateY(Math.PI / 8), at(x, y + 2.6, z));
-  b.geometry('roofSlate', new THREE.CylinderGeometry(0.15, r + 0.6, 2.2, 8).rotateY(Math.PI / 8).translate(0, 1.1, 0), at(x, y + 2.85, z));
-  b.geometry('lhWhite', new THREE.ConeGeometry(0.12, 0.8, 6).translate(0, 0.4, 0), at(x, y + 5.05, z));
+  b.geometry('lhWhite', new THREE.CylinderGeometry(r * 0.45, r + 0.6, 1.2, 8).rotateY(Math.PI / 8).translate(0, 0.6, 0), at(x, y + 2.85, z));
+  b.geometry('lattice', new THREE.CylinderGeometry(r * 0.45, r * 0.45, 0.6, 8, 1, true).rotateY(Math.PI / 8), at(x, y + 4.35, z));
+  b.geometry('lhWhite', new THREE.CylinderGeometry(0.15, r * 0.6, 0.9, 8).rotateY(Math.PI / 8).translate(0, 0.45, 0), at(x, y + 4.65, z));
+  b.geometry('lhWhite', new THREE.ConeGeometry(0.1, 0.6, 6).translate(0, 0.3, 0), at(x, y + 5.5, z));
 }
 
 /**
@@ -65,27 +78,27 @@ export function rosaNautica(b: Builder, hf: Heightfield, def: MaleconDef, c: Coa
   const X = p.x, D = c.sea + 2.6, z0 = def.beachRoad.z + def.beachRoad.half + 4, zE = c.shore + p.length, r = mulberry32(83);
   const g0 = hf.heightAt(X, z0), walkEnd = zE - 34;
   b.box('bridgeConcrete', [5, 0.4, Math.hypot(6, D - g0)], new THREE.Vector3(X, (g0 + D) / 2, z0 + 3), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.atan2(g0 - D, 6)), true);
-  b.box('paving', [5.2, 0.5, walkEnd - z0 - 6], new THREE.Vector3(X, D - 0.25, (z0 + 6 + walkEnd) / 2), Q, true);
-  b.box('none', [14, 1.4, zE + 10 - z0], new THREE.Vector3(X, D - 1.5, (z0 + zE + 10) / 2), Q, true);
+  b.box('deckPier', [5.2, 0.5, walkEnd - z0 - 6], new THREE.Vector3(X, D - 0.25, (z0 + 6 + walkEnd) / 2), Q, true);
+  b.box('none', [14, 1.4, zE + 36 - z0], new THREE.Vector3(X, D - 1.5, (z0 + zE + 36) / 2), Q, true);
   const top = D - 0.7, foot = c.sea - 3, slope = (top - foot) / 4.5;
   const mound = new THREE.Shape([new THREE.Vector2(-8, foot), new THREE.Vector2(8, foot), new THREE.Vector2(3.5, top), new THREE.Vector2(-3.5, top)]);
-  b.geometry('breakRock', new THREE.ExtrudeGeometry(mound, { depth: zE + 14 - z0, bevelEnabled: false }), at(X, 0, z0));
-  for (let z = z0; z < zE + 14; z += 0.9) for (const s of [-1, 1]) for (let k = 0; k < 3; k++) {
+  b.geometry('breakRock', new THREE.ExtrudeGeometry(mound, { depth: zE + 40 - z0, bevelEnabled: false }), at(X, 0, z0));
+  for (let z = z0; z < zE + 40; z += 0.9) for (const s of [-1, 1]) for (let k = 0; k < 3; k++) {
     const off = 3 + r() * 5, rad = 0.5 + r() * 0.9, y = Math.min(top - Math.max(0, off - 3.5) * slope + rad * 0.2, D - 0.35 - rad * 0.75);
     b.geometry('breakRock', new THREE.DodecahedronGeometry(rad, 0).scale(1.3, 0.75, 1), new THREE.Matrix4().compose(new THREE.Vector3(X + s * off, y, z + r() * 0.9), new THREE.Quaternion().setFromEuler(new THREE.Euler(r() * 3, r() * 3, r() * 3)), new THREE.Vector3(1, 1, 1)));
   }
   for (let k = 0; k < 40; k++) {
     const a = r() * Math.PI, rad = 0.6 + r() * 1;
-    b.geometry('breakRock', new THREE.DodecahedronGeometry(rad, 0).scale(1.3, 0.75, 1), new THREE.Matrix4().compose(new THREE.Vector3(X + Math.cos(a) * 6 * r(), top - r() * 3, zE + 14 + Math.sin(a) * 4), new THREE.Quaternion().setFromEuler(new THREE.Euler(r() * 3, r() * 3, r() * 3)), new THREE.Vector3(1, 1, 1)));
+    b.geometry('breakRock', new THREE.DodecahedronGeometry(rad, 0).scale(1.3, 0.75, 1), new THREE.Matrix4().compose(new THREE.Vector3(X + Math.cos(a) * 6 * r(), top - r() * 3, zE + 40 + Math.sin(a) * 4), new THREE.Quaternion().setFromEuler(new THREE.Euler(r() * 3, r() * 3, r() * 3)), new THREE.Vector3(1, 1, 1)));
   }
   const kiosk0 = walkEnd - 52;
   railing(b, X + 2.6, z0 + 6, X + 2.6, walkEnd, D);
   railing(b, X - 2.6, z0 + 6, X - 2.6, kiosk0, D);
   railing(b, X - 9.2, kiosk0, X - 9.2, walkEnd, D);
-  for (let z = z0 + 14; z < walkEnd; z += 16) lamp(b, new THREE.Vector3(X + 2.2, D, z));
-  for (let z = z0 + 10; z < walkEnd - 4; z += 9) b.box('planter', [0.7, 0.6, 0.7], new THREE.Vector3(X - 2.1, D + 0.3, z), Q, true);
+  for (let z = z0 + 14; z < walkEnd; z += 16) pierLamp(b, X + 2.15, D, z);
+  for (let z = z0 + 18; z < walkEnd - 4; z += 9) pot(b, X + (Math.round((z - z0) / 9) % 2 ? -1.9 : 1.9), D, z);
   gazebo(b, X, D, z0 + 9, 3.2);
-  b.box('paving', [7, 0.5, walkEnd - kiosk0], new THREE.Vector3(X - 5.6, D - 0.25, (kiosk0 + walkEnd) / 2), Q, true);
+  b.box('deckPier', [7, 0.5, walkEnd - kiosk0], new THREE.Vector3(X - 5.6, D - 0.25, (kiosk0 + walkEnd) / 2), Q, true);
   for (let z = kiosk0 + 4; z < walkEnd - 2; z += 6.5) {
     b.box('creamWall', [4, 2.8, 5.4], new THREE.Vector3(X - 6.4, D + 1.4, z), Q, true);
     b.box('lobby', [0.05, 1.5, 3.4], new THREE.Vector3(X - 4.37, D + 1.5, z), Q, false);

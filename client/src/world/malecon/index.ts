@@ -70,7 +70,11 @@ function maleconMaterials(lighting: Lighting, { apt, co, pl, br, wd, fo }: Tex):
     lhBlack: std('lhBlack', { color: '#19191b', roughness: 0.5, metalness: 0.2 }),
     lhWhite: std('lhWhite', { color: '#f3f2ee', roughness: 0.7 }),
     creamWall: std('creamWall', { map: pl.map, normalMap: pl.normalMap, color: '#efe6cf', roughness: 0.85 }),
-    roofSlate: std('roofSlate', { color: '#5f7389', roughness: 0.6 }),
+    roofSlate: std('roofSlate', { color: '#2f6fc9', roughness: 0.55 }),
+    deckPier: lighting.setup(new THREE.MeshStandardMaterial({ map: deck().map, normalMap: deck().normalMap, color: '#d9d4ca', roughness: 0.85 }), 'deckPier', (sh) => {
+      sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\n  diffuseColor.rgb = mix(diffuseColor.rgb, vec3(dot(diffuseColor.rgb, vec3(0.3, 0.59, 0.11))) * vec3(1.05, 1.0, 0.93) * 1.5, 0.85);');
+    }),
+    lampBlue: std('lampBlue', { color: '#2a5ea8', roughness: 0.5, metalness: 0.3 }),
     awningStripe: std('awningStripe', { color: '#d8c27a', roughness: 0.8 }),
     flatRoof: std('flatRoof', { color: '#a7a49c', roughness: 0.9 }),
     barrierRed: std('barrierRed', { color: '#b8322a', roughness: 0.8 }),
@@ -136,7 +140,7 @@ export function buildMalecon(hf: Heightfield, def: MaleconDef, lighting: Lightin
   const mats = { ...barrioMaterials(lighting, atlas), ...maleconMaterials(lighting, tex) };
   const textured = (key: string, set: PbrSet, keys: string[], roughness: number) => ({ material: lighting.setup(new THREE.MeshStandardMaterial({ map: set.map, normalMap: set.normalMap, roughness, vertexColors: true }), key), keys });
   const bake = [
-    ...bakeGroups(lighting, ['alu', 'railGreen', 'lampPole', 'chair', 'awningRed', 'lobby', 'steelDark', 'columnGreen', 'flagMast', 'fenceIron', 'benchGreen', 'bollardGreen', 'lhBlack', 'lhWhite', 'roofTile', 'poolWater', 'roofSlate', 'awningStripe', 'flatRoof', 'ceilingWhite', 'linen', 'chairGreen', 'cushionOrange', 'greenTrim', 'barrierRed', 'barrierWhite']),
+    ...bakeGroups(lighting, ['alu', 'railGreen', 'lampPole', 'chair', 'awningRed', 'lobby', 'steelDark', 'columnGreen', 'flagMast', 'fenceIron', 'benchGreen', 'bollardGreen', 'lhBlack', 'lhWhite', 'roofTile', 'poolWater', 'roofSlate', 'lampBlue', 'awningStripe', 'flatRoof', 'ceilingWhite', 'linen', 'chairGreen', 'cushionOrange', 'greenTrim', 'barrierRed', 'barrierWhite']),
     textured('apt-baked', tex.apt, [...new Set(FACADES)], 0.85),
     textured('plaster-baked', tex.pl, ['houseWhite', 'houseCream', 'houseGray', 'houseWarm', 'mallWhite', 'terracotta', 'creamWall'], 0.85),
     textured('slabs-baked', slabs(), ['pavement'], 0.9),

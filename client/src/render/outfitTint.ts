@@ -41,13 +41,13 @@ export function tintHook(hair: boolean) {
 const HAIR = ['#1c1714', '#2b2019', '#3d2a1c', '#5a3b22', '#151515', '#6e4a2a', '#8a6a4a', '#7a2e22'];
 export const LOOKS = 8;
 
-/** `LOOKS` copies of a civilian material with their own clothing (or hair) colours, plus a dark suit last; one shader program. */
+/** `LOOKS` copies of a civilian material, each with its own clothing (or hair) colours; they share one shader program. */
 export function variants(mat: THREE.MeshStandardMaterial, key: string, lighting: Lighting, rand = Math.random): THREE.Material[] {
   const hair = /hair/i.test(mat.name);
-  return Array.from({ length: LOOKS + 1 }, (_, i) => {
-    const m = i ? mat.clone() : mat, suit = i === LOOKS, c = new THREE.Color(suit ? '#151515' : HAIR[Math.floor(rand() * HAIR.length)]);
-    m.userData.outfit = { value: suit ? new THREE.Vector4(0, 0.3, 0.55, 0) : i ? new THREE.Vector4(rand(), 0.6 + rand() * 0.8, 0.55 + rand() * 0.45, rand() < 0.5 ? rand() * 0.45 : 0) : new THREE.Vector4(0, 1, 1, 0) };
-    m.userData.tone = { value: hair ? new THREE.Vector3(c.r, c.g, c.b) : new THREE.Vector3(suit ? 0.9 : 0.65 + rand() * 0.33, 0, 0) };
+  return Array.from({ length: LOOKS }, (_, i) => {
+    const m = i ? mat.clone() : mat, c = new THREE.Color(HAIR[Math.floor(rand() * HAIR.length)]);
+    m.userData.outfit = { value: i ? new THREE.Vector4(rand(), 0.6 + rand() * 0.8, 0.55 + rand() * 0.45, rand() < 0.5 ? rand() * 0.45 : 0) : new THREE.Vector4(0, 1, 1, 0) };
+    m.userData.tone = { value: hair ? new THREE.Vector3(c.r, c.g, c.b) : new THREE.Vector3(0.65 + rand() * 0.33, 0, 0) };
     return lighting.setup(m, key, (sh) => tintHook(hair)(sh, m));
   });
 }

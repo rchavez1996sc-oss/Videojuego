@@ -1,5 +1,5 @@
 {
- "version": 10,
+ "version": 11,
  "characters": {
   "pnp": {
    "near": "characters/pnp.glb",
@@ -25,6 +25,10 @@
    "near": "characters/civ_c.glb",
    "far": "characters/civ_c.lod.glb",
    "source": "Mixamo: Ch42 (polo rojo)"
+  },
+  "vip": {
+   "near": "characters/vip.glb",
+   "far": "characters/vip.lod.glb"
   }
  },
  "animations": "characters/anims.glb",
