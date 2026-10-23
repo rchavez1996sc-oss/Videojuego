@@ -1,6 +1,6 @@
 {
   "recluta": {
-    "label": "RECLUTA",
+    "label": "FÁCIL",
     "damage": 1.7,
     "attackers": 2,
     "reaction": 1.15,
@@ -10,7 +10,7 @@
     "medkitDrop": 0.2
   },
   "veterano": {
-    "label": "VETERANO",
+    "label": "NORMAL",
     "damage": 2.45,
     "attackers": 3,
     "reaction": 0.9,
@@ -20,7 +20,7 @@
     "medkitDrop": 0.15
   },
   "guerrillero": {
-    "label": "GUERRILLERO",
+    "label": "DIFÍCIL",
     "damage": 3.25,
     "attackers": 4,
     "reaction": 0.7,

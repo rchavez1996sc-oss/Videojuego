@@ -129,12 +129,13 @@ body.jolt::after { content: ''; position: fixed; inset: 0; pointer-events: none;
 #launcher .go:hover { background: #e0743b; }
 #overlay .levels::before { content: 'NIVEL'; align-self: center; margin-right: 6px; font: 600 13px 'Barlow Condensed', 'Arial Narrow', sans-serif; letter-spacing: 0.25em; color: var(--dim); }
 #overlay .levels { margin-top: 10px; }
-#overlay .bigmap { position: absolute; right: 3vw; top: 50%; transform: translateY(-50%); width: min(46vh, 30vw); height: min(46vh, 30vw); border: 1px solid rgba(232, 226, 212, 0.35); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6); }
 #overlay .confirm { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; background: rgba(8, 7, 6, 0.86); }
 #overlay .confirm.on { display: flex; }
 #overlay .confirm p { max-width: 520px; text-align: center; font: 600 22px 'Barlow Condensed', sans-serif; letter-spacing: 0.05em; }
-#overlay { padding-right: calc(min(46vh, 30vw) + 3vw); box-sizing: border-box; }
 #overlay h1 { font-size: min(72px, 4.6vw); }
 #countdown { position: fixed; left: 50%; top: 40%; transform: translate(-50%, -50%); z-index: 40; pointer-events: none; font: italic 800 140px 'Barlow Condensed', sans-serif; color: #f2ede2; text-shadow: 0 4px 30px rgba(0, 0, 0, 0.8); white-space: nowrap; }
 #countdown.pop { animation: count-pop 0.95s ease-out forwards; }
 @keyframes count-pop { 0% { opacity: 0; scale: 1.6; } 15% { opacity: 1; scale: 1; } 75% { opacity: 1; } 100% { opacity: 0; scale: 0.92; } }
+#overlay.intro .difficulty { display: none; }
+#overlay.intro #status { font: 600 22px 'Barlow Condensed', sans-serif; letter-spacing: 0.35em; color: var(--fg); animation: hint-pulse 1.4s ease-in-out infinite; }
+body.paused #obj-marker, body.paused .prompt, body.paused #healthbars, body.paused #hud .crosshair, body.paused #hud .hitmarker, body.paused #hud .reload, body.paused #hud .reload-hint, body.paused #hud .toast, body.paused #countdown { visibility: hidden; }

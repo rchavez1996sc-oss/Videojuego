@@ -4,20 +4,21 @@ import { chooseQuality, quality } from '../core/settings';
 import { QUALITIES, type ChapterCard } from './launcher';
 import { startCountdown } from './countdown';
 
-export interface PauseExtras { chapters: ChapterCard[]; current: string; drawMap: (c: HTMLCanvasElement) => void }
+export interface PauseExtras { chapters: ChapterCard[]; current: string }
 
 /**
- * Start/pause overlay: difficulty, quality (applied live), chapter switch (asks first: it restarts) and the level map;
+ * Start/pause overlay: difficulty, quality (applied live) and chapter switch (asks first: it restarts);
  * clicking anywhere else plays. The overlay hides while the pointer is locked, P pauses, and the first entry opens a 3 s grace period.
  */
 export function setupStartMenu(overlay: HTMLElement, status: HTMLElement, canvas: HTMLElement, onPlay: () => void, extras: PauseExtras): void {
-  status.textContent = 'Elige la dificultad · clic en cualquier parte para jugar';
+  status.textContent = 'CLIC PARA COMENZAR';
+  overlay.classList.add('intro');
+  document.body.classList.add('paused');
   const box = overlay.querySelector('.difficulty') as HTMLElement, qbox = overlay.querySelector('.quality') as HTMLElement;
   const levels = Object.assign(document.createElement('div'), { className: 'difficulty levels' });
-  const map = Object.assign(document.createElement('canvas'), { className: 'bigmap', width: 720, height: 720 });
   const ask = Object.assign(document.createElement('div'), { className: 'confirm' });
   qbox.after(levels);
-  overlay.append(map, ask);
+  overlay.append(ask);
   const button = (parent: HTMLElement, label: string, on: boolean, act: () => void) => {
     const b = document.createElement('button');
     b.innerHTML = label;
@@ -57,10 +58,10 @@ export function setupStartMenu(overlay: HTMLElement, status: HTMLElement, canvas
   document.addEventListener('pointerlockchange', () => {
     const playing = document.pointerLockElement === canvas;
     overlay.classList.toggle('hidden', playing);
-    if (!playing) {
-      extras.drawMap(map);
-      ask.classList.remove('on');
-    }
+    document.body.classList.toggle('paused', !playing);
+    if (!playing) ask.classList.remove('on');
+    if (!playing && truce.until) status.textContent = 'PAUSA · clic para continuar';
+    if (playing) overlay.classList.remove('intro');
     if (playing && !truce.until) {
       truce.until = Infinity;
       startCountdown(() => (truce.until = performance.now() + 2000));

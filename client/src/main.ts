@@ -208,7 +208,7 @@ async function boot(): Promise<void> {
     traffic: () => life?.trafficEvents,
   });
 
-  setupStartMenu(overlay, status, canvas, () => !failed && (mixer.resume(), input.lock()), { chapters: cards, current: chId, drawMap: (c) => minimap.drawFull(c) });
+  setupStartMenu(overlay, status, canvas, () => !failed && (mixer.resume(), input.lock()), { chapters: cards, current: chId });
 
   const gpu = gpuName.replace(/^ANGLE \((.*)\)$/, '$1').slice(0, 60);
   const melee = new Melee(player, enemies, sfx, tpc);
