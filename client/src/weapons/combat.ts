@@ -14,7 +14,7 @@ import { Shells } from '../fx/shells';
 import { Blast } from '../fx/blast';
 import { SURFACE_FX, hitHandler, pierceChance, surfaceOf, type Surface } from '../world/surfaces';
 
-const RELOAD_HOLD = 0.45;
+const RELOAD_HOLD = 0.8;
 
 import type { Lighting } from '../render/lighting';
 import type { Heightfield } from '../world/heightfield';
