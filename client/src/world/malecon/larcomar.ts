@@ -17,7 +17,7 @@ const SHOPS: [string, string, string][] = [
 export function buildLarcomar(b: Builder, def: MaleconDef, c: CoastDef, lighting: Lighting, plants: Plants, rand: () => number): THREE.Group {
   const signs = new THREE.Group(), l = def.larcomar, y0 = l.y, H = -y0;
   const cx = (l.x0 + l.x1) / 2, zEdge = Math.min(edgeZ(c, l.x0 + 8), edgeZ(c, l.x1 - 8), edgeZ(c, cx)) - 0.8;
-  const side = 12;
+  const side = 12, zFoot = Math.max(...(c.carves ?? []).filter((k) => k.x0 <= l.x0 + 1 && k.x1 >= l.x1 - 1).map((k) => k.z1), zEdge + 1);
   const sign = (text: string, bg: string, fg: string, pos: THREE.Vector3, yaw: number, w: number, lit = false) => {
     const tex = canvasTexture((ctx, cw, ch) => {
       ctx.fillStyle = bg;
@@ -39,6 +39,7 @@ export function buildLarcomar(b: Builder, def: MaleconDef, c: CoastDef, lighting
   for (const s of [-1, 1]) {
     const x = s < 0 ? l.x0 + side / 2 : l.x1 - side / 2;
     b.box('mallWhite', [side, H + 0.1, zEdge - l.z0], new THREE.Vector3(x, y0 + H / 2, (l.z0 + zEdge) / 2), Q, true);
+    b.box('mallWhite', [1.2, H + 0.1, zFoot - zEdge + 0.5], new THREE.Vector3(s < 0 ? l.x0 + 0.6 : l.x1 - 0.6, y0 + H / 2, (zEdge + zFoot) / 2), Q, true);
     b.box('mallWhite', [side + 1, 0.1, zEdge - l.z0 + 1], new THREE.Vector3(x, 0.03, (l.z0 + zEdge) / 2), Q, false);
     const face = x - s * (side / 2 + 0.02), yaw = s < 0 ? Math.PI / 2 : -Math.PI / 2;
     for (let z = l.z0 + 4, k = 0; z < zEdge - 4; z += 8, k++) {
