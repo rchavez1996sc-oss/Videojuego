@@ -1,4 +1,5 @@
 import { makePbr, type PbrSet } from './textures';
+import { cracks, fbmField, grainField, paintPixels } from './noiseTex';
 
 /** Exposed clay brick with mortar lines, the typical unplastered wall of a Lima settlement. */
 export const brick = (): PbrSet =>
@@ -29,49 +30,36 @@ export const brick = (): PbrSet =>
     }
   });
 
-/** Rough concrete for columns, slabs, stairs and sidewalks. */
+const ss = (a: number, b: number, x: number) => Math.min(1, Math.max(0, (x - a) / (b - a)));
+
+/** Cast concrete for columns, slabs, stairs and sidewalks: cloudy tone, sand grain, exposed aggregate, pores, hairline cracks. */
 export const concrete = (): PbrSet =>
-  makePbr(512, 83, 2.5, (c, h, s, r) => {
-    c.fillStyle = '#86827a';
-    c.fillRect(0, 0, s, s);
-    for (let i = 0; i < 4000; i++) {
-      const v = 120 + r() * 60;
-      c.fillStyle = `rgba(${v},${v * 0.98},${v * 0.94},0.25)`;
-      c.fillRect(r() * s, r() * s, 1 + r() * 3, 1 + r() * 3);
-      h.fillStyle = r() < 0.5 ? '#6a6a6a' : '#a0a0a0';
-      h.fillRect(r() * s, r() * s, 1 + r() * 2, 1 + r() * 2);
-    }
-    for (let i = 0; i < 45; i++) {
-      c.fillStyle = `rgba(70,64,56,${0.15 + r() * 0.2})`;
-      c.beginPath();
-      c.ellipse(r() * s, r() * s, 10 + r() * 40, 6 + r() * 20, r() * 3, 0, Math.PI * 2);
-      c.fill();
-    }
+  makePbr(1024, 83, 2.2, (c, h, s, r) => {
+    const big = fbmField(s, 831, 4, 64), stain = fbmField(s, 832, 2, 16, 0.7), agg = fbmField(s, 833, 128, 512, 0.6), grain = grainField(s, 834);
+    paintPixels(c, h, s, (i) => {
+      const peb = ss(0.28, 0.42, agg[i]), pore = grain[i] > 0.994 ? 1 : 0;
+      const v = 0.53 + big[i] * 0.07 + Math.min(0, stain[i]) * 0.09 + grain[i] * 0.03 + peb * 0.07 - pore * 0.22;
+      return [v, v * 0.975, v * 0.93, 0.5 + big[i] * 0.06 + peb * 0.22 + grain[i] * 0.025 - pore * 0.3];
+    });
+    cracks(c, h, s, r, 7, 0.35);
   });
 
-/** Plastered wall, pale so material colour can tint it into blues, yellows and pinks. */
+/** Plastered wall, pale so material colour can tint it into blues, yellows and pinks: trowel waves, sand grain, cracks, patches of brick. */
 export const plaster = (): PbrSet =>
-  makePbr(512, 97, 2, (c, h, s, r) => {
-    c.fillStyle = '#e8e4dc';
-    c.fillRect(0, 0, s, s);
-    for (let i = 0; i < 2500; i++) {
-      c.fillStyle = `rgba(${r() < 0.5 ? '255,255,255' : '150,140,125'},${0.06 + r() * 0.1})`;
-      c.beginPath();
-      c.arc(r() * s, r() * s, 1 + r() * 7, 0, Math.PI * 2);
-      c.fill();
-    }
-    for (let i = 0; i < 10; i++) {
-      const x = r() * s, y = r() * s, w = 20 + r() * 60, hh = 10 + r() * 40;
-      c.fillStyle = 'rgba(150,80,55,0.6)';
+  makePbr(1024, 97, 1.6, (c, h, s, r) => {
+    const big = fbmField(s, 971, 3, 32), trowel = fbmField(s, 972, 32, 256, 0.6), grain = grainField(s, 973);
+    paintPixels(c, h, s, (i) => {
+      const v = 0.9 + big[i] * 0.05 + trowel[i] * 0.025 + grain[i] * 0.014;
+      return [v * 1.0, v * 0.985, v * 0.955, 0.5 + trowel[i] * 0.18 + grain[i] * 0.03];
+    });
+    cracks(c, h, s, r, 5, 0.25);
+    for (let i = 0; i < 4; i++) {
+      const x = r() * s, y = r() * s, w = 40 + r() * 110, hh = 20 + r() * 70;
+      c.fillStyle = 'rgba(150,80,55,0.55)';
       c.fillRect(x, y, w, hh);
-      h.fillStyle = '#505050';
+      h.fillStyle = '#4a4a4a';
       h.fillRect(x, y, w, hh);
     }
-    const g = c.createLinearGradient(0, s * 0.75, 0, s);
-    g.addColorStop(0, 'rgba(90,75,60,0)');
-    g.addColorStop(1, 'rgba(90,75,60,0.45)');
-    c.fillStyle = g;
-    c.fillRect(0, 0, s, s);
   });
 
 /** Corrugated metal sheet (calamina). */

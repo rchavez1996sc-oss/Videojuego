@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { mulberry32 } from '../core/rng';
+import { fbmField, grainField, paintPixels } from './noiseTex';
 
 type Painter = (color: CanvasRenderingContext2D, height: CanvasRenderingContext2D, size: number, rand: () => number) => void;
 
@@ -133,13 +134,15 @@ export const wood = (): PbrSet =>
     }
   });
 
+/** Weathered stone / asphalt base: mottled tone, mid-scale relief and a coarse aggregate of light and dark grains. */
 export const rock = (): PbrSet =>
-  makePbr(512, 47, 4, (c, h, s, r) => {
-    c.fillStyle = '#77716a';
-    c.fillRect(0, 0, s, s);
-    speckle(c, s, r, 4000, ['#5d5853', '#8d8780', '#6b655c', '#9a9288', '#4f4a44'], [1, 14]);
-    speckle(h, s, r, 4000, ['#404040', '#c0c0c0', '#808080'], [1, 12]);
-    speckle(c, s, r, 300, ['#5f6a3a', '#7a7a48'], [3, 16]);
+  makePbr(1024, 47, 3, (c, h, s) => {
+    const big = fbmField(s, 471, 4, 32), mid = fbmField(s, 472, 16, 128), agg = fbmField(s, 473, 256, 512, 0.7), grain = grainField(s, 474);
+    paintPixels(c, h, s, (i) => {
+      const light = Math.max(0, agg[i] - 0.3) * 1.6, dark = Math.max(0, -agg[i] - 0.3) * 1.4;
+      const v = 0.45 + big[i] * 0.07 + mid[i] * 0.05 + grain[i] * 0.035 + light * 0.25 - dark * 0.2;
+      return [v * 1.02, v * 0.98, v * 0.93, 0.5 + mid[i] * 0.3 + (light - dark) * 0.25 + grain[i] * 0.03];
+    });
   });
 
 export const soil = (): PbrSet =>
