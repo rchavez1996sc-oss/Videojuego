@@ -43,7 +43,7 @@ export function buildLarcomar(b: Builder, def: MaleconDef, c: CoastDef, lighting
   for (const s of [-1, 1]) {
     const x = s < 0 ? l.x0 + side / 2 : l.x1 - side / 2;
     b.box('mallWhite', [side, H + 0.1, zEdge - l.z0], new THREE.Vector3(x, y0 + H / 2, (l.z0 + zEdge) / 2), Q, true);
-    b.box('mallWhite', [1.2, H + 0.1, zFoot - zEdge + 0.5], new THREE.Vector3(s < 0 ? l.x0 + 0.6 : l.x1 - 0.6, y0 + H / 2, (zEdge + zFoot) / 2), Q, true);
+    b.box('mallWhite', [3, H + 0.1, zFoot - zEdge + 0.5], new THREE.Vector3(s < 0 ? l.x0 + 1.5 : l.x1 - 1.5, y0 + H / 2, (zEdge + zFoot) / 2), Q, true);
     b.box('mallWhite', [side + 1, 0.1, zEdge - l.z0 + 1], new THREE.Vector3(x, 0.03, (l.z0 + zEdge) / 2), Q, false);
     const face = x - s * (side / 2 + 0.02), yaw = s < 0 ? Math.PI / 2 : -Math.PI / 2;
     for (let z = l.z0 + 4, k = 0; z < zEdge - 4; z += 8, k++) {

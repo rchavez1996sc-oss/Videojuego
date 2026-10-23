@@ -88,7 +88,7 @@ export function coastHeight(c: CoastDef, x: number, z: number, noise: Noise): nu
   if (t > 1 && z < c.shore) h += noise.fbm(x, z, 1 / 9, 2) * 0.15;
   for (const r of c.ravines ?? []) h = ravineCut(c, r, x, z, h);
   for (const k of c.carves ?? []) {
-    const d = Math.max(k.x0 - x, x - k.x1, k.z0 - z, z - k.z1);
+    const d = Math.max(k.x0 + 2.6 - x, x - k.x1 + 2.6, k.z0 - z, z - k.z1);
     if (d < 1.5) h = lerp(h, Math.min(h, k.y), smoothstep(1.5, 0, d));
   }
   return h;
