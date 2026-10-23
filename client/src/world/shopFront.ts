@@ -25,7 +25,7 @@ export function shopFront(b: Builder, at: At, q: THREE.Quaternion, o: Opening, y
       b.box(GOODS[Math.floor(rand() * GOODS.length)], [s, s * (0.6 + rand()), s], at(o.x + x, floor + 0.95 + s * 0.4, -0.05 + (rand() - 0.5) * 0.15), q, false);
     }
   }
-  const def = rand() < 0.85 ? sign(at(o.x, top + 0.35, 0.03), q, o.w + 0.6) : undefined;
+  const def = rand() < 0.85 ? sign(at(o.x, top + 0.35, 0.2), q, o.w + 0.6) : undefined;
   if (open && rand() < 0.75) b.box(`umbrella${Math.floor(rand() * 4)}`, [o.w + 0.4, 0.04, 1.0], at(o.x, top - 0.25, 0.48), q.clone().multiply(TILT), false);
   if (def?.food) {
     const l = doorEdge, r = o.x - o.w / 2 - 0.15, gw = Math.min(r - l, 1.9);

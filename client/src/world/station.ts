@@ -52,7 +52,7 @@ export function buildStation(b: Builder, hf: Heightfield, atlas: SignAtlas, def:
   box('concrete', [W + 0.4, 0.3, depth + 0.4], 0, H1 + H2 + 0.45, mid);
   box('concrete', [W + 0.4, 0.6, 0.2], 0, H1 + H2 + 0.9, FRONT + 0.1);
   box('concrete', [3.6, 0.2, 1.6], 0, 2.95, FRONT + 0.8, false);
-  atlas.add(at(0, H1 - 0.35, FRONT + 0.02), q, 7, 'station', rand);
+  atlas.add(at(0, H1 - 0.35, FRONT + 0.16), q, 7, 'station', rand);
 
   box('wood', [7, 1.1, 0.7], 0, 0.75, FRONT - 3.2);
   for (const x of [-9, -4.5, 0, 4.5, 9]) box('light', [1.4, 0.06, 0.3], x, H1 - 0.05, mid, false);
