@@ -197,20 +197,21 @@ export class Sfx {
   reload(empty: boolean): void {
     const t = this.m.ctx.currentTime;
     const clack = (dt: number, f: number, p: number, body = 0) => {
-      this.filtered(t + dt, 'bandpass', f, 3, p, 0.001, 0.06, 0.15);
-      this.filtered(t + dt, 'bandpass', f * 2.3, 5, p * 0.6, 0.001, 0.035);
-      if (body) this.tone(t + dt, 'triangle', 170, 90, body, 0.12);
+      this.filtered(t + dt, 'bandpass', f, 3, p, 0.001, 0.07, 0.15);
+      this.filtered(t + dt, 'bandpass', f * 2.3, 5, p * 0.7, 0.001, 0.04);
+      this.filtered(t + dt, 'lowpass', 600, 1, p * 0.5, 0.001, 0.05);
+      if (body) this.tone(t + dt, 'triangle', 170, 90, body, 0.14);
     };
-    clack(0.25, 2100, 1.8, 0.4);
-    this.filtered(t + 0.3, 'bandpass', 2400, 1.2, 0.45, 0.05, 0.25);
-    this.filtered(t + 0.75, 'bandpass', 900, 0.8, 0.35, 0.08, 0.3);
-    this.filtered(t + 1.25, 'bandpass', 3000, 1.4, 0.4, 0.05, 0.14);
-    clack(1.42, 1400, 2.4, 1.0);
-    this.filtered(t + 1.55, 'lowpass', 480, 1, 1.1, 0.002, 0.09);
+    clack(0.25, 2100, 3.6, 0.9);
+    this.filtered(t + 0.3, 'bandpass', 2400, 1.2, 0.9, 0.05, 0.25);
+    this.filtered(t + 0.75, 'bandpass', 900, 0.8, 0.7, 0.08, 0.3);
+    this.filtered(t + 1.25, 'bandpass', 3000, 1.4, 0.8, 0.05, 0.14);
+    clack(1.42, 1400, 4.6, 2.0);
+    this.filtered(t + 1.55, 'lowpass', 480, 1, 2.0, 0.002, 0.1);
     if (empty) {
-      clack(1.9, 2300, 2.0, 0.3);
-      this.filtered(t + 1.93, 'bandpass', 3600, 1.6, 0.4, 0.02, 0.1);
-      clack(2.12, 1200, 2.6, 1.1);
+      clack(1.9, 2300, 3.8, 0.7);
+      this.filtered(t + 1.93, 'bandpass', 3600, 1.6, 0.8, 0.02, 0.1);
+      clack(2.12, 1200, 4.8, 2.2);
     }
   }
 

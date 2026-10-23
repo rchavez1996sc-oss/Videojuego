@@ -29,10 +29,6 @@ body.shot #overlay, body.shot #stats { display: none; }
 #hud .hitmarker.kill i { background: #e0452b; width: 16px; }
 #hud .hitmarker.pop { animation: hm-pop 0.12s ease-out; }
 @keyframes hm-pop { from { transform: scale(1.5); } to { transform: scale(1); } }
-#hud .reload { position: absolute; left: 50%; top: calc(50% + 40px); transform: translateX(-50%); text-align: center; font: 12px ui-monospace, monospace; letter-spacing: 0.2em; opacity: 0; transition: opacity 0.15s; }
-#hud .reload.on { opacity: 0.9; }
-#hud .reload .bar { width: 90px; height: 2px; background: rgba(255, 255, 255, 0.2); margin-top: 4px; }
-#hud .reload .bar div { height: 100%; background: var(--accent); }
 
 #healthbars { position: fixed; inset: 0; pointer-events: none; }
 #healthbars .hb { position: absolute; left: -24px; top: -6px; width: 48px; height: 5px; background: rgba(0, 0, 0, 0.55); outline: 1px solid rgba(0, 0, 0, 0.6); transition: opacity 0.25s; }
@@ -104,3 +100,17 @@ body.jolt::after { content: ''; position: fixed; inset: 0; pointer-events: none;
 #healthbars .hb.bleeding div { background: linear-gradient(90deg, #ff2a1a, #ff8a3a) !important; transition: width 0.1s linear; }
 #healthbars .hb.bleeding::after { color: #ff8a6a !important; }
 @keyframes bleedPulse { 50% { box-shadow: 0 0 10px rgba(255, 50, 30, 0.9); } }
+#hud .reload { position: absolute; left: 50%; top: 50%; width: 64px; height: 64px; transform: translate(-50%, -50%); opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+#hud .reload.on, #hud .reload.ready { opacity: 1; }
+#hud .reload svg { width: 100%; height: 100%; transform: rotate(-90deg); filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.8)); }
+#hud .reload circle { fill: none; stroke: rgba(255, 255, 255, 0.28); stroke-width: 3.5; }
+#hud .reload circle.fg { stroke: #ffb547; stroke-dasharray: 125.7; stroke-dashoffset: 125.7; stroke-linecap: round; }
+#hud .reload span { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: 6px; font: 700 13px 'Barlow Condensed', sans-serif; letter-spacing: 0.22em; color: #fff; text-shadow: 0 1px 3px #000; white-space: nowrap; }
+#hud .reload.ready:not(.on) span { color: #8fe08a; }
+#hud .reload.ready:not(.on) { animation: reload-ready 0.6s ease-out forwards; }
+#hud .reload.ready:not(.on) circle.fg { stroke: #8fe08a; stroke-dashoffset: 0; }
+@keyframes reload-ready { 0% { opacity: 1; scale: 1; } 100% { opacity: 0; scale: 1.25; } }
+#hud .reload-hint { position: absolute; left: 50%; top: calc(50% + 46px); transform: translateX(-50%); font: 700 13px 'Barlow Condensed', sans-serif; letter-spacing: 0.2em; color: #ffcf3f; text-shadow: 0 1px 3px #000; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+#hud .reload-hint.on { opacity: 1; animation: hint-pulse 1.2s ease-in-out infinite; }
+#hud .reload-hint kbd { display: inline-block; margin-right: 6px; padding: 0 5px; border: 1px solid #ffcf3f; border-radius: 3px; font: inherit; letter-spacing: 0; }
+@keyframes hint-pulse { 50% { opacity: 0.55; } }

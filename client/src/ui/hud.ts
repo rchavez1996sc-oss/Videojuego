@@ -11,6 +11,7 @@ export class Hud {
   private hp: HTMLElement;
   private stamina: HTMLElement;
   private reload: HTMLElement;
+  private lastReload = 0;
   private toast: HTMLElement;
   private counter: HTMLElement;
   private nades: HTMLElement;
@@ -28,7 +29,8 @@ export class Hud {
     this.root.innerHTML = `
       <div class="crosshair"><i class="t"></i><i class="b"></i><i class="l"></i><i class="r"></i><b></b></div>
       <div class="hitmarker"><i></i><i></i><i></i><i></i></div>
-      <div class="reload"><span>RECARGANDO</span><div class="bar"><div></div></div></div>
+      <div class="reload"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="20"/><circle class="fg" cx="24" cy="24" r="20"/></svg><span>RECARGANDO</span></div>
+      <div class="reload-hint"><kbd>R</kbd>RECARGAR</div>
       <div class="toast"></div>
       <div class="zoom"></div>
       <div class="counter"><span class="k">ENEMIGOS</span><b>0</b><span class="civ"></span></div>
@@ -118,9 +120,14 @@ export class Hud {
       this.stamina.parentElement!.classList.toggle('hidden', s.stamina >= 99.5);
     });
     this.set('rl', s.reload.toFixed(2), () => {
+      if (this.lastReload > 0 && s.reload === 0) this.flashReady();
+      if (this.lastReload === 0 && s.reload > 0) this.reload.querySelector('span')!.textContent = 'RECARGANDO';
+      this.lastReload = s.reload;
       this.reload.classList.toggle('on', s.reload > 0);
-      (this.reload.querySelector('.bar div') as HTMLElement).style.width = `${s.reload * 100}%`;
+      (this.reload.querySelector('.fg') as SVGCircleElement).style.strokeDashoffset = String(125.7 * (1 - s.reload));
     });
+    const hint = s.slot === 'rifle' && s.reload === 0 && s.reserve > 0 && s.ammo <= s.mag * 0.25;
+    this.set('rh', String(hint), () => this.root.querySelector('.reload-hint')!.classList.toggle('on', hint));
     this.hitT = Math.max(0, this.hitT - dt);
     this.toastT = Math.max(0, this.toastT - dt);
     const hitO = Math.min(1, this.hitT * 5).toFixed(2), toastO = Math.min(1, this.toastT * 3).toFixed(2);
@@ -158,5 +165,13 @@ export class Hud {
     void this.toast.offsetWidth;
     this.toast.classList.add('pop');
     this.toastT = 1.4;
+  }
+
+  /** Brief "LISTO" pop on the ring when a reload finishes. */
+  private flashReady(): void {
+    this.reload.querySelector('span')!.textContent = 'LISTO';
+    this.reload.classList.remove('ready');
+    void this.reload.offsetWidth;
+    this.reload.classList.add('ready');
   }
 }
