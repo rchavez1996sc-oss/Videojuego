@@ -1,7 +1,7 @@
 /** True while the mission-start countdown runs; the game loop renders but does not simulate. */
 export let counting = false;
 
-/** Big 3 · 2 · 1 · ¡A LA MISIÓN! with a short beep per step (a higher one at the end), shown once when play first starts. */
+/** Big 3 · 2 · 1 with a short beep per number (a higher one on 1), shown once when play first starts. */
 export function startCountdown(onDone: () => void): void {
   counting = true;
   const el = document.createElement('div');
@@ -23,17 +23,17 @@ export function startCountdown(onDone: () => void): void {
     o.start(t);
     o.stop(t + len + 0.02);
   };
-  const steps = ['3', '2', '1', '¡A LA MISIÓN!'];
-  steps.forEach((s, i) => setTimeout(() => {
-    el.textContent = s;
-    el.className = i === steps.length - 1 ? 'go' : '';
+  ['3', '2', '1'].forEach((n, i) => setTimeout(() => {
+    el.textContent = n;
+    el.classList.remove('pop');
     void el.offsetWidth;
     el.classList.add('pop');
-    beep(i === steps.length - 1 ? 1320 : 660, i === steps.length - 1 ? 0.5 : 0.18);
-    if (i === steps.length - 1) {
-      counting = false;
-      onDone();
-      setTimeout(() => (el.remove(), ctx?.close()), 900);
-    }
+    beep(i === 2 ? 880 : 660, 0.18);
   }, i * 1000));
+  setTimeout(() => {
+    counting = false;
+    onDone();
+    el.remove();
+    ctx?.close();
+  }, 3000);
 }
