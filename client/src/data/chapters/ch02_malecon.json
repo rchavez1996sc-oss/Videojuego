@@ -60,8 +60,8 @@
   "fogColor": "#c2c6c9",
   "fogDensity": 0.0017,
   "colors": {
-   "grassLush": "#4d7d2a",
-   "grassDry": "#6d8a38",
+   "grassLush": "#4a6f2c",
+   "grassDry": "#6c7c3c",
    "dirt": "#9a8566",
    "road": "#5a5754",
    "rock": "#c2a27a",

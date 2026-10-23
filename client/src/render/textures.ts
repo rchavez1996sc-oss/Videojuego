@@ -3,11 +3,13 @@ import { mulberry32 } from '../core/rng';
 import { fbmField, grainField, paintPixels } from './noiseTex';
 import { photo } from './photoTextures';
 
-type Painter = (color: CanvasRenderingContext2D, height: CanvasRenderingContext2D, size: number, rand: () => number) => void;
+type Painter = (color: CanvasRenderingContext2D, height: CanvasRenderingContext2D, size: number, rand: () => number, rough: CanvasRenderingContext2D) => void;
 
 export interface PbrSet {
   map: THREE.Texture;
   normalMap: THREE.Texture;
+  /** Optional per-texel roughness (white = the material's roughness), e.g. glossy window glass on a matte wall. */
+  roughnessMap?: THREE.Texture;
 }
 
 function heightToNormal(src: HTMLCanvasElement, strength: number): HTMLCanvasElement {
@@ -34,22 +36,28 @@ function heightToNormal(src: HTMLCanvasElement, strength: number): HTMLCanvasEle
   return out;
 }
 
-export function makePbr(size: number, seed: number, strength: number, paint: Painter): PbrSet {
+export function makePbr(size: number, seed: number, strength: number, paint: Painter, withRough = false): PbrSet {
   const c = document.createElement('canvas');
   const hc = document.createElement('canvas');
+  const rc = document.createElement('canvas');
   c.width = c.height = hc.width = hc.height = size;
-  const ctx = c.getContext('2d')!, hctx = hc.getContext('2d', { willReadFrequently: true })!;
+  rc.width = rc.height = withRough ? size : 1;
+  const ctx = c.getContext('2d')!, hctx = hc.getContext('2d', { willReadFrequently: true })!, rctx = rc.getContext('2d')!;
   hctx.fillStyle = '#808080';
   hctx.fillRect(0, 0, size, size);
-  paint(ctx, hctx, size, mulberry32(seed));
+  rctx.fillStyle = '#ffffff';
+  rctx.fillRect(0, 0, rc.width, rc.height);
+  paint(ctx, hctx, size, mulberry32(seed), rctx);
   const map = new THREE.CanvasTexture(c);
   map.colorSpace = THREE.SRGBColorSpace;
   const normalMap = new THREE.CanvasTexture(heightToNormal(hc, strength));
-  for (const t of [map, normalMap]) {
+  const roughnessMap = withRough ? new THREE.CanvasTexture(rc) : undefined;
+  for (const t of [map, normalMap, roughnessMap]) {
+    if (!t) continue;
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.anisotropy = 8;
+    t.anisotropy = 16;
   }
-  return { map, normalMap };
+  return { map, normalMap, roughnessMap };
 }
 
 function speckle(ctx: CanvasRenderingContext2D, size: number, rand: () => number, n: number, colors: string[], r: [number, number]) {

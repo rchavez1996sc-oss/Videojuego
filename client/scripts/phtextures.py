@@ -1,13 +1,15 @@
-"""Downloads CC0 Poly Haven texture sets (1k) and writes game-ready maps to public/assets/textures/.
+"""Downloads CC0 Poly Haven texture sets (2k colour for big surfaces in HI, else 1k) and writes game-ready maps to public/assets/textures/.
 
 Colour maps are rescaled so their mean colour matches the procedural texture they replace, so existing material
-tints keep working; normal maps (OpenGL) are downsized to 512. Run: python3 scripts/phtextures.py
+tints keep working; normal maps (OpenGL) are downsized to 1024/512; GREY sets are normalised to a neutral mean and tinted in the shader. Run: python3 scripts/phtextures.py
 """
 import io, json, os, urllib.request
 from PIL import Image, ImageStat
 
 OUT = os.path.join(os.path.dirname(__file__), '..', 'public', 'assets', 'textures')
-URL = 'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/{0}/{0}_{1}_1k.jpg'
+URL = 'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/{2}/{0}/{0}_{1}_{2}.jpg'
+HI = {'asphalt', 'slabs', 'cobble', 'flagstone', 'plaster', 'concrete', 'brick', 'lawn', 'dryGrass'}
+GREY = (128, 128, 128)
 SETS = {
     'concrete': ('concrete_floor_worn_001', (134, 131, 125)),
     'slabs': ('concrete_pavement', (134, 131, 125)),
@@ -26,10 +28,12 @@ SETS = {
     'pirca': ('old_stone_wall', None),
     'stoneWall': ('yellow_stone_wall', (168, 150, 122)),
     'pebbles': ('ganges_river_pebbles', None),
+    'lawn': ('leafy_grass', GREY),
+    'dryGrass': ('sparse_grass', GREY),
 }
 
-def fetch(asset, kind):
-    with urllib.request.urlopen(URL.format(asset, kind)) as r:
+def fetch(asset, kind, res='1k'):
+    with urllib.request.urlopen(URL.format(asset, kind, res)) as r:
         return Image.open(io.BytesIO(r.read())).convert('RGB')
 
 os.makedirs(OUT, exist_ok=True)
@@ -38,11 +42,12 @@ only = sys.argv[1:]
 for key, (asset, target) in SETS.items():
     if only and key not in only:
         continue
-    col = fetch(asset, 'diff')
+    hi = key in HI
+    col = fetch(asset, 'diff', '2k' if hi else '1k')
     if target:
         mean = ImageStat.Stat(col).mean
         col = Image.merge('RGB', [band.point(lambda v, k=t / m: min(255, int(v * k))) for band, t, m in zip(col.split(), target, mean)])
     col.save(os.path.join(OUT, f'{key}_col.jpg'), quality=82, optimize=True)
-    fetch(asset, 'nor_gl').resize((512, 512), Image.LANCZOS).save(os.path.join(OUT, f'{key}_nrm.jpg'), quality=88, optimize=True)
+    fetch(asset, 'nor_gl').resize((1024, 1024) if hi else (512, 512), Image.LANCZOS).save(os.path.join(OUT, f'{key}_nrm.jpg'), quality=88, optimize=True)
     print(key, asset)
 print(json.dumps({k: {'map': f'textures/{k}_col.jpg', 'normal': f'textures/{k}_nrm.jpg', 'source': f'Poly Haven {a} (CC0)'} for k, (a, _) in SETS.items()}, indent=1))

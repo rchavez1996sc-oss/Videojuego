@@ -4,6 +4,7 @@ import type { Heightfield } from './heightfield';
 import type { BiomeDef } from '../data/types';
 import type { Lighting } from '../render/lighting';
 import { rock, soil } from '../render/textures';
+import { photo } from '../render/photoTextures';
 import * as S from './terrainShader';
 import { setSurface } from './surfaces';
 
@@ -101,6 +102,9 @@ function terrainMaterial(hf: Heightfield, biome: BiomeDef, lighting: Lighting): 
     uRoad: { value: new THREE.Color(c.road) },
     uRockTint: { value: new THREE.Color(c.rock) },
     uSnow: { value: new THREE.Color(c.snow) },
+    uLawn: { value: photo('lawn')?.map ?? soil().map },
+    uDryG: { value: photo('dryGrass')?.map ?? soil().map },
+    uPhoto: { value: photo('lawn') && photo('dryGrass') ? 1 : 0 },
   };
   const mat = new THREE.MeshStandardMaterial({ roughness: 1, metalness: 0 });
   lighting.setup(mat, 'terrain', (sh) => {

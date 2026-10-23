@@ -125,7 +125,7 @@ function maleconMaterials(lighting: Lighting, { apt, co, pl, br, wd, fo }: Tex):
     bollardGreen: std('bollardGreen', { color: '#2f6b55', roughness: 0.45, metalness: 0.3 }),
   };
   [['houseWhite', '#f4f2ed'], ['houseCream', '#ece2cf'], ['houseGray', '#d6d7d5'], ['houseWarm', '#e9d8c0']].forEach(([k, c]) => (m[k] = std(k, { map: pl.map, normalMap: pl.normalMap, color: c, roughness: 0.85 })));
-  [['aptTerracotta', '#c98b70'], ['aptSalmon', '#dba58c'], ['aptWhite', '#f6f4ee'], ['aptCream', '#ecdfc4'], ['aptSand', '#dcc9a4'], ['aptGray', '#c9cbcc'], ['aptBlue', '#c5d5e6']].forEach(([k, c]) => (m[k] = std(k, { map: apt.map, normalMap: apt.normalMap, color: c, roughness: 0.85 })));
+  [['aptTerracotta', '#c98b70'], ['aptSalmon', '#dba58c'], ['aptWhite', '#f6f4ee'], ['aptCream', '#ecdfc4'], ['aptSand', '#dcc9a4'], ['aptGray', '#c9cbcc'], ['aptBlue', '#c5d5e6']].forEach(([k, c]) => (m[k] = std(k, { map: apt.map, normalMap: apt.normalMap, roughnessMap: apt.roughnessMap ?? null, color: c, roughness: 0.85 })));
   return m;
 }
 
@@ -138,7 +138,7 @@ export function buildMalecon(hf: Heightfield, def: MaleconDef, lighting: Lightin
   const tex: Tex = { apt: apartment(), co: concrete(), pl: plaster(), br: brick(), wd: wood(), fo: foliage() };
   const atlas = new SignAtlas(), brands = atlas.brands;
   const mats = { ...barrioMaterials(lighting, atlas), ...maleconMaterials(lighting, tex) };
-  const textured = (key: string, set: PbrSet, keys: string[], roughness: number) => ({ material: lighting.setup(new THREE.MeshStandardMaterial({ map: set.map, normalMap: set.normalMap, roughness, vertexColors: true }), key), keys });
+  const textured = (key: string, set: PbrSet, keys: string[], roughness: number) => ({ material: lighting.setup(new THREE.MeshStandardMaterial({ map: set.map, normalMap: set.normalMap, roughnessMap: set.roughnessMap ?? null, roughness, vertexColors: true }), key), keys });
   const bake = [
     ...bakeGroups(lighting, ['alu', 'railGreen', 'lampPole', 'chair', 'awningRed', 'lobby', 'steelDark', 'columnGreen', 'flagMast', 'fenceIron', 'benchGreen', 'bollardGreen', 'lhBlack', 'lhWhite', 'roofTile', 'poolWater', 'roofSlate', 'lampBlue', 'awningStripe', 'flatRoof', 'ceilingWhite', 'linen', 'chairGreen', 'cushionOrange', 'greenTrim', 'barrierRed', 'barrierWhite']),
     textured('apt-baked', tex.apt, [...new Set(FACADES)], 0.85),

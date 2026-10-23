@@ -1,5 +1,5 @@
 {
- "version": 12,
+ "version": 14,
  "characters": {
   "pnp": {
    "near": "characters/pnp.glb",
@@ -110,6 +110,21 @@
   "pebbles": {
    "map": "textures/pebbles_col.jpg",
    "normal": "textures/pebbles_nrm.jpg"
+  },
+  "lawn": {
+   "map": "textures/lawn_col.jpg",
+   "normal": "textures/lawn_nrm.jpg",
+   "source": "Poly Haven leafy_grass (CC0)"
+  },
+  "dryGrass": {
+   "map": "textures/dryGrass_col.jpg",
+   "normal": "textures/dryGrass_nrm.jpg",
+   "source": "Poly Haven sparse_grass (CC0)"
   }
+ },
+ "environment": {
+  "file": "hdri/beach_parking_1k.hdr",
+  "gain": 1.3,
+  "source": "Poly Haven beach_parking (CC0)"
  }
 }

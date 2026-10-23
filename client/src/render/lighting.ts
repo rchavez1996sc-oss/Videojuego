@@ -11,7 +11,7 @@ export class Lighting {
   readonly csm: CSM;
   readonly sunDir = new THREE.Vector3();
 
-  constructor(private scene: THREE.Scene, camera: THREE.PerspectiveCamera, gl: THREE.WebGLRenderer, biome: BiomeDef) {
+  constructor(private scene: THREE.Scene, camera: THREE.PerspectiveCamera, private gl: THREE.WebGLRenderer, biome: BiomeDef) {
     const phi = THREE.MathUtils.degToRad(90 - biome.sunElevation);
     const theta = THREE.MathUtils.degToRad(biome.sunAzimuth);
     this.sunDir.setFromSphericalCoords(1, phi, theta);
@@ -77,6 +77,28 @@ export class Lighting {
    * Outer cascades re-render every other frame only while the camera holds still: CSM moves their light frustums
    * every frame, so a skipped re-render while turning would sample a stale map and make the shadows jump.
    */
+  /** Swaps the analytic sky's reflections for a photographed HDRI (real surroundings in car paint, glass and metal). */
+  useEnvironment(hdr: THREE.DataTexture, gain: number): void {
+    const pmrem = new THREE.PMREMGenerator(this.gl);
+    hdr.mapping = THREE.EquirectangularReflectionMapping;
+    const d = hdr.image.data as unknown as Float32Array, step = d.length / (hdr.image.width * hdr.image.height);
+    for (let i = 0; i < d.length; i += step) {
+      const l = d[i] * 0.2126 + d[i + 1] * 0.7152 + d[i + 2] * 0.0722;
+      for (let k = 0; k < 3; k++) d[i + k] = l + (d[i + k] - l) * 0.35;
+    }
+    const w = hdr.image.width, h = hdr.image.height, row = (y: number) => y * w * step, horizon = [0, 0, 0];
+    for (let x = 0; x < w; x++) for (let k = 0; k < 3; k++) horizon[k] += d[row(Math.floor(h / 2) - 2) + x * step + k] / w;
+    for (let y = Math.floor(h / 2); y < h; y++) for (let x = 0; x < w; x++) {
+      const i = row(y) + x * step, t = Math.min(1, (y - h / 2) / (h * 0.08));
+      for (let k = 0; k < 3; k++) d[i + k] = Math.max(d[i + k], horizon[k] * 0.7 * t + d[i + k] * (1 - t));
+    }
+    hdr.needsUpdate = true;
+    this.scene.environment = pmrem.fromEquirectangular(hdr).texture;
+    this.scene.environmentIntensity *= gain;
+    pmrem.dispose();
+    hdr.dispose();
+  }
+
   update(camera: THREE.Camera): void {
     this.csm.update();
     const e = camera.matrixWorld.elements, l = this.lastCam.elements;

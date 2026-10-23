@@ -4,48 +4,79 @@ import { photo } from '../../render/photoTextures';
 
 /** Apartment facade, 2 bays × 2 floors (6 m): slab bands, recessed windows with blinds and sky glints. Pale for tinting. */
 export const apartment = (): PbrSet =>
-  makePbr(512, 211, 3, (c, h, s, r) => {
+  makePbr(1024, 211, 3, (c, h, s, r, rough) => {
+    const k = s / 512;
     c.fillStyle = '#ecebe6';
     c.fillRect(0, 0, s, s);
     const stucco = photo('stucco')?.map.image as CanvasImageSource | undefined;
     if (stucco) for (let i = 0; i < 9; i++) for (const ctx of [c, h]) ctx.drawImage(stucco, (i % 3) * (s / 3), Math.floor(i / 3) * (s / 3), s / 3, s / 3);
     for (let i = 0; i < (stucco ? 0 : 1800); i++) {
       c.fillStyle = `rgba(${r() < 0.5 ? '255,255,255' : '120,116,108'},${0.04 + r() * 0.06})`;
-      c.fillRect(r() * s, r() * s, 1 + r() * 4, 1 + r() * 4);
+      c.fillRect(r() * s, r() * s, 1 + r() * 4 * k, 1 + r() * 4 * k);
     }
     const cell = s / 2;
     for (let fy = 0; fy < 2; fy++) {
       const y0 = fy * cell;
       c.fillStyle = '#c9c6bf';
-      c.fillRect(0, y0 + cell - 18, s, 18);
+      c.fillRect(0, y0 + cell - 18 * k, s, 18 * k);
       h.fillStyle = '#a0a0a0';
-      h.fillRect(0, y0 + cell - 18, s, 18);
+      h.fillRect(0, y0 + cell - 18 * k, s, 18 * k);
+      const drip = c.createLinearGradient(0, y0 + cell, 0, y0 + cell + 40 * k);
+      drip.addColorStop(0, 'rgba(90,86,78,0.18)');
+      drip.addColorStop(1, 'rgba(90,86,78,0)');
       for (let bx = 0; bx < 2; bx++) {
-        const x0 = bx * cell + 22, w = cell - 44, wy = y0 + 30, wh = cell - 70;
+        const x0 = bx * cell + 22 * k, w = cell - 44 * k, wy = y0 + 30 * k, wh = cell - 70 * k;
         const g = c.createLinearGradient(0, wy, 0, wy + wh);
-        g.addColorStop(0, '#8fa3b0');
-        g.addColorStop(0.45, '#33424c');
-        g.addColorStop(1, '#1d252b');
+        const sky = r();
+        g.addColorStop(0, sky < 0.5 ? '#9fb3bf' : '#7d929f');
+        g.addColorStop(0.45, '#3a4952');
+        g.addColorStop(1, '#1b2227');
         c.fillStyle = g;
         c.fillRect(x0, wy, w, wh);
+        if (r() < 0.35) {
+          c.fillStyle = `rgba(255,236,200,${0.08 + r() * 0.12})`;
+          c.fillRect(x0 + w * 0.1, wy + wh * 0.3, w * 0.8, wh * 0.6);
+        }
         const blind = r();
         if (blind < 0.55) {
           c.fillStyle = ['#d8d0c0', '#bfb6a6', '#e6e1d6', '#9a8f80'][Math.floor(r() * 4)];
           c.globalAlpha = 0.85;
-          c.fillRect(x0 + 4, wy + 4, w - 8, wh * (0.2 + r() * 0.6));
+          const bh = wh * (0.2 + r() * 0.6);
+          c.fillRect(x0 + 4 * k, wy + 4 * k, w - 8 * k, bh);
+          for (let y = wy + 4 * k; y < wy + bh; y += 5 * k) {
+            c.fillStyle = 'rgba(0,0,0,0.08)';
+            c.fillRect(x0 + 4 * k, y, w - 8 * k, 1 * k);
+          }
           c.globalAlpha = 1;
+          rough.fillStyle = '#d0d0d0';
+          rough.fillRect(x0 + 4 * k, wy + 4 * k, w - 8 * k, bh);
+        }
+        rough.fillStyle = '#1a1a1a';
+        rough.fillRect(x0, wy + (blind < 0.55 ? 0 : 0), w, wh);
+        if (blind < 0.55) {
+          rough.fillStyle = '#d0d0d0';
+          rough.fillRect(x0 + 4 * k, wy + 4 * k, w - 8 * k, wh * 0.2);
         }
         c.fillStyle = '#5d6266';
-        c.fillRect(x0 + w / 2 - 3, wy, 6, wh);
-        c.fillRect(x0, wy + wh * 0.62, w, 5);
+        c.fillRect(x0 + w / 2 - 3 * k, wy, 6 * k, wh);
+        c.fillRect(x0, wy + wh * 0.62, w, 5 * k);
         c.strokeStyle = '#7b7f82';
-        c.lineWidth = 6;
+        c.lineWidth = 6 * k;
         c.strokeRect(x0, wy, w, wh);
+        rough.strokeStyle = '#999999';
+        rough.lineWidth = 6 * k;
+        rough.strokeRect(x0, wy, w, wh);
+        c.fillStyle = '#b9b5ad';
+        c.fillRect(x0 - 6 * k, wy + wh + 3 * k, w + 12 * k, 8 * k);
+        h.fillStyle = '#c8c8c8';
+        h.fillRect(x0 - 6 * k, wy + wh + 3 * k, w + 12 * k, 8 * k);
+        c.fillStyle = drip;
+        c.fillRect(x0, wy + wh + 11 * k, w, 40 * k);
         h.fillStyle = '#404040';
         h.fillRect(x0, wy, w, wh);
       }
     }
-  });
+  }, true);
 
 /** Curtain wall: blue-green glass between aluminium mullions with a spandrel band every floor (3 m × 3 m). */
 export const curtain = (): PbrSet =>

@@ -16,6 +16,9 @@ varying vec3 vWNormal;
 uniform sampler2D uMask;
 uniform sampler2D uSoil;
 uniform sampler2D uRock;
+uniform sampler2D uLawn;
+uniform sampler2D uDryG;
+uniform float uPhoto;
 uniform float uSize;
 uniform float uSnowLine;
 uniform vec3 uGrassLush, uGrassDry, uDirt, uRoad, uRockTint, uSnow;
@@ -45,8 +48,12 @@ vec3 rockC = triplanar(uRock, vWPos, wn, 0.11) * mix(vec3(1.0), triplanar(uRock,
 
 float dryness = smoothstep(-0.25, 0.45, n1 + vWPos.y * 0.008);
 vec3 grass = mix(uGrassLush, uGrassDry, dryness);
-grass *= 0.78 + 0.28 * n2 + 0.12 * n3;
-grass = mix(grass, grass * soilC * 2.0, 0.25);
+float far = smoothstep(5.0, 30.0, camDist);
+vec3 lawnC = mix(triplanar(uLawn, vWPos, wn, 0.42), triplanar(uLawn, vWPos, wn, 0.071), far * 0.6);
+vec3 dryC = mix(triplanar(uDryG, vWPos, wn, 0.38), triplanar(uDryG, vWPos, wn, 0.063), far * 0.6);
+vec3 blades = mix(lawnC, dryC, dryness) * 4.6;
+grass = mix(grass * (0.78 + 0.28 * n2 + 0.12 * n3), grass * blades * (0.86 + 0.2 * n2), uPhoto);
+grass = mix(grass, grass * soilC * 2.0, 0.25 * (1.0 - uPhoto));
 
 float bareK = m.b * m.a * 0.16;
 float rockW = smoothstep(0.24 - bareK, 0.4 - bareK, slope + n2 * 0.08) * m.a;
@@ -59,7 +66,7 @@ col = mix(col, uSnow * (0.92 + 0.08 * n3), snow);
 float cavity = 0.82 + 0.18 * smoothstep(-0.6, 0.4, n2);
 diffuseColor.rgb = col * cavity;
 
-float tBump = (lum(soilC) * (1.0 - rockW) + lum(rockC) * rockW * 2.0 + n3 * 0.05) * (1.0 - snow * 0.8);
+float tBump = (mix(lum(soilC), lum(blades) * 0.25, uPhoto * (1.0 - dirtW)) * (1.0 - rockW) + lum(rockC) * rockW * 2.0 + n3 * 0.05) * (1.0 - snow * 0.8);
 tBump *= 1.0 - smoothstep(6.0, 35.0, camDist);
 float tRough = mix(mix(0.97, 0.9, m.r), 0.82, rockW);
 tRough = mix(tRough, 0.55, snow);

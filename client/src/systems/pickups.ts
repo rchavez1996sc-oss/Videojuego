@@ -96,7 +96,7 @@ export class Pickups {
 /** Every fallen policeman leaves his rounds on the body; sometimes (by difficulty) a medkit beside them, gone after 30 s. */
 export function dropLoot(pickups: Pickups, at: THREE.Vector3, ground: number): void {
   const a = Math.random() * Math.PI * 2, side = new THREE.Vector3(Math.cos(a) * 0.45, 0, Math.sin(a) * 0.45);
-  pickups.spawn(at.clone().add(side), 'ammo', 90, ground, 30 + Math.round(Math.random() * 45));
+  pickups.spawn(at.clone().add(side), 'ammo', 90, ground, 15 + Math.round(Math.random() * 30));
   if (Math.random() < difficulty.value.medkitDrop) pickups.spawn(at.clone().sub(side), 'medkit', 30, ground);
 }
 

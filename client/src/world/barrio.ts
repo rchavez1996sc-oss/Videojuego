@@ -53,9 +53,7 @@ export interface Barrio {
   /** Where the player may start (inside the playable district); everywhere when absent. */
   inside?: (x: number, z: number) => boolean;
 }
-
 const PAINT_COLORS = ['#9fc3d6', '#e3c46a', '#d9a3a0', '#9cc29a', '#e6dac0', '#d99a63'];
-
 export function materials(lighting: Lighting, atlas: SignAtlas): Record<string, THREE.Material> {
   const br = brick(), co = concrete(), pl = plaster(), ca = corrugated(), es = estera(), st = rock(), wd = wood();
   const std = (key: string, p: THREE.MeshStandardMaterialParameters) => lighting.setup(new THREE.MeshStandardMaterial(p), key);
@@ -176,7 +174,10 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
   for (const s of [1, -1]) {
     for (let col = 0; col < def.cols; col++) {
       const bx0 = def.x0 + col * pitch;
-      b.box('concrete', [def.blockW, 0.18, 2.4], new THREE.Vector3(bx0 + def.blockW / 2, hf.heightAt(bx0, s * 9.4) + 0.06, s * 9.4), new THREE.Quaternion());
+      for (let k = 0, n = Math.ceil(def.blockW / 4), sw = def.blockW / n; k < n; k++) {
+        const x0 = bx0 + k * sw, hs = [x0, x0 + sw].flatMap((x) => [8.2, 10.6].map((z) => hf.heightAt(x, s * z))), top = Math.max(...hs) + 0.15, base = Math.min(...hs) - 0.4;
+        b.box('concrete', [sw + 0.01, top - base, 2.4], new THREE.Vector3(x0 + sw / 2, (top + base) / 2, s * 9.4), new THREE.Quaternion());
+      }
     }
     const poles: THREE.Vector3[] = [];
     for (let x = def.x0 - 20; x < xEnd + 20; x += 31) poles.push(new THREE.Vector3(x, 0, s * 9.9));
