@@ -3,7 +3,7 @@ import type { Builder } from '../buildingKit';
 import type { Lighting } from '../../render/lighting';
 import { edgeZ, type CoastDef } from '../coast';
 import type { MaleconDef } from './layout';
-import { chatGroup, type Plants } from './park';
+import { chatGroup, railing, type Plants } from './park';
 import { canvasTexture } from './textures';
 
 const Q = new THREE.Quaternion(), UP = new THREE.Vector3(0, 1, 0);
@@ -36,6 +36,10 @@ export function buildLarcomar(b: Builder, def: MaleconDef, c: CoastDef, lighting
   };
   b.box('confetti', [l.x1 - l.x0, 0.3, zEdge - l.z0 + 1], new THREE.Vector3(cx, y0 - 0.15, (l.z0 + zEdge) / 2), Q, true);
   b.box('lattice', [l.x1 - l.x0 + 2, H, 12], new THREE.Vector3(cx, y0 + H / 2, l.z0 - 6), Q, true);
+  for (const s of [-1, 1]) {
+    const wx = s < 0 ? l.x0 : l.x1, gap = Array.from({ length: 5 }, (_, k) => wx - s * (8 - k * 2));
+    railing(b, gap.map((x) => new THREE.Vector3(x, 0, edgeZ(c, x) - 1.2)).concat(new THREE.Vector3(wx, 0, edgeZ(c, wx) - 1.2)));
+  }
   for (const s of [-1, 1]) {
     const x = s < 0 ? l.x0 + side / 2 : l.x1 - side / 2;
     b.box('mallWhite', [side, H + 0.1, zEdge - l.z0], new THREE.Vector3(x, y0 + H / 2, (l.z0 + zEdge) / 2), Q, true);

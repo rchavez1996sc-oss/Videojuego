@@ -45,6 +45,13 @@ export function buildBeach(b: Builder, hf: Heightfield, def: MaleconDef, c: Coas
     const kind = kinds[Math.floor(rand() * kinds.length)];
     car(b, new THREE.Vector3(x, y(x, z) + 0.03, z), rand() < 0.5 ? 0 : Math.PI, kind === 'tico' ? 'car3' : `car${[0, 1, 2, 4, 5][Math.floor(rand() * 5)]}`, kind);
   }
+  const kz = br.z + br.half + 1.5, mouths = (c.ravines ?? []).map((r) => ravineCentre(r, kz) + (r.skew ?? 0) * 4);
+  for (let x = -L + 6; x < L - 6; x += 5.6) {
+    if (rand() < 0.4 || mouths.some((m) => Math.abs(m - x) < 16) || Math.abs(x - (def.pier?.x ?? 1e4)) < 14) continue;
+    if (Math.abs((((x - (-L + 10)) % 34) + 34) % 34) < 2.5 || Math.abs((((x - (-L + 10)) % 34) + 34) % 34) > 31.5) continue;
+    const kind = kinds[Math.floor(rand() * kinds.length)];
+    car(b, new THREE.Vector3(x, y(x, kz) + 0.03, kz), rand() < 0.5 ? Math.PI / 2 : -Math.PI / 2, kind === 'tico' ? 'car3' : `car${[0, 1, 2, 4, 5][Math.floor(rand() * 5)]}`, kind);
+  }
 }
 
 /** Galvanised chain-link: a diamond wire pattern on transparent ground, for an alpha-tested fence panel. */

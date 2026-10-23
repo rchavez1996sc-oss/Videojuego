@@ -15,7 +15,7 @@ export function chatGroup(list: Extra[], at: THREE.Vector3, rand: () => number):
   const n = 2 + Math.floor(rand() * 2), a0 = rand() * Math.PI * 2;
   for (let k = 0; k < n; k++) {
     const a = a0 + (k / n) * Math.PI * 2, p = at.clone().add(new THREE.Vector3(Math.cos(a) * 0.75, 0, Math.sin(a) * 0.75));
-    list.push({ pos: p, yaw: Math.atan2(at.x - p.x, at.z - p.z), key: k === 0 || rand() < 0.4 ? 'talk' : rand() < 0.5 ? 'civ_idle' : 'texting' });
+    list.push({ pos: p, yaw: Math.atan2(at.x - p.x, at.z - p.z), key: k === 0 || rand() < 0.4 ? 'civ_idle' : rand() < 0.5 ? 'look_around' : 'texting' });
   }
 }
 

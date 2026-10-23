@@ -38,8 +38,8 @@ export function buildBajada(b: Builder, hf: Heightfield, def: MaleconDef, c: Coa
     for (let z = z0; z <= z1; z += 1.5) centre.push(new THREE.Vector2(ravineCentre(r, Math.min(z, mouth)) + Math.max(0, z - mouth) * (r.skew ?? 0) + Math.max(0, z - mouth + 6) ** 2 * 0.045, z));
     ribbon(b, hf, centre, road * 2, 'cobble', 0.1);
     for (let z = r.head + 6; z < mouth - 2; z += 3.2) {
-      const x = ravineCentre(r, z), f = ravineFloor(c, r, z), q = new THREE.Quaternion().setFromAxisAngle(UP, Math.atan2(r.skew ?? 0, 1));
-      b.box('pirca', [road * 2 - 0.1, 0.16, 0.32], new THREE.Vector3(x, f + 0.12, z), q, false);
+      const x = ravineCentre(r, z), f = ravineFloor(c, r, z), w = road * 2 * Math.hypot(1, r.skew ?? 0) - 0.1;
+      b.box('pirca', [w, 0.16, 0.32], new THREE.Vector3(x, f + 0.12, z), new THREE.Quaternion(), false);
     }
     for (const s of [-1, 1]) ribbon(b, hf, centre.map((p) => new THREE.Vector2(p.x + s * (road + 0.12), p.y)), 0.25, 'kerbYellow', 0.16);
     for (let z = r.head + 2, i = 0; z < mouth - 2; z += 4, i++) {

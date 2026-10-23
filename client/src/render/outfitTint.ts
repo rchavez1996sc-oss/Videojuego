@@ -31,7 +31,7 @@ export function tintHook(hair: boolean) {
   diffuseColor.rgb = mix(diffuseColor.rgb, uTone * dot(diffuseColor.rgb, vec3(0.3, 0.59, 0.11)) * 2.2, 0.8);` : `#include <map_fragment>
   {
     vec3 hsv = tq_rgb2hsv(pow(max(diffuseColor.rgb, 0.0), vec3(1.0 / 2.2)));
-    float skin = (1.0 - smoothstep(0.10, 0.14, hsv.x)) * smoothstep(0.15, 0.24, hsv.y) * (1.0 - smoothstep(0.55, 0.68, hsv.y)) * smoothstep(0.15, 0.25, hsv.z);
+    float skin = max(1.0 - smoothstep(0.11, 0.15, hsv.x), smoothstep(0.95, 0.98, hsv.x)) * smoothstep(0.07, 0.15, hsv.y) * (1.0 - smoothstep(0.6, 0.72, hsv.y)) * smoothstep(0.1, 0.2, hsv.z);
     vec3 cloth = vec3(fract(hsv.x + uOutfit.x), clamp(max(hsv.y * uOutfit.y, uOutfit.w * (1.0 - smoothstep(0.0, 0.2, hsv.y))), 0.0, 1.0), min(hsv.z * uOutfit.z, 0.92));
     diffuseColor.rgb = mix(pow(tq_hsv2rgb(cloth), vec3(2.2)), diffuseColor.rgb * uTone.x, skin);
   }`);

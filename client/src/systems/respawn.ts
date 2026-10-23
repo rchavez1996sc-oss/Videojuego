@@ -31,7 +31,7 @@ export function roomy(world: RAPIER.World, pos: THREE.Vector3, ignore: number): 
 }
 
 /**
- * Picks a respawn spot 40–90 m from where the player fell, away from living enemies and out of their sight.
+ * Picks a respawn spot near where the player fell (within 50 m when possible), clear of living enemies and out of their sight.
  * Returns the feet position and a yaw facing back toward the fight.
  */
 export function findRespawn(world: RAPIER.World, hf: Heightfield, enemies: Enemy[], death: THREE.Vector3, fallback: THREE.Vector3, streets?: THREE.Vector3[], ignore = -1): { pos: THREE.Vector3; yaw: number } {
@@ -43,8 +43,9 @@ export function findRespawn(world: RAPIER.World, hf: Heightfield, enemies: Enemy
   const limit = hf.def.playable / 2 - 15;
   let best: { pos: THREE.Vector3; score: number } | null = null;
 
-  const rings = streets ? [[35, 60], [60, 95], [95, 160]] : [[40, 40], [55, 55], [70, 70], [90, 90]];
+  const rings = streets ? [[8, 50], [50, 90], [90, 160]] : [[40, 40], [55, 55], [70, 70], [90, 90]];
   for (const [r0, r1] of rings) {
+    const clear = streets && r1 <= 50 ? 25 : 45;
     const spots = streets
       ? streets.filter((p) => Math.hypot(p.x - death.x, p.z - death.z) >= r0 && Math.hypot(p.x - death.x, p.z - death.z) < r1).map((p) => [p.x, p.z])
       : Array.from({ length: 16 }, (_, i) => [death.x + Math.cos((i / 16) * Math.PI * 2) * r0, death.z + Math.sin((i / 16) * Math.PI * 2) * r0]);
@@ -61,14 +62,14 @@ export function findRespawn(world: RAPIER.World, hf: Heightfield, enemies: Enemy
       for (const e of alive) {
         const d = e.position.distanceTo(pos);
         nearest = Math.min(nearest, d);
-        if (d < 120 && !seen) {
+        if (d < (clear < 45 ? 60 : 120) && !seen) {
           const from = e.position.clone().setY(e.position.y + 1.6), to = pos.clone().setY(pos.y + 1.2);
           const dir = to.clone().sub(from), len = dir.length();
           const hit = world.castRay(new RAPIER.Ray(from, dir.divideScalar(len)), len, true, undefined, undefined, undefined, undefined, (c) => c.handle !== e.handle && c.isEnabled());
           seen = !hit || hit.timeOfImpact > len - 0.5;
         }
       }
-      if (nearest < 45 || seen) continue;
+      if (nearest < clear || seen) continue;
       const dir = pos.clone().sub(death).setY(0).normalize();
       const score = radius * 0.4 - dir.dot(away) * 30 - Math.min(nearest, 90) * 0.2;
       if (!best || score < best.score) best = { pos, score };
