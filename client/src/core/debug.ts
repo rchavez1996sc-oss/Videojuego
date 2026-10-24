@@ -268,10 +268,10 @@ export function installDebug(c: DebugContext): void {
       return `hp=${c.player.hp.toFixed(0)} moved=${c.player.position.distanceTo(before).toFixed(1)}m`;
     },
     /** Stands at (x, z) with enemies alerted, presses Q, and reports where the player ended and whether the threat can see them. */
-    coverTest(x: number, z: number) {
+    coverTest(x: number, z: number, y?: number) {
       c.setFreeCam(false);
       c.setSkipRender(true);
-      c.player.respawn(new THREE.Vector3(x, c.hf.heightAt(x, z), z), 0);
+      c.player.respawn(new THREE.Vector3(x, y ?? c.hf.heightAt(x, z), z), 0);
       c.combat.debugShoot();
       for (let i = 0; i < 20; i++) {
         c.player.hp = 100;

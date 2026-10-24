@@ -146,3 +146,11 @@ body.paused #obj-marker, body.paused .prompt, body.paused #healthbars, body.paus
 #hud .reload-hint.held kbd { background: rgba(255, 207, 63, 0.25); }
 #hud .reload-hint.empty { color: #ff5a3c; }
 #hud .reload-hint.empty kbd { border-color: #ff5a3c; }
+body.lost #game { filter: grayscale(1) brightness(0.7) contrast(1.1); transition: filter 1.6s ease-out; }
+#fail.on { animation: fail-veil 1.4s ease-out both; }
+#fail.on::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 30%, rgba(120, 0, 10, 0.55)); animation: fail-pulse 2.2s ease-out both; }
+#fail.on h2 { animation: fail-slam 0.5s 0.25s cubic-bezier(0.3, 1.6, 0.5, 1) both, fail-shake 0.35s 0.7s both; }
+@keyframes fail-veil { from { background: rgba(12, 6, 4, 0); } to { background: rgba(12, 6, 4, 0.82); } }
+@keyframes fail-pulse { 0% { opacity: 0; } 20% { opacity: 1; } 55% { opacity: 0.6; } 70% { opacity: 1; } 100% { opacity: 0.75; } }
+@keyframes fail-slam { from { opacity: 0; transform: scale(2.2); } to { opacity: 1; transform: scale(1); } }
+@keyframes fail-shake { 0%, 100% { translate: 0; } 25% { translate: -8px 2px; } 50% { translate: 7px -2px; } 75% { translate: -4px 1px; } }

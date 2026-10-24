@@ -51,7 +51,7 @@ function pierLamp(b: Builder, x: number, y: number, z: number): void {
 
 /** Big white planter with a clipped shrub. */
 function pot(b: Builder, x: number, y: number, z: number): void {
-  b.geometry('lhWhite', new THREE.CylinderGeometry(0.42, 0.32, 0.8, 12).translate(0, 0.4, 0), at(x, y, z), { size: [0.8, 0.8, 0.8], pos: new THREE.Vector3(x, y + 0.4, z), quat: Q });
+  b.geometry('lhWhite', new THREE.CylinderGeometry(0.42, 0.32, 0.8, 12).translate(0, 0.4, 0), at(x, y, z), { size: [0.9, 1.4, 0.9], pos: new THREE.Vector3(x, y + 0.7, z), quat: Q });
   b.geometry('hedge', new THREE.SphereGeometry(0.55, 10, 8).scale(1, 0.9, 1), at(x, y + 1.15, z));
 }
 

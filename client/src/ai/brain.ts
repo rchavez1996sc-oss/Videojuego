@@ -70,7 +70,7 @@ function pickCover(e: Enemy, ctx: AIContext, preferred: number, radius = 30, anc
   const threat = e.lastKnown.clone().setY(e.lastKnown.y + 1.3);
   for (const c of ctx.cover.candidates(anchor, threat, radius, preferred, e.id)) {
     if (e.leash && c.pos.distanceTo(e.leash.at) > e.leash.r) continue;
-    const spot = c.pos.clone().setY(ctx.groundY(c.pos.x, c.pos.z));
+    const spot = c.pos.clone();
     if (!ctx.blocked(spot.clone().setY(spot.y + 1.0), threat, e.handle)) continue;
     if (e.cover) e.cover.owner = -1;
     c.owner = e.id;
@@ -85,7 +85,7 @@ function pickCover(e: Enemy, ctx: AIContext, preferred: number, radius = 30, anc
 
 function coverCompromised(e: Enemy, ctx: AIContext): boolean {
   if (!e.cover) return true;
-  const spot = e.cover.pos.clone().setY(ctx.groundY(e.cover.pos.x, e.cover.pos.z) + 1.0);
+  const spot = e.cover.pos.clone().setY(e.cover.pos.y + 1.0);
   return !ctx.blocked(spot, ctx.playerChest, e.handle);
 }
 
@@ -117,12 +117,12 @@ function thinkCombat(e: Enemy, ctx: AIContext): void {
 
 /** Steps sideways (or stands) out of cover to a spot that sees the threat, fires from there, then ducks back. */
 function startPeek(e: Enemy, ctx: AIContext): boolean {
-  const base = e.cover!.pos.clone().setY(ctx.groundY(e.cover!.pos.x, e.cover!.pos.z));
+  const base = e.cover!.pos.clone();
   const to = e.lastKnown.clone().sub(base).setY(0).normalize();
   const side = new THREE.Vector3(-to.z, 0, to.x);
   for (const d of Math.random() < 0.5 ? [1.6, -1.6, 2.8, -2.8] : [-1.6, 1.6, -2.8, 2.8]) {
     const spot = base.clone().addScaledVector(side, d).addScaledVector(to, 0.4);
-    spot.y = ctx.groundY(spot.x, spot.z);
+    spot.y = base.y;
     if (ctx.blocked(spot.clone().setY(spot.y + 1.0), spot.clone().setY(spot.y + 0.3), e.handle)) continue;
     if (ctx.blocked(spot.clone().setY(spot.y + 1.5), ctx.playerChest, e.handle)) continue;
     e.peek = base;

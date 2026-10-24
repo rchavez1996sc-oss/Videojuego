@@ -1,19 +1,23 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 
+/** `pos.y`: floor the spot stands on (the obstacle's base until `prune` settles it on the real floor). */
 export interface CoverPoint { pos: THREE.Vector3; normal: THREE.Vector3; owner: number }
 
 /** Flat list of cover spots; `normal` points from the obstacle towards the spot. */
 export class CoverIndex {
   readonly points: CoverPoint[] = [];
 
-  add(x: number, z: number, nx: number, nz: number): void {
-    this.points.push({ pos: new THREE.Vector3(x, 0, z), normal: new THREE.Vector3(nx, 0, nz).normalize(), owner: -1 });
+  add(x: number, z: number, nx: number, nz: number, base = -Infinity): void {
+    this.points.push({ pos: new THREE.Vector3(x, base, z), normal: new THREE.Vector3(nx, 0, nz).normalize(), owner: -1 });
   }
 
   /** Adds spots along both long faces of an oriented box footprint (XZ). */
   addBox(center: THREE.Vector3, size: [number, number, number], quat: THREE.Quaternion): void {
     if (size[1] < 0.9) return;
+    const base = center.y - size[1] / 2;
+    const wide = Math.max(size[0], size[2]);
+    if (wide < 1.2) return void (wide >= 0.6 && this.addRound(center.clone().setY(base + 0.5), wide / 2, 4));
     const ax = new THREE.Vector3(1, 0, 0).applyQuaternion(quat).setY(0).normalize();
     const az = new THREE.Vector3(0, 0, 1).applyQuaternion(quat).setY(0).normalize();
     const faces: [THREE.Vector3, THREE.Vector3, number, number][] = [
@@ -27,29 +31,36 @@ export class CoverIndex {
         const t = (i + 0.5) / count - 0.5;
         for (const s of [1, -1]) {
           const p = center.clone().addScaledVector(along, t * len).addScaledVector(n, s * (half + 0.75));
-          this.add(p.x, p.z, n.x * s, n.z * s);
+          this.add(p.x, p.z, n.x * s, n.z * s, base);
         }
       }
     }
   }
 
-  addRound(center: THREE.Vector3, radius: number): void {
-    for (let i = 0; i < 6; i++) {
-      const a = (i / 6) * Math.PI * 2;
-      this.add(center.x + Math.cos(a) * (radius + 0.7), center.z + Math.sin(a) * (radius + 0.7), Math.cos(a), Math.sin(a));
+  addRound(center: THREE.Vector3, radius: number, n = 6): void {
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      this.add(center.x + Math.cos(a) * (radius + 0.7), center.z + Math.sin(a) * (radius + 0.7), Math.cos(a), Math.sin(a), center.y - 0.5);
     }
   }
 
   /**
-   * Drops spots that are unusable: under a roof (inside a house), inside solid geometry,
-   * or with no clear standing room. Call once the world is fully built.
+   * Settles each spot on the floor it stands on (terrain, or the deck/plaza its obstacle sits on) and drops the unusable
+   * ones: under a roof (inside a house) or hanging in the air (beside an upper-storey wall). Call once the world is built.
    */
   prune(world: RAPIER.World, groundY: (x: number, z: number) => number): void {
-    const up = { x: 0, y: 1, z: 0 }, origin = { x: 0, y: 0, z: 0 };
+    const up = { x: 0, y: 1, z: 0 }, down = { x: 0, y: -1, z: 0 }, origin = { x: 0, y: 0, z: 0 };
     const keep = this.points.filter((c) => {
+      const ground = groundY(c.pos.x, c.pos.z), raised = c.pos.y > ground + 0.3;
       origin.x = c.pos.x;
-      origin.y = groundY(c.pos.x, c.pos.z) + 0.9;
       origin.z = c.pos.z;
+      if (raised) {
+        origin.y = c.pos.y + 0.9;
+        const floor = world.castRay(new RAPIER.Ray(origin, down), 1.4, true);
+        if (!floor) return false;
+        c.pos.y = origin.y - floor.timeOfImpact;
+      } else c.pos.y = ground;
+      origin.y = c.pos.y + 0.9;
       return !world.castRay(new RAPIER.Ray(origin, up), 40, true);
     });
     this.points.length = 0;
