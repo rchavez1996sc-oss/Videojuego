@@ -65,7 +65,7 @@ export const plaster = (): PbrSet =>
 
 /** Corrugated metal sheet (calamina). */
 export const corrugated = (): PbrSet =>
-  makePbr(256, 109, 6, (c, h, s, r) => {
+  photo('calamina') ?? makePbr(256, 109, 6, (c, h, s, r) => {
     for (let x = 0; x < s; x++) {
       const v = 0.5 + 0.5 * Math.sin((x / s) * Math.PI * 24);
       c.fillStyle = `rgb(${110 + v * 50},${108 + v * 48},${102 + v * 45})`;

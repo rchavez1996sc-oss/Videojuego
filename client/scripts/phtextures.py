@@ -8,7 +8,9 @@ from PIL import Image, ImageStat
 
 OUT = os.path.join(os.path.dirname(__file__), '..', 'public', 'assets', 'textures')
 URL = 'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/{2}/{0}/{0}_{1}_{2}.jpg'
-HI = {'asphalt', 'slabs', 'cobble', 'flagstone', 'plaster', 'concrete', 'brick', 'lawn', 'dryGrass'}
+HI = {'asphalt', 'slabs', 'cobble', 'flagstone', 'plaster', 'concrete', 'brick', 'lawn', 'dryGrass', 'soil'}
+# Roughness maps remapped to 0.8-1.0: they add breakup to the material's roughness but never make it glossier (no new glints).
+ROUGH = {'asphalt', 'slabs', 'cobble', 'flagstone', 'concrete', 'brick', 'plaster', 'stucco', 'rock', 'roofTiles', 'calamina', 'deck', 'wood', 'pirca', 'stoneWall', 'soil'}
 GREY = (128, 128, 128)
 SETS = {
     'concrete': ('concrete_floor_worn_001', (134, 131, 125)),
@@ -30,6 +32,9 @@ SETS = {
     'pebbles': ('ganges_river_pebbles', None),
     'lawn': ('leafy_grass', GREY),
     'dryGrass': ('sparse_grass', GREY),
+    'soil': ('dry_ground_rocks', (122, 102, 80)),
+    'calamina': ('worn_corrugated_iron', None),
+    'wood': ('weathered_planks', (90, 67, 48)),
 }
 
 def fetch(asset, kind, res='1k'):
@@ -49,5 +54,14 @@ for key, (asset, target) in SETS.items():
         col = Image.merge('RGB', [band.point(lambda v, k=t / m: min(255, int(v * k))) for band, t, m in zip(col.split(), target, mean)])
     col.save(os.path.join(OUT, f'{key}_col.jpg'), quality=82, optimize=True)
     fetch(asset, 'nor_gl').resize((1024, 1024) if hi else (512, 512), Image.LANCZOS).save(os.path.join(OUT, f'{key}_nrm.jpg'), quality=88, optimize=True)
+    if key in ROUGH:
+        r = fetch(asset, 'rough').convert('L').resize((512, 512), Image.LANCZOS)
+        hist = r.histogram(); total = sum(hist); acc = 0; lo = hi_v = None
+        for v, c in enumerate(hist):
+            acc += c
+            if lo is None and acc > total * 0.02: lo = v
+            if hi_v is None and acc > total * 0.98: hi_v = v
+        span = max(1, hi_v - lo)
+        r.point(lambda v: int(204 + 51 * min(1, max(0, (v - lo) / span)))).save(os.path.join(OUT, f'{key}_rgh.jpg'), quality=85)
     print(key, asset)
-print(json.dumps({k: {'map': f'textures/{k}_col.jpg', 'normal': f'textures/{k}_nrm.jpg', 'source': f'Poly Haven {a} (CC0)'} for k, (a, _) in SETS.items()}, indent=1))
+print(json.dumps({k: {'map': f'textures/{k}_col.jpg', 'normal': f'textures/{k}_nrm.jpg', **({'rough': f'textures/{k}_rgh.jpg'} if k in ROUGH else {}), 'source': f'Poly Haven {a} (CC0)'} for k, (a, _) in SETS.items()}, indent=1))

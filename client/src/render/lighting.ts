@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { roughFor } from './photoTextures';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { CSM } from 'three/examples/jsm/csm/CSM.js';
 import { onQuality, preset, quality } from '../core/settings';
@@ -6,6 +7,18 @@ import { weathering } from './weathering';
 import type { BiomeDef } from '../data/types';
 
 type Hook = (shader: THREE.WebGLProgramParametersWithUniforms, renderer: THREE.WebGLRenderer) => void;
+
+/** The HDRI's sun is clamped to this many times its mean brightness: it no longer flares off glass, paint and metal. */
+const SUN_CAP = 6;
+
+/**
+ * Specular anti-aliasing (Toksvig-style): where the shading normal varies within a pixel (normal maps far away,
+ * thin geometry) roughness goes up, so distant glossy detail averages out instead of sparkling.
+ */
+const SPECULAR_AA = /* glsl */ `
+vec3 tqNd = fwidth(normal);
+roughnessFactor = min(1.0, sqrt(roughnessFactor * roughnessFactor + min(0.25, 2.5 * dot(tqNd, tqNd))));
+#include <lights_physical_fragment>`;
 
 export class Lighting {
   readonly csm: CSM;
@@ -69,11 +82,13 @@ export class Lighting {
   /** Registers a material with CSM; optional hook runs after CSM's own shader patch. */
   setup<T extends THREE.Material>(mat: T, key: string, hook?: Hook): T {
     this.csm.setupMaterial(mat);
+    if (mat instanceof THREE.MeshStandardMaterial && mat.map && !mat.roughnessMap) mat.roughnessMap = roughFor(mat.map) ?? null;
     mat.customProgramCacheKey = () => key;
     const csmHook = mat.onBeforeCompile.bind(mat), wear = quality !== 'low';
     mat.onBeforeCompile = (shader, r) => {
       csmHook(shader, r);
       hook?.(shader, r);
+      shader.fragmentShader = shader.fragmentShader.replace('#include <lights_physical_fragment>', SPECULAR_AA);
       if (wear) weathering(shader, key);
     };
     return mat;
@@ -90,10 +105,12 @@ export class Lighting {
   useEnvironment(hdr: THREE.DataTexture, gain: number): void {
     const pmrem = new THREE.PMREMGenerator(this.gl);
     hdr.mapping = THREE.EquirectangularReflectionMapping;
-    const d = hdr.image.data as unknown as Float32Array, step = d.length / (hdr.image.width * hdr.image.height);
+    const w0 = hdr.image.width, h0 = hdr.image.height, d = hdr.image.data as unknown as Float32Array, step = d.length / (w0 * h0);
+    let mean = 0;
+    for (let i = 0; i < d.length; i += step) mean += (d[i] * 0.2126 + d[i + 1] * 0.7152 + d[i + 2] * 0.0722) / (w0 * h0);
     for (let i = 0; i < d.length; i += step) {
-      const l = d[i] * 0.2126 + d[i + 1] * 0.7152 + d[i + 2] * 0.0722;
-      for (let k = 0; k < 3; k++) d[i + k] = l + (d[i + k] - l) * 0.35;
+      const l = d[i] * 0.2126 + d[i + 1] * 0.7152 + d[i + 2] * 0.0722, cap = l > mean * SUN_CAP ? (mean * SUN_CAP) / l : 1;
+      for (let k = 0; k < 3; k++) d[i + k] = (l + (d[i + k] - l) * 0.35) * cap;
     }
     const w = hdr.image.width, h = hdr.image.height, row = (y: number) => y * w * step, horizon = [0, 0, 0];
     for (let x = 0; x < w; x++) for (let k = 0; k < 3; k++) horizon[k] += d[row(Math.floor(h / 2) - 2) + x * step + k] / w;

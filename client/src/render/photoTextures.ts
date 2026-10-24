@@ -9,17 +9,18 @@ let env: { texture: THREE.DataTexture; gain: number } | null = null;
 /** Loads the photographic texture sets listed under `textures` in the manifest; missing ones fall back to procedural. */
 export async function loadPhotoTextures(): Promise<void> {
   try {
-    const manifest = (await (await fetch(`${BASE}manifest.json`, { cache: 'no-cache' })).json()) as { version?: number; textures?: Record<string, { map: string; normal: string }>; environment?: { file: string; gain: number } };
+    const manifest = (await (await fetch(`${BASE}manifest.json`, { cache: 'no-cache' })).json()) as { version?: number; textures?: Record<string, { map: string; normal: string; rough?: string }>; environment?: { file: string; gain: number } };
     const loader = new THREE.TextureLoader(), v = manifest.version ?? 0, e = manifest.environment;
     const hdr = e ? new RGBELoader().setDataType(THREE.FloatType).loadAsync(`${BASE}${e.file}?v=${v}`).then((texture) => (env = { texture, gain: e.gain })).catch(() => null) : null;
     await Promise.all(Object.entries(manifest.textures ?? {}).map(async ([key, t]) => {
-      const [map, normalMap] = await Promise.all([loader.loadAsync(`${BASE}${t.map}?v=${v}`), loader.loadAsync(`${BASE}${t.normal}?v=${v}`)]);
-      map.colorSpace = THREE.SRGBColorSpace;
-      for (const x of [map, normalMap]) {
+      const [map, normalMap, roughnessMap] = await Promise.all([t.map, t.normal, t.rough].map((f) => (f ? loader.loadAsync(`${BASE}${f}?v=${v}`) : Promise.resolve(undefined))));
+      map!.colorSpace = THREE.SRGBColorSpace;
+      for (const x of [map, normalMap, roughnessMap]) {
+        if (!x) continue;
         x.wrapS = x.wrapT = THREE.RepeatWrapping;
         x.anisotropy = 8;
       }
-      sets.set(key, { map, normalMap });
+      sets.set(key, { map: map!, normalMap: normalMap!, roughnessMap });
     }));
     await hdr;
   } catch (e) {
@@ -29,6 +30,11 @@ export async function loadPhotoTextures(): Promise<void> {
 
 export function photo(key: string): PbrSet | undefined {
   return sets.get(key);
+}
+
+/** The photographed roughness that goes with a photo colour map, if any. */
+export function roughFor(map: THREE.Texture | null): THREE.Texture | undefined {
+  if (map) for (const s of sets.values()) if (s.map === map) return s.roughnessMap;
 }
 
 /** The photographed environment for reflections, if the manifest lists one and it loaded. */

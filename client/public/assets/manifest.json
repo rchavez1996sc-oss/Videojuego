@@ -1,5 +1,5 @@
 {
- "version": 16,
+ "version": 17,
  "characters": {
   "pnp": {
    "near": "characters/pnp.glb",
@@ -45,71 +45,101 @@
  "textures": {
   "concrete": {
    "map": "textures/concrete_col.jpg",
-   "normal": "textures/concrete_nrm.jpg"
+   "normal": "textures/concrete_nrm.jpg",
+   "rough": "textures/concrete_rgh.jpg",
+   "source": "Poly Haven concrete_floor_worn_001 (CC0)"
   },
   "slabs": {
    "map": "textures/slabs_col.jpg",
-   "normal": "textures/slabs_nrm.jpg"
+   "normal": "textures/slabs_nrm.jpg",
+   "rough": "textures/slabs_rgh.jpg",
+   "source": "Poly Haven concrete_pavement (CC0)"
   },
   "plaster": {
    "map": "textures/plaster_col.jpg",
-   "normal": "textures/plaster_nrm.jpg"
+   "normal": "textures/plaster_nrm.jpg",
+   "rough": "textures/plaster_rgh.jpg",
+   "source": "Poly Haven white_plaster_02 (CC0)"
   },
   "brick": {
    "map": "textures/brick_col.jpg",
-   "normal": "textures/brick_nrm.jpg"
+   "normal": "textures/brick_nrm.jpg",
+   "rough": "textures/brick_rgh.jpg",
+   "source": "Poly Haven brick_wall_006 (CC0)"
   },
   "rock": {
    "map": "textures/rock_col.jpg",
-   "normal": "textures/rock_nrm.jpg"
+   "normal": "textures/rock_nrm.jpg",
+   "rough": "textures/rock_rgh.jpg",
+   "source": "Poly Haven rock_face_03 (CC0)"
   },
   "asphalt": {
    "map": "textures/asphalt_col.jpg",
-   "normal": "textures/asphalt_nrm.jpg"
+   "normal": "textures/asphalt_nrm.jpg",
+   "rough": "textures/asphalt_rgh.jpg",
+   "source": "Poly Haven asphalt_01 (CC0)"
   },
   "roofTiles": {
    "map": "textures/roofTiles_col.jpg",
-   "normal": "textures/roofTiles_nrm.jpg"
+   "normal": "textures/roofTiles_nrm.jpg",
+   "rough": "textures/roofTiles_rgh.jpg",
+   "source": "Poly Haven clay_roof_tiles_02 (CC0)"
   },
   "deck": {
    "map": "textures/deck_col.jpg",
-   "normal": "textures/deck_nrm.jpg"
+   "normal": "textures/deck_nrm.jpg",
+   "rough": "textures/deck_rgh.jpg",
+   "source": "Poly Haven wood_floor_deck (CC0)"
   },
   "parquet": {
    "map": "textures/parquet_col.jpg",
-   "normal": "textures/parquet_nrm.jpg"
+   "normal": "textures/parquet_nrm.jpg",
+   "source": "Poly Haven herringbone_parquet (CC0)"
   },
   "flagstone": {
    "map": "textures/flagstone_col.jpg",
-   "normal": "textures/flagstone_nrm.jpg"
+   "normal": "textures/flagstone_nrm.jpg",
+   "rough": "textures/flagstone_rgh.jpg",
+   "source": "Poly Haven stone_tiles_02 (CC0)"
   },
   "stucco": {
    "map": "textures/stucco_col.jpg",
-   "normal": "textures/stucco_nrm.jpg"
+   "normal": "textures/stucco_nrm.jpg",
+   "rough": "textures/stucco_rgh.jpg",
+   "source": "Poly Haven white_stucco_02 (CC0)"
   },
   "bark": {
    "map": "textures/bark_col.jpg",
-   "normal": "textures/bark_nrm.jpg"
+   "normal": "textures/bark_nrm.jpg",
+   "source": "Poly Haven bark_platanus (CC0)"
   },
   "palmBark": {
    "map": "textures/palmBark_col.jpg",
-   "normal": "textures/palmBark_nrm.jpg"
+   "normal": "textures/palmBark_nrm.jpg",
+   "source": "Poly Haven palm_bark (CC0)"
   },
   "cobble": {
    "map": "textures/cobble_col.jpg",
-   "normal": "textures/cobble_nrm.jpg"
+   "normal": "textures/cobble_nrm.jpg",
+   "rough": "textures/cobble_rgh.jpg",
+   "source": "Poly Haven cobblestone_05 (CC0)"
   },
   "pirca": {
    "map": "textures/pirca_col.jpg",
-   "normal": "textures/pirca_nrm.jpg"
+   "normal": "textures/pirca_nrm.jpg",
+   "rough": "textures/pirca_rgh.jpg",
+   "source": "Poly Haven old_stone_wall (CC0)"
   },
   "stoneWall": {
    "map": "textures/stoneWall_col.jpg",
-   "normal": "textures/stoneWall_nrm.jpg"
+   "normal": "textures/stoneWall_nrm.jpg",
+   "rough": "textures/stoneWall_rgh.jpg",
+   "source": "Poly Haven yellow_stone_wall (CC0)"
   },
   "pebbles": {
    "map": "textures/pebbles_col.jpg",
-   "normal": "textures/pebbles_nrm.jpg"
+   "normal": "textures/pebbles_nrm.jpg",
+   "source": "Poly Haven ganges_river_pebbles (CC0)"
   },
   "lawn": {
    "map": "textures/lawn_col.jpg",
@@ -120,6 +150,24 @@
    "map": "textures/dryGrass_col.jpg",
    "normal": "textures/dryGrass_nrm.jpg",
    "source": "Poly Haven sparse_grass (CC0)"
+  },
+  "soil": {
+   "map": "textures/soil_col.jpg",
+   "normal": "textures/soil_nrm.jpg",
+   "rough": "textures/soil_rgh.jpg",
+   "source": "Poly Haven dry_ground_rocks (CC0)"
+  },
+  "calamina": {
+   "map": "textures/calamina_col.jpg",
+   "normal": "textures/calamina_nrm.jpg",
+   "rough": "textures/calamina_rgh.jpg",
+   "source": "Poly Haven worn_corrugated_iron (CC0)"
+  },
+  "wood": {
+   "map": "textures/wood_col.jpg",
+   "normal": "textures/wood_nrm.jpg",
+   "rough": "textures/wood_rgh.jpg",
+   "source": "Poly Haven weathered_planks (CC0)"
   }
  },
  "environment": {

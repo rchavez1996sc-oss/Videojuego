@@ -130,7 +130,7 @@ export const roofTiles = (): PbrSet =>
   });
 
 export const wood = (): PbrSet =>
-  makePbr(256, 31, 2, (c, h, s, r) => {
+  photo('wood') ?? makePbr(256, 31, 2, (c, h, s, r) => {
     c.fillStyle = '#5a4330';
     c.fillRect(0, 0, s, s);
     for (let i = 0; i < 120; i++) {
@@ -155,7 +155,7 @@ export const rock = (): PbrSet =>
   });
 
 export const soil = (): PbrSet =>
-  makePbr(512, 59, 5, (c, h, s, r) => {
+  photo('soil') ?? makePbr(512, 59, 5, (c, h, s, r) => {
     c.fillStyle = '#7a6650';
     c.fillRect(0, 0, s, s);
     speckle(c, s, r, 5000, ['#6a5641', '#8b7660', '#5b4a38', '#9a8670'], [1, 5]);
