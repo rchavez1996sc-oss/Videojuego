@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { Builder } from './buildingKit';
 import type { Lighting } from '../render/lighting';
+import { stationPosters } from './stationPosters';
 
 type At = (x: number, y: number, z: number) => THREE.Vector3;
 const UP = new THREE.Vector3(0, 1, 0);
@@ -84,13 +85,57 @@ export function furnishStation(b: Builder, at: At, q: THREE.Quaternion, back: nu
   for (let i = 0; i < 5; i++) box('paper', [0.21, 0.004, 0.297], -2.8 + rand() * 5.6, 1.31 + i * 0.005, -9.2 + (rand() - 0.5) * 0.4, false, rand() * Math.PI);
 
   const flagX = -SIDE + 0.04;
-  for (const [i, mat] of ['stripe', 'car5', 'stripe'].entries()) box(mat, [0.02, 1.8, 0.9], flagX, 2.2, -14.4 + i * 0.9);
-  box('brass', [0.03, 0.5, 0.42], flagX + 0.01, 2.2, -13.5);
   box('bars', [0.04, 0.04, 2.9], flagX + 0.04, 3.13, -13.5);
 
   box('cork', [0.03, 0.9, 1.4], -SIDE + 0.04, 1.7, -6.9);
   for (let i = 0; i < 7; i++) box('paper', [0.01, 0.28, 0.21], -SIDE + 0.07, 1.4 + (i % 2) * 0.38 + rand() * 0.06, -7.45 + i * 0.17, false, (rand() - 0.5) * 0.2);
-  box('plastic', [0.06, 0.32, 0.32], 0, 3.0, back + 0.04);
+
+  box('desk', [0.5, 1.15, 0.95], -SIDE + 0.27, 0.575, -9.8, true);
+  for (let r = 0; r < 6; r++) for (let c = 0; c < 4; c++) {
+    const y = 0.15 + r * 0.17, z = -10.15 + c * 0.235;
+    box('wood', [0.02, 0.14, 0.21], -SIDE + 0.53, y + 0.02, z);
+    box('brass', [0.02, 0.025, 0.06], -SIDE + 0.55, y + 0.02, z);
+  }
+  box('car5', [0.34, 0.95, 0.34], SIDE - 0.25, 0.475, -9.8, true);
+  box('plastic', [0.2, 0.04, 0.04], SIDE - 0.42, 0.78, -9.8);
+}
+
+/** Inner face of the front wall (local z). */
+const FRONT_IN = -6.32;
+
+/** White wall clock face with a black rim and hands at ten past ten. */
+function clockTexture(): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const ctx = c.getContext('2d')!;
+  ctx.fillStyle = '#1b1b1b';
+  ctx.beginPath();
+  ctx.arc(128, 128, 128, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#f4f2ea';
+  ctx.beginPath();
+  ctx.arc(128, 128, 112, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#222';
+  ctx.font = '700 26px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (let h = 1; h <= 12; h++) ctx.fillText(String(h), 128 + Math.sin((h / 12) * Math.PI * 2) * 88, 128 - Math.cos((h / 12) * Math.PI * 2) * 88);
+  const hand = (a: number, len: number, w: number, col: string) => {
+    ctx.strokeStyle = col;
+    ctx.lineWidth = w;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(128, 128);
+    ctx.lineTo(128 + Math.sin(a) * len, 128 - Math.cos(a) * len);
+    ctx.stroke();
+  };
+  hand((10.17 / 12) * Math.PI * 2, 55, 8, '#111');
+  hand((2 / 12) * Math.PI * 2, 85, 5, '#111');
+  hand((7 / 12) * Math.PI * 2, 90, 2, '#b3121b');
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
 }
 
 /** Lettering for the commemorative plaques on the lobby walls. */
@@ -127,6 +172,9 @@ function plaqueTexture(lines: string[]): THREE.CanvasTexture {
   return t;
 }
 
+/** Horizontal centre of the general's face in `art.general` (a wide plate): the portrait crop is centred on it. */
+const FACE_X = 0.69;
+
 /** The general's framed portrait (from `manifest.art.general`) over the arms cache and brass plaques on the walls. */
 export function stationArt(lighting: Lighting, at: At, q: THREE.Quaternion, back: number): THREE.Group {
   const g = new THREE.Group();
@@ -149,14 +197,32 @@ export function stationArt(lighting: Lighting, at: At, q: THREE.Quaternion, back
     if (!path) return;
     new THREE.TextureLoader().load(`${base}${path}?v=${m.version ?? 0}`, (tex) => {
       tex.colorSpace = THREE.SRGBColorSpace;
-      const aspect = tex.image.width / tex.image.height, want = 1.26 / 1.7;
-      tex.repeat.set(Math.min(1, want / aspect) * (aspect > 1 ? 0.5 : 1), 1);
-      tex.offset.set(aspect > 1 ? 0.5 : (1 - tex.repeat.x) / 2, 0);
+      const aspect = tex.image.width / tex.image.height, w = Math.min(1, 1.26 / 1.7 / aspect);
+      tex.repeat.set(w, 1);
+      tex.offset.set(THREE.MathUtils.clamp(FACE_X - w / 2, 0, 1 - w), 0);
       canvas.map = tex;
       canvas.color.set('#ffffff');
       canvas.needsUpdate = true;
     });
   }).catch(() => {});
+
+  const water = lighting.setup(new THREE.MeshStandardMaterial({ color: '#7fb4e0', roughness: 0.1, metalness: 0, transparent: true, opacity: 0.55 }), 'water-bottle');
+  const bottle = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.42, 16), water);
+  bottle.position.copy(at(SIDE - 0.25, 1.17, -9.8));
+  g.add(bottle);
+  const clock = lighting.setup(new THREE.MeshStandardMaterial({ map: clockTexture(), roughness: 0.4 }), 'wall-clock');
+  const dial = new THREE.Mesh(new THREE.CircleGeometry(0.2, 32), clock);
+  dial.position.copy(at(0, 3.05, FRONT_IN));
+  dial.quaternion.copy(face(Math.PI));
+  g.add(dial);
+
+  const L = -SIDE + 0.02, R = Math.PI / 2;
+  g.add(...stationPosters(lighting, at, face, [
+    ['peru', L + 0.01, 2.2, -13.5, R], ['wanted', L, 1.9, -9.3, R], ['notice', L, 1.85, -10.15, R], ['regime', L, 2.2, -8.5, R],
+    ['wanted', -2.6, 1.9, FRONT_IN, Math.PI], ['hours', 2.6, 1.9, FRONT_IN, Math.PI], ['regime', -8.6, 2.0, FRONT_IN, Math.PI],
+    ['notice', 8.6, 1.8, FRONT_IN, Math.PI], ['wanted', 13.6, 1.9, FRONT_IN, Math.PI], ['notice', -13.6, 1.8, FRONT_IN, Math.PI],
+    ['regime', -8, 2.3, z + 0.01, 0], ['notice', 8, 2.2, z + 0.01, 0], ['notice', -12.5, 2.2, z + 0.01, 0],
+  ]));
 
   const spots: [number, number, number, number][] = [[SIDE - 0.02, 2.0, -7.6, -Math.PI / 2], [SIDE - 0.02, 2.0, -9.4, -Math.PI / 2], [-3.2, 1.9, z, 0], [3.2, 1.9, z, 0]];
   spots.forEach(([x, y, zz, yaw], i) => {
