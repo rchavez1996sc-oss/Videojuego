@@ -139,7 +139,7 @@ async function boot(): Promise<void> {
   const dynRes = new DynamicResolution(renderer), damageFx = new DamageFx((k) => (sfx.thud(k), tpc.kick(0, 0, 0.12 + 0.2 * k)));
   const nav = barrio ? new StreetNav(barrio.graph) : null;
   world.step();
-  const enemies = new Enemies(enemyDefs as unknown as Record<string, EnemyDef>, ch.enemies ?? [], world, hf, lighting, player, combat, sfx, camera, nav);
+  const enemies = new Enemies(Object.fromEntries(Object.entries(enemyDefs as unknown as Record<string, EnemyDef>).map(([k, d]) => [k, { ...d, hp: Math.round(d.hp * (ch.enemyHealth ?? 1)) }])), ch.enemies ?? [], world, hf, lighting, player, combat, sfx, camera, nav);
   scene.add(enemies.group);
   const { civilians, life, alarm, state: populace } = createPopulace(ch, barrio, { world, hf, lighting, mixer, sfx, combat, hud, camera, scene });
   let failed = false;

@@ -19,27 +19,31 @@ export function findLedge(world: RAPIER.World, feet: THREE.Vector3, yaw: number,
   }
   if (wall === Infinity) return null;
 
-  const probe = (dist: number) => {
+  const probe = (dist: number, len = 3.7) => {
     const from = new THREE.Vector3(feet.x + fwd.x * dist, feet.y + 3.0, feet.z + fwd.z * dist);
-    const hit = cast(from, DOWN, 3.7);
+    const hit = cast(from, DOWN, len);
     return hit && hit.normal.y > 0.65 ? from.y - hit.timeOfImpact : null;
   };
-  const top = probe(wall + 0.3);
+  const deep = probe(wall + 0.3), cap = probe(wall + 0.06);
+  /** A wall thinner than ~0.3 m: its top is only found just past the face, and it can be vaulted at any reachable height. */
+  const thin = cap !== null && (deep === null || deep < cap - 0.4);
+  const top = thin ? cap : deep;
   if (top === null) return null;
   const height = top - feet.y;
   if (height < 0.3 || height > maxHeight) return null;
-  const standPoint = new THREE.Vector3(feet.x + fwd.x * (wall + 0.3), top + 0.05, feet.z + fwd.z * (wall + 0.3));
+  const standPoint = new THREE.Vector3(feet.x + fwd.x * (wall + (thin ? 0.06 : 0.3)), top + 0.05, feet.z + fwd.z * (wall + (thin ? 0.06 : 0.3)));
   if (cast(standPoint, UP, 1.7)) return null;
   for (const h of [0.15, 0.9, 1.6]) {
     const o = new THREE.Vector3(feet.x, top + h, feet.z);
     if (cast(o, fwd, wall + 0.6)) return null;
   }
 
-  const behind = probe(wall + 0.75), beyond = probe(wall + 1.1);
-  if (height <= 1.3 && behind !== null && beyond !== null && behind < top - 0.4 && beyond < top - 0.4) {
+  const behind = probe(wall + 0.75, thin ? 9 : 3.7), beyond = probe(wall + 1.1, thin ? 9 : 3.7);
+  if ((height <= 1.3 || thin) && behind !== null && beyond !== null && behind < top - 0.4 && beyond < top - 0.4) {
     const land = new THREE.Vector3(feet.x + fwd.x * (wall + 1.2), beyond + 0.02, feet.z + fwd.z * (wall + 1.2));
     return { target: land, top, height, vault: true };
   }
+  if (thin) return null;
   return { target: standPoint.setY(top + 0.02), top, height, vault: false };
 }
 

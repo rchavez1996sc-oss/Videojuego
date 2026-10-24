@@ -62,6 +62,8 @@ export interface ChapterDef {
   lives?: number;
   /** Key in weapons.json the player carries. */
   weapon?: string;
+  /** Scales every enemy's health (weaker guns early on). */
+  enemyHealth?: number;
   /** Prologue paragraphs shown while the chapter loads. */
   intro?: string[];
   objective?: import('../systems/objective').ObjectiveDef;

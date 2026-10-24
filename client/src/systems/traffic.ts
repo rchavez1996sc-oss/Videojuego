@@ -8,6 +8,8 @@ import { onHit, setSurface } from '../world/surfaces';
 import { seatedPerson, seatedRig, SEATS } from '../entities/occupants';
 import type { Heightfield } from '../world/heightfield';
 import type { Lighting } from '../render/lighting';
+import type { Rig } from '../entities/rig';
+import { Riders } from './riders';
 
 type State = 'drive' | 'off' | 'crash' | 'wreck';
 
@@ -15,6 +17,7 @@ interface Vehicle {
   kind: CarKind | 'moto' | 'delivery'; group: THREE.Group; body: RAPIER.RigidBody; collider: RAPIER.Collider; dir: 1 | -1;
   x: number; z: number; base: number; lane: number; half: number; yaw: number; speed: number; cruise: number; len: number;
   honkT: number; panic: boolean; state: State; hp: number; spin: number; drift: number; smokeT: number;
+  /** Seat holders (Mixamo sitters), the driver first. */ seats: THREE.Group[];
 }
 
 export interface Victim { key: string; pos: THREE.Vector3; hurt(damage: number, from: THREE.Vector3, shove: THREE.Vector3): void }
@@ -37,11 +40,13 @@ export class Traffic {
   /** People a moving vehicle can run into (player, squad, soldiers); `hurt` receives damage, origin and a shove. */
   victims: () => Victim[] = () => [];
   private hitT = new Map<string, number>();
+  private riders: Riders;
   private clock = 0;
   /** Other people on the road drivers brake for (the squad). */
   obstacles: () => THREE.Vector3[] = () => [];
 
   constructor(private world: RAPIER.World, private hf: Heightfield, lighting: Lighting, materials: Record<string, THREE.Material>, bake: { material: THREE.Material; keys: string[] }[], roads: Road[]) {
+    this.riders = new Riders(this.group, hf);
     const lanes = roads.flatMap((r) => Array<Road>(r.count).fill(r)), count = lanes.length;
     const glass = lighting.setup(new THREE.MeshStandardMaterial({ color: '#2a3238', roughness: 0.1, metalness: 0.5, transparent: true, opacity: 0.35 }), 'glass-see');
     const mats = { ...materials, glass };
@@ -57,13 +62,14 @@ export class Traffic {
       else car(b, new THREE.Vector3(), 0, kind === 'combi' ? 'car5' : kind === 'tico' ? 'car3' : `car${i % 6}`, kind);
       const g = new THREE.Group();
       g.add(...b.build(mats, 0.5, bakeNoGlass));
-      const riders: THREE.BufferGeometry[] = [];
+      const riders: THREE.BufferGeometry[] = [], seats: THREE.Group[] = [];
       let riderMat: THREE.Material | null = null;
       SEATS[kind].forEach(([x, y, z], k) => {
         if (k > 0 && rand() < 0.45) return;
-        const rider = kind === 'moto' || kind === 'delivery' ? seatedRig(lighting, rand) : null;
+        const rider = seatedRig(lighting, rand, kind !== 'moto' && kind !== 'delivery');
         if (rider) {
           rider.position.set(x, y, z);
+          seats.push(rider);
           return void g.add(rider);
         }
         const p = seatedPerson(lighting, rand);
@@ -80,7 +86,7 @@ export class Traffic {
       const cruise = kind === 'delivery' ? 9 : kind === 'moto' ? 7 : kind === 'combi' ? 11 : 10;
       const v: Vehicle = {
         kind, group: g, body, collider, dir, x: X_MIN + ((i * 77) % (X_MAX - X_MIN)), z: lanes[i].z + dir * lanes[i].lane, base: lanes[i].z, lane: lanes[i].lane, half: lanes[i].half, yaw: dir > 0 ? Math.PI / 2 : -Math.PI / 2,
-        speed: cruise, cruise, len, honkT: 3 + rand() * 10, panic: false, state: 'drive', hp: HP, spin: 0, drift: 0, smokeT: 0,
+        speed: cruise, cruise, len, honkT: 3 + rand() * 10, panic: false, state: 'drive', hp: HP, spin: 0, drift: 0, smokeT: 0, seats,
       };
       this.list.push(v);
       onHit(collider.handle, (dmg, p) => {
@@ -99,12 +105,18 @@ export class Traffic {
     v.spin = (Math.random() < 0.5 ? -1 : 1) * (1.2 + Math.random() * 1.6);
     v.drift = v.dir * (1.5 + Math.random() * 2.5);
     this.onDisabled(new THREE.Vector3(v.x, 1, v.z), v.kind === 'combi' ? 4 : v.kind === 'moto' || v.kind === 'delivery' ? 1 : 2);
+    const driver = v.seats[0];
+    if ((v.kind === 'moto' || v.kind === 'delivery') && driver?.parent === v.group) {
+      v.group.updateMatrixWorld(true);
+      this.riders.throwOff(driver, new THREE.Vector3(Math.cos(v.yaw), 0, -Math.sin(v.yaw)).multiplyScalar(v.drift > 0 ? -1 : 1));
+    }
   }
 
   /** Test hook: disables the nearest driving vehicle and reports where it is. */
-  debugDisableNearest(p: THREE.Vector3): string {
-    const v = this.list.filter((o) => o.state === 'drive').sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z))[0];
+  debugDisableNearest(p: THREE.Vector3, kind?: string): string {
+    const v = this.list.filter((o) => o.state === 'drive' && (!kind || o.kind === kind)).sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z))[0];
     if (!v) return 'none';
+    this.debugLast = v;
     this.damage(v, HP);
     return `${v.x.toFixed(0)},${v.z.toFixed(1)} speed ${v.speed.toFixed(1)}`;
   }
@@ -113,6 +125,11 @@ export class Traffic {
   debugAhead(gap: number): THREE.Vector3 | null {
     const v = this.list.filter((o) => o.state === 'drive').sort((a, b) => b.speed - a.speed)[0];
     return v ? new THREE.Vector3(v.x + v.dir * (v.len / 2 + gap), 0, v.z) : null;
+  }
+
+  private debugLast?: Vehicle;
+  get debugLastAt(): string {
+    return this.debugLast ? `${this.debugLast.x.toFixed(1)},${this.debugLast.z.toFixed(1)},${this.debugLast.yaw.toFixed(2)}` : '';
   }
 
   get debugStates(): string {
@@ -176,6 +193,7 @@ export class Traffic {
     this.calmT += dt;
     this.cam.copy(camera);
     this.clock += dt;
+    this.riders.update(dt, camera);
     for (const v of this.list) {
       if (v.state === 'off') {
         if (this.calmT > 20 && Math.random() < dt * 0.5) {
@@ -216,7 +234,9 @@ export class Traffic {
       }
       const y = this.hf.heightAt(v.x, v.z);
       const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), v.yaw);
-      v.group.visible = Math.hypot(v.x - camera.x, v.z - camera.z) < 150;
+      const dist = Math.hypot(v.x - camera.x, v.z - camera.z);
+      v.group.visible = dist < 150;
+      for (const s of v.seats) (s.userData.rig as Rig).far = dist > 25;
       v.group.position.set(v.x, y, v.z);
       v.group.quaternion.copy(q);
       v.body.setNextKinematicTranslation({ x: v.x, y, z: v.z });

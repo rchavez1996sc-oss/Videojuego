@@ -861,6 +861,7 @@
  "squad": 4,
  "lives": 3,
  "weapon": "pistol",
+ "enemyHealth": 0.85,
  "objective": {
   "title": "ASALTA LA COMISARÍA",
   "detail": "Entra a la comisaría y saquea el cargamento de armas",

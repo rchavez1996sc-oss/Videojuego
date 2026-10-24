@@ -1,6 +1,6 @@
 {
   "rifleman": {
-    "hp": 110,
+    "hp": 130,
     "damage": 7,
     "rpm": 520,
     "burst": [

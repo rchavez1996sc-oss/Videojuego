@@ -18,16 +18,19 @@ export function seatedPerson(lighting: Lighting, rand: () => number): THREE.Mesh
 }
 
 const RIDERS: CharKind[] = ['civ_a', 'civ_b', 'civ_c'];
+/** Chair pose shins hang straight down; in a car they reach forward to the pedals (rad about the knee). */
+const CAR_KNEE = -0.75;
 
 /**
  * A Mixamo civilian frozen in the sitting pose, facing +z with the hips at the returned group's origin (for open
  * vehicles: mototaxis and delivery bikes). Null until the characters and their `sit` clip are loaded.
  */
-export function seatedRig(lighting: Lighting, rand: () => number): THREE.Group | null {
+export function seatedRig(lighting: Lighting, rand: () => number, inCar = false): THREE.Group | null {
   if (!characters.ready || !characters.clips.has('sit')) return null;
   const rig = new Rig(RIDERS[Math.floor(rand() * RIDERS.length)], lighting, false);
   rig.loop('sit');
   rig.tick(0.5 + rand());
+  if (inCar) for (const s of ['Left', 'Right']) rig.root.getObjectByName(`mixamorig${s}Leg`)!.rotateX(CAR_KNEE);
   rig.root.updateMatrixWorld(true);
   const knees = ['Left', 'Right'].map((s) => rig.root.getObjectByName(`mixamorig${s}Leg`)!.getWorldPosition(new THREE.Vector3()));
   const ahead = knees[0].add(knees[1]).multiplyScalar(0.5).sub(rig.hips());
@@ -37,6 +40,7 @@ export function seatedRig(lighting: Lighting, rand: () => number): THREE.Group |
   rig.castShadow = false;
   const holder = new THREE.Group();
   holder.name = 'rider';
+  holder.userData.rig = rig;
   holder.add(rig.root);
   return holder;
 }

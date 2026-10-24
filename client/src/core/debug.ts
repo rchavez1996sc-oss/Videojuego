@@ -302,17 +302,18 @@ export function installDebug(c: DebugContext): void {
     },
     info: () => ({ calls: c.renderer.gl.info.render.calls, tris: c.renderer.gl.info.render.triangles, pos: c.player.position.toArray().map(Math.round) }),
     /** Disables the nearest moving vehicle and logs every vehicle's state for 3 s. */
-    vehicleTest() {
+    vehicleTest(kind?: string) {
       const tr = c.traffic?.();
       if (!tr) return 'no traffic';
       c.setFreeCam(false);
       c.setSkipRender(true);
-      const log = [`disabled ${tr.debugDisableNearest(c.player.position)}`];
+      const log = [`disabled ${tr.debugDisableNearest(c.player.position, kind)}`];
       for (let i = 0; i < 60; i++) {
         c.frame(1 / 20);
         if (i % 20 === 19) log.push(tr.debugStates);
       }
       c.setSkipRender(false);
+      log.push(`at ${tr.debugLastAt}`);
       return log.join('\n');
     },
     ready: true,
