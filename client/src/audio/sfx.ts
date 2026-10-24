@@ -4,16 +4,17 @@ import { buildGunshots } from './gunshot';
 export class Sfx {
   private shots: AudioBuffer[];
   private heavy: AudioBuffer[];
+  private own: AudioBuffer[];
 
-  constructor(private m: Mixer) {
+  constructor(private m: Mixer, light = 0) {
     this.shots = buildGunshots(m.ctx, 4);
     this.heavy = buildGunshots(m.ctx, 2, true);
+    this.own = light ? buildGunshots(m.ctx, 4, false, light) : this.shots;
   }
 
   /** One pre-rendered report into `dest`, with send amounts to the street slapback and the valley reverb. */
-  private report(t: number, heavy: boolean, gain: number, dest: AudioNode, street: number, reverb: number, rate = 1): void {
+  private report(t: number, bank: AudioBuffer[], gain: number, dest: AudioNode, street: number, reverb: number, rate = 1): void {
     const { ctx } = this.m;
-    const bank = heavy ? this.heavy : this.shots;
     const src = ctx.createBufferSource();
     src.buffer = bank[Math.floor(Math.random() * bank.length)];
     src.playbackRate.value = rate * (0.96 + Math.random() * 0.08);
@@ -65,7 +66,7 @@ export class Sfx {
   }
 
   rifleShot(): void {
-    this.report(this.m.ctx.currentTime + 0.001, false, 1.15, this.m.sfx, 0.55, 0.45);
+    this.report(this.m.ctx.currentTime + 0.001, this.own, 1.15, this.m.sfx, 0.55, 0.45);
   }
 
   /** Other people's gunshots: delayed by distance, dulled, quieter and panned towards its side; `gain` tames the squad's fire. */
@@ -81,7 +82,7 @@ export class Sfx {
     const bus = ctx.createGain();
     bus.gain.value = (0.25 + near * 0.9) * gain;
     lp.connect(panner).connect(bus).connect(this.m.sfx);
-    this.report(t, heavy, 0.9, lp, 0.25 + (1 - near) * 0.5, 0.4 + (1 - near) * 1.1, v > 1 ? 1 : 0.97);
+    this.report(t, heavy ? this.heavy : this.shots, 0.9, lp, 0.25 + (1 - near) * 0.5, 0.4 + (1 - near) * 1.1, v > 1 ? 1 : 0.97);
     setTimeout(() => bus.disconnect(), (distance / 343 + 1.5) * 1000);
   }
 
@@ -103,19 +104,20 @@ export class Sfx {
   /** Grenade: sharp crack, deep body and sub thump, a roll bouncing off the façades, debris rain and, up close, ringing ears. */
   explosion(distance: number, pan: number): void {
     const { ctx } = this.m;
-    const t = ctx.currentTime + distance / 343, near = 1 / (1 + distance / 30);
+    const t = ctx.currentTime + distance / 343, near = 1 / (1 + distance / 50);
     const panner = ctx.createStereoPanner();
     panner.pan.value = Math.max(-1, Math.min(1, pan)) * 0.7;
     const bus = ctx.createGain();
-    bus.gain.value = 0.45 + near * 1.2;
+    bus.gain.value = 0.8 + near * 2.1;
     panner.connect(bus).connect(this.m.sfx);
     const echo = ctx.createGain();
-    echo.gain.value = 0.5 + (1 - near) * 0.4;
+    echo.gain.value = 0.8 + (1 - near) * 0.6;
     panner.connect(echo).connect(this.m.street);
     this.filtered(t, 'highpass', 2200, 0.7, 0.9 * near + 0.1, 0.001, 0.09, 0.3, panner);
     this.filtered(t, 'lowpass', 220, 0.7, 2.6, 0.004, 1.6, 1.8, panner);
     this.filtered(t, 'lowpass', 1800 * near + 500, 0.6, 1.6, 0.002, 0.6, 1.2, panner);
-    this.tone(t, 'sine', 62, 22, 2.4, 1.4, 0.8, panner);
+    this.tone(t, 'sine', 62, 22, 3.2, 1.8, 0.8, panner);
+    this.filtered(t, 'lowpass', 90, 0.9, 2.2, 0.003, 2.2, 2.4, panner);
     this.tone(t + 0.01, 'triangle', 110, 40, 0.8, 0.5, 0.3, panner);
     this.filtered(t + 0.35, 'lowpass', 160, 0.5, 0.9, 0.15, 2.6, 1.6, panner);
     for (let i = 0; i < 14; i++) {

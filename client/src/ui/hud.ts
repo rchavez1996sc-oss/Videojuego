@@ -42,7 +42,7 @@ export class Hud {
         <div class="head"><span class="weapon"></span><span class="mode"></span></div>
         <div class="count"><span class="mag">30</span><span class="res">150</span></div>
         <div class="ticks"><div></div></div>
-        <div class="slots"><div class="slot rifle on"><kbd>1</kbd>FUSIL</div><div class="slot nade"><kbd>G</kbd>GRANADA<span class="nades"></span></div></div>
+        <div class="slots"><div class="slot rifle on"><kbd>1</kbd><span>FUSIL</span></div><div class="slot nade"><kbd>G</kbd>GRANADA<span class="nades"></span></div></div>
       </div>`;
     document.body.appendChild(this.root);
     const q = <T extends HTMLElement>(s: string) => this.root.querySelector(s) as T;
@@ -75,7 +75,7 @@ export class Hud {
     this.root.style.display = v ? '' : 'none';
   }
 
-  update(dt: number, s: { spreadPx: number; ammo: number; mag: number; reserve: number; carry: number; mode: string; weapon: string; hp: number; cap: number; stamina: number; grenades: number; zoom: number; reload: number; reloadHold?: number; aiming: boolean; slot: 'rifle' | 'grenade' }): void {
+  update(dt: number, s: { spreadPx: number; ammo: number; mag: number; reserve: number; carry: number; mode: string; weapon: string; hp: number; cap: number; stamina: number; grenades: number; zoom: number; reload: number; reloadHold?: number; aiming: boolean; slot: 'rifle' | 'grenade'; slotLabel?: string }): void {
     const gap = Math.round(5 + s.spreadPx);
     this.set('gap', String(gap), () => {
       this.cross[0].style.transform = `translate(-50%, ${-gap - 10}px)`;
@@ -94,6 +94,7 @@ export class Hud {
     });
     this.set('slot', s.slot, () => {
       this.slots[0].classList.toggle('on', s.slot === 'rifle');
+      if (s.slotLabel) this.slots[0].lastElementChild!.textContent = s.slotLabel;
       this.slots[1].classList.toggle('on', s.slot === 'grenade');
     });
     this.set('mode', s.mode + s.weapon, () => {

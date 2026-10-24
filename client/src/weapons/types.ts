@@ -22,4 +22,9 @@ export interface WeaponDef {
   pattern: [number, number][];
   tracerEvery: number;
   modes: ('auto' | 'semi')[];
+  model?: import('./gunModels').GunModel;
+  /** HUD slot label. */
+  slot?: string;
+  /** 0 = rifle report, 1 = light subsonic pistol pop. */
+  light?: number;
 }

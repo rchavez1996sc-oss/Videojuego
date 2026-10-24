@@ -119,12 +119,12 @@ async function boot(): Promise<void> {
   const respawnPts = barrio ? streetPoints(barrio.graph) : undefined;
   const start = respawnPts && barrio?.station && !shotMode ? startSpot(world, hf, respawnPts, ch.objective?.capture ?? barrio.station.entrance, ch.enemies ?? [], barrio.inside) : null;
   const spawn = start?.pos ?? new THREE.Vector3(ch.spawn.x, hf.heightAt(ch.spawn.x, ch.spawn.z), ch.spawn.z), startYaw = start?.yaw ?? ch.spawn.yaw;
-  const player = new Player(world, lighting, spawn, startYaw);
+  const wdef = (weapons as unknown as Record<string, WeaponDef>)[ch.weapon ?? 'ak'], player = new Player(world, lighting, spawn, startYaw, wdef.model);
   scene.add(player.model.root);
   const input = new Input(canvas);
   const tpc = new ThirdPersonCamera(camera, world, startYaw);
-  const mixer = new Mixer(), sfx = new Sfx(mixer), hud = new Hud();
-  const combat = new Combat(weapons.ak as WeaponDef, world, player, tpc, sfx, lighting, hf);
+  const mixer = new Mixer(), sfx = new Sfx(mixer, wdef.light), hud = new Hud();
+  const combat = new Combat(wdef, world, player, tpc, sfx, lighting, hf);
   scene.add(combat.group);
   const rangeOrigin = { ...ch.spawn, yaw: ch.rangeYaw ?? ch.spawn.yaw };
   const range = new ShootingRange(hf, lighting, world, rangeOrigin, ch.range ?? [], (h) => {
@@ -276,7 +276,7 @@ async function boot(): Promise<void> {
     const cone = THREE.MathUtils.degToRad(g.coneDeg(input.aiming, player.speed, player.airborne) * tpc.steady);
     hud.update(dt, {
       spreadPx: (Math.tan(cone) / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) * innerHeight * 0.5,
-      ammo: g.ammo, mag: g.def.magazine, reserve: g.reserve, carry: g.carry, mode: g.mode, weapon: g.def.name,
+      ammo: g.ammo, mag: g.def.magazine, reserve: g.reserve, carry: g.carry, mode: g.mode, weapon: g.def.name, slotLabel: g.def.slot,
       hp: player.hp, cap: player.regenCap, grenades: grenades.count, zoom: tpc.zoom, stamina: player.stamina, reload: g.reloadProgress, reloadHold: combat.reloadHold, aiming: input.aiming, slot: nadeMode.equipped ? 'grenade' : 'rifle',
     });
     if (!shotMode) dynRes.update(dt);

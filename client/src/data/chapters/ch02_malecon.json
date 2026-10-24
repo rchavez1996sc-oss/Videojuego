@@ -373,6 +373,7 @@
  },
  "squad": 4,
  "lives": 3,
+ "weapon": "smg",
  "scatter": {
   "rocks": 0,
   "trees": 0,

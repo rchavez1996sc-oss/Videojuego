@@ -1,3 +1,4 @@
+import type { GunModel } from '../weapons/gunModels';
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import type { Input } from '../core/input';
@@ -49,8 +50,8 @@ export class Player {
   private mantle: { ledge: Ledge; start: THREE.Vector3; t: number; dur: number; step?: boolean; clip?: Climb } | null = null;
   private ladder: Ladder | null = null;
 
-  constructor(private world: RAPIER.World, lighting: Lighting, spawn: THREE.Vector3, yaw: number) {
-    this.model = new Rig('fls', lighting, true, true, OUTFIT);
+  constructor(private world: RAPIER.World, lighting: Lighting, spawn: THREE.Vector3, yaw: number, gun?: GunModel) {
+    this.model = new Rig('fls', lighting, true, true, OUTFIT, gun);
     this.yaw = yaw;
     this.body = world.createRigidBody(RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(spawn.x, spawn.y + HALF + RADIUS + 0.2, spawn.z));
     this.collider = world.createCollider(RAPIER.ColliderDesc.capsule(HALF, RADIUS), this.body);

@@ -6,7 +6,7 @@ import type { Player } from '../entities/player';
 import type { Sfx } from '../audio/sfx';
 import type { Hud } from '../ui/hud';
 
-const STEPS = 90, DT = 0.03, GRAVITY = 9.81, THROW_SPEED = 17, THROW_LIFT = 3.5;
+const STEPS = 90, DT = 0.03, GRAVITY = 9.81, THROW_SPEED = 20, THROW_LIFT = 3.5;
 /** Grenade Throw clip: torso poses (held ready / arm cocked), the throwing stretch and when the hand lets go. */
 const READY = 1.0, COCKED = 1.84, FROM = 1.6, THROW_TIME = 0.75, RELEASE = 0.29, DRAW = 0.3;
 

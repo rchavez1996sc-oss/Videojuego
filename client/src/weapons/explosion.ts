@@ -6,7 +6,7 @@ import type { ThirdPersonCamera } from '../core/camera';
 import type { Enemies } from '../systems/enemies';
 import type { Player } from '../entities/player';
 
-export const BLAST_RADIUS = 8;
+export const BLAST_RADIUS = 11;
 
 /** Grenade detonation: effects, sound, camera shake, enemy alert/damage and self-damage behind no cover. */
 export function detonate(at: THREE.Vector3, d: { combat: Combat; sfx: Sfx; tpc: ThirdPersonCamera; enemies: Enemies; player: Player; world: RAPIER.World; playerAlive: boolean }): void {
@@ -14,9 +14,9 @@ export function detonate(at: THREE.Vector3, d: { combat: Combat; sfx: Sfx; tpc: 
   const dist = at.distanceTo(cam);
   d.combat.explosionFx(at);
   d.sfx.explosion(dist, at.clone().sub(cam).normalize().dot(right));
-  d.tpc.kick(0.025 * Math.max(0, 1 - dist / 45), (Math.random() - 0.5) * 0.01 * Math.max(0, 1 - dist / 30), Math.max(0, 1.1 - dist / 45));
+  d.tpc.kick(0.03 * Math.max(0, 1 - dist / 60), (Math.random() - 0.5) * 0.012 * Math.max(0, 1 - dist / 40), Math.max(0, 1.3 - dist / 60));
   d.enemies.hearShot(at);
-  d.enemies.explosion(at, BLAST_RADIUS, 230);
+  d.enemies.explosion(at, BLAST_RADIUS, 320);
   const chest = d.player.position.clone().setY(d.player.position.y + 1.0);
   const r = chest.distanceTo(at);
   if (r >= BLAST_RADIUS || !d.playerAlive) return;

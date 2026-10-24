@@ -60,6 +60,8 @@ export interface ChapterDef {
   civilians?: { count: number; seed: number };
   squad?: number;
   lives?: number;
+  /** Key in weapons.json the player carries. */
+  weapon?: string;
   /** Prologue paragraphs shown while the chapter loads. */
   intro?: string[];
   objective?: import('../systems/objective').ObjectiveDef;

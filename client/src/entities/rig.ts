@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { characters, type CharKind } from '../render/characters';
-import { buildAK } from '../weapons/akModel';
+import { buildWeapon, type GunModel } from '../weapons/gunModels';
 import { bakeLod } from '../render/merge';
 import { dress, type Outfit } from './outfit';
 import { addWound } from './wounds';
@@ -51,7 +51,7 @@ export class Rig {
   private wounds = 0;
   private idleKey = ['civ_idle', 'civ_idle', 'texting', 'look_around'].filter((k) => characters.clips.has(k))[Math.floor(Math.random() * 4)] ?? 'civ_stand';
 
-  constructor(kind: CharKind, private lighting: Lighting, private armed = true, detailedGun = false, outfit?: Outfit) {
+  constructor(kind: CharKind, private lighting: Lighting, private armed = true, detailedGun = false, outfit?: Outfit, gunModel: GunModel = 'ak') {
     const update = this.root.updateMatrixWorld.bind(this.root);
     this.root.updateMatrixWorld = (force) => void (this.root.visible && update(force));
     this.inst = characters.create(kind);
@@ -59,10 +59,10 @@ export class Rig {
     this.mixer = new THREE.AnimationMixer(this.inst.model);
     const b = this.inst.bones;
     this.spine = ['mixamorigSpine', 'mixamorigSpine1', 'mixamorigSpine2'].map((n) => b.get(n)!);
-    const ak = buildAK(lighting);
+    const ak = buildWeapon(gunModel, lighting);
     let gun: THREE.Object3D = ak.group;
     if (!detailedGun) {
-      const merged = bakeLod(ak.group, lighting.setup(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, metalness: 0.4 }), 'ak-baked'));
+      const merged = bakeLod(ak.group, lighting.setup(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, metalness: 0.4 }), `${gunModel}-baked`));
       merged.add(ak.muzzle, ak.ejector);
       gun = merged;
     }
