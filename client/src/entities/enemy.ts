@@ -12,7 +12,7 @@ import type { CoverPoint } from '../ai/cover';
 export interface EnemyDef {
   hp: number; damage: number; rpm: number; burst: [number, number]; burstPause: [number, number];
   spread: number; spreadPerMeter: number; reaction: number; sight: number; fov: number; hearing: number;
-  walk: number; run: number; preferredRange: number; palette: Palette; rig?: CharKind;
+  walk: number; run: number; preferredRange: number; palette: Palette; rig?: CharKind; gun?: import('../weapons/gunModels').GunModel;
 }
 
 export type EnemyState = 'patrol' | 'alert' | 'combat' | 'dead';
@@ -71,7 +71,7 @@ export class Enemy {
 
   constructor(readonly id: number, readonly def: EnemyDef, private world: RAPIER.World, lighting: Lighting, spawn: THREE.Vector3, readonly patrol: THREE.Vector3[], readonly isStatic: boolean, outfit?: Outfit) {
     this.hp = def.hp;
-    this.model = new Rig(def.rig ?? 'pnp', lighting, true, false, outfit);
+    this.model = new Rig(def.rig ?? 'pnp', lighting, true, false, outfit, def.gun);
     this.body = world.createRigidBody(RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(spawn.x, spawn.y + HALF + RADIUS + 0.05, spawn.z));
     this.collider = world.createCollider(RAPIER.ColliderDesc.capsule(HALF, RADIUS), this.body);
     this.ctrl = world.createCharacterController(0.05);

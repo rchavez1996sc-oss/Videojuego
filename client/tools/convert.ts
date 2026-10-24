@@ -145,6 +145,7 @@ async function animations(skeletonUrl: string, list: AnimSpec[]): Promise<{ data
       info.push(`${a.key}: FAILED ${(e as Error).message}`);
       continue;
     }
+    src.tracks.forEach((t) => (t.name = t.name.replace(/^mixamorig\d+/, 'mixamorig')));
     const tracks = src.tracks.filter((t) => {
       const [node, prop] = [t.name.slice(0, t.name.lastIndexOf('.')), t.name.slice(t.name.lastIndexOf('.') + 1)];
       return bones.has(node) && (prop === 'quaternion' || (prop === 'position' && node.endsWith('Hips')));

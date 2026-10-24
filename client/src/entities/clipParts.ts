@@ -7,6 +7,14 @@ const CHEST = /Spine2|Neck|Head|Shoulder|Arm|Hand/;
 type Parts = Record<'full' | 'lower' | 'upper' | 'body' | 'chest', THREE.AnimationClip>;
 const split = new Map<string, Parts>();
 
+/** Torso clip for a pistol holder: aim stance from the Shooting clip, arms of the pistol walk/run cycles elsewhere. */
+export function pistolUpper(key: string): string {
+  if (key === 'aim' || key === 'crouch_aim') return 'p_aim';
+  if (key.startsWith('walk_')) return 'p_walk';
+  if (key.startsWith('run_') || key === 'sprint') return 'p_run';
+  return key === 'idle' || key === 'crouch_idle' || key.startsWith('crouch_') || key === 'jump' ? 'p_idle' : key;
+}
+
 /** A clip split by bone groups: full body, legs/upper body, and body/chest for aiming on the move. */
 export function parts(key: string): Parts {
   let p = split.get(key);

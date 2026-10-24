@@ -70,7 +70,7 @@ export class Sfx {
   }
 
   /** Other people's gunshots: delayed by distance, dulled, quieter and panned towards its side; `gain` tames the squad's fire. */
-  distantShot(distance: number, pan: number, heavy = false, gain = 1): void {
+  distantShot(distance: number, pan: number, heavy: boolean | 'own' = false, gain = 1): void {
     const { ctx } = this.m;
     const t = ctx.currentTime + distance / 343, v = 0.9 + Math.random() * 0.2;
     const near = 1 / (1 + distance / 22);
@@ -82,7 +82,7 @@ export class Sfx {
     const bus = ctx.createGain();
     bus.gain.value = (0.25 + near * 0.9) * gain;
     lp.connect(panner).connect(bus).connect(this.m.sfx);
-    this.report(t, heavy ? this.heavy : this.shots, 0.9, lp, 0.25 + (1 - near) * 0.5, 0.4 + (1 - near) * 1.1, v > 1 ? 1 : 0.97);
+    this.report(t, heavy === 'own' ? this.own : heavy ? this.heavy : this.shots, 0.9, lp, 0.25 + (1 - near) * 0.5, 0.4 + (1 - near) * 1.1, v > 1 ? 1 : 0.97);
     setTimeout(() => bus.disconnect(), (distance / 343 + 1.5) * 1000);
   }
 

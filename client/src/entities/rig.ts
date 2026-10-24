@@ -4,7 +4,7 @@ import { buildWeapon, type GunModel } from '../weapons/gunModels';
 import { bakeLod } from '../render/merge';
 import { dress, type Outfit } from './outfit';
 import { addWound } from './wounds';
-import { parts } from './clipParts';
+import { parts, pistolUpper } from './clipParts';
 import type { Lighting } from '../render/lighting';
 
 export type { Outfit } from './outfit';
@@ -48,10 +48,12 @@ export class Rig {
   private acc = 0;
   private last = new THREE.Vector3();
   private spine: THREE.Bone[];
+  /** Spine before the aim bend: the mixer skips bones whose value did not change (still poses), so the bend must not pile up. */
+  private bent: THREE.Quaternion[] = [];
   private wounds = 0;
   private idleKey = ['civ_idle', 'civ_idle', 'texting', 'look_around'].filter((k) => characters.clips.has(k))[Math.floor(Math.random() * 4)] ?? 'civ_stand';
 
-  constructor(kind: CharKind, private lighting: Lighting, private armed = true, detailedGun = false, outfit?: Outfit, gunModel: GunModel = 'ak') {
+  constructor(kind: CharKind, private lighting: Lighting, private armed = true, detailedGun = false, outfit?: Outfit, private gunModel: GunModel = 'ak') {
     const update = this.root.updateMatrixWorld.bind(this.root);
     this.root.updateMatrixWorld = (force) => void (this.root.visible && update(force));
     this.inst = characters.create(kind);
@@ -78,7 +80,7 @@ export class Rig {
 
   /** Parents the rifle to the right hand, calibrated so that in the aiming pose it points straight ahead, slightly towards the left hand. */
   private gripWeapon(rightHand: THREE.Bone, leftHand: THREE.Bone): void {
-    const a = this.mixer.clipAction(parts('aim').full).play();
+    const a = this.mixer.clipAction(parts(this.gunModel === 'pistol' ? 'p_aim' : 'aim').full).play();
     this.mixer.update(0);
     this.inst.model.updateMatrixWorld(true);
     const rh = rightHand.getWorldPosition(new THREE.Vector3()), lh = leftHand.getWorldPosition(new THREE.Vector3());
@@ -128,9 +130,9 @@ export class Rig {
   tick(dt: number): void { this.mixer.update(dt); }
 
   /** Upper-body one-shots: 'reload', 'throw', 'hit'; `from` starts part-way into the clip. */
-  gesture(key: 'reload' | 'throw' | 'hit', seconds?: number, from = 0): void {
+  gesture(gesture: 'reload' | 'throw' | 'hit', seconds?: number, from = 0): void {
     if (this.dead || this.held) return;
-    const dur = characters.clips.get(key)!.duration;
+    const key = this.clipFor(gesture), dur = characters.clips.get(key)!.duration;
     if (key === 'hit' && this.overlay && this.overlay.key !== 'hit') return;
     this.overlay = { key, t: seconds ?? dur * (key === 'hit' ? 0.35 : 1), from };
     this.upKey = '';
@@ -139,7 +141,11 @@ export class Rig {
 
   /** Ends a torso gesture early (a reload let go of). */
   stopGesture(key: 'reload' | 'throw' | 'hit'): void {
-    if (this.overlay?.key === key) this.overlay.t = 0;
+    if (this.overlay?.key === this.clipFor(key)) this.overlay.t = 0;
+  }
+
+  private clipFor(gesture: string): string {
+    return gesture === 'reload' && this.gunModel === 'pistol' && characters.clips.has('p_reload') ? 'p_reload' : gesture;
   }
 
   /** Torso frozen at `at` seconds of `key` until `clearPose` (grenade held ready or cocked). */
@@ -254,8 +260,9 @@ export class Rig {
   private chooseUpper(low: string, crouch: number): string {
     if (this.overlay) return this.overlay.key;
     if (!this.armed) return low;
-    if (this.aiming || this.aimT > 0 || low === 'idle' || low === 'crouch_idle') return crouch > 0.5 ? 'crouch_aim' : 'aim';
-    return low;
+    const aim = this.aiming || this.aimT > 0 || (this.gunModel !== 'pistol' && (low === 'idle' || low === 'crouch_idle'));
+    const up = aim ? (crouch > 0.5 ? 'crouch_aim' : 'aim') : low;
+    return this.gunModel === 'pistol' ? pistolUpper(up) : up;
   }
 
   animate(dt: number, speed: number, crouch: number, aimPitch: number): void {
@@ -283,9 +290,12 @@ export class Rig {
       if (this.upper && up === low) this.upper.timeScale = scale;
     }
     this.last.copy(this.root.position);
+    this.bent.forEach((q, i) => this.spine[i].quaternion.copy(q));
+    this.bent.length = 0;
     this.mixer.update(step);
     if (!this.dead && !this.held && this.armed) {
       const bend = aimPitch / 3, k = this.kick;
+      this.spine.forEach((b, i) => (this.bent[i] ??= new THREE.Quaternion()).copy(b.quaternion));
       for (const [i, b] of this.spine.entries()) b.rotateX(-bend - (i === 2 ? k * 0.07 : k * 0.025));
       this.kick = Math.max(0, this.kick - step * 14);
     }

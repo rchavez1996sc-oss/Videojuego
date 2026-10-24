@@ -183,9 +183,9 @@ export function installDebug(c: DebugContext): void {
       return log.join('\n');
     },
     /** Frames a unit from 3.5 m in front (enemy/ally index, or a civilian position); `kill` first plays its death for 3 s. */
-    inspect(kind: 'enemy' | 'ally' | 'civ', i: number, kill = false, side = 0, dist = 3.5) {
+    inspect(kind: 'enemy' | 'ally' | 'civ' | 'player', i: number, kill = false, side = 0, dist = 3.5) {
       c.setFreeCam(false);
-      const unit = kind === 'enemy' ? c.enemies.list[i] : kind === 'ally' ? c.squad?.list[i].unit : null;
+      const unit = kind === 'enemy' ? c.enemies.list[i] : kind === 'ally' ? c.squad?.list[i].unit : kind === 'player' ? (c.player as never) : null;
       if (unit && kill && unit.alive && unit.damage(1e6)) unit.die(new THREE.Vector3(0, 0, 1));
       for (let k = 0; k < (kill ? 60 : 4); k++) c.frame(1 / 20);
       const p = unit ? unit.position.clone() : c.civilians!()[i].clone();

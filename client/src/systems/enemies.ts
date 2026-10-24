@@ -249,7 +249,7 @@ export class Enemies {
   }
 
   private fire(e: Enemy): void {
-    enemyFire(e, this, this.ctx, this.attackers.has(e.id), this.world, this.camera, this.combat, this.sfx, this.player);
+    enemyFire(e, this, this.ctx, this.attackers.has(e.id), this.world, this.camera, this.combat, this.sfx, this.player, !!this.focus.get(e.id)?.unit);
   }
 
   update(dt: number): void {

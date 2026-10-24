@@ -13,19 +13,19 @@ import { difficulty } from '../core/difficulty';
 /** Rounds hit the player 15 % softer; allies are not covered. */
 const PLAYER_ARMOUR = 0.85;
 
-/** One enemy round: accurate attackers aim at the target's chest, the rest suppress around it. */
-export function enemyFire(e: Enemy, en: Enemies, ctx: AIContext, attacker: boolean, world: RAPIER.World, camera: THREE.PerspectiveCamera, combat: Combat, sfx: Sfx, player: Player): void {
+/** One enemy round: accurate attackers aim at the target's chest, the rest suppress around it (at an ally, `allyAim` of them aim). */
+export function enemyFire(e: Enemy, en: Enemies, ctx: AIContext, attacker: boolean, world: RAPIER.World, camera: THREE.PerspectiveCamera, combat: Combat, sfx: Sfx, player: Player, atAlly = false): void {
   if (holdingFire()) return;
   const muzzle = e.model.muzzle.getWorldPosition(new THREE.Vector3());
   e.flash.fire(e.model.muzzle);
   e.model.fire();
   en.onEnemyShot(muzzle);
   const dist = muzzle.distanceTo(ctx.playerChest);
-  const moving = player.speed > 3 ? 1.2 : player.speed > 0.5 ? 0.5 : 0;
+  const moving = atAlly ? 0.4 : player.speed > 3 ? 1.2 : player.speed > 0.5 ? 0.5 : 0;
   const settle = 1 + 1.6 * Math.max(0, 1 - e.stateT / 3.5);
   const cone = THREE.MathUtils.degToRad((e.def.spread + dist * e.def.spreadPerMeter * 10 + moving) * settle * difficulty.value.spread);
   const aimPoint = ctx.playerChest.clone();
-  if (!attacker) {
+  if (!attacker && !(atAlly && Math.random() < difficulty.value.allyAim)) {
     const off = new THREE.Vector3(Math.random() - 0.5, Math.random() * 0.6 - 0.2, Math.random() - 0.5).normalize().multiplyScalar(1.6 + Math.random() * 2.5);
     aimPoint.add(off);
   }

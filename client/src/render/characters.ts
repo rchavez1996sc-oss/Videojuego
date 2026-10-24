@@ -37,6 +37,29 @@ function still(clip: THREE.AnimationClip, name: string, time: number): THREE.Ani
   }));
 }
 
+/** Bones the source rig lacks (the pistol clips have no Spine2) held at `ref`'s first frame, so nothing else accumulates on them. */
+function fillMissing(clip: THREE.AnimationClip, ref: THREE.AnimationClip): void {
+  const have = new Set(clip.tracks.map((t) => t.name));
+  for (const t of ref.tracks) if (!have.has(t.name) && t.name.endsWith('.quaternion')) clip.tracks.push(new THREE.QuaternionKeyframeTrack(t.name, [0], Array.from(t.createInterpolant().evaluate(0))));
+}
+
+/** Fold the hips tilt this clip has relative to `ref` (same source rig) into the spine: the legs come from other clips. */
+function onHips(pose: THREE.AnimationClip, ref: THREE.AnimationClip): THREE.AnimationClip {
+  const q = (c: THREE.AnimationClip, bone: string) => c.tracks.find((t) => t.name === `mixamorig${bone}.quaternion`);
+  const hips = q(pose, 'Hips'), spine = q(pose, 'Spine'), base = q(ref, 'Hips');
+  if (!hips || !spine || !base) return pose;
+  const inv = new THREE.Quaternion().fromArray(Array.from(base.createInterpolant().evaluate(0))).invert();
+  const at = hips.createInterpolant(), out = new Float32Array(spine.values.length);
+  const h = new THREE.Quaternion(), sp = new THREE.Quaternion();
+  spine.times.forEach((t, k) => {
+    h.fromArray(Array.from(at.evaluate(t)));
+    sp.fromArray(spine.values, k * 4);
+    inv.clone().multiply(h).multiply(sp).toArray(out, k * 4);
+  });
+  spine.values = out;
+  return pose;
+}
+
 /** Mixamo characters converted by scripts/mixamo.mjs; shared geometry/materials, cloned skeletons per instance. */
 class CharacterLibrary {
   readonly clips = new Map<string, THREE.AnimationClip>();
@@ -53,6 +76,12 @@ class CharacterLibrary {
     for (const clip of anims.animations) this.clips.set(clip.name, clip);
     const walk = this.clips.get('civ_walk');
     if (walk) this.clips.set('civ_stand', still(walk, 'civ_stand', walk.duration * STAND_AT));
+    const shoot = this.clips.get('p_shoot');
+    const rest = this.clips.get('idle');
+    if (rest) for (const [key, clip] of this.clips) if (key.startsWith('p_')) fillMissing(clip, rest);
+    const pIdle = this.clips.get('p_idle'), reload = this.clips.get('p_reload');
+    if (shoot && pIdle) this.clips.set('p_aim', onHips(still(shoot, 'p_aim', 0), pIdle));
+    if (reload && pIdle) onHips(reload, pIdle);
     Object.keys(manifest.characters).forEach((kind, i) => {
       const near = models[i * 2].scene, farScene = models[i * 2 + 1].scene;
       const mats = new Map<string, THREE.Material>();

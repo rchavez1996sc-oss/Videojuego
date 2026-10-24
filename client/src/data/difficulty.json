@@ -7,7 +7,8 @@
     "spread": 1.1,
     "regenDelay": 5,
     "civilianLimit": 5,
-    "medkitDrop": 0.2
+    "medkitDrop": 0.2,
+    "allyAim": 0.35
   },
   "veterano": {
     "label": "NORMAL",
@@ -17,7 +18,8 @@
     "spread": 0.95,
     "regenDelay": 6,
     "civilianLimit": 5,
-    "medkitDrop": 0.15
+    "medkitDrop": 0.15,
+    "allyAim": 0.5
   },
   "guerrillero": {
     "label": "DIFÍCIL",
@@ -27,6 +29,7 @@
     "spread": 0.8,
     "regenDelay": 8,
     "civilianLimit": 5,
-    "medkitDrop": 0.1
+    "medkitDrop": 0.1,
+    "allyAim": 0.65
   }
 }

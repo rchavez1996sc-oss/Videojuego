@@ -152,7 +152,7 @@ async function boot(): Promise<void> {
     alarm(p, 90);
   };
   enemies.onEnemyShot = (p) => alarm(p, 60);
-  const squad = createSquad(ch.squad ?? 0, allyDef as unknown as AllyDef, { world, hf, lighting, player, enemies, combat, sfx, hud, camera, nav, alarm }, spawn, startYaw);
+  const squad = createSquad(ch.squad ?? 0, { ...(allyDef as unknown as AllyDef), gun: wdef.model }, { world, hf, lighting, player, enemies, combat, sfx, hud, camera, nav, alarm }, spawn, startYaw);
   if (squad) scene.add(squad.group);
   if (life) wireRoad(life.trafficEvents, { player, enemies, squad, playerHit: (dmg, from) => enemies.onPlayerHit(dmg, from), alive: () => deadT <= 0 });
   let deadT = 0, skipRender = false, shieldT = 0;

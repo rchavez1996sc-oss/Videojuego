@@ -1,7 +1,7 @@
 import table from '../data/difficulty.json';
 
 export type DifficultyId = keyof typeof table;
-export interface Difficulty { label: string; damage: number; attackers: number; reaction: number; spread: number; regenDelay: number; civilianLimit: number; medkitDrop: number }
+export interface Difficulty { label: string; damage: number; attackers: number; reaction: number; spread: number; regenDelay: number; civilianLimit: number; medkitDrop: number; /** Share of rounds at an ally that are aimed rather than suppressive. */ allyAim: number }
 
 export const DIFFICULTIES = table as Record<DifficultyId, Difficulty>;
 

@@ -24,6 +24,7 @@ const ANIMS = [
   ['knock', 'Knocked.Down.fbx', 1], ['getup', 'Getting.Up.fbx', 1],
   ['death_front', P('death from the front'), 0], ['death_back', P('death from the back'), 0], ['death_right', P('death from right'), 0],
   ['death_head', P('death from front headshot'), 0], ['death_crouch', P('death crouching headshot front'), 0], ['dying', 'Dying.fbx', 0], ['fall_back', 'Falling.Back.Death.fbx', 0],
+  ['p_idle', 'pistolpack/pistol idle.fbx', 1], ['p_shoot', 'Shooting.fbx', 1], ['p_walk', 'pistolpack/pistol walk.fbx', 1], ['p_run', 'pistolpack/pistol run.fbx', 1], ['p_kneel', 'pistolpack/pistol kneeling idle.fbx', 1], ['p_reload', 'Reloading.1.fbx', 1],
   ['civ_walk', 'Walking.fbx', 1], ['civ_back', 'Walking.Backwards.fbx', 1], ['civ_run', 'Running.fbx', 1], ['terrified', 'Terrified.fbx', 1, 6],
   ['sit', 'Sitting.Idle.fbx', 1, 8], ['sit2', 'Sitting.Idle.1.fbx', 1, 8], ['sit_talk', 'Sitting.Talking.fbx', 1, 8],
   ['civ_idle', 'Breathing.Idle.fbx', 1, 8], ['talk', 'Talking.fbx', 1, 8], ['texting', 'Texting.While.Standing.fbx', 1, 8], ['lean', 'Leaning.fbx', 1, 8], ['look_around', 'Looking.Around.fbx', 1, 8],
