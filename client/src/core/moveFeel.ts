@@ -1,10 +1,8 @@
 import * as THREE from 'three';
 import type { Player } from '../entities/player';
 import type { ThirdPersonCamera } from './camera';
-import type { Sfx } from '../audio/sfx';
+import type { Sfx, Ground } from '../audio/sfx';
 import type { Input } from './input';
-
-type Ground = 'grass' | 'dirt' | 'rock' | 'wood';
 
 /** Camera bob/sway, landing dip, sprint FOV and footstep sounds driven by the player's gait. */
 export class MoveFeel {

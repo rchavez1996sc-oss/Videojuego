@@ -40,17 +40,24 @@ export class Ambience {
     this.bed.update(dt, this.calm);
   }
 
-  horn(distance: number, pan: number): void {
+  /**
+   * A car horn: two slightly sour reeds at the vehicle's own fixed pitch through a nasal band, muffled with distance.
+   * Fixed per vehicle and only from nearby traffic, so distant honks never line up into something like a tune.
+   */
+  horn(distance: number, pan: number, pitch: number): void {
     const { ctx } = this.m, t = ctx.currentTime + distance / 343;
-    const p = ctx.createStereoPanner(), g = ctx.createGain(), lp = ctx.createBiquadFilter();
+    const p = ctx.createStereoPanner(), g = ctx.createGain(), bp = ctx.createBiquadFilter(), lp = ctx.createBiquadFilter();
     p.pan.value = Math.max(-1, Math.min(1, pan));
-    g.gain.value = Math.max(0.03, 0.25 / (1 + distance / 25));
+    g.gain.value = 0.18 / (1 + distance / 20);
+    bp.type = 'bandpass';
+    bp.frequency.value = 1300;
+    bp.Q.value = 0.7;
     lp.type = 'lowpass';
-    lp.frequency.value = 2400;
-    lp.connect(g).connect(p).connect(this.m.sfx);
-    const dur = 0.25 + Math.random() * 0.35;
-    for (const f of [392, 494]) this.blip(t, 'square', f * (0.9 + Math.random() * 0.2), dur, 0.3, lp);
-    if (Math.random() < 0.4) for (const f of [392, 494]) this.blip(t + dur + 0.12, 'square', f, 0.18, 0.3, lp);
+    lp.frequency.value = Math.max(700, 3200 / (1 + distance / 40));
+    bp.connect(lp).connect(g).connect(p).connect(this.m.sfx);
+    const dur = 0.2 + Math.random() * 0.25;
+    for (const f of [pitch, pitch * 1.23]) this.blip(t, 'sawtooth', f, dur, 0.3, bp);
+    if (Math.random() < 0.3) for (const f of [pitch, pitch * 1.23]) this.blip(t + dur + 0.1, 'sawtooth', f, 0.12, 0.3, bp);
   }
 
   bark(distance: number, pan: number): void {

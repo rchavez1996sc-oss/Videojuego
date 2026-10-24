@@ -1,10 +1,12 @@
+import { VICTORIES, DEFEATS } from './fanfareVariants';
+
 /**
  * Orchestral stingers for the end of a mission, synthesised on the spot: a brass section (detuned saws through a
  * swelling filter), strings and an "ah" choir pad, timpani, cymbals and a tam-tam, all into a concert-hall reverb.
  */
-const hz = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12);
+export const hz = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12);
 
-class Orchestra {
+export class Orchestra {
   readonly t0: number;
   private dry: GainNode;
   private wet: GainNode;
@@ -57,7 +59,7 @@ class Orchestra {
   }
 
   /** Brass section note: the filter opens with the attack ("blat") and a slow vibrato sets in. */
-  brass(at: number, midi: number, dur: number, vel = 1): void {
+  brass(at: number, midi: number, dur: number, vel = 1, bendTo?: number): void {
     const { ctx } = this, t = this.t0 + at, f = hz(midi);
     const g = this.env(at, 0.05, dur, 0.5, 0.11 * vel), lp = ctx.createBiquadFilter();
     lp.type = 'lowpass';
@@ -73,7 +75,8 @@ class Orchestra {
     for (const det of [-9, 0, 8]) {
       const o = ctx.createOscillator();
       o.type = 'sawtooth';
-      o.frequency.value = f;
+      o.frequency.setValueAtTime(f, t);
+      if (bendTo !== undefined) o.frequency.exponentialRampToValueAtTime(hz(bendTo), t + dur);
       o.detune.value = det;
       depth.connect(o.detune);
       o.connect(lp);
@@ -153,6 +156,28 @@ class Orchestra {
     this.hiss(at + 0.05, 'bandpass', 420, 0.35 * vel, 0.3, 2.2, 1.2, 3);
   }
 
+  /** Snare roll or single hit: bright noise with a short body. */
+  snare(at: number, vel = 1, roll = 0): void {
+    for (let x = 0; x <= roll; x += 0.05) {
+      const k = roll ? 0.3 + 0.7 * (x / roll) : 1;
+      this.hiss(at + x, 'bandpass', 2400, 0.35 * vel * k, 0.002, 0.12, 0.6, 0.8);
+      this.hiss(at + x, 'lowpass', 260, 0.25 * vel * k, 0.002, 0.07, 0.4);
+    }
+  }
+
+  /** Struck bell: inharmonic sine partials with long decays. */
+  bell(at: number, midi: number, vel = 1, decay = 2): void {
+    const { ctx } = this, t = this.t0 + at, f = hz(midi);
+    for (const [r, a, d] of [[0.5, 0.5, 1], [1, 1, 0.8], [1.19, 0.5, 0.55], [1.56, 0.35, 0.4], [2, 0.3, 0.35], [2.74, 0.2, 0.25]]) {
+      const o = ctx.createOscillator(), g = this.env(at, 0.003, 0, decay * d, 0.09 * vel * a);
+      o.frequency.value = f * r;
+      o.connect(g);
+      o.start(t);
+      o.stop(t + decay * d + 0.1);
+      this.send(g, 1);
+    }
+  }
+
   /** Fades everything (reverb tail included) out between `from` and `to` seconds, then frees the context. */
   end(from: number, to: number): void {
     const { ctx } = this, g = this.out.gain;
@@ -162,29 +187,17 @@ class Orchestra {
   }
 }
 
-/** Short brass call: a quick roll and pickup into one major chord with a cymbal crash (under 3 s). */
-export function victoryFanfare(ctx: BaseAudioContext = new AudioContext()): void {
+/** Which of the alternatives in `fanfareVariants.ts` the game plays (0-based). */
+export const CHOSEN = { victory: 0, defeat: 0 };
+
+export function victoryFanfare(ctx: BaseAudioContext = new AudioContext(), variant = CHOSEN.victory): void {
   try {
-    const o = new Orchestra(0.75, ctx);
-    o.roll(0, 36, 0.5, 0.7);
-    o.cymbal(0.5, 0.9, 0.45);
-    [[0, 55], [0.12, 55], [0.24, 60]].forEach(([at, n]) => o.brass(at, n, 0.05, 0.8));
-    for (const n of [36, 48, 55, 60, 64, 67, 72, 76]) o.brass(0.5, n, 1.2, 1);
-    o.pad(0.5, [48, 55, 60, 64, 67, 72], 1.0, 1.1);
-    o.timpani(0.5, 36, 1);
-    o.timpani(1.7, 36, 0.6);
-    o.end(2.3, 3);
+    VICTORIES[variant](new Orchestra(0.75, ctx));
   } catch { /* no audio */ }
 }
 
-/** A low minor blow: tam-tam, timpani and a dark brass chord that dies away (under 3 s). */
-export function defeatFanfare(ctx: BaseAudioContext = new AudioContext()): void {
+export function defeatFanfare(ctx: BaseAudioContext = new AudioContext(), variant = CHOSEN.defeat): void {
   try {
-    const o = new Orchestra(0.95, ctx);
-    o.tamtam(0, 1);
-    o.timpani(0, 36, 1);
-    for (const n of [36, 43, 48, 51]) o.brass(0, n, 0.9, 0.9);
-    o.pad(0.1, [48, 51, 55], 1.0, 0.8);
-    o.end(2.2, 3);
+    DEFEATS[variant](new Orchestra(0.95, ctx));
   } catch { /* no audio */ }
 }

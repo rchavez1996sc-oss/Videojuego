@@ -1,6 +1,8 @@
 import type { Mixer } from './mixer';
 import { buildGunshots } from './gunshot';
 
+export type Ground = 'grass' | 'dirt' | 'hard' | 'metal' | 'wood';
+
 export class Sfx {
   private shots: AudioBuffer[];
   private heavy: AudioBuffer[];
@@ -226,17 +228,32 @@ export class Sfx {
     this.reloadBus = null;
   }
 
-  /** Muffled heel thud plus a surface layer: grass swish, dirt grit, stone tap or hollow wood. */
-  footstep(intensity: number, surface: 'grass' | 'dirt' | 'rock' | 'wood' = 'dirt'): void {
+  /**
+   * Heel thud plus a surface layer: grass swish, crunchy dirt and grit (a scatter of tiny grains), a hard click and
+   * scuff on asphalt/concrete/stone, a ringing clank on sheet metal or a hollow knock on wood.
+   */
+  footstep(intensity: number, surface: Ground = 'dirt'): void {
     const t = this.m.ctx.currentTime, v = 0.9 + Math.random() * 0.2, k = intensity;
-    this.tone(t, 'sine', 85 * v, 45, 0.32 * k, 0.09);
-    this.filtered(t, 'lowpass', 260 * v, 0.7, 0.3 * k, 0.003, 0.07);
-    if (surface === 'grass') this.filtered(t + 0.015, 'bandpass', 1500 * v, 0.6, 0.035 * k, 0.02, 0.12);
-    else if (surface === 'dirt') this.filtered(t + 0.01, 'bandpass', 1100 * v, 0.9, 0.05 * k, 0.005, 0.07);
-    else if (surface === 'rock') {
-      this.filtered(t, 'bandpass', 1800 * v, 2, 0.08 * k, 0.001, 0.035);
-      this.tone(t, 'sine', 160 * v, 120, 0.12 * k, 0.05);
-    } else this.tone(t, 'triangle', 210 * v, 170, 0.16 * k, 0.11);
+    const soft = surface === 'grass' || surface === 'dirt';
+    this.tone(t, 'sine', 85 * v, 45, (soft ? 0.32 : 0.22) * k, soft ? 0.09 : 0.05);
+    this.filtered(t, 'lowpass', 260 * v, 0.7, 0.3 * k, 0.003, soft ? 0.07 : 0.04);
+    if (surface === 'grass') {
+      this.filtered(t + 0.015, 'highpass', 2600 * v, 0.5, 0.03 * k, 0.025, 0.16);
+      this.filtered(t + 0.01, 'bandpass', 1200 * v, 0.6, 0.02 * k, 0.02, 0.1);
+    } else if (surface === 'dirt') {
+      for (let i = 0; i < 7; i++) this.filtered(t + 0.005 + Math.random() * 0.07, 'bandpass', 1800 + Math.random() * 3000, 3, 0.05 * k, 0.001, 0.012);
+      this.filtered(t + 0.01, 'bandpass', 900 * v, 0.8, 0.04 * k, 0.004, 0.08);
+    } else if (surface === 'hard') {
+      this.filtered(t, 'bandpass', 3200 * v, 1.6, 0.11 * k, 0.001, 0.025);
+      this.filtered(t + 0.03, 'bandpass', 1600 * v, 0.7, 0.035 * k, 0.01, 0.06);
+      this.tone(t, 'sine', 190 * v, 140, 0.08 * k, 0.03);
+    } else if (surface === 'metal') {
+      for (const f of [420, 690, 1130]) this.tone(t, 'sine', f * v, f * v * 0.99, 0.035 * k, 0.22);
+      this.filtered(t, 'bandpass', 2500 * v, 2, 0.07 * k, 0.001, 0.05);
+    } else {
+      this.tone(t, 'triangle', 210 * v, 170, 0.16 * k, 0.11);
+      this.filtered(t, 'bandpass', 650 * v, 3, 0.06 * k, 0.002, 0.08);
+    }
   }
 
   shellBounce(): void {

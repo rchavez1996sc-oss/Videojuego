@@ -128,6 +128,11 @@ export class Heightfield {
     return [-dx / len, (2 * e) / len, -dz / len];
   }
 
+  /** Inside one of the terrain's paved bands (a road laid on the ground). */
+  isPaved(z: number): boolean {
+    return !!this.def.paved?.some((p) => Math.abs(z - p.z) < p.half);
+  }
+
   maskAt(x: number, z: number, channel: 0 | 1 | 2): number {
     const xi = Math.round((x + this.half) / this.step), zi = Math.round((z + this.half) / this.step);
     if (xi < 0 || zi < 0 || xi >= this.n || zi >= this.n) return 0;

@@ -6,7 +6,7 @@ const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 /** Somebody building a second floor: a short run of hammer blows. */
 function hammering(m: Mixer, vol: number): void {
   const t = m.ctx.currentTime, n = Math.floor(rnd(4, 9)), gap = rnd(0.35, 0.55);
-  for (let i = 0; i < n; i++) noise(m, t + i * gap + rnd(0, 0.05), 2300, 4, 0.05 * vol, 0.05);
+  for (let i = 0; i < n; i++) noise(m, t + i * gap + rnd(0, 0.05), rnd(900, 1400), 1.1, 0.06 * vol, 0.04);
 }
 
 function wind(m: Mixer, vol: number): void {

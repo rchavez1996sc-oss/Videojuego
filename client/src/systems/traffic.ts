@@ -16,7 +16,7 @@ type State = 'drive' | 'off' | 'crash' | 'wreck';
 interface Vehicle {
   kind: CarKind | 'moto' | 'delivery'; group: THREE.Group; body: RAPIER.RigidBody; collider: RAPIER.Collider; dir: 1 | -1;
   x: number; z: number; base: number; lane: number; half: number; yaw: number; speed: number; cruise: number; len: number;
-  honkT: number; panic: boolean; state: State; hp: number; spin: number; drift: number; smokeT: number;
+  honkT: number; horn: number; panic: boolean; state: State; hp: number; spin: number; drift: number; smokeT: number;
   /** Seat holders (Mixamo sitters), the driver first. */ seats: THREE.Group[];
 }
 
@@ -33,7 +33,7 @@ export class Traffic {
   private list: Vehicle[] = [];
   private calmT = 99;
   private cam = new THREE.Vector3();
-  onHonk: (at: THREE.Vector3) => void = () => {};
+  onHonk: (at: THREE.Vector3, pitch: number) => void = () => {};
   onDisabled: (at: THREE.Vector3, weight: number) => void = () => {};
   onCrash: (at: THREE.Vector3) => void = () => {};
   onSmoke: (at: THREE.Vector3) => void = () => {};
@@ -86,7 +86,7 @@ export class Traffic {
       const cruise = kind === 'delivery' ? 9 : kind === 'moto' ? 7 : kind === 'combi' ? 11 : 10;
       const v: Vehicle = {
         kind, group: g, body, collider, dir, x: X_MIN + ((i * 77) % (X_MAX - X_MIN)), z: lanes[i].z + dir * lanes[i].lane, base: lanes[i].z, lane: lanes[i].lane, half: lanes[i].half, yaw: dir > 0 ? Math.PI / 2 : -Math.PI / 2,
-        speed: cruise, cruise, len, honkT: 3 + rand() * 10, panic: false, state: 'drive', hp: HP, spin: 0, drift: 0, smokeT: 0, seats,
+        speed: cruise, cruise, len, honkT: 3 + rand() * 10, horn: 360 + rand() * 110, panic: false, state: 'drive', hp: HP, spin: 0, drift: 0, smokeT: 0, seats,
       };
       this.list.push(v);
       onHit(collider.handle, (dmg, p) => {
@@ -215,8 +215,8 @@ export class Traffic {
         v.x += v.dir * v.speed * dt;
         v.honkT -= dt;
         if (v.honkT <= 0) {
-          v.honkT = 6 + Math.random() * 14;
-          this.onHonk(new THREE.Vector3(v.x, 0, v.z));
+          v.honkT = 15 + Math.random() * 30;
+          if (Math.hypot(v.x - camera.x, v.z - camera.z) < 110) this.onHonk(new THREE.Vector3(v.x, 0, v.z), v.horn);
         }
         if (!v.panic && this.calmT > 20 && Math.abs(v.x - camera.x) > 160) this.bringNear(v, camera.x);
         if ((v.dir > 0 && v.x > X_MAX) || (v.dir < 0 && v.x < X_MIN)) {

@@ -135,7 +135,7 @@ async function boot(): Promise<void> {
   });
   scene.add(range.group);
   scene.add(buildStructures(hf, lighting, world, rangeOrigin, ch.structures ?? []));
-  player.onMantle = () => sfx.footstep(1.3, 'rock');
+  player.onMantle = () => sfx.footstep(1.3, 'hard');
   const dynRes = new DynamicResolution(renderer), damageFx = new DamageFx((k) => (sfx.thud(k), tpc.kick(0, 0, 0.12 + 0.2 * k)));
   const nav = barrio ? new StreetNav(barrio.graph) : null;
   world.step();

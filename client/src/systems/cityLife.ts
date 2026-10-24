@@ -25,7 +25,7 @@ export class CityLife {
     this.birds = new Birds(def.birds, 250);
     this.ambience = new Ambience(mixer);
     this.group.add(this.traffic.group, this.dogs.group, this.birds.mesh);
-    this.traffic.onHonk = (at) => this.cue(at, (d, p) => this.ambience.horn(d, p));
+    this.traffic.onHonk = (at, pitch) => this.cue(at, (d, p) => this.ambience.horn(d, p, pitch));
     this.dogs.onBark = (at) => this.cue(at, (d, p) => this.ambience.bark(d, p));
   }
 

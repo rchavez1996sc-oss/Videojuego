@@ -5,6 +5,7 @@ import type { Civilians } from './civilians';
 import type { Player } from '../entities/player';
 import type { Heightfield } from '../world/heightfield';
 import { surfaceOf } from '../world/surfaces';
+import type { Ground } from '../audio/sfx';
 import type { SupplyKind } from './pickups';
 
 /** Directions/distances of nearby enemies (and bystanders, as neutral marks) relative to the camera heading. */
@@ -32,11 +33,12 @@ export function gatherThreats(enemies: Enemies, civilians: Civilians | null, sup
 }
 
 /** Footstep surface under the player: grass/dirt from the terrain mask, otherwise the collider's material. */
-export function surfaceUnder(world: RAPIER.World, hf: Heightfield, player: Player): 'grass' | 'dirt' | 'rock' | 'wood' {
+/** What the player's feet are on: terrain gives road (asphalt), grass or bare dirt from its mask; built floors by material. */
+export function surfaceUnder(world: RAPIER.World, hf: Heightfield, player: Player): Ground {
   const p = player.position;
   const hit = world.castRay(new RAPIER.Ray({ x: p.x, y: p.y + 0.3, z: p.z }, { x: 0, y: -1, z: 0 }), 0.8, true, undefined, undefined, undefined, undefined, (c) => c.handle !== player.collisionHandle);
   const surf = hit ? surfaceOf(hit.collider.handle) : 'dirt';
-  if (surf === 'dirt') return hf.maskAt(p.x, p.z, 1) > 0.3 ? 'grass' : 'dirt';
-  if (surf === 'wood') return 'wood';
-  return surf === 'rock' || surf === 'metal' || surf === 'tile' ? 'rock' : 'dirt';
+  if (surf === 'dirt' && hit && hf.heightAt(p.x, p.z) < p.y - 0.25) return 'dirt';
+  if (surf === 'dirt') return hf.maskAt(p.x, p.z, 0) > 0.5 || hf.isPaved(p.z) ? 'hard' : hf.maskAt(p.x, p.z, 1) > 0.3 ? 'grass' : 'dirt';
+  return surf === 'wood' ? 'wood' : surf === 'metal' ? 'metal' : 'hard';
 }
