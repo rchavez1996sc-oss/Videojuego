@@ -239,7 +239,7 @@ async function boot(): Promise<void> {
           hud.lives = --lives;
           if (lives <= 0) {
             window.setTimeout(() => (failed = true), 2600);
-            window.setTimeout(() => showMissionFailed('Perdiste tus tres vidas. El nivel se reinicia desde el principio.'), 2600);
+            window.setTimeout(() => showMissionFailed('', 'VIDAS AGOTADAS'), 2600);
           }
           deadT = 4.5;
           deathPos.copy(player.position);
