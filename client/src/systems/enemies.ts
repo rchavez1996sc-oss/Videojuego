@@ -4,6 +4,8 @@ import { Enemy, type EnemyDef } from '../entities/enemy';
 import { think, act, type AIContext } from '../ai/brain';
 import { cover } from '../ai/cover';
 import { onHit, pierceChance } from '../world/surfaces';
+import { shuffleRoamers } from './enemySpots';
+import { shotMode } from '../core/settings';
 import type { Heightfield } from '../world/heightfield';
 import type { Lighting } from '../render/lighting';
 import type { Player } from '../entities/player';
@@ -44,9 +46,9 @@ export class Enemies {
   private alerted = false;
 
   constructor(defs: Record<string, EnemyDef>, spawns: SpawnDef[], private world: RAPIER.World, private hf: Heightfield, lighting: Lighting, private player: Player, private combat: Combat, private sfx: Sfx, private camera: THREE.PerspectiveCamera, nav: StreetNav | null = null) {
+    if (nav && !shotMode) spawns = shuffleRoamers(spawns, nav.nodes, world, hf, player.position);
     spawns.forEach((s, i) => {
-      const def = defs[s.type];
-      const spot = new THREE.Vector3(s.x, hf.heightAt(s.x, s.z), s.z);
+      const def = defs[s.type], spot = new THREE.Vector3(s.x, hf.heightAt(s.x, s.z), s.z);
       if (s.y === undefined && s.at === undefined && nav && world.castRay(new RAPIER.Ray({ x: spot.x, y: spot.y + 0.6, z: spot.z }, { x: 0, y: 1, z: 0 }), 40, true)) {
         const n = nav.route(spot, spot)[0];
         spot.set(n.x, hf.heightAt(n.x, n.z), n.z);
@@ -90,11 +92,7 @@ export class Enemies {
       },
       cover,
       alertNearby: (src) => {
-        for (const o of this.list) {
-          if (o === src || !o.alive || o.position.distanceTo(src.position) > 45) continue;
-          o.awareness = Math.max(o.awareness, 0.75);
-          o.lastKnown.copy(src.lastKnown);
-        }
+        for (const o of this.list) if (o !== src && o.alive && o.position.distanceTo(src.position) <= 45) (o.awareness = Math.max(o.awareness, 0.75)), o.lastKnown.copy(src.lastKnown);
       },
     };
   }

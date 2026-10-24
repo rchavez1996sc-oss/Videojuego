@@ -13,6 +13,10 @@ export class StreetNav {
     }
   }
 
+  get nodes(): THREE.Vector3[] {
+    return this.g.nodes;
+  }
+
   nearest(p: THREE.Vector3): number {
     let best = 0, bd = Infinity;
     this.g.nodes.forEach((n, i) => {

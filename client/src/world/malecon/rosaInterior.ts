@@ -89,7 +89,8 @@ export function diningPavilion(b: Builder, x: number, y: number, z: number, r: n
     b.box('glasswall', [fw + 0.2, 2.4, 0.3], p(2.1), q, true);
     b.box('none', [fw + 0.2, h - 3.3, 0.3], p((h + 3.3) / 2), q, true);
   }
-  b.geometry('parquet', new THREE.CylinderGeometry(r, r, 0.04, 8).rotateY(Math.PI / 8), at(x, y + 0.02, z));
+  b.geometry('parquet', new THREE.CylinderGeometry(r, r, 0.04, 8).rotateY(Math.PI / 8), at(x, y - 0.015, z));
+  b.box('none', [2 * r + 0.6, 0.5, 2 * r + 0.6], new THREE.Vector3(x, y - 0.25, z), Q, true);
   b.geometry('ceilingWhite', new THREE.CylinderGeometry(r, r, 0.12, 8).rotateY(Math.PI / 8), at(x, y + h, z));
   b.geometry('creamWall', new THREE.CylinderGeometry(r, r, 3.2, 8, 1, true).rotateY(Math.PI / 8).translate(0, 1.6, 0), at(x, y + h, z));
   b.geometry('glassClear', new THREE.CylinderGeometry(r + 0.02, r + 0.02, 1.8, 8, 1, true).rotateY(Math.PI / 8), at(x, y + h + 1.6, z));
