@@ -4,7 +4,7 @@ import { setPorous, setSurface, type Surface } from './surfaces';
 import { cover } from '../ai/cover';
 
 const SURFACE: Record<string, Surface> = {
-  adobe: 'adobe', plaster: 'adobe', stone: 'rock', none: 'rock', wood: 'wood', crate: 'wood', roof: 'tile',
+  adobe: 'adobe', plaster: 'adobe', stone: 'rock', none: 'rock', wood: 'wood', crate: 'wood', desk: 'wood', armsCrate: 'wood', cardboard: 'wood', roof: 'tile',
   brick: 'adobe', concrete: 'rock', calamina: 'metal', estera: 'wood', door: 'metal', shutter: 'metal', sandbag: 'dirt', moto: 'metal',
 };
 

@@ -17,7 +17,7 @@ export function furnishStation(b: Builder, at: At, q: THREE.Quaternion, back: nu
   const box = (mat: string, size: [number, number, number], x: number, y: number, z: number, collide = false, a = 0) => b.box(mat, size, at(x, y, z), turn(a), collide);
 
   const desk = (x: number, z: number, a: number, pc: boolean) => {
-    box('wood', [1.6, 0.05, 0.8], x, 0.76, z, true, a);
+    box('desk', [1.6, 0.05, 0.8], x, 0.76, z, true, a);
     for (const [dx, dz] of [[-0.75, -0.35], [0.75, -0.35], [-0.75, 0.35], [0.75, 0.35]]) {
       const c = Math.cos(a), s = Math.sin(a);
       box('bars', [0.05, 0.74, 0.05], x + dx * c + dz * s, 0.37, z - dx * s + dz * c, false, a);
