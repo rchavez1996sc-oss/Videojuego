@@ -79,6 +79,11 @@ export function materials(lighting: Lighting, atlas: SignAtlas): Record<string, 
     canopy: std('canopy', { color: '#2b2f6b', roughness: 0.7 }),
     seat: std('seat', { color: '#2a2a2a', roughness: 0.6 }),
     tire: std('tire', { color: '#151515', roughness: 0.85 }),
+    cardboard: std('cardboard', { color: '#a8834f', roughness: 0.95 }),
+    paper: std('paper', { color: '#ecebe4', roughness: 0.9 }),
+    screen: std('screen', { color: '#0d1a2a', roughness: 0.2, emissive: '#2a5a8a', emissiveIntensity: 0.6 }),
+    brass: std('brass', { color: '#b8913a', roughness: 0.35, metalness: 0.7 }),
+    cork: std('cork', { color: '#8a6438', roughness: 1 }),
     policeGreen: std('policeGreen', { map: pl.map, normalMap: pl.normalMap, roughness: 0.9, color: '#4f7a5c' }),
     armsCrate: std('arms-crate', { map: wd.map, color: '#3e4228', roughness: 0.8 }),
     doorRed: std('doorRed', { map: ca.map, roughness: 0.55, metalness: 0.5, color: '#8e1b14' }),
@@ -274,6 +279,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
   const mats = materials(lighting, atlas);
   const bake = bakeGroups(lighting);
   group.add(...b.build(mats, 0.5, bake, 128));
+  if (station?.art) group.add(station.art(lighting));
   if (atlas.geometries.length) {
     const signs = new THREE.Mesh(mergeGeometries(atlas.geometries), mats.signs);
     signs.receiveShadow = true;

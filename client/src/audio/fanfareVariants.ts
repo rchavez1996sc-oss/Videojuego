@@ -112,11 +112,13 @@ export const DEFEATS: Score[] = [
     o.end(2, 2.8);
   },
   (o) => {
-    [24, 36, 37, 43].forEach((n) => o.brass(0, n, 0.8, 1, undefined, 1.6));
-    o.pad(0.3, [36, 43, 48], 0.6, 1.4);
-    o.tamtam(0, 0.8);
+    [24, 36, 37, 43].forEach((n) => o.brass(0, n, 2.1, 0.8, n - 1, 0.8));
+    o.pad(0.2, [36, 39, 43], 2.0, 1.6);
+    o.tamtam(0, 0.9);
+    o.tamtam(1.5, 0.45);
     o.timpani(0, 31, 1);
-    o.end(2.3, 3);
+    o.timpani(1.5, 30, 0.5);
+    o.end(2.5, 3);
   },
   (o) => {
     o.timpani(0, 36, 1);
