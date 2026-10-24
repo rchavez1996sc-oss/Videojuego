@@ -9,19 +9,20 @@ class Orchestra {
   private dry: GainNode;
   private wet: GainNode;
   private noise: AudioBuffer;
+  private out: GainNode;
 
   constructor(volume: number, readonly ctx: BaseAudioContext) {
     this.t0 = ctx.currentTime + 0.05;
     const comp = ctx.createDynamicsCompressor();
     comp.threshold.value = -16;
     comp.ratio.value = 4;
-    const out = ctx.createGain();
+    const out = (this.out = ctx.createGain());
     out.gain.value = volume;
     out.connect(comp).connect(ctx.destination);
     this.dry = ctx.createGain();
     this.dry.connect(out);
     const hall = ctx.createConvolver();
-    hall.buffer = this.impulse(3.6);
+    hall.buffer = this.impulse(1.8);
     this.wet = ctx.createGain();
     this.wet.gain.value = 0.55;
     this.wet.connect(hall).connect(out);
@@ -143,59 +144,47 @@ class Orchestra {
 
   cymbal(at: number, vel = 1, swell = 0): void {
     if (swell) this.hiss(at - swell, 'highpass', 6000, 0.22 * vel, swell, 0.15);
-    this.hiss(at, 'highpass', 5200, 0.3 * vel, 0.004, 2.6);
+    this.hiss(at, 'highpass', 5200, 0.3 * vel, 0.004, 1.5);
     this.hiss(at, 'bandpass', 3000, 0.12 * vel, 0.004, 1.4, 1, 1.5);
   }
 
   tamtam(at: number, vel = 1): void {
-    this.hiss(at, 'lowpass', 140, 0.9 * vel, 0.01, 3.5, 0.8);
-    this.hiss(at + 0.05, 'bandpass', 420, 0.35 * vel, 0.3, 4, 1.2, 3);
+    this.hiss(at, 'lowpass', 140, 0.9 * vel, 0.01, 2.4, 0.8);
+    this.hiss(at + 0.05, 'bandpass', 420, 0.35 * vel, 0.3, 2.2, 1.2, 3);
   }
 
-  close(after: number): void {
-    const { ctx } = this;
-    if (ctx instanceof AudioContext) setTimeout(() => ctx.close(), after * 1000);
+  /** Fades everything (reverb tail included) out between `from` and `to` seconds, then frees the context. */
+  end(from: number, to: number): void {
+    const { ctx } = this, g = this.out.gain;
+    g.setValueAtTime(g.value, this.t0 + from);
+    g.linearRampToValueAtTime(0, this.t0 + to);
+    if (ctx instanceof AudioContext) setTimeout(() => ctx.close(), (to + 0.5) * 1000);
   }
 }
 
-/** Triumphant brass call over a timpani roll, a plagal swell and a long major chord with cymbals and choir. */
+/** Short brass call: a quick roll and pickup into one major chord with a cymbal crash (under 3 s). */
 export function victoryFanfare(ctx: BaseAudioContext = new AudioContext()): void {
   try {
     const o = new Orchestra(0.75, ctx);
-    o.roll(0, 36, 0.85, 0.8);
-    o.cymbal(0.85, 0.9, 0.8);
-    [[0, 55], [0.14, 55], [0.28, 55]].forEach(([at, n]) => o.brass(at, n, 0.06, 0.8));
-    o.brass(0.42, 60, 0.3);
-    for (const n of [48, 55, 60, 64, 67, 72]) o.brass(0.85, n, 0.9, 1);
-    o.pad(0.85, [48, 60, 64, 67], 1.0);
-    o.timpani(0.85, 36, 1);
-    for (const n of [53, 57, 60, 65, 69, 72]) o.brass(1.95, n, 0.45, 0.85);
-    o.timpani(1.95, 41, 0.8);
-    o.roll(2.15, 36, 0.5, 0.7);
-    for (const n of [36, 48, 55, 60, 64, 67, 72, 76]) o.brass(2.65, n, 1.9, 1);
-    o.pad(2.65, [48, 55, 60, 64, 67, 72], 2.2, 1.2);
-    o.timpani(2.65, 36, 1);
-    o.cymbal(2.65, 1.1);
-    o.timpani(4.4, 36, 0.9);
-    o.close(9);
+    o.roll(0, 36, 0.5, 0.7);
+    o.cymbal(0.5, 0.9, 0.45);
+    [[0, 55], [0.12, 55], [0.24, 60]].forEach(([at, n]) => o.brass(at, n, 0.05, 0.8));
+    for (const n of [36, 48, 55, 60, 64, 67, 72, 76]) o.brass(0.5, n, 1.2, 1);
+    o.pad(0.5, [48, 55, 60, 64, 67, 72], 1.0, 1.1);
+    o.timpani(0.5, 36, 1);
+    o.timpani(1.7, 36, 0.6);
+    o.end(2.3, 3);
   } catch { /* no audio */ }
 }
 
-/** A low minor blow with a tam-tam, a falling horn line, a dark Ab → C minor close and a fading roll. */
+/** A low minor blow: tam-tam, timpani and a dark brass chord that dies away (under 3 s). */
 export function defeatFanfare(ctx: BaseAudioContext = new AudioContext()): void {
   try {
     const o = new Orchestra(0.95, ctx);
     o.tamtam(0, 1);
     o.timpani(0, 36, 1);
     for (const n of [36, 43, 48, 51]) o.brass(0, n, 0.9, 0.9);
-    o.pad(0.1, [48, 51, 55], 1.6, 0.8);
-    [[1.0, 55], [1.45, 51], [1.9, 50]].forEach(([at, n]) => o.brass(at, n, 0.35, 0.7));
-    for (const n of [44, 48, 51, 56]) o.brass(2.35, n, 0.6, 0.8);
-    o.timpani(2.35, 32, 0.7);
-    for (const n of [36, 43, 48, 51, 55]) o.brass(3.05, n, 1.8, 0.75);
-    o.pad(3.05, [48, 51, 55, 60], 2.2, 1);
-    o.roll(3.05, 36, 1.6, 0.6);
-    o.tamtam(3.05, 0.7);
-    o.close(9);
+    o.pad(0.1, [48, 51, 55], 1.0, 0.8);
+    o.end(2.2, 3);
   } catch { /* no audio */ }
 }
