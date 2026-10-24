@@ -10,7 +10,7 @@ export class Orchestra {
   readonly t0: number;
   private dry: GainNode;
   private wet: GainNode;
-  private noise: AudioBuffer;
+  readonly noise: AudioBuffer;
   private out: GainNode;
 
   constructor(volume: number, readonly ctx: BaseAudioContext) {
@@ -42,14 +42,14 @@ export class Orchestra {
     return buf;
   }
 
-  private send(node: AudioNode, wet = 1): void {
+  send(node: AudioNode, wet = 1): void {
     node.connect(this.dry);
     const s = this.ctx.createGain();
     s.gain.value = wet;
     node.connect(s).connect(this.wet);
   }
 
-  private env(at: number, attack: number, hold: number, release: number, peak: number): GainNode {
+  env(at: number, attack: number, hold: number, release: number, peak: number): GainNode {
     const g = this.ctx.createGain(), t = this.t0 + at;
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(peak, t + attack);
@@ -59,9 +59,9 @@ export class Orchestra {
   }
 
   /** Brass section note: the filter opens with the attack ("blat") and a slow vibrato sets in. */
-  brass(at: number, midi: number, dur: number, vel = 1, bendTo?: number): void {
+  brass(at: number, midi: number, dur: number, vel = 1, bendTo?: number, release = 0.5): void {
     const { ctx } = this, t = this.t0 + at, f = hz(midi);
-    const g = this.env(at, 0.05, dur, 0.5, 0.11 * vel), lp = ctx.createBiquadFilter();
+    const g = this.env(at, 0.05, dur, release, 0.11 * vel), lp = ctx.createBiquadFilter();
     lp.type = 'lowpass';
     lp.Q.value = 1.2;
     lp.frequency.setValueAtTime(f * 1.5, t);
@@ -81,10 +81,10 @@ export class Orchestra {
       depth.connect(o.detune);
       o.connect(lp);
       o.start(t);
-      o.stop(t + dur + 0.6);
+      o.stop(t + dur + release + 0.1);
     }
     vib.start(t);
-    vib.stop(t + dur + 0.6);
+    vib.stop(t + dur + release + 0.1);
     lp.connect(g);
     this.send(g, 0.8);
   }
@@ -188,7 +188,7 @@ export class Orchestra {
 }
 
 /** Which of the alternatives in `fanfareVariants.ts` the game plays (0-based). */
-export const CHOSEN = { victory: 0, defeat: 0 };
+export const CHOSEN = { victory: 0, defeat: 3 };
 
 export function victoryFanfare(ctx: BaseAudioContext = new AudioContext(), variant = CHOSEN.victory): void {
   try {

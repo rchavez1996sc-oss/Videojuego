@@ -1,9 +1,10 @@
 import type { Orchestra } from './fanfare';
+import { VICTORY_STYLES } from './victoryStyles';
 
 type Score = (o: Orchestra) => void;
 const chord = (o: Orchestra, at: number, notes: number[], dur: number, vel = 1) => notes.forEach((n) => o.brass(at, n, dur, vel));
 
-/** Ten short victory stingers (each under 3 s, faded by `end`). MIDI: 36 = C2, 48 = C3, 60 = C4. */
+/** Victory stingers (each under 3 s, faded by `end`): ten orchestral, then ten other styles from `victoryStyles.ts`. MIDI: 36 = C2, 48 = C3, 60 = C4. */
 export const VICTORIES: Score[] = [
   (o) => {
     o.roll(0, 36, 0.5, 0.7);
@@ -84,6 +85,7 @@ export const VICTORIES: Score[] = [
     o.cymbal(0.4, 0.7);
     o.end(1.9, 2.7);
   },
+  ...VICTORY_STYLES,
 ];
 
 /** Ten short defeat stingers (each under 3 s). The first is the original low minor blow. */
@@ -110,10 +112,11 @@ export const DEFEATS: Score[] = [
     o.end(2, 2.8);
   },
   (o) => {
-    chord(o, 0, [24, 36, 37, 43], 1.2, 1);
+    [24, 36, 37, 43].forEach((n) => o.brass(0, n, 0.8, 1, undefined, 1.6));
+    o.pad(0.3, [36, 43, 48], 0.6, 1.4);
     o.tamtam(0, 0.8);
     o.timpani(0, 31, 1);
-    o.end(1.8, 2.7);
+    o.end(2.3, 3);
   },
   (o) => {
     o.timpani(0, 36, 1);
