@@ -140,17 +140,24 @@ export class Sfx {
     this.filtered(t + 0.18, 'bandpass', 3200, 4, 0.2 * vol, 0.002, 0.4, 0.3);
   }
 
+  /** Rifle swung hard: an airy whoosh and the sling/gear jostling. */
   meleeSwing(): void {
     const t = this.m.ctx.currentTime;
-    this.filtered(t, 'bandpass', 700, 1.2, 0.25, 0.08, 0.18);
-    this.filtered(t + 0.06, 'bandpass', 1400, 1.5, 0.15, 0.05, 0.12);
+    this.filtered(t, 'bandpass', 500, 0.6, 0.35, 0.09, 0.16);
+    this.filtered(t + 0.05, 'bandpass', 1100, 0.7, 0.22, 0.05, 0.1);
+    for (let i = 0; i < 3; i++) this.filtered(t + 0.02 + i * 0.04, 'lowpass', 900, 0.7, 0.12, 0.002, 0.04);
   }
 
+  /** Stock into a body: a deep, dull blow (no ring), the slap of cloth and flesh, gear rattling, a grunt-like low tail. */
   meleeHit(): void {
     const t = this.m.ctx.currentTime;
-    this.filtered(t, 'lowpass', 260, 1, 1.1, 0.002, 0.16, 0.2);
-    this.tone(t, 'sine', 120, 55, 0.6, 0.14);
-    this.filtered(t + 0.01, 'bandpass', 2400, 3, 0.18, 0.001, 0.05);
+    this.filtered(t, 'lowpass', 180, 0.7, 2.2, 0.002, 0.22, 0.25);
+    this.tone(t, 'sine', 95, 38, 1.6, 0.22, 0.2);
+    this.tone(t, 'triangle', 160, 70, 0.5, 0.09);
+    this.filtered(t + 0.003, 'bandpass', 700, 0.6, 1.1, 0.001, 0.07);
+    this.filtered(t + 0.006, 'lowpass', 1400, 0.5, 0.6, 0.001, 0.05);
+    for (let i = 0; i < 4; i++) this.filtered(t + 0.03 + i * 0.03 + Math.random() * 0.02, 'lowpass', 1200, 0.6, 0.18, 0.002, 0.05);
+    this.filtered(t + 0.12, 'lowpass', 220, 0.6, 0.5, 0.02, 0.25);
   }
 
   grenadePin(): void {

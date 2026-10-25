@@ -35,13 +35,13 @@ export function fenceGaps(def: CampusDef): [number, number][] {
 /** Campus perimeter on Av. Venezuela: yellow kerb, black bars between posts, porous collider. */
 export function venezuelaFence(b: Builder, def: CampusDef): void {
   const v = def.venezuela, z = v.z - v.half - v.sidewalk - 0.5, Q = new THREE.Quaternion();
-  let x0 = -def.bounds.x - 6;
+  let x0 = def.bounds.west - 0.3;
   const spans: [number, number][] = [];
   for (const [a, c] of fenceGaps(def)) {
     if (a > x0) spans.push([x0, a]);
     x0 = Math.max(x0, c);
   }
-  spans.push([x0, def.bounds.x + 6]);
+  spans.push([x0, def.bounds.x + 0.3]);
   for (const [a, c] of spans) {
     const len = c - a, mid = (a + c) / 2;
     b.box('kerbYellow', [len, 0.42, 0.36], new THREE.Vector3(mid, 0.21, z), Q, false);
@@ -129,12 +129,4 @@ export function footballField(b: Builder, f: Rect, turf: THREE.MeshStandardMater
   fence(D, -W / 2, 0, 'z');
   for (const s of [-1, 1]) fence(D / 2 - 1.5, W / 2, s * (D / 4 + 0.75), 'z');
   return mesh;
-}
-
-/** Corrugated site hoarding closing the sector off (the rest of the campus is not built yet). */
-export function hoarding(b: Builder, x0: number, x1: number, z: number): void {
-  const Q = new THREE.Quaternion(), len = x1 - x0;
-  b.box('calamina', [len, 2.6, 0.06], new THREE.Vector3((x0 + x1) / 2, 1.3, z), Q, false);
-  for (let x = x0; x <= x1; x += 3) b.box('pole', [0.12, 2.8, 0.12], new THREE.Vector3(x, 1.4, z + 0.1), Q, false);
-  b.box('none', [len, 6, 0.6], new THREE.Vector3((x0 + x1) / 2, 3, z), Q, true);
 }

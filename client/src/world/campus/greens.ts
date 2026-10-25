@@ -80,7 +80,7 @@ export function paintCampusLawns(hf: Heightfield, def: CampusDef, hard: (x: numb
   const B = def.bounds;
   for (let zi = 0; zi < hf.n; zi++) for (let xi = 0; xi < hf.n; xi++) {
     const x = -hf.half + xi * hf.step, z = -hf.half + zi * hf.step;
-    if (Math.abs(x) > B.x + 12 || z < B.north - 12 || z > B.south) continue;
+    if (x < B.west || x > B.x || z < B.north || z > B.south) continue;
     if (hf.plainOut(x, z) > 0 || hf.heightAt(x, z) > 0.4 || hard(x, z)) continue;
     const k = (zi * hf.n + xi) * 4, worn = Math.sin(x * 0.21 + Math.sin(z * 0.13) * 2) * Math.sin(z * 0.17 + Math.sin(x * 0.11) * 2);
     hf.mask[k + 1] = (worn > 0.55 ? 0.45 : 0.95) * 255;
@@ -93,7 +93,7 @@ export function plantCampus(hf: Heightfield, def: CampusDef, hard: (x: number, z
   const B = def.bounds, want: [THREE.Vector3[], number, number][] = [[plants.trees, 150, 4.5], [plants.palms, 40, 3], [plants.pines, 6, 5]];
   for (const [list, count, gap] of want) {
     for (let tries = 0, n = 0; n < count && tries < count * 40; tries++) {
-      const x = (rand() * 2 - 1) * (B.x - 4), z = B.north + 6 + rand() * (B.south - 30 - B.north);
+      const x = B.west + 4 + rand() * (B.x - B.west - 8), z = B.north + 6 + rand() * (B.south - 30 - B.north);
       if (hf.heightAt(x, z) > 0.3 || hard(x, z, gap) || [...plants.trees, ...plants.palms, ...plants.pines].some((p) => Math.hypot(p.x - x, p.z - z) < 7)) continue;
       list.push(new THREE.Vector3(x, 0, z));
       n++;

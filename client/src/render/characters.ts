@@ -82,6 +82,11 @@ class CharacterLibrary {
     const pIdle = this.clips.get('p_idle'), reload = this.clips.get('p_reload');
     if (shoot && pIdle) this.clips.set('p_aim', onHips(still(shoot, 'p_aim', 0), pIdle));
     if (reload && pIdle) onHips(reload, pIdle);
+    const masks = new Map<string, THREE.Texture>();
+    await Promise.all(Object.keys(manifest.characters).filter((k) => k.startsWith('civ')).map((k) => new THREE.TextureLoader().loadAsync(`${BASE}characters/${k}.mask.png?v=${manifest.version ?? 0}`).then((t) => {
+      t.flipY = false;
+      masks.set(k, t);
+    }, () => {})));
     Object.keys(manifest.characters).forEach((kind, i) => {
       const near = models[i * 2].scene, farScene = models[i * 2 + 1].scene;
       const mats = new Map<string, THREE.Material>();
@@ -90,7 +95,7 @@ class CharacterLibrary {
         const mat = m.material as THREE.MeshStandardMaterial;
         mat.envMapIntensity = 0.6;
         if (kind.startsWith('civ')) {
-          const looks = variants(mat, `char-${kind}-${mat.name}`, lighting);
+          const looks = variants(mat, `char-${kind}-${mat.name}`, lighting, masks.get(kind));
           this.looks.set(looks[0], looks);
           m.material = looks[0];
         } else m.material = lighting.setup(mat, `char-${kind}-${mat.name}`);

@@ -21,8 +21,8 @@ export interface CampusBuilding extends Rect {
 export interface CampusDef {
   seed: number;
   venezuela: { z: number; half: number; median: number; sidewalk: number };
-  /** Walkable area: |x| < x, north < z < south. */
-  bounds: { x: number; north: number; south: number };
+  /** Walkable campus: west < x < x (east), z > north (walled on the north and east, open towards the Huaca); `south` bounds the avenue side. */
+  bounds: { x: number; west: number; north: number; south: number };
   gate1: { x: number; z: number; yaw: number };
   field: Rect;
   parkings: Rect[];
@@ -73,9 +73,10 @@ export function offset(pts: [number, number][], off: number): [number, number][]
 export function campusGraph(def: CampusDef, solid: (x: number, z: number) => boolean): StreetGraph {
   const nodes: THREE.Vector3[] = [], edges: [number, number][] = [];
   const b = def.bounds, v = def.venezuela;
-  const lines: [number, number][][] = [[[-b.x + 4, v.z - v.half - v.sidewalk / 2], [b.x - 4, v.z - v.half - v.sidewalk / 2]]];
+  const side = v.z - v.half - v.sidewalk;
+  const lines: [number, number][][] = [[[-b.x + 4, side + v.sidewalk / 2], [b.x - 4, side + v.sidewalk / 2]]];
   for (const r of def.roads) for (const s of [-1, 1]) lines.push(offset(r.pts, s * (r.w / 2 + 1.4)));
-  const ok = (p: THREE.Vector2) => Math.abs(p.x) < b.x - 3 && p.y > b.north + 3 && p.y < b.south && !solid(p.x, p.y);
+  const ok = (p: THREE.Vector2) => Math.abs(p.x) < b.x - 3 && p.y < b.south && !solid(p.x, p.y) && (p.y > side || (p.x > b.west + 3 && p.y > b.north + 3));
   for (const line of lines) {
     let prev = -1;
     for (const p of sample(line, 8)) {
@@ -95,6 +96,6 @@ export function campusGraph(def: CampusDef, solid: (x: number, z: number) => boo
       if (!solid(mid.x, mid.z)) edges.push([i, j]);
     }
   }
-  const exits = nodes.map((n, k) => [n, k] as const).filter(([n]) => Math.abs(n.x) > b.x - 14 || n.z < b.north + 14).map(([, k]) => k);
+  const exits = nodes.map((n, k) => [n, k] as const).filter(([n]) => Math.abs(n.x) > b.x - 14).map(([, k]) => k);
   return { nodes, edges, exits };
 }

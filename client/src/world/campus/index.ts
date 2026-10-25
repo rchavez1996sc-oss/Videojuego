@@ -15,7 +15,8 @@ import { buildCampusRoads } from './roads';
 import { pavilion, type NameSign } from './pavilion';
 import { comedor } from './comedor';
 import { minasPortal, puerta1 } from './gates';
-import { footballField, hoarding, parkingLot, venezuelaFence } from './grounds';
+import { footballField, parkingLot, venezuelaFence } from './grounds';
+import { perimeter } from './perimeter';
 import { campusHard, comedorPark, paintCampusLawns, plantCampus } from './greens';
 import { stadium, venezuelaSouth } from './south';
 import { campusMaterials, campusBake } from './materials';
@@ -44,7 +45,7 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
   for (const p of def.parkings) parkingLot(b, p, rand);
   const turf = lighting.setup(new THREE.MeshStandardMaterial({ roughness: 0.95 }), 'turf');
   group.add(footballField(b, def.field, turf));
-  hoarding(b, -def.bounds.x - 8, def.bounds.x + 8, def.bounds.north);
+  perimeter(b, def, mulberry32(def.seed + 3), group, lighting);
   venezuelaSouth(b, hf, def, rand, (pos, q, w) => atlas.add(pos, q, w, 'shop', rand, rand() < 0.6 ? brands[Math.floor(rand() * brands.length)] : undefined));
   stadium(b, def.stadium);
 
@@ -65,7 +66,7 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
   const B = def.bounds;
   return { group, materials: mats, bake, station: null, graph, bystanders,
     blocked: (x, z) => solid(x, z) || z > v.z + v.half + v.sidewalk,
-    inside: (x, z) => Math.abs(x) < B.x - 4 && z > B.north + 4 && z < v.z - v.half - v.sidewalk - 1 };
+    inside: (x, z) => x > B.west + 4 && x < B.x - 4 && z > B.north + 4 && z < v.z - v.half - v.sidewalk - 1 };
 }
 
 /** Centre of a point `ahead` metres in front of a footprint's +z face (for porches, portals). */
