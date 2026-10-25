@@ -11,7 +11,7 @@ import { barsTexture } from './grounds';
 /** Painted plaster walls of the faculties (photos: cream Química, white/grey Geológica, yellow Comedor…). */
 const WALLS: Record<string, string> = {
   uniCream: '#e6dcc4', uniGrey: '#c8c6c0', uniWhite: '#efeee9', uniYellow: '#e3b443', uniRed: '#b02a22', uniFrame: '#d5d3cd',
-  uniTerracotta: '#a35a3c', uniOrange: '#d9772e', roofWhite: '#e9e8e3', uniStone: '#9a958c', uniSand: '#d2bf98', uniTaupe: '#968d80', uniOchre: '#d8ad2c', uniBrown: '#7c4a2c',
+  uniTerracotta: '#a35a3c', uniOrange: '#d9772e', roofWhite: '#e9e8e3', uniStone: '#9a958c', uniSand: '#d2bf98', uniTaupe: '#968d80', uniOchre: '#d8ad2c', uniBrown: '#7c4a2c', uniBlue: '#4f86c9',
 };
 
 export function campusMaterials(lighting: Lighting): Record<string, THREE.Material> {
@@ -55,9 +55,12 @@ export function campusMaterials(lighting: Lighting): Record<string, THREE.Materi
     tableWhite: std('tableWhite', { color: '#ecebe6', roughness: 0.4 }),
     tubeLight: std('tubeLight', { color: '#ffffff', emissive: '#f4f8ff', emissiveIntensity: 1.2 }),
     hedgeGold: std('hedgeGold', { map: fo.map, normalMap: fo.normalMap, color: '#f0dc3a', roughness: 0.95 }),
+    hedgeLime: std('hedgeLime', { map: fo.map, normalMap: fo.normalMap, color: '#f6ff6a', roughness: 0.95 }),
+    flowerSilver: std('flowerSilver', { map: fo.map, normalMap: fo.normalMap, color: '#c9d2cf', roughness: 0.95 }),
     flowerRed: std('flowerRed', { map: fo.map, normalMap: fo.normalMap, color: '#ff5a5a', emissive: '#3a0606', roughness: 0.95 }),
     flowerPurple: std('flowerPurple', { map: fo.map, normalMap: fo.normalMap, color: '#b05ad0', emissive: '#22062e', roughness: 0.95 }),
     kioskGreen: std('kioskGreen', { color: '#4f9a3c', roughness: 0.7 }),
+    pavRed: std('pavRed', { map: (photo('brick') ?? stone).map, normalMap: (photo('brick') ?? stone).normalMap, color: '#b8604e', roughness: 0.9 }),
     brickRed: std('brickRed', { map: (photo('brick') ?? stone).map, normalMap: (photo('brick') ?? stone).normalMap, color: '#d8524a', roughness: 0.85 }),
     awningStripe: std('awningStripe', { color: '#5a554e', roughness: 0.8, side: THREE.DoubleSide }),
     trackRed: std('trackRed', { color: '#b8452e', roughness: 0.9 }),
@@ -74,7 +77,7 @@ export function campusBake(lighting: Lighting): { material: THREE.Material; keys
     ...bakeGroups(lighting, ['mullion', 'paneBlue', 'paneYellow', 'panePurple', 'curtainRed', 'steelGrey', 'alu', 'binGreen', 'fenceIron', 'lampPole']),
     textured('uni-plaster-baked', photo('paintPlaster') ?? plaster(), Object.keys(WALLS).filter((k) => k !== 'uniStone'), 0.88),
     textured('concrete-baked', concrete(), ['concrete', 'parkPath', 'kerbYellow'], 0.9),
-    textured('foliage-baked', foliage(), ['hedge', 'lawnBed'], 0.95),
+    textured('foliage-baked', foliage(), ['hedge', 'lawnBed', 'hedgeLime'], 0.95),
     textured('deck-baked', deck(), ['benchWood'], 0.75),
   ];
 }

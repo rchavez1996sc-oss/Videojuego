@@ -4,7 +4,7 @@ import { framer, yawQ, type CampusBuilding } from './layout';
 
 export const FLOOR = 3.6;
 const SPANDREL = 1.0, GLASS = 1.7, BAY = 3;
-export const WALLS: Record<string, string> = { cream: 'uniCream', grey: 'uniGrey', white: 'uniWhite', yellow: 'uniYellow', stone: 'uniStone', travertine: 'travertine', brown: 'uniBrown', sand: 'uniSand', taupe: 'uniTaupe', ochre: 'uniOchre' };
+export const WALLS: Record<string, string> = { cream: 'uniCream', grey: 'uniGrey', white: 'uniWhite', yellow: 'uniYellow', stone: 'uniStone', travertine: 'travertine', brown: 'uniBrown', sand: 'uniSand', taupe: 'uniTaupe', ochre: 'uniOchre', blue: 'uniBlue' };
 
 /** Where a building's name goes: centre of the lettering, facing, width, colours. */
 export interface NameSign { pos: THREE.Vector3; q: THREE.Quaternion; w: number; text: string; ink: string; plate?: string; font?: 'serif' | 'sans' }
@@ -52,7 +52,9 @@ function wing(b: Builder, at: At, q: THREE.Quaternion, cx: number, cz: number, w
         for (let i = 0; i <= cols; i++) put('steelGrey', 0.07, FLOOR, 0.14, -len / 2 + i * cw, y0 + FLOOR / 2, 0.08);
         for (const y of [0.9, FLOOR - 0.05]) put('steelGrey', len, 0.08, 0.14, 0, y0 + y, 0.08);
       } else if (sk.kind === 'framed') {
+        if (f === 0 && sk.base !== sk.wall) put(sk.base, len, FLOOR, 0.2, 0, FLOOR / 2, 0.06);
         for (let i = 0; i < n; i++) {
+          if (sk.spandrel !== sk.wall && i % 4 === 2 && f > 0) put(sk.spandrel, bay, FLOOR, 0.2, -len / 2 + (i + 0.5) * bay, y0 + FLOOR / 2, 0.07);
           if (i % 3 === 1) continue;
           const x = -len / 2 + (i + 0.5) * bay, y = y0 + 1.0 + 0.85;
           put('winGlass', bay * 0.62, 1.7, 0.06, x, y, 0.02);

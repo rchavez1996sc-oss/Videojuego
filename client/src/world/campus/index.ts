@@ -17,6 +17,8 @@ import { comedor } from './comedor';
 import { minasPortal, puerta1, puerta2 } from './gates';
 import { industrial } from './industrial';
 import { fisicasRotunda, mathEntrance } from './faculties';
+import { cie } from './cie';
+import { fisInst } from './fisInst';
 import { SwingGates } from './swingGates';
 import { studentLife, studentWalks } from './student';
 import { plazuela } from './plazuela';
@@ -57,7 +59,7 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
       seals.push(c.seal);
       continue;
     }
-    const s = bd.key === 'industrial' ? industrial(b, bd, rand) : pavilion(b, bd, rand);
+    const s = bd.key === 'industrial' ? industrial(b, bd, rand) : bd.key === 'cie' ? cie(b, bd) : bd.key === 'fisinst' ? fisInst(b, bd, plants, rand) : pavilion(b, bd, rand);
     if (bd.key === 'fisicas') signs.push(fisicasRotunda(b, bd));
     if (bd.key === 'mate') signs.push(mathEntrance(b, bd));
     if (s) signs.push(s);
