@@ -47,6 +47,26 @@ export class Heightfield {
     return h;
   }
 
+  /** Distance outside the plain (0 inside). */
+  plainOut(x: number, z: number): number {
+    const p = this.def.plain;
+    return p ? Math.max(0, Math.abs(x) - p.hw, p.z0 - z, z - p.z1) : Infinity;
+  }
+
+  /** Levels the plain and raises the mounds. */
+  private shape(x: number, z: number, h: number, noise: Noise): number {
+    const p = this.def.plain;
+    if (p) h = lerp(h, 0, smoothstep(p.blend, 0, this.plainOut(x, z)));
+    for (const m of this.def.mounds ?? []) {
+      const a = ((m.yaw ?? 0) * Math.PI) / 180, dx = x - m.x, dz = z - m.z;
+      const lx = dx * Math.cos(a) + dz * Math.sin(a), lz = -dx * Math.sin(a) + dz * Math.cos(a);
+      const q = Math.hypot(lx / m.rx, lz / m.rz) + noise.fbm(x, z, 1 / 30, 3) * 0.08;
+      const v = smoothstep(1, 0.5, q), steps = Math.floor(v * 4) / 4;
+      h += m.h * lerp(v, steps + (v - steps) * 0.35, 0.6) * (0.9 + noise.fbm(x, z, 1 / 12, 2) * 0.1);
+    }
+    return h;
+  }
+
   private generate(): void {
     const { n, step, half, def } = this;
     const noise = new Noise(def.seed);
@@ -65,6 +85,7 @@ export class Heightfield {
           const t = smoothstep(f.r, f.r * 0.55, Math.hypot(x - f.x, z - f.z));
           h = lerp(h, flatTargets[i] + noise.fbm(x, z, 1 / 40, 2) * 0.6, t);
         });
+        h = this.shape(x, z, h, noise);
         const rwh = (this.def.roadWidth ?? 6.4) / 2;
         h -= (1 - smoothstep(rwh - 0.7, rwh + 3.8, dRoad)) * 0.35;
         const k = zi * n + xi;
@@ -97,6 +118,10 @@ export class Heightfield {
         let grass = (1 - road) * (1 - packed * 0.85) * smoothstep(0.32, 0.12, slope) * patches;
         grass *= smoothstep(def.mountainHeight * 0.6, def.mountainHeight * 0.3, this.heights[k]);
         if (def.paved?.some((p) => Math.abs(z - p.z) < p.half)) grass = 0;
+        if (def.plain && this.plainOut(x, z) < 1) {
+          grass = 0;
+          packed = 0.7;
+        }
         const o = k * 4;
         this.mask[o] = road * 255;
         this.mask[o + 1] = grass * 255;

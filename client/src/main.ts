@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import ch01 from './data/chapters/ch01_lima.json';
 import ch02 from './data/chapters/ch02_malecon.json';
-import ch03 from './data/chapters/ch03_aldea.json';
+import ch03 from './data/chapters/ch03_sanmarcos.json';
+import ch04 from './data/chapters/ch04_aldea.json';
 import type { ChapterDef } from './data/types';
 import { Input } from './core/input';
 import { ThirdPersonCamera } from './core/camera';
@@ -45,6 +46,7 @@ import { ShadowCull } from './render/shadowCull';
 import { buildBarrio } from './world/barrio';
 import { buildFarCity } from './world/farCity';
 import { buildMalecon } from './world/malecon';
+import { buildCampus } from './world/campus';
 import { StreetNav } from './ai/nav';
 import { cover } from './ai/cover';
 import { createPopulace } from './systems/populace';
@@ -63,7 +65,7 @@ import { showLauncher } from './ui/launcher';
 import { counting } from './ui/countdown';
 import allyDef from './data/allies.json';
 
-const CHAPTERS: Record<string, unknown> = { '1': ch01, '2': ch02, '3': ch03 };
+const CHAPTERS: Record<string, unknown> = { '1': ch01, '2': ch02, '3': ch03, '4': ch04 };
 const status = document.getElementById('status')!;
 const overlay = document.getElementById('overlay')!;
 const stats = document.getElementById('stats')!;
@@ -72,7 +74,7 @@ const step = (msg: string) => prologueQuiet().then(() => new Promise<void>((r) =
 async function boot(): Promise<void> {
   if (shotMode) document.body.classList.add('shot');
   const asked = new URLSearchParams(location.search).get('ch') ?? savedChapter() ?? '1';
-  const cards = (['1', '2'] as const).map((id) => ({ id, number: (CHAPTERS[id] as ChapterDef).number ?? +id, title: (CHAPTERS[id] as ChapterDef).title }));
+  const cards = (['1', '2', '3'] as const).map((id) => ({ id, number: (CHAPTERS[id] as ChapterDef).number ?? +id, title: (CHAPTERS[id] as ChapterDef).title }));
   const chId = shotMode ? asked : await showLauncher(cards, asked), ch = (CHAPTERS[chId] ?? ch01) as ChapterDef;
   document.querySelector('#overlay .sub')!.textContent = `Capítulo ${ch.number ?? 1} — ${ch.title}`;
   const prologue = shotMode ? Promise.resolve() : showPrologue(`CAPÍTULO ${ch.number ?? 1}`, ch.title.toUpperCase(), ch.intro ?? [], ch.introPlates, ch.introScore, true);
@@ -98,7 +100,7 @@ async function boot(): Promise<void> {
     blockers.push((x, z) => village.footprints.some((f) => Math.hypot(f.x - x, f.z - z) < f.r + 2));
   }
   const shadowCull = new ShadowCull(ch.shadowRange ?? 90);
-  const barrio = ch.barrio ? buildBarrio(hf, ch.barrio, lighting, world) : ch.malecon ? buildMalecon(hf, ch.malecon, lighting, world) : null;
+  const barrio = ch.barrio ? buildBarrio(hf, ch.barrio, lighting, world) : ch.malecon ? buildMalecon(hf, ch.malecon, lighting, world) : ch.campus ? buildCampus(hf, ch.campus, lighting, world) : null;
   if (barrio) {
     scene.add(barrio.group);
     shadowCull.add(barrio.group);

@@ -15,6 +15,10 @@ export interface TerrainDef {
   /** Bands along x (centre z, half width) that are paved: no grass grows there. */
   paved?: { z: number; half: number }[];
   coast?: import('../world/coast').CoastDef;
+  /** Perfectly level, bare ground at y 0 over |x| < hw, z0 < z < z1, blending into the noise over `blend` metres (lawns are painted by the level). */
+  plain?: { hw: number; z0: number; z1: number; blend: number };
+  /** Flat-topped, terraced mounds (adobe huacas) raised on top: centre, radii, height, yaw (deg). */
+  mounds?: { x: number; z: number; rx: number; rz: number; h: number; yaw?: number }[];
 }
 
 export interface BiomeDef {
@@ -47,6 +51,7 @@ export interface ChapterDef {
   barrio?: import('../world/barrio').BarrioDef;
   farCity?: import('../world/farCity').FarCityDef;
   malecon?: import('../world/malecon/layout').MaleconDef;
+  campus?: import('../world/campus/layout').CampusDef;
   /** Once a shot is heard, every mobile enemy on the map converges on the player. */
   alertAll?: boolean;
   /** `?ch=` value of the chapter that follows this one. */
