@@ -61,7 +61,7 @@ export function studentLife(b: Builder, def: CampusDef, p: PoliticsDef, walks: [
   const group = new THREE.Group();
   const posters = new Atlas(lighting, 'posters', 6, 4, [256, 352], posterDraw(p));
   const graffiti = new Atlas(lighting, 'graffiti', 4, 6, [512, 160], graffitiDraw(p), { transparent: true, alphaTest: 0.2, roughness: 0.9 });
-  const banners = new Atlas(lighting, 'banners', 2, 6, [1024, 192], bannerDraw(p), { side: THREE.DoubleSide, roughness: 0.95 });
+  const banners = new Atlas(lighting, 'banners', 2, 6, [1024, 256], bannerDraw(p), { side: THREE.DoubleSide, roughness: 0.97 });
   const murals = new Atlas(lighting, 'murals', 2, 3, [1024, 320], muralDraw(p), { roughness: 0.8 });
   const place = (x: number, z: number, w: number, d: number, yaw: number) => taken.push({ x, z, w, d, yaw: (-yaw * 180) / Math.PI });
 
@@ -100,8 +100,8 @@ export function studentLife(b: Builder, def: CampusDef, p: PoliticsDef, walks: [
 
   def.buildings.forEach((r, i) => {
     if (!big(r) || r.key === 'comedor' || r.key === 'industrial' || i % 2) return;
-    const H = r.floors * FLOOR, w = Math.min(12, r.w * 0.4), at = framer(r);
-    banners.add((i / 2) % banners.count, at((rand() - 0.5) * (r.w - w - 4), H - 1.6, r.d / 2 + (r.skin === 'grid' ? 0.85 : 0.36)), yawQ(r.yaw), w, w * 0.19);
+    const H = r.floors * FLOOR, w = Math.min(10, r.w * 0.35), at = framer(r);
+    banners.add((i / 2) % banners.count, at((rand() - 0.5) * (r.w - w - 4), H - 1.6, r.d / 2 + (r.skin === 'grid' ? 0.85 : 0.36)), yawQ(r.yaw), w * 0.75, w * 0.1875, (rand() - 0.5) * 0.05);
   });
 
   const busts = p.busts, pl = def.plazuela;

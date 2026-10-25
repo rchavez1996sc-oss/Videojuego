@@ -129,16 +129,51 @@ export function graffitiDraw(p: PoliticsDef): Draw {
   };
 }
 
-/** Painted cloth banners: red on white or white on red, with the organisation in small letters. */
+const HAND = '"Permanent Marker", "Caveat Brush", "Comic Sans MS", cursive';
+
+/** Hand-lettered protest sheets (papelógrafos): creased off-white paper, masking tape at the corners, marker letters. */
 export function bannerDraw(p: PoliticsDef): Draw {
   return (g, w, h, i) => {
-    const red = i % 2 === 0;
-    g.fillStyle = red ? '#b7231d' : '#efe9dc';
+    const paper = ['#f1ece0', '#ece6d4', '#f4efe4', '#e9e1c9'][i % 4];
+    g.fillStyle = paper;
     g.fillRect(0, 0, w, h);
-    g.fillStyle = red ? '#f6f1e6' : '#a3161a';
-    fitText(g, p.slogans[(i * 3 + 1) % p.slogans.length], w * 0.04, h * 0.06, w * 0.92, h * 0.62);
-    g.fillStyle = red ? '#f6d65c' : '#1a1a1a';
-    fitText(g, p.orgs[i % p.orgs.length], w * 0.1, h * 0.7, w * 0.8, h * 0.24, 700);
+    for (let k = 0; k < 900; k++) {
+      g.fillStyle = `rgba(${k % 2 ? 255 : 120},${k % 2 ? 250 : 110},${k % 2 ? 240 : 90},0.05)`;
+      g.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 6, 2 + Math.random() * 6);
+    }
+    g.strokeStyle = 'rgba(90,80,60,0.18)';
+    g.lineWidth = 2;
+    for (const x of [w / 3, (2 * w) / 3]) {
+      g.beginPath();
+      g.moveTo(x + (Math.random() - 0.5) * 8, 0);
+      g.lineTo(x + (Math.random() - 0.5) * 8, h);
+      g.stroke();
+    }
+    g.beginPath();
+    g.moveTo(0, h / 2 + (Math.random() - 0.5) * 6);
+    g.lineTo(w, h / 2 + (Math.random() - 0.5) * 6);
+    g.stroke();
+    const ink = ['#c0141c', '#141414', '#1c3a9a'][i % 3];
+    g.fillStyle = ink;
+    g.save();
+    g.translate(w / 2, h / 2);
+    g.rotate((((i * 37) % 7) - 3) * 0.006);
+    g.translate(-w / 2, -h / 2);
+    fitText(g, p.slogans[(i * 3 + 1) % p.slogans.length], w * 0.05, h * 0.06, w * 0.9, h * 0.6, 400, HAND, h * 0.42);
+    g.restore();
+    g.fillStyle = ['#141414', '#c0141c', '#141414'][i % 3];
+    g.font = `${h * 0.17}px ${HAND}`;
+    g.textAlign = 'center';
+    g.fillText(p.orgs[i % p.orgs.length], w / 2, h * 0.8);
+    g.textAlign = 'left';
+    g.fillStyle = 'rgba(214,200,150,0.85)';
+    for (const [tx, ty] of [[0, 0], [w, 0], [0, h], [w, h]]) {
+      g.save();
+      g.translate(tx, ty);
+      g.rotate(tx === ty || (tx && ty) ? 0.7 : -0.7);
+      g.fillRect(-40, -12, 80, 24);
+      g.restore();
+    }
   };
 }
 

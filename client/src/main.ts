@@ -93,6 +93,7 @@ async function boot(): Promise<void> {
   const terrain = new Terrain(hf, ch.biome, lighting, world);
   scene.add(terrain.group);
   await step('Levantando las construcciones…');
+  await Promise.all(['64px "Permanent Marker"', '64px "Caveat Brush"'].map((f) => document.fonts.load(f))).catch(() => undefined);
   const blockers: ((x: number, z: number) => boolean)[] = [];
   if (ch.village) {
     const village = buildVillage(hf, ch.village, ch.terrain, lighting, world);
