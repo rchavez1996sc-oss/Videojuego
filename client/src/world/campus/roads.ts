@@ -41,7 +41,7 @@ export function buildCampusRoads(b: Builder, def: CampusDef, rand: () => number)
     const x = r.pts[r.pts.length - 1][0];
     return [x - r.w / 2 - 0.4, x + r.w / 2 + 0.4] as [number, number];
   });
-  const crossings = [...entries.map(([a, c]) => (a + c) / 2), def.gate1.x + 10];
+  const crossings = entries.map(([a, c]) => (a + c) / 2);
   for (const x of crossings) {
     for (let z = v.z - v.half + 0.6; z < v.z + v.half - 0.4; z += 1.1) if (Math.abs(z - v.z) > inner + 0.3) b.box('roadWhite', [3.2, 0.012, 0.55], new THREE.Vector3(x, ASPHALT + 0.007, z), Q, false);
   }
@@ -78,7 +78,7 @@ export function buildCampusRoads(b: Builder, def: CampusDef, rand: () => number)
   });
   const zn = v.z - v.half - v.sidewalk / 2;
   for (let x = -def.bounds.x; x < def.bounds.x; x += 24) campusLamp(b, new THREE.Vector3(x + 6, WALK, zn - 1), Math.PI / 2);
-  for (const x of [def.gate1.x + 36, 96]) busStop(b, new THREE.Vector3(x, WALK, zn + 0.6));
+  for (const x of [-180, 96]) busStop(b, new THREE.Vector3(x, WALK, zn + 0.6));
 }
 
 /** [a, b] minus the cut intervals. */

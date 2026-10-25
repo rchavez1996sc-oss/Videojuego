@@ -1,5 +1,5 @@
 {
- "version": 18,
+ "version": 19,
  "characters": {
   "pnp": {
    "near": "characters/pnp.glb",
@@ -168,6 +168,30 @@
    "normal": "textures/wood_nrm.jpg",
    "rough": "textures/wood_rgh.jpg",
    "source": "Poly Haven weathered_planks (CC0)"
+  },
+  "laja": {
+   "map": "textures/laja_col.jpg",
+   "normal": "textures/laja_nrm.jpg",
+   "rough": "textures/laja_rgh.jpg",
+   "source": "Poly Haven slate_driveway (CC0)"
+  },
+  "plazaFlag": {
+   "map": "textures/plazaFlag_col.jpg",
+   "normal": "textures/plazaFlag_nrm.jpg",
+   "rough": "textures/plazaFlag_rgh.jpg",
+   "source": "Poly Haven slate_floor (CC0)"
+  },
+  "slateDark": {
+   "map": "textures/slateDark_col.jpg",
+   "normal": "textures/slateDark_nrm.jpg",
+   "rough": "textures/slateDark_rgh.jpg",
+   "source": "Poly Haven stacked_stone_wall (CC0)"
+  },
+  "paintPlaster": {
+   "map": "textures/paintPlaster_col.jpg",
+   "normal": "textures/paintPlaster_nrm.jpg",
+   "rough": "textures/paintPlaster_rgh.jpg",
+   "source": "Poly Haven painted_plaster_wall (CC0)"
   }
  },
  "environment": {

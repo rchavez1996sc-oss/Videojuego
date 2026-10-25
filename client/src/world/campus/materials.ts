@@ -16,7 +16,8 @@ const WALLS: Record<string, string> = {
 
 export function campusMaterials(lighting: Lighting): Record<string, THREE.Material> {
   const std = (key: string, p: THREE.MeshStandardMaterialParameters) => lighting.setup(new THREE.MeshStandardMaterial(p), key);
-  const pl = plaster(), co = concrete(), fo = foliage(), rk = rock(), stone = photo('stoneWall') ?? rk, fs = flagstone();
+  const pl = photo('paintPlaster') ?? plaster(), co = concrete(), fo = foliage(), rk = rock(), stone = photo('stoneWall') ?? rk, fs = flagstone();
+  const laja = photo('laja') ?? fs, flags = photo('plazaFlag') ?? fs, slate = photo('slateDark') ?? stone;
   const m: Record<string, THREE.Material> = {
     winGlass: std('winGlass', { color: '#4d5f6a', roughness: 0.08, metalness: 0.7, envMapIntensity: 1.4 }),
     darkGlass: std('darkGlass', { color: '#15191d', roughness: 0.05, metalness: 0.85, envMapIntensity: 1.6 }),
@@ -24,8 +25,8 @@ export function campusMaterials(lighting: Lighting): Record<string, THREE.Materi
     paneBlue: std('paneBlue', { color: '#2f5c96', roughness: 0.3, metalness: 0.3 }),
     paneYellow: std('paneYellow', { color: '#d9ad2a', roughness: 0.35, metalness: 0.2 }),
     alu: std('alu', { color: '#b9bec2', roughness: 0.35, metalness: 0.8 }),
-    laja: std('laja', { map: fs.map, normalMap: fs.normalMap, color: '#fff6ea', roughness: 0.85 }),
-    plazaStone: std('plazaStone', { map: fs.map, normalMap: fs.normalMap, color: '#fff8ec', roughness: 0.9 }),
+    laja: std('laja', { map: laja.map, normalMap: laja.normalMap, color: '#ffffff', roughness: 0.85 }),
+    plazaStone: std('plazaStone', { map: flags.map, normalMap: flags.normalMap, color: '#ffffff', roughness: 0.9 }),
     pavers: std('pavers', { map: slabs().map, normalMap: slabs().normalMap, color: '#b9b2a6', roughness: 0.9 }),
     parkPath: std('parkPath', { map: co.map, normalMap: co.normalMap, color: '#bdb8ae', roughness: 0.9 }),
     lawnBed: std('lawnBed', { map: fo.map, normalMap: fo.normalMap, color: '#8fb85c', roughness: 0.95 }),
@@ -39,7 +40,7 @@ export function campusMaterials(lighting: Lighting): Record<string, THREE.Materi
     lampPole: std('lampPole', { color: '#1b1c1d', roughness: 0.5, metalness: 0.5 }),
     globe: std('globe', { color: '#f7f2e4', roughness: 0.3, emissive: '#fff1d0', emissiveIntensity: 0.35 }),
     glassClear: std('glassClear', { color: '#cfe3ea', roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.22, depthWrite: false }),
-    slate: std('slate', { map: stone.map, normalMap: stone.normalMap, color: '#4b4b4e', roughness: 0.8 }),
+    slate: std('slate', { map: slate.map, normalMap: slate.normalMap, color: '#d8d8dc', roughness: 0.8 }),
     travertine: std('travertine', { map: travertine(), color: '#ffffff', roughness: 0.55 }),
     steelGrey: std('steelGrey', { color: '#8d9296', roughness: 0.45, metalness: 0.6 }),
     panePurple: std('panePurple', { color: '#7d6db0', roughness: 0.35, metalness: 0.2 }),
@@ -55,7 +56,7 @@ export function campusBake(lighting: Lighting): { material: THREE.Material; keys
   const textured = (key: string, set: PbrSet, keys: string[], roughness: number) => ({ material: lighting.setup(new THREE.MeshStandardMaterial({ map: set.map, normalMap: set.normalMap, roughnessMap: set.roughnessMap ?? null, roughness, vertexColors: true }), key), keys });
   return [
     ...bakeGroups(lighting, ['mullion', 'paneBlue', 'paneYellow', 'panePurple', 'curtainRed', 'steelGrey', 'alu', 'binGreen', 'fenceIron', 'lampPole']),
-    textured('uni-plaster-baked', plaster(), Object.keys(WALLS).filter((k) => k !== 'uniStone'), 0.88),
+    textured('uni-plaster-baked', photo('paintPlaster') ?? plaster(), Object.keys(WALLS).filter((k) => k !== 'uniStone'), 0.88),
     textured('concrete-baked', concrete(), ['concrete', 'parkPath', 'kerbYellow'], 0.9),
     textured('foliage-baked', foliage(), ['hedge', 'lawnBed'], 0.95),
     textured('deck-baked', deck(), ['benchWood'], 0.75),

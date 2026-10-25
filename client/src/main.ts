@@ -266,6 +266,7 @@ async function boot(): Promise<void> {
     }
     enemies.sync();
     squad?.sync();
+    barrio?.tick?.(dt, [player.position, ...enemies.list.filter((e) => e.alive).map((e) => e.position), ...(squad?.positions ?? []), ...(civilians?.present ?? [])]);
     collectSupplies(dt, pickups, { player, gun: combat.gun, grenades, sfx, hud, alive: deadT <= 0 });
     objective?.update(dt, player.position, enemies.list, input, deadT <= 0);
     corpses.update(dt, { dead: enemies.list.filter((e) => !e.alive), fallen: squad?.fallen ?? [] });

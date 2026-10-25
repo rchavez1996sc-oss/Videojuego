@@ -8,9 +8,9 @@ from PIL import Image, ImageStat
 
 OUT = os.path.join(os.path.dirname(__file__), '..', 'public', 'assets', 'textures')
 URL = 'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/{2}/{0}/{0}_{1}_{2}.jpg'
-HI = {'asphalt', 'slabs', 'cobble', 'flagstone', 'plaster', 'concrete', 'brick', 'lawn', 'dryGrass', 'soil'}
+HI = {'laja', 'plazaFlag', 'asphalt', 'slabs', 'cobble', 'flagstone', 'plaster', 'concrete', 'brick', 'lawn', 'dryGrass', 'soil'}
 # Roughness maps remapped to 0.8-1.0: they add breakup to the material's roughness but never make it glossier (no new glints).
-ROUGH = {'asphalt', 'slabs', 'cobble', 'flagstone', 'concrete', 'brick', 'plaster', 'stucco', 'rock', 'roofTiles', 'calamina', 'deck', 'wood', 'pirca', 'stoneWall', 'soil'}
+ROUGH = {'laja', 'plazaFlag', 'slateDark', 'paintPlaster', 'asphalt', 'slabs', 'cobble', 'flagstone', 'concrete', 'brick', 'plaster', 'stucco', 'rock', 'roofTiles', 'calamina', 'deck', 'wood', 'pirca', 'stoneWall', 'soil'}
 GREY = (128, 128, 128)
 SETS = {
     'concrete': ('concrete_floor_worn_001', (134, 131, 125)),
@@ -35,6 +35,10 @@ SETS = {
     'soil': ('dry_ground_rocks', (122, 102, 80)),
     'calamina': ('worn_corrugated_iron', None),
     'wood': ('weathered_planks', (90, 67, 48)),
+    'laja': ('slate_driveway', (176, 170, 160)),
+    'plazaFlag': ('slate_floor', (168, 163, 155)),
+    'slateDark': ('stacked_stone_wall', (80, 78, 76)),
+    'paintPlaster': ('painted_plaster_wall', (231, 227, 219)),
 }
 
 def fetch(asset, kind, res='1k'):

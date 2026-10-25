@@ -28,7 +28,6 @@ export function fenceGaps(def: CampusDef): [number, number][] {
     const x = r.pts[r.pts.length - 1][0];
     return [x - r.w / 2 - 2.6, x + r.w / 2 + 2.6] as [number, number];
   });
-  gaps.push([def.gate1.x - 27, def.gate1.x + 29]);
   if (def.gate2) gaps.push([def.gate2.x - 14, def.gate2.x + 16]);
   return gaps.sort((a, c) => a[0] - c[0]);
 }
@@ -36,7 +35,7 @@ export function fenceGaps(def: CampusDef): [number, number][] {
 /** Campus perimeter on Av. Venezuela: yellow kerb, black bars between posts, porous collider. */
 export function venezuelaFence(b: Builder, def: CampusDef): void {
   const v = def.venezuela, z = v.z - v.half - v.sidewalk - 0.5, Q = new THREE.Quaternion();
-  let x0 = def.bounds.west - 0.3;
+  let x0 = def.fenceWest ?? def.bounds.west - 0.3;
   const spans: [number, number][] = [];
   for (const [a, c] of fenceGaps(def)) {
     if (a > x0) spans.push([x0, a]);
@@ -64,7 +63,7 @@ export function parkingLot(b: Builder, r: Rect, rand: () => number): void {
     for (let i = 0; i < n; i++) {
       if (rand() < 0.35) continue;
       const kind = KINDS[Math.floor(rand() * KINDS.length)], u = -(n * pitch) / 2 + (i + 0.5) * pitch;
-      car(b, at(u, 0.05, v), (-r.yaw * Math.PI) / 180 + Math.PI / 2 + (rand() < 0.5 ? 0 : Math.PI), kind === 'tico' ? 'car3' : PAINT[Math.floor(rand() * PAINT.length)], kind);
+      car(b, at(u, 0.05, v), (-r.yaw * Math.PI) / 180 + (rand() < 0.5 ? 0 : Math.PI), kind === 'tico' ? 'car3' : PAINT[Math.floor(rand() * PAINT.length)], kind);
     }
   }
 }

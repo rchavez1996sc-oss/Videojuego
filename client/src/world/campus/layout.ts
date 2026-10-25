@@ -25,6 +25,10 @@ export interface CampusDef {
   bounds: { x: number; west: number; north: number; south: number };
   gate1: { x: number; z: number; yaw: number };
   gate2?: { x: number; z: number; yaw: number };
+  /** The Venezuela fence starts here (west of it the Puerta 1 plaza meets the avenue). */
+  fenceWest?: number;
+  /** Dense tree stands: rectangle and spacing. */
+  forests?: { x0: number; x1: number; z0: number; z1: number; gap: number }[];
   plazuela?: import('./plazuela').PlazuelaDef;
   /** Av. Universitaria beyond the east fence: centre x and half width (decor only). */
   universitaria?: { x: number; half: number };

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { Builder } from '../buildingKit';
 import type { Heightfield } from '../heightfield';
 import { bench, chatGroup, ribbon, type Plants } from '../malecon/park';
-import { framer, inRect, yawQ, type CampusDef } from './layout';
+import { framer, inRect, yawQ, type CampusDef, type Rect } from './layout';
 import { campusLamp } from './roads';
 
 /** Hard ground laid out by the park (path centrelines with widths, round plazas), for the lawn painter. */
@@ -61,16 +61,15 @@ function segDist(x: number, z: number, a: THREE.Vector2, c: THREE.Vector2): numb
 }
 
 /** True where the ground is built over (buildings, roads with sidewalks, lots, pitch, plaza, park paths), grown by `m`. */
-export function campusHard(def: CampusDef, paths: Paths, plazaDepth: number): (x: number, z: number, m?: number) => boolean {
-  const v = def.venezuela, g = def.gate1;
-  const plaza = { x: g.x + 1, z: g.z + (plazaDepth - 4) / 2, w: 58, d: plazaDepth + 8, yaw: g.yaw };
+export function campusHard(def: CampusDef, paths: Paths, extra: Rect[]): (x: number, z: number, m?: number) => boolean {
+  const v = def.venezuela;
   const roads = [...def.roads.map((r) => ({ pts: r.pts.map(([x, z]) => new THREE.Vector2(x, z)), w: r.w + 5 })), ...paths.lines];
   return (x, z, m = 0) =>
     z > v.z - v.half - v.sidewalk - 1 - m ||
     def.buildings.some((r) => inRect(r, x, z, 1.2 + m)) ||
     def.parkings.some((r) => inRect(r, x, z, 0.4 + m)) ||
     inRect(def.field, x, z, 3.4 + m) ||
-    inRect(plaza, x, z, m) ||
+    extra.some((r) => inRect(r, x, z, m)) ||
     (!!def.gate2 && Math.abs(x - def.gate2.x - 1) < 17 + m && Math.abs(z - def.gate2.z) < 4 + m) ||
     paths.discs.some((d) => Math.hypot(x - d.x, z - d.z) < d.r + m) ||
     roads.some((r) => r.pts.some((a, i) => i + 1 < r.pts.length && segDist(x, z, a, r.pts[i + 1]) < r.w / 2 + 0.3 + m));
@@ -91,6 +90,10 @@ export function paintCampusLawns(hf: Heightfield, def: CampusDef, hard: (x: numb
 
 /** Trees, palms and Norfolk pines scattered on the lawns, clear of everything built. */
 export function plantCampus(hf: Heightfield, def: CampusDef, hard: (x: number, z: number, m?: number) => boolean, plants: Plants, rand: () => number): void {
+  for (const f of def.forests ?? []) for (let z = f.z0; z < f.z1; z += f.gap) for (let x = f.x0; x < f.x1; x += f.gap) {
+    const px = x + (rand() - 0.5) * f.gap * 0.9, pz = z + (rand() - 0.5) * f.gap * 0.9;
+    if (hf.heightAt(px, pz) < 0.3 && !hard(px, pz, 1.2)) plants.trees.push(new THREE.Vector3(px, 0, pz));
+  }
   const B = def.bounds, want: [THREE.Vector3[], number, number][] = [[plants.trees, 150, 4.5], [plants.palms, 40, 3], [plants.pines, 6, 5]];
   for (const [list, count, gap] of want) {
     for (let tries = 0, n = 0; n < count && tries < count * 40; tries++) {

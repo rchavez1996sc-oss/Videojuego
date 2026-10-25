@@ -16,6 +16,7 @@ import { pavilion, type NameSign } from './pavilion';
 import { comedor } from './comedor';
 import { minasPortal, puerta1, puerta2 } from './gates';
 import { industrial } from './industrial';
+import { SwingGates } from './swingGates';
 import { plazuela } from './plazuela';
 import { footballField, parkingLot, venezuelaFence } from './grounds';
 import { perimeter } from './perimeter';
@@ -35,9 +36,11 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
   const group = new THREE.Group(), signs: NameSign[] = [];
 
   buildCampusRoads(b, def, rand);
-  const v = def.venezuela, g = def.gate1, plazaDepth = v.z - v.half - v.sidewalk - g.z - 1.8;
-  const gate = puerta1(b, g, plazaDepth);
-  signs.push(gate.name);
+  const v = def.venezuela, gate = puerta1(b, def.gate1);
+  signs.push(gate.name, gate.plate);
+  plants.palms.push(...gate.palms);
+  const swing = new SwingGates(gate.leaves, world, lighting);
+  group.add(swing.group);
   const seals: { pos: THREE.Vector3; q: THREE.Quaternion; size: number; silver?: boolean }[] = [gate.crest];
   if (def.gate2) {
     const g2 = puerta2(b, def.gate2);
@@ -60,7 +63,7 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
 
   const paths = comedorPark(b, hf, def, plants, rand);
   if (def.plazuela) plazuela(b, hf, def.plazuela, plants, paths, rand);
-  const hard = campusHard(def, paths, plazaDepth);
+  const hard = campusHard(def, paths, gate.hard);
   paintCampusLawns(hf, def, hard);
   plantCampus(hf, def, hard, plants, rand);
 
@@ -74,7 +77,7 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
   const solid = (x: number, z: number) => def.buildings.some((r) => inRect(r, x, z, 1)) || def.parkings.some((r) => inRect(r, x, z, 0)) || inRect(def.field, x, z, 3.2);
   const graph = campusGraph(def, solid);
   const B = def.bounds;
-  return { group, materials: mats, bake, station: null, graph, bystanders,
+  return { group, materials: mats, bake, station: null, graph, bystanders, tick: (dt, movers) => swing.update(dt, movers),
     blocked: (x, z) => solid(x, z) || z > v.z + v.half + v.sidewalk,
     inside: (x, z) => x > B.west + 4 && x < B.x - 4 && z > B.north + 4 && z < v.z - v.half - v.sidewalk - 1 };
 }
