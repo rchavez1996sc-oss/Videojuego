@@ -109,12 +109,15 @@ function wing(b: Builder, at: At, q: THREE.Quaternion, cx: number, cz: number, w
 }
 
 /** Entrance on the local +z face at x: canopy slab on two posts, dark doors, steps. */
-function entrance(b: Builder, at: At, q: THREE.Quaternion, x: number, zFace: number, wide: number): void {
+function entrance(b: Builder, at: At, q: THREE.Quaternion, x: number, zFace: number, wide: number, flush: boolean): void {
   const box = (mat: string, size: [number, number, number], px: number, y: number, z: number, collide = false) => b.box(mat, size, at(px, y, z), q, collide);
-  box('darkGlass', [wide - 1, 2.6, 0.08], x, 1.3, zFace + 0.32);
-  box('uniFrame', [wide + 1.2, 0.3, 3.2], x, 3.3, zFace + 1.6);
-  for (const s of [-1, 1]) box('uniFrame', [0.3, 3.2, 0.3], x + s * (wide / 2 + 0.3), 1.6, zFace + 2.9, true);
-  for (let k = 0; k < 3; k++) box('concrete', [wide + 1.6 - k * 0.4, 0.15 * (k + 1), 2.6 - k * 0.6], x, 0.075 * (k + 1), zFace + 1.3 - k * 0.3, true);
+  const dz = flush ? zFace - 0.12 : zFace + 0.3, w = wide - 1;
+  box('darkGlass', [w, 2.6, 0.08], x, 1.3, dz);
+  for (const s of [-1, 1]) box('uniFrame', [0.2, 2.8, 0.3 + dz - zFace + 0.15], x + s * (w / 2 + 0.1), 1.4, (dz + zFace - 0.15) / 2);
+  box('uniFrame', [w + 0.4, 0.2, 0.3 + dz - zFace + 0.15], x, 2.7, (dz + zFace - 0.15) / 2);
+  box('uniFrame', [wide + 1.2, 0.3, 3.2], x, 3.3, zFace + 1.45);
+  for (const s of [-1, 1]) box('uniFrame', [0.3, 3.15, 0.3], x + s * (wide / 2 + 0.3), 1.58, zFace + 2.9, true);
+  for (let k = 0; k < 3; k++) box('concrete', [wide + 1.6 - k * 0.4, 0.15 * (k + 1), 2.6 - k * 0.6], x, 0.075 * (k + 1), zFace + 1.15 - k * 0.3, true);
 }
 
 /** Red entrance tower standing proud of the +z face (Geológica): its own volume, a doorway and the sign plate. */
@@ -145,7 +148,7 @@ export function pavilion(b: Builder, def: CampusBuilding, rand: () => number): N
   } else wing(b, at, q, 0, 0, def.w, def.d, def.floors, sk, rand);
   let tower: THREE.Vector3 | null = null;
   if (def.accent === 'red') tower = accentTower(b, at, q, def.d / 2, H);
-  else if (def.style !== 'courtyard' && def.key !== 'mate') entrance(b, at, q, (rand() - 0.5) * def.w * 0.3, def.d / 2, Math.min(5, def.w * 0.25));
+  else if (def.style !== 'courtyard' && def.key !== 'mate') entrance(b, at, q, (rand() - 0.5) * def.w * 0.3, def.d / 2, Math.min(5, def.w * 0.25), sk.kind === 'punched');
   if (!def.name) return null;
   if (tower) return { pos: tower, q, w: 6.2, text: def.name, ink: '#f4ead2' };
   if (sk.kind === 'bio') {
@@ -153,7 +156,8 @@ export function pavilion(b: Builder, def: CampusBuilding, rand: () => number): N
     return { pos: at(-def.w / 2 - 0.08, FLOOR * 1.35, 0), q: west, w: Math.min(def.d * 0.78, 12.5), text: def.name, ink: '#101010', font: 'sans' };
   }
   const band = sk.kind === 'band';
-  const y = band ? FLOOR + (FLOOR - 0.3) / 2 : def.style === 'courtyard' ? FLOOR + 0.2 : Math.min(H - 0.6, FLOOR + SPANDREL / 2);
-  const z = def.d / 2 + (band ? 0.04 : 0.32);
-  return { pos: at(0, y, z), q, w: Math.min(def.w * 0.7, def.name.length * 0.45), text: def.name, ink: band ? '#e6e6e2' : '#1c1c1c', plate: band ? undefined : '#ebe8e0' };
+  const low = def.floors === 1;
+  const y = band ? FLOOR + (FLOOR - 0.3) / 2 : def.style === 'courtyard' ? FLOOR + 0.2 : low ? H + 0.62 : FLOOR + SPANDREL / 2;
+  const z = def.d / 2 + (band ? 0.04 : low ? 0.27 : sk.kind === 'punched' ? -0.12 : 0.32);
+  return { pos: at(0, y, z), q, w: Math.min(def.w * 0.7, def.name.length * 0.45, low ? (0.72 * (def.name.length * 0.65 + 0.6)) / 1.55 : 99), text: def.name, ink: band ? '#e6e6e2' : '#1c1c1c', plate: band ? undefined : '#ebe8e0' };
 }
