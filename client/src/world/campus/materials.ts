@@ -19,6 +19,8 @@ export function campusMaterials(lighting: Lighting): Record<string, THREE.Materi
   const pl = photo('paintPlaster') ?? plaster(), co = concrete(), fo = foliage(), rk = rock(), stone = photo('stoneWall') ?? rk, fs = flagstone();
   const laja = photo('laja') ?? fs, flags = photo('plazaFlag') ?? fs, slate = photo('slateDark') ?? stone;
   const m: Record<string, THREE.Material> = {
+    bioGlass: std('bioGlass', { color: '#8e9ca2', roughness: 0.1, metalness: 0.55, envMapIntensity: 1.3 }),
+    louvre: std('louvre', { map: louvreTex(), color: '#d4d8da', roughness: 0.4, metalness: 0.6 }),
     winGlass: std('winGlass', { color: '#4d5f6a', roughness: 0.08, metalness: 0.7, envMapIntensity: 1.4 }),
     darkGlass: std('darkGlass', { color: '#15191d', roughness: 0.05, metalness: 0.85, envMapIntensity: 1.6 }),
     mullion: std('mullion', { color: '#34373a', roughness: 0.5, metalness: 0.5 }),
@@ -84,12 +86,22 @@ function travertine(): THREE.CanvasTexture {
   const g = c.getContext('2d')!;
   g.fillStyle = '#dcc39a';
   g.fillRect(0, 0, S, S);
+  for (let y = 0; y < S; y += 128) for (let x = (y / 128) % 2 ? -128 : 0; x < S; x += 256) {
+    const k = Math.random() * 0.75, r = 236 - k * 20, gg = 214 - k * 52, bb = 172 - k * 74;
+    g.fillStyle = `rgb(${r},${gg},${bb})`;
+    g.fillRect(x, y, 256, 128);
+    if (Math.random() < 0.45) {
+      const grad = g.createLinearGradient(0, y, 0, y + 128);
+      grad.addColorStop(0, 'rgba(200,110,60,0)'); grad.addColorStop(1, `rgba(200,110,60,${0.15 + Math.random() * 0.25})`);
+      g.fillStyle = grad; g.fillRect(x, y, 256, 128);
+    }
+  }
   for (let i = 0; i < 900; i++) {
     const y = Math.random() * S, v = Math.random();
     g.fillStyle = v < 0.5 ? `rgba(240,222,190,${0.25 + Math.random() * 0.3})` : `rgba(${190 + Math.random() * 30},${130 + Math.random() * 30},${80 + Math.random() * 20},${0.12 + Math.random() * 0.2})`;
     g.fillRect(Math.random() * S - 40, y, 30 + Math.random() * 200, 1 + Math.random() * 3);
   }
-  g.strokeStyle = 'rgba(150,120,90,0.35)';
+  g.strokeStyle = 'rgba(120,95,70,0.6)';
   g.lineWidth = 2;
   for (let y = 0; y < S; y += 128) for (let x = (y / 128) % 2 ? 0 : 128; x < S + 256; x += 256) g.strokeRect(x - 256, y, 256, 128);
   const t = new THREE.CanvasTexture(c);
@@ -97,6 +109,18 @@ function travertine(): THREE.CanvasTexture {
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = 8;
   return t;
+}
+
+/** Horizontal aluminium slats (jalousie windows of Biológicas). */
+function louvreTex(): THREE.CanvasTexture {
+  return canvasTex(64, (g, s) => {
+    g.fillStyle = '#7d8386';
+    g.fillRect(0, 0, s, s);
+    for (let y = 0; y < s; y += 8) {
+      g.fillStyle = '#e4e8ea'; g.fillRect(0, y, s, 5);
+      g.fillStyle = '#5a6064'; g.fillRect(0, y + 5, s, 1);
+    }
+  });
 }
 
 function canvasTex(size: number, draw: (g: CanvasRenderingContext2D, s: number) => void, repeat = 1): THREE.CanvasTexture {

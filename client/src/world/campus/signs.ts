@@ -7,7 +7,7 @@ const PX = 96;
 /** Building lettering: one alpha-tested plane per sign, text (lines split on \n) drawn to fit its width. */
 function lettering(s: NameSign, lighting: Lighting): THREE.Mesh {
   const lines = s.text.split('\n'), c = document.createElement('canvas'), g = c.getContext('2d')!;
-  const font = (px: number) => (s.font === 'sans' ? `700 ${px}px "Barlow Condensed", "Arial Narrow", sans-serif` : `700 ${px}px "Times New Roman", Georgia, serif`);
+  const font = (px: number) => (s.font === 'sans' ? `800 ${px}px "Barlow Condensed", "Arial Narrow", sans-serif` : `700 ${px}px "Times New Roman", Georgia, serif`);
   g.font = font(PX);
   const widest = Math.max(...lines.map((l) => g.measureText(l).width));
   c.width = Math.ceil(widest + PX * 0.6);

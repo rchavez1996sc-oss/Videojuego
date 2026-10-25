@@ -43,11 +43,11 @@ function wing(b: Builder, at: At, q: THREE.Quaternion, cx: number, cz: number, w
         if (f === 0) put('travertine', len + 0.3, H, 0.16, 0, H / 2, 0.08);
       } else if (sk.kind === 'bio') {
         const cols = Math.round(len / 1.5), cw = len / cols;
-        put('winGlass', len - 0.1, FLOOR - 0.2, 0.06, 0, y0 + FLOOR / 2, 0.02);
+        put('bioGlass', len - 0.1, FLOOR - 0.2, 0.06, 0, y0 + FLOOR / 2, 0.02);
         for (let i = 0; i < cols; i++) {
           const r = rand(), x = -len / 2 + (i + 0.5) * cw;
           if (r < 0.22) put(['paneYellow', 'panePurple', 'paneBlue'][Math.floor(rand() * 3)], cw - 0.12, 0.7, 0.04, x, y0 + 0.5, 0.05);
-          else if (r < 0.34) put('alu', cw - 0.12, 1.3, 0.05, x, y0 + FLOOR - 1.0, 0.06);
+          else if (r < 0.5) put('louvre', cw - 0.12, 1.5, 0.05, x, y0 + FLOOR - 1.05, 0.06);
         }
         for (let i = 0; i <= cols; i++) put('steelGrey', 0.07, FLOOR, 0.14, -len / 2 + i * cw, y0 + FLOOR / 2, 0.08);
         for (const y of [0.9, FLOOR - 0.05]) put('steelGrey', len, 0.08, 0.14, 0, y0 + y, 0.08);
@@ -147,7 +147,7 @@ export function pavilion(b: Builder, def: CampusBuilding, rand: () => number): N
   if (tower) return { pos: tower, q, w: 6.2, text: def.name, ink: '#f4ead2' };
   if (sk.kind === 'bio') {
     const west = q.clone().multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2));
-    return { pos: at(-def.w / 2 - 0.06, FLOOR * 1.6, 0), q: west, w: Math.min(def.d * 0.62, 9), text: def.name, ink: '#151515', font: 'sans' };
+    return { pos: at(-def.w / 2 - 0.08, FLOOR * 1.35, 0), q: west, w: Math.min(def.d * 0.78, 12.5), text: def.name, ink: '#101010', font: 'sans' };
   }
   const band = sk.kind === 'band';
   const y = band ? FLOOR + (FLOOR - 0.3) / 2 : def.style === 'courtyard' ? FLOOR + 0.2 : Math.min(H - 0.6, FLOOR + SPANDREL / 2);
