@@ -9,7 +9,8 @@ import type { Barrio } from '../world/barrio';
 import type { Heightfield } from '../world/heightfield';
 import type { Lighting } from '../render/lighting';
 
-export interface LifeDef { traffic: number; dogs: number; birds: number; roads?: Road[] }
+/** `span`: x range the traffic drives over (default ±245). */
+export interface LifeDef { traffic: number; dogs: number; birds: number; roads?: Road[]; span?: [number, number] }
 
 /** Everything that makes the barrio feel inhabited besides the pedestrians: traffic, strays, vultures and sound. */
 export class CityLife {
@@ -20,7 +21,7 @@ export class CityLife {
   private ambience: Ambience;
 
   constructor(def: LifeDef, world: RAPIER.World, hf: Heightfield, barrio: Barrio, lighting: Lighting, mixer: Mixer, private camera: THREE.Camera) {
-    this.traffic = new Traffic(world, hf, lighting, barrio.materials, barrio.bake, def.roads ?? [{ z: 0, lane: 3.2, half: 7.6, count: def.traffic }]);
+    this.traffic = new Traffic(world, hf, lighting, barrio.materials, barrio.bake, def.roads ?? [{ z: 0, lane: 3.2, half: 7.6, count: def.traffic }], def.span);
     this.dogs = new Dogs(barrio.graph, hf, def.dogs);
     this.birds = new Birds(def.birds, 250);
     this.ambience = new Ambience(mixer);

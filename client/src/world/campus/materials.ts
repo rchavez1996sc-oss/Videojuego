@@ -11,7 +11,7 @@ import { barsTexture } from './grounds';
 /** Painted plaster walls of the faculties (photos: cream Química, white/grey Geológica, yellow Comedor…). */
 const WALLS: Record<string, string> = {
   uniCream: '#e6dcc4', uniGrey: '#c8c6c0', uniWhite: '#efeee9', uniYellow: '#e3b443', uniRed: '#b02a22', uniFrame: '#d5d3cd',
-  uniTerracotta: '#a35a3c', uniOrange: '#d9772e', roofWhite: '#e9e8e3', uniStone: '#9a958c',
+  uniTerracotta: '#a35a3c', uniOrange: '#d9772e', roofWhite: '#e9e8e3', uniStone: '#9a958c', uniSand: '#d2bf98', uniTaupe: '#968d80', uniOchre: '#d8ad2c',
 };
 
 export function campusMaterials(lighting: Lighting): Record<string, THREE.Material> {
@@ -39,6 +39,11 @@ export function campusMaterials(lighting: Lighting): Record<string, THREE.Materi
     lampPole: std('lampPole', { color: '#1b1c1d', roughness: 0.5, metalness: 0.5 }),
     globe: std('globe', { color: '#f7f2e4', roughness: 0.3, emissive: '#fff1d0', emissiveIntensity: 0.35 }),
     glassClear: std('glassClear', { color: '#cfe3ea', roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.22, depthWrite: false }),
+    slate: std('slate', { map: stone.map, normalMap: stone.normalMap, color: '#4b4b4e', roughness: 0.8 }),
+    travertine: std('travertine', { map: travertine(), color: '#ffffff', roughness: 0.55 }),
+    steelGrey: std('steelGrey', { color: '#8d9296', roughness: 0.45, metalness: 0.6 }),
+    panePurple: std('panePurple', { color: '#7d6db0', roughness: 0.35, metalness: 0.2 }),
+    curtainRed: std('curtainRed', { color: '#6a3a34', roughness: 0.7 }),
     benchWood: std('benchWood', { map: wood().map, color: '#a07a52', roughness: 0.8 }),
   };
   for (const [k, c] of Object.entries(WALLS)) m[k] = std(k, { map: (k === 'uniStone' ? stone : pl).map, normalMap: (k === 'uniStone' ? stone : pl).normalMap, color: c, roughness: 0.88 });
@@ -49,10 +54,33 @@ export function campusMaterials(lighting: Lighting): Record<string, THREE.Materi
 export function campusBake(lighting: Lighting): { material: THREE.Material; keys: string[] }[] {
   const textured = (key: string, set: PbrSet, keys: string[], roughness: number) => ({ material: lighting.setup(new THREE.MeshStandardMaterial({ map: set.map, normalMap: set.normalMap, roughnessMap: set.roughnessMap ?? null, roughness, vertexColors: true }), key), keys });
   return [
-    ...bakeGroups(lighting, ['mullion', 'paneBlue', 'paneYellow', 'alu', 'binGreen', 'fenceIron', 'lampPole']),
+    ...bakeGroups(lighting, ['mullion', 'paneBlue', 'paneYellow', 'panePurple', 'curtainRed', 'steelGrey', 'alu', 'binGreen', 'fenceIron', 'lampPole']),
     textured('uni-plaster-baked', plaster(), Object.keys(WALLS).filter((k) => k !== 'uniStone'), 0.88),
     textured('concrete-baked', concrete(), ['concrete', 'parkPath', 'kerbYellow'], 0.9),
     textured('foliage-baked', foliage(), ['hedge', 'lawnBed'], 0.95),
     textured('deck-baked', deck(), ['benchWood'], 0.75),
   ];
 }
+
+/** Travertine cladding: warm cream slabs with horizontal veins and rusty streaks (Biológicas end walls). */
+function travertine(): THREE.CanvasTexture {
+  const S = 512, c = document.createElement('canvas');
+  c.width = c.height = S;
+  const g = c.getContext('2d')!;
+  g.fillStyle = '#dcc39a';
+  g.fillRect(0, 0, S, S);
+  for (let i = 0; i < 900; i++) {
+    const y = Math.random() * S, v = Math.random();
+    g.fillStyle = v < 0.5 ? `rgba(240,222,190,${0.25 + Math.random() * 0.3})` : `rgba(${190 + Math.random() * 30},${130 + Math.random() * 30},${80 + Math.random() * 20},${0.12 + Math.random() * 0.2})`;
+    g.fillRect(Math.random() * S - 40, y, 30 + Math.random() * 200, 1 + Math.random() * 3);
+  }
+  g.strokeStyle = 'rgba(150,120,90,0.35)';
+  g.lineWidth = 2;
+  for (let y = 0; y < S; y += 128) for (let x = (y / 128) % 2 ? 0 : 128; x < S + 256; x += 256) g.strokeRect(x - 256, y, 256, 128);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  return t;
+}
+

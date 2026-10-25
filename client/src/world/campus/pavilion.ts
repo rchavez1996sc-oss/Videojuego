@@ -4,18 +4,20 @@ import { framer, yawQ, type CampusBuilding } from './layout';
 
 export const FLOOR = 3.6;
 const SPANDREL = 1.0, GLASS = 1.7, BAY = 3;
-export const WALLS: Record<string, string> = { cream: 'uniCream', grey: 'uniGrey', white: 'uniWhite', yellow: 'uniYellow', stone: 'uniStone' };
+export const WALLS: Record<string, string> = { cream: 'uniCream', grey: 'uniGrey', white: 'uniWhite', yellow: 'uniYellow', stone: 'uniStone', sand: 'uniSand', taupe: 'uniTaupe', ochre: 'uniOchre' };
 
 /** Where a building's name goes: centre of the lettering, facing, width, colours. */
-export interface NameSign { pos: THREE.Vector3; q: THREE.Quaternion; w: number; text: string; ink: string; plate?: string }
+export interface NameSign { pos: THREE.Vector3; q: THREE.Quaternion; w: number; text: string; ink: string; plate?: string; font?: 'serif' | 'sans' }
 
 type At = (x: number, y: number, z: number) => THREE.Vector3;
 /**
  * Facade treatment: `band` dark glass curtain on the upper floors over a light clerestory base (Química);
  * `frame` window bands behind spandrels with a concrete column grid (Geológica, Matemáticas); `punched` plain
- * walls with separate windows; `panels` like frame with coloured panes mixed in (Físicas).
+ * walls with separate windows; `panels` like frame with coloured panes mixed in (Físicas); `grid` deep concrete egg-crate
+ * of slabs and fins over recessed glass (Industrial, old wing); `bio` steel curtain grid with coloured panes and louvres on
+ * the long faces, blind travertine ends (Biológicas); `framed` punched windows in proud white frames (Biológicas annex).
  */
-interface Skin { kind: 'band' | 'frame' | 'punched' | 'panels'; wall: string; spandrel: string; base: string }
+interface Skin { kind: NonNullable<CampusBuilding['skin']>; wall: string; spandrel: string; base: string }
 
 function skinOf(def: CampusBuilding): Skin {
   const wall = WALLS[def.color] ?? 'uniGrey';
@@ -32,7 +34,34 @@ function wing(b: Builder, at: At, q: THREE.Quaternion, cx: number, cz: number, w
       along === 'x' ? box(mat, [l, h, depth], u, y, s * (out - 0.15 + o)) : box(mat, [depth, h, l], s * (out - 0.15 + o), y, u);
     for (let f = 0; f < floors; f++) {
       const y0 = f * FLOOR;
-      if (sk.kind === 'punched') {
+      if (sk.kind === 'grid') {
+        put(rand() < 0.15 ? 'curtainRed' : 'winGlass', len - 0.2, FLOOR - 1.0, 0.06, 0, y0 + 0.95 + (FLOOR - 1.0) / 2, 0.02);
+        put(sk.wall, len, 0.95, 0.3, 0, y0 + 0.47, 0.12);
+        put(sk.wall, len + 0.3, 0.2, 0.9, 0, y0 + FLOOR - 0.1, 0.45);
+        for (let i = 0; i <= n; i++) put(sk.wall, 0.2, FLOOR, 0.9, -len / 2 + i * bay, y0 + FLOOR / 2, 0.45);
+      } else if (sk.kind === 'bio' && along === 'z') {
+        if (f === 0) put('travertine', len + 0.3, H, 0.16, 0, H / 2, 0.08);
+      } else if (sk.kind === 'bio') {
+        const cols = Math.round(len / 1.5), cw = len / cols;
+        put('winGlass', len - 0.1, FLOOR - 0.2, 0.06, 0, y0 + FLOOR / 2, 0.02);
+        for (let i = 0; i < cols; i++) {
+          const r = rand(), x = -len / 2 + (i + 0.5) * cw;
+          if (r < 0.22) put(['paneYellow', 'panePurple', 'paneBlue'][Math.floor(rand() * 3)], cw - 0.12, 0.7, 0.04, x, y0 + 0.5, 0.05);
+          else if (r < 0.34) put('alu', cw - 0.12, 1.3, 0.05, x, y0 + FLOOR - 1.0, 0.06);
+        }
+        for (let i = 0; i <= cols; i++) put('steelGrey', 0.07, FLOOR, 0.14, -len / 2 + i * cw, y0 + FLOOR / 2, 0.08);
+        for (const y of [0.9, FLOOR - 0.05]) put('steelGrey', len, 0.08, 0.14, 0, y0 + y, 0.08);
+      } else if (sk.kind === 'framed') {
+        for (let i = 0; i < n; i++) {
+          if (i % 3 === 1) continue;
+          const x = -len / 2 + (i + 0.5) * bay, y = y0 + 1.0 + 0.85;
+          put('winGlass', bay * 0.62, 1.7, 0.06, x, y, 0.02);
+          for (const s of [-1, 1]) put('uniWhite', 0.16, 1.95, 0.3, x + s * (bay * 0.31 + 0.08), y, 0.15);
+          for (const s of [-1, 1]) put('uniWhite', bay * 0.62 + 0.32, 0.16, 0.3, x, y + s * 0.93, 0.15);
+          put('uniWhite', 0.05, 1.7, 0.08, x, y, 0.05);
+          put('uniWhite', bay * 0.62, 0.05, 0.08, x, y + 0.2, 0.05);
+        }
+      } else if (sk.kind === 'punched') {
         for (let i = 0; i < n; i++) if (rand() < 0.85) put('winGlass', bay * 0.55, GLASS, 0.06, -len / 2 + (i + 0.5) * bay, y0 + SPANDREL + GLASS / 2, 0.02);
       } else if (sk.kind === 'band' && f > 0) {
         put('darkGlass', len - 0.1, FLOOR - 0.3, 0.08, 0, y0 + FLOOR / 2 + 0.05, 0.04);
@@ -58,7 +87,7 @@ function wing(b: Builder, at: At, q: THREE.Quaternion, cx: number, cz: number, w
     face(w - 0.3, 'x', s);
     face(d - 0.3, 'z', s);
   }
-  const cornice = sk.kind === 'band' ? 'uniTerracotta' : 'uniFrame';
+  const cornice = sk.kind === 'band' || sk.kind === 'bio' ? 'uniTerracotta' : sk.kind === 'grid' || sk.kind === 'framed' ? sk.wall : 'uniFrame';
   box('uniFrame', [w + 0.3, 0.45, d + 0.3], 0, H + 0.22, 0);
   if (sk.kind === 'band') for (const s of [-1, 1]) {
     box(cornice, [w + 0.5, 0.5, 0.3], 0, H + 0.2, s * (d / 2 + 0.1));
@@ -109,6 +138,10 @@ export function pavilion(b: Builder, def: CampusBuilding, rand: () => number): N
   else if (def.style !== 'courtyard') entrance(b, at, q, (rand() - 0.5) * def.w * 0.3, def.d / 2, Math.min(5, def.w * 0.25));
   if (!def.name) return null;
   if (tower) return { pos: tower, q, w: 5.8, text: def.name, ink: '#ffffff' };
+  if (sk.kind === 'bio') {
+    const west = q.clone().multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2));
+    return { pos: at(-def.w / 2 - 0.06, FLOOR * 1.6, 0), q: west, w: Math.min(def.d * 0.62, 9), text: def.name, ink: '#151515', font: 'sans' };
+  }
   const band = sk.kind === 'band';
   const y = band ? FLOOR + (FLOOR - 0.3) / 2 : def.style === 'courtyard' ? FLOOR + 0.2 : Math.min(H - 0.6, FLOOR + SPANDREL / 2);
   const z = def.d / 2 + (band ? 0.04 : 0.32);

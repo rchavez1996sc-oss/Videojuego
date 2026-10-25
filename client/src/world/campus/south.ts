@@ -35,3 +35,15 @@ export function stadium(b: Builder, s: CampusDef['stadium']): void {
     b.box('globe', [6, 3, 0.8], p.clone().setY(43), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(-cx, -cz)), false);
   }
 }
+
+/** Av. Universitaria past the east fence (out of reach): carriageways, median, far sidewalk, lamp posts. */
+export function universitaria(b: Builder, def: CampusDef): void {
+  const u = def.universitaria;
+  if (!u) return;
+  const Q = new THREE.Quaternion(), z0 = def.bounds.north - 120, z1 = def.venezuela.z - def.venezuela.half, len = z1 - z0, zc = (z0 + z1) / 2;
+  b.box('asphalt', [u.half * 2, 0.25, len], new THREE.Vector3(u.x, -0.07, zc), Q, false);
+  b.box('kerbYellow', [1.4, 0.3, len], new THREE.Vector3(u.x, 0.15, zc), Q, false);
+  for (const s of [-1, 1]) for (let z = z0; z < z1; z += 9) b.box('roadWhite', [0.13, 0.012, 4.5], new THREE.Vector3(u.x + s * u.half * 0.5, 0.062, z), Q, false);
+  b.box('concrete', [4, 0.37, len], new THREE.Vector3(u.x + u.half + 2, 0.08, zc), Q, false);
+  for (let z = z0 + 10; z < z1; z += 30) b.box('lampPole', [0.2, 9, 0.2], new THREE.Vector3(u.x + u.half + 1, 4.5, z), Q, false);
+}

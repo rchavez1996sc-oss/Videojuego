@@ -14,15 +14,17 @@ import { campusGraph, framer, inRect, type CampusDef } from './layout';
 import { buildCampusRoads } from './roads';
 import { pavilion, type NameSign } from './pavilion';
 import { comedor } from './comedor';
-import { minasPortal, puerta1 } from './gates';
+import { minasPortal, puerta1, puerta2 } from './gates';
+import { industrial } from './industrial';
+import { plazuela } from './plazuela';
 import { footballField, parkingLot, venezuelaFence } from './grounds';
 import { perimeter } from './perimeter';
 import { campusHard, comedorPark, paintCampusLawns, plantCampus } from './greens';
-import { stadium, venezuelaSouth } from './south';
+import { stadium, universitaria, venezuelaSouth } from './south';
 import { campusMaterials, campusBake } from './materials';
 import { campusSigns } from './signs';
 
-/** Level 3: Ciudad Universitaria de San Marcos (UNMSM), south-west sector along Av. Venezuela. */
+/** Level 3: Ciudad Universitaria de San Marcos (UNMSM), southern sectors along Av. Venezuela, from the Huaca to Av. Universitaria. */
 export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting, world: RAPIER.World): Barrio {
   const b = new Builder(world, world.createRigidBody(RAPIER.RigidBodyDesc.fixed()));
   const rand = mulberry32(def.seed);
@@ -36,8 +38,14 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
   const v = def.venezuela, g = def.gate1, plazaDepth = v.z - v.half - v.sidewalk - g.z - 1.8;
   const gate = puerta1(b, g, plazaDepth);
   signs.push(gate.name);
+  const seals: { pos: THREE.Vector3; q: THREE.Quaternion; size: number; silver?: boolean }[] = [gate.crest];
+  if (def.gate2) {
+    const g2 = puerta2(b, def.gate2);
+    signs.push(g2.name);
+    seals.push({ ...g2.crest, silver: true });
+  }
   for (const bd of def.buildings) {
-    const s = bd.key === 'comedor' ? comedor(b, bd) : pavilion(b, bd, rand);
+    const s = bd.key === 'comedor' ? comedor(b, bd) : bd.key === 'industrial' ? industrial(b, bd, rand) : pavilion(b, bd, rand);
     if (s) signs.push(s);
     if (bd.key === 'minas') signs.push(minasPortal(b, { yaw: bd.yaw, ...offsetFront(bd, 6) }));
   }
@@ -48,8 +56,10 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
   perimeter(b, def, mulberry32(def.seed + 3), group, lighting);
   venezuelaSouth(b, hf, def, rand, (pos, q, w) => atlas.add(pos, q, w, 'shop', rand, rand() < 0.6 ? brands[Math.floor(rand() * brands.length)] : undefined));
   stadium(b, def.stadium);
+  universitaria(b, def);
 
   const paths = comedorPark(b, hf, def, plants, rand);
+  if (def.plazuela) plazuela(b, hf, def.plazuela, plants, paths, rand);
   const hard = campusHard(def, paths, plazaDepth);
   paintCampusLawns(hf, def, hard);
   plantCampus(hf, def, hard, plants, rand);
@@ -57,7 +67,7 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
   group.add(buildVegetation(b, plants, [], lighting));
   const bystanders = { onHurt: (_p: THREE.Vector3) => {} };
   group.add(crowd(plants.seats, plants.standing, lighting, world, bystanders));
-  group.add(campusSigns(signs, gate.crest, lighting));
+  group.add(campusSigns(signs, seals, lighting));
   group.add(...b.build(mats, 0.5, bake, 128));
   if (atlas.geometries.length) group.add(Object.assign(new THREE.Mesh(mergeGeometries(atlas.geometries), mats.signs), { receiveShadow: true }));
 

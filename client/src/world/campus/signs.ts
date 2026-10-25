@@ -7,7 +7,7 @@ const PX = 96;
 /** Building lettering: one alpha-tested plane per sign, text (lines split on \n) drawn to fit its width. */
 function lettering(s: NameSign, lighting: Lighting): THREE.Mesh {
   const lines = s.text.split('\n'), c = document.createElement('canvas'), g = c.getContext('2d')!;
-  const font = (px: number) => `700 ${px}px "Times New Roman", Georgia, serif`;
+  const font = (px: number) => (s.font === 'sans' ? `700 ${px}px "Barlow Condensed", "Arial Narrow", sans-serif` : `700 ${px}px "Times New Roman", Georgia, serif`);
   g.font = font(PX);
   const widest = Math.max(...lines.map((l) => g.measureText(l).width));
   c.width = Math.ceil(widest + PX * 0.6);
@@ -35,7 +35,7 @@ function lettering(s: NameSign, lighting: Lighting): THREE.Mesh {
 }
 
 /** San Marcos coat of arms: baroque gold frame round an oval; left the evangelist in red with his book and lion, right a tower over the sea. */
-function crest(size: number, lighting: Lighting): THREE.Mesh {
+function crest(size: number, lighting: Lighting, silver = false): THREE.Mesh {
   const N = 512, c = document.createElement('canvas'), g = c.getContext('2d')!, cx = N / 2, cy = N / 2;
   c.width = c.height = N;
   const gold = g.createRadialGradient(cx - 60, cy - 80, 20, cx, cy, 260);
@@ -68,18 +68,27 @@ function crest(size: number, lighting: Lighting): THREE.Mesh {
   g.restore();
   g.strokeStyle = '#c99a32'; g.lineWidth = 3;
   g.beginPath(); g.moveTo(cx, cy - 195); g.lineTo(cx, cy + 195); g.stroke();
+  if (silver) {
+    const img = g.getImageData(0, 0, N, N), d = img.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const v = Math.min(255, (d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11) * 1.15 + 30);
+      d[i] = d[i + 1] = d[i + 2] = v;
+    }
+    g.putImageData(img, 0, 0);
+  }
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = 8;
-  const mat = lighting.setup(new THREE.MeshStandardMaterial({ map: t, alphaTest: 0.3, roughness: 0.4, metalness: 0.25, polygonOffset: true, polygonOffsetFactor: -2 }), 'campus-crest');
+  const mat = lighting.setup(new THREE.MeshStandardMaterial({ map: t, alphaTest: 0.3, roughness: 0.4, metalness: silver ? 0.75 : 0.25, polygonOffset: true, polygonOffsetFactor: -2 }), 'campus-crest');
   return new THREE.Mesh(new THREE.PlaneGeometry(size * 0.88, size), mat);
 }
 
-export function campusSigns(signs: NameSign[], seal: { pos: THREE.Vector3; q: THREE.Quaternion; size: number } | null, lighting: Lighting): THREE.Group {
+type Seal = { pos: THREE.Vector3; q: THREE.Quaternion; size: number; silver?: boolean };
+export function campusSigns(signs: NameSign[], seals: Seal[], lighting: Lighting): THREE.Group {
   const g = new THREE.Group();
   for (const s of signs) g.add(lettering(s, lighting));
-  if (seal) {
-    const m = crest(seal.size, lighting);
+  for (const seal of seals) {
+    const m = crest(seal.size, lighting, seal.silver);
     m.position.copy(seal.pos);
     m.quaternion.copy(seal.q);
     g.add(m);

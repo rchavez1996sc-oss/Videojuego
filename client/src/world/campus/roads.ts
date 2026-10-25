@@ -36,7 +36,7 @@ export function onCarriageway(def: CampusDef, x: number, z: number, margin: numb
 
 /** Av. Venezuela (two carriageways, planted median, lane marks), campus roads with kerbed sidewalks cut at junctions, lamps, bus stops. */
 export function buildCampusRoads(b: Builder, def: CampusDef, rand: () => number): void {
-  const v = def.venezuela, X = 300, inner = v.median / 2, cw = v.half - inner;
+  const v = def.venezuela, X = Math.max(-def.bounds.west, def.bounds.x) + 80, inner = v.median / 2, cw = v.half - inner;
   const entries = def.roads.filter((r) => r.pts[r.pts.length - 1][1] > v.z - v.half - v.sidewalk - 3).map((r) => {
     const x = r.pts[r.pts.length - 1][0];
     return [x - r.w / 2 - 0.4, x + r.w / 2 + 0.4] as [number, number];

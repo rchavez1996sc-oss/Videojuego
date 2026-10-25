@@ -29,6 +29,7 @@ export function fenceGaps(def: CampusDef): [number, number][] {
     return [x - r.w / 2 - 2.6, x + r.w / 2 + 2.6] as [number, number];
   });
   gaps.push([def.gate1.x - 27, def.gate1.x + 29]);
+  if (def.gate2) gaps.push([def.gate2.x - 14, def.gate2.x + 16]);
   return gaps.sort((a, c) => a[0] - c[0]);
 }
 

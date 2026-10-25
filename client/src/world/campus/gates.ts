@@ -108,3 +108,39 @@ export function minasPortal(b: Builder, p: { x: number; z: number; yaw: number }
 }
 
 export { bin };
+
+/**
+ * Puerta 2 (Av. Venezuela at Universitaria; from the user's photo): a block of dark stacked slate carrying the silver
+ * crest, a grey rendered box, a thick red cantilevered canopy with the university's name in white over a black-framed
+ * glazed gatehouse, and the vehicle lane (local x −14…−6) with its sliding bar gate parked open. Local +z faces the avenue.
+ */
+export function puerta2(b: Builder, g: { x: number; z: number; yaw: number }): { name: NameSign; crest: { pos: THREE.Vector3; q: THREE.Quaternion; size: number } } {
+  const at = framer(g), q = yawQ(g.yaw), box = (mat: string, size: [number, number, number], x: number, y: number, z: number, collide = true) => b.box(mat, size, at(x, y, z), q, collide);
+  box('slate', [6, 6.6, 3], 0, 3.3, 0);
+  box('uniGrey', [3, 5.6, 3.2], -4.5, 2.8, -0.1);
+  box('uniRed', [23, 1.7, 7], 5.5, 7.05, 0.4);
+  box('uniWhite', [22.6, 0.12, 6.6], 5.5, 6.14, 0.4, false);
+  box('fenceIron', [23.1, 0.18, 0.3], 5.5, 7.95, 3.8, false);
+  for (const z of [-2.2, 2.2]) {
+    box('glassClear', [11.6, 3.6, 0.05], 9.2, 1.8, z, false);
+    for (let x = 3.4; x <= 15.01; x += 1.45) box('fenceIron', [0.1, 3.6, 0.12], x, 1.8, z, false);
+    box('fenceIron', [11.8, 0.12, 0.14], 9.2, 3.6, z, false);
+  }
+  box('fenceIron', [0.12, 3.6, 4.4], 15, 1.8, 0, false);
+  box('none', [12, 3.8, 4.6], 9.2, 1.9, 0);
+  box('uniCream', [1.5, 3.6, 1.6], 11.5, 1.8, 0.6, false);
+  for (const x of [3.6, 14.8]) box('uniGrey', [0.4, 6.2, 0.4], x, 3.1, 3.4);
+  box('uniFrame', [12, 0.25, 4.6], 9.2, 3.75, 0, false);
+  for (let k = 0; k < 30; k++) b.box('fenceIron', [0.05, 3, 0.05], at(-23.5 + k * 0.32, 1.5, -1.8), q, false);
+  for (const y of [0.2, 2.95]) box('fenceIron', [9.8, 0.08, 0.08], -18.8, y, -1.8, false);
+  box('grate', [9.8, 3, 0.3], -18.8, 1.5, -1.8);
+  for (const [x, z] of [[-11, 2.4], [-8.5, 2.6]]) {
+    for (const s of [-1, 1]) b.box('kerbYellow', [0.05, 1.1, 0.05], at(x + s * 1, 0.55, z), q, false);
+    b.box('kerbYellow', [2.1, 0.05, 0.05], at(x, 1.05, z), q, false);
+    for (let k = 1; k < 7; k++) b.box('kerbYellow', [0.03, 0.9, 0.03], at(x - 1 + k * 0.29, 0.55, z), q, false);
+  }
+  return {
+    name: { pos: at(5.5, 7.05, 3.92), q, w: 18, text: 'UNIVERSIDAD NACIONAL MAYOR DE SAN MARCOS', ink: '#ffffff' },
+    crest: { pos: at(0, 3.6, 1.53), q, size: 3.6 },
+  };
+}

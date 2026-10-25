@@ -7,7 +7,7 @@ export interface CampusRoad { name: string; w: number; pts: [number, number][] }
 export interface CampusBuilding extends Rect {
   floors: number;
   style: 'courtyard' | 'single';
-  skin?: 'band' | 'frame' | 'punched' | 'panels';
+  skin?: 'band' | 'frame' | 'punched' | 'panels' | 'grid' | 'bio' | 'framed';
   /** Wall colour key (cream, grey, white, yellow, stone); spandrel colour (orange…) and ground-floor colour override it. */
   color: string;
   spandrel?: string;
@@ -24,6 +24,10 @@ export interface CampusDef {
   /** Walkable campus: west < x < x (east), z > north (walled on the north and east, open towards the Huaca); `south` bounds the avenue side. */
   bounds: { x: number; west: number; north: number; south: number };
   gate1: { x: number; z: number; yaw: number };
+  gate2?: { x: number; z: number; yaw: number };
+  plazuela?: import('./plazuela').PlazuelaDef;
+  /** Av. Universitaria beyond the east fence: centre x and half width (decor only). */
+  universitaria?: { x: number; half: number };
   field: Rect;
   parkings: Rect[];
   /** Parque del Comedor: local −z side runs along the dining hall. */

@@ -25,11 +25,13 @@ export interface Victim { key: string; pos: THREE.Vector3; hurt(damage: number, 
 /** A straight road along x: centre `z`, lane offset from the centre, half width, how many vehicles use it (and which kinds). */
 export interface Road { z: number; lane: number; half: number; count: number; kinds?: (CarKind | 'moto' | 'delivery')[] }
 
-const X_MIN = -245, X_MAX = 245, HP = 140;
+const HP = 140;
 
 /** Avenue traffic with drivers/passengers; vehicles take bullet damage and, once disabled, skid out of control. */
 export class Traffic {
   readonly group = new THREE.Group();
+  private xMin: number;
+  private xMax: number;
   private list: Vehicle[] = [];
   private calmT = 99;
   private cam = new THREE.Vector3();
@@ -45,7 +47,8 @@ export class Traffic {
   /** Other people on the road drivers brake for (the squad). */
   obstacles: () => THREE.Vector3[] = () => [];
 
-  constructor(private world: RAPIER.World, private hf: Heightfield, lighting: Lighting, materials: Record<string, THREE.Material>, bake: { material: THREE.Material; keys: string[] }[], roads: Road[]) {
+  constructor(private world: RAPIER.World, private hf: Heightfield, lighting: Lighting, materials: Record<string, THREE.Material>, bake: { material: THREE.Material; keys: string[] }[], roads: Road[], span: [number, number] = [-245, 245]) {
+    [this.xMin, this.xMax] = span;
     this.riders = new Riders(this.group, hf);
     const lanes = roads.flatMap((r) => Array<Road>(r.count).fill(r)), count = lanes.length;
     const glass = lighting.setup(new THREE.MeshStandardMaterial({ color: '#2a3238', roughness: 0.1, metalness: 0.5, transparent: true, opacity: 0.35 }), 'glass-see');
@@ -85,7 +88,7 @@ export class Traffic {
       const dir = i % 2 ? 1 : -1;
       const cruise = kind === 'delivery' ? 9 : kind === 'moto' ? 7 : kind === 'combi' ? 11 : 10;
       const v: Vehicle = {
-        kind, group: g, body, collider, dir, x: X_MIN + ((i * 77) % (X_MAX - X_MIN)), z: lanes[i].z + dir * lanes[i].lane, base: lanes[i].z, lane: lanes[i].lane, half: lanes[i].half, yaw: dir > 0 ? Math.PI / 2 : -Math.PI / 2,
+        kind, group: g, body, collider, dir, x: this.xMin + ((i * 77) % (this.xMax - this.xMin)), z: lanes[i].z + dir * lanes[i].lane, base: lanes[i].z, lane: lanes[i].lane, half: lanes[i].half, yaw: dir > 0 ? Math.PI / 2 : -Math.PI / 2,
         speed: cruise, cruise, len, honkT: 3 + rand() * 10, horn: 360 + rand() * 110, panic: false, state: 'drive', hp: HP, spin: 0, drift: 0, smokeT: 0, seats,
       };
       this.list.push(v);
@@ -184,7 +187,7 @@ export class Traffic {
 
   /** Moves a far-off car to just beyond view behind/ahead of the player so the nearby avenue stays busy. */
   private bringNear(v: Vehicle, camX: number): void {
-    const x = THREE.MathUtils.clamp(camX - v.dir * (150 + Math.random() * 40), X_MIN, X_MAX);
+    const x = THREE.MathUtils.clamp(camX - v.dir * (150 + Math.random() * 40), this.xMin, this.xMax);
     if (this.list.some((o) => o !== v && o.dir === v.dir && o.base === v.base && o.state !== 'off' && Math.abs(o.x - x) < o.len + 10)) return;
     v.x = x;
   }
@@ -197,7 +200,7 @@ export class Traffic {
     for (const v of this.list) {
       if (v.state === 'off') {
         if (this.calmT > 20 && Math.random() < dt * 0.5) {
-          Object.assign(v, { state: 'drive', panic: false, hp: HP, x: v.dir > 0 ? X_MIN : X_MAX, z: v.base + v.dir * v.lane, yaw: v.dir > 0 ? Math.PI / 2 : -Math.PI / 2 });
+          Object.assign(v, { state: 'drive', panic: false, hp: HP, x: v.dir > 0 ? this.xMin : this.xMax, z: v.base + v.dir * v.lane, yaw: v.dir > 0 ? Math.PI / 2 : -Math.PI / 2 });
           v.group.visible = true;
         } else continue;
       }
@@ -219,14 +222,14 @@ export class Traffic {
           if (Math.hypot(v.x - camera.x, v.z - camera.z) < 110) this.onHonk(new THREE.Vector3(v.x, 0, v.z), v.horn);
         }
         if (!v.panic && this.calmT > 20 && Math.abs(v.x - camera.x) > 160) this.bringNear(v, camera.x);
-        if ((v.dir > 0 && v.x > X_MAX) || (v.dir < 0 && v.x < X_MIN)) {
+        if ((v.dir > 0 && v.x > this.xMax) || (v.dir < 0 && v.x < this.xMin)) {
           if (v.panic || this.calmT < 20) {
             v.state = 'off';
             v.group.visible = false;
             v.body.setNextKinematicTranslation({ x: 0, y: -50, z: 0 });
             continue;
           }
-          v.x = v.dir > 0 ? X_MIN : X_MAX;
+          v.x = v.dir > 0 ? this.xMin : this.xMax;
         }
       } else if ((v.smokeT -= dt) <= 0 && Math.hypot(v.x - camera.x, v.z - camera.z) < 140) {
         v.smokeT = 0.12;
