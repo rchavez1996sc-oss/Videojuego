@@ -47,6 +47,15 @@ export function campusMaterials(lighting: Lighting): Record<string, THREE.Materi
     curtainRed: std('curtainRed', { color: '#6a3a34', roughness: 0.7 }),
     granite: std('granite', { map: co.map, normalMap: co.normalMap, color: '#9d988f', roughness: 0.7 }),
     bronze: std('bronze', { color: '#6a5634', roughness: 0.42, metalness: 0.75 }),
+    terrazzo: std('terrazzo', { map: terrazzo(), roughness: 0.25, metalness: 0.05 }),
+    wallTile: std('wallTile', { map: tiles(), roughness: 0.3 }),
+    chairOrange: std('chairOrange', { color: '#e8552a', roughness: 0.45 }),
+    tableWhite: std('tableWhite', { color: '#ecebe6', roughness: 0.4 }),
+    tubeLight: std('tubeLight', { color: '#ffffff', emissive: '#f4f8ff', emissiveIntensity: 1.2 }),
+    hedgeGold: std('hedgeGold', { map: fo.map, normalMap: fo.normalMap, color: '#f0dc3a', roughness: 0.95 }),
+    flowerRed: std('flowerRed', { map: fo.map, normalMap: fo.normalMap, color: '#ff5a5a', emissive: '#3a0606', roughness: 0.95 }),
+    flowerPurple: std('flowerPurple', { map: fo.map, normalMap: fo.normalMap, color: '#b05ad0', emissive: '#22062e', roughness: 0.95 }),
+    kioskGreen: std('kioskGreen', { color: '#4f9a3c', roughness: 0.7 }),
     benchWood: std('benchWood', { map: wood().map, color: '#a07a52', roughness: 0.8 }),
   };
   for (const [k, c] of Object.entries(WALLS)) m[k] = std(k, { map: (k === 'uniStone' ? stone : pl).map, normalMap: (k === 'uniStone' ? stone : pl).normalMap, color: c, roughness: 0.88 });
@@ -85,5 +94,43 @@ function travertine(): THREE.CanvasTexture {
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = 8;
   return t;
+}
+
+function canvasTex(size: number, draw: (g: CanvasRenderingContext2D, s: number) => void, repeat = 1): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  draw(c.getContext('2d')!, size);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(repeat, repeat);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  return t;
+}
+
+/** Dark polished terrazzo: grey ground with white, black and ochre chips. */
+function terrazzo(): THREE.CanvasTexture {
+  return canvasTex(512, (g, s) => {
+    g.fillStyle = '#4a4b4d';
+    g.fillRect(0, 0, s, s);
+    for (let i = 0; i < 9000; i++) {
+      g.fillStyle = ['#d8d6d0', '#1e1e1f', '#8a8580', '#b49a6a', '#6b6c6e'][i % 5];
+      const r = 0.6 + Math.random() * 2.2;
+      g.fillRect(Math.random() * s, Math.random() * s, r, r * (0.6 + Math.random()));
+    }
+  });
+}
+
+/** White glazed wall tiles, 15 cm, with grey grout. */
+function tiles(): THREE.CanvasTexture {
+  return canvasTex(256, (g, s) => {
+    g.fillStyle = '#f2f1ec';
+    g.fillRect(0, 0, s, s);
+    g.fillStyle = '#c9c7c0';
+    for (let k = 0; k <= s; k += s / 8) {
+      g.fillRect(k - 1, 0, 2, s);
+      g.fillRect(0, k - 1, s, 2);
+    }
+  });
 }
 

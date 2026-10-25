@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { Builder } from '../buildingKit';
 import type { Heightfield } from '../heightfield';
 import { bench, chatGroup, ribbon, type Plants } from '../malecon/park';
-import { framer, inRect, yawQ, type CampusDef, type Rect } from './layout';
+import { framer, inRect, type CampusDef, type Rect } from './layout';
 import { campusLamp } from './roads';
 
 /** Hard ground laid out by the park (path centrelines with widths, round plazas), for the lawn painter. */
@@ -18,7 +18,7 @@ function curve(at: (x: number, y: number, z: number) => THREE.Vector3, pts: [num
  * stairs to the road, a winding cross path, a round plaza with benches, low hedges, lamps, trees and palms.
  */
 export function comedorPark(b: Builder, hf: Heightfield, def: CampusDef, plants: Plants, rand: () => number): Paths {
-  const p = def.park, at = framer(p), q = yawQ(p.yaw), W = p.w / 2, D = p.d / 2, yaw = (-p.yaw * Math.PI) / 180;
+  const p = def.park, at = framer(p), W = p.w / 2, D = p.d / 2, yaw = (-p.yaw * Math.PI) / 180;
   const paths: Paths = { lines: [], discs: [] };
   const path = (pts: THREE.Vector2[], w: number, lift: number) => {
     ribbon(b, hf, pts, w, 'parkPath', lift);
@@ -45,7 +45,6 @@ export function comedorPark(b: Builder, hf: Heightfield, def: CampusDef, plants:
     const pos = at(x, 0.08, front + 2.6);
     bench(b, pos, yaw + Math.PI);
     if (rand() < 0.45) plants.seats.push({ pos, yaw: yaw + Math.PI });
-    b.box('hedge', [6.2, 0.7, 0.7], at(x, 0.35, front + 4.2), q, true);
   }
   for (let i = 8; i < wind.length - 4; i += 12) campusLamp(b, new THREE.Vector3(wind[i].x + 2, 0, wind[i].y + 1.6), yaw);
   for (let i = 0; i < 4; i++) chatGroup(plants.standing, at((rand() - 0.5) * W * 1.4, 0.06, front + 1.2 + rand() * 0.8), rand);

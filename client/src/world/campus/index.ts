@@ -19,6 +19,7 @@ import { industrial } from './industrial';
 import { SwingGates } from './swingGates';
 import { studentLife, studentWalks } from './student';
 import { plazuela } from './plazuela';
+import { patioDetail } from './patio';
 import { footballField, parkingLot, venezuelaFence } from './grounds';
 import { perimeter } from './perimeter';
 import { campusHard, comedorPark, paintCampusLawns, plantCampus } from './greens';
@@ -49,7 +50,13 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
     seals.push({ ...g2.crest, silver: true });
   }
   for (const bd of def.buildings) {
-    const s = bd.key === 'comedor' ? comedor(b, bd) : bd.key === 'industrial' ? industrial(b, bd, rand) : pavilion(b, bd, rand);
+    if (bd.key === 'comedor') {
+      const c = comedor(b, bd, plants);
+      signs.push(c.sign, c.inner);
+      seals.push(c.seal);
+      continue;
+    }
+    const s = bd.key === 'industrial' ? industrial(b, bd, rand) : pavilion(b, bd, rand);
     if (s) signs.push(s);
     if (bd.key === 'minas') signs.push(minasPortal(b, { yaw: bd.yaw, ...offsetFront(bd, 6) }));
   }
@@ -63,6 +70,7 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
   universitaria(b, def);
 
   const paths = comedorPark(b, hf, def, plants, rand);
+  patioDetail(b, def, paths, plants, rand);
   if (def.plazuela) plazuela(b, hf, def.plazuela, plants, paths, rand);
   const walks = studentWalks(b, hf, def, paths);
   const hard = campusHard(def, paths, gate.hard);
