@@ -90,7 +90,9 @@ export function bench(b: Builder, at: THREE.Vector3, yaw: number, wood = 'benchW
 /** Clifftop park: paths, lawns painted into the terrain mask, railings, lamps, benches, hedges; returns where to plant. */
 export function buildPark(b: Builder, hf: Heightfield, def: MaleconDef, c: CoastDef, rand: () => number): Plants {
   const plants: Plants = { palms: [], phoenix: [], trees: [], bent: [], pines: [], seats: [], standing: [], arch: [] };
+  const flat = (x: number, z: number) => hf.normalAt(x, z, 1.5)[1] > 0.97;
   const seat = (at: THREE.Vector3, yaw: number) => {
+    if (!flat(at.x, at.z)) return;
     bench(b, at, yaw);
     if (rand() < 0.4) plants.seats.push({ pos: at, yaw });
   };
@@ -184,22 +186,22 @@ export function buildPark(b: Builder, hf: Heightfield, def: MaleconDef, c: Coast
   for (const run of prom) for (let i = 0; i < run.length; i += 10) {
     const p = run[i], z = p.y + 2.6, x = p.x;
     if (Math.abs(x - def.amor.x) < def.amor.w / 2 || Math.hypot(x - lh.x, z - lh.z) < 12) continue;
-    lamp(b, new THREE.Vector3(x, hf.heightAt(x, z), z));
+    if (flat(x, z)) lamp(b, new THREE.Vector3(x, hf.heightAt(x, z), z));
     for (const dx of [-5, 5]) if (Math.hypot(x + dx - def.lighthouse.x, z - def.lighthouse.z) > 14) seat(new THREE.Vector3(x + dx, hf.heightAt(x + dx, z), z + 0.3), 0);
   }
   for (const run of prom) for (let i = 4; i < run.length; i += 12) {
     const p = run[i], z = edgeZ(c, p.x) - 2.2;
-    if (rand() < 0.45 || blocked(p.x, z, 3) || Math.abs(p.x - def.amor.x) < def.amor.w / 2) continue;
+    if (rand() < 0.45 || blocked(p.x, z, 3) || !flat(p.x, z) || Math.abs(p.x - def.amor.x) < def.amor.w / 2) continue;
     for (let k = 0; k < 1 + Math.floor(rand() * 2); k++) plants.standing.push({ pos: new THREE.Vector3(p.x + k * 0.8, hf.heightAt(p.x, z), z), yaw: (rand() - 0.5) * 0.6, key: rand() < 0.5 ? 'look_around' : rand() < 0.5 ? 'civ_idle' : 'texting' });
   }
   for (const run of inner) for (let i = 0; i < run.length; i++) {
     const p = run[i];
-    if (i % 20 === 10 && rand() < 0.7 && !blocked(p.x, p.y + 4.5, 3)) chatGroup(plants.standing, new THREE.Vector3(p.x, hf.heightAt(p.x, p.y + 4.5), p.y + 4.5), rand);
+    if (i % 20 === 10 && rand() < 0.7 && !blocked(p.x, p.y + 4.5, 3) && flat(p.x, p.y + 4.5)) chatGroup(plants.standing, new THREE.Vector3(p.x, hf.heightAt(p.x, p.y + 4.5), p.y + 4.5), rand);
     if (i % 6 === 0) plants.palms.push(new THREE.Vector3(p.x + 1, 0, p.y - 2.8));
     if (i % 6 === 3 && !blocked(p.x, p.y - 2.3, 3)) seat(new THREE.Vector3(p.x, hf.heightAt(p.x, p.y - 2.3), p.y - 2.3), 0);
     if (i % 9 === 4 && rand() < 0.7) {
       const len = 6 + rand() * 8, z = p.y + 2.4;
-      if (!blocked(p.x, z, 4)) b.box('hedge', [len, 0.9, 0.9], new THREE.Vector3(p.x + len / 2, hf.heightAt(p.x, z) + 0.45, z), Q, true);
+      if (!blocked(p.x, z, 4) && flat(p.x, z) && flat(p.x + len, z)) b.box('hedge', [len, 0.9, 0.9], new THREE.Vector3(p.x + len / 2, hf.heightAt(p.x, z) + 0.45, z), Q, true);
     }
   }
   for (let i = 0; i < 260; i++) {

@@ -1,19 +1,14 @@
 import * as THREE from 'three';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { Heightfield } from '../world/heightfield';
 import type { Lighting } from '../render/lighting';
 import type { StreetGraph } from '../world/barrio';
+import { animateBeast, makeBeast, type Beast } from '../entities/quadruped';
 
-interface Dog { node: number; queue: THREE.Vector3[]; root: THREE.Group; legs: THREE.Object3D[]; tail: THREE.Object3D; pos: THREE.Vector3; target: THREE.Vector3; yaw: number; speed: number; idle: number; phase: number; panic: number; gone: boolean }
+interface Dog { node: number; queue: THREE.Vector3[]; root: THREE.Group; beast: Beast; pos: THREE.Vector3; target: THREE.Vector3; yaw: number; speed: number; idle: number; phase: number; panic: number; gone: boolean }
 
-const COATS = ['#5b4630', '#2a2622', '#b59a72', '#8a6a48', '#e3dccd', '#3d3128'];
-
-function colored(g: THREE.BufferGeometry, c: THREE.Color): THREE.BufferGeometry {
-  const n = (g = g.toNonIndexed().deleteAttribute('uv')).attributes.position.count, arr = new Float32Array(n * 3);
-  for (let i = 0; i < n; i++) arr.set([c.r, c.g, c.b], i * 3);
-  g.setAttribute('color', new THREE.BufferAttribute(arr, 3));
-  return g;
-}
+/** Coat and belly colours: tan, black-and-tan, cream, brindle-brown, white, dark. */
+const COATS: [string, string][] = [['#8a6440', '#c9a77c'], ['#2a2622', '#9c6a3c'], ['#c4a57a', '#e6d6b8'], ['#6b4a30', '#a07850'], ['#e3dccd', '#f1ece2'], ['#3d3128', '#6a5644']];
+const CAT_COATS: [string, string][] = [['#9a7a58', '#e8dcc8'], ['#2a2724', '#2a2724'], ['#c98a4a', '#efe0c8'], ['#7d7a74', '#dcd8d0']];
 
 /** Stray dogs trotting around the streets; they bark now and then and run off when shooting starts. */
 export class Dogs {
@@ -33,36 +28,14 @@ export class Dogs {
       this.neighbors[a].push(b);
       this.neighbors[b].push(a);
     }
-    const mat = lighting.setup(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 }), 'dog');
+    const rand = Math.random;
     for (let i = 0; i < count; i++) {
-      const coat = new THREE.Color(COATS[i % COATS.length]), dark = coat.clone().multiplyScalar(0.6);
-      const body = mergeGeometries([
-        colored(new THREE.CapsuleGeometry(0.16, 0.5, 4, 8).rotateX(Math.PI / 2), coat),
-        colored(new THREE.BoxGeometry(0.2, 0.2, 0.26).translate(0, 0.14, 0.4), coat),
-        colored(new THREE.BoxGeometry(0.12, 0.1, 0.14).translate(0, 0.1, 0.58), dark),
-        colored(new THREE.ConeGeometry(0.05, 0.1, 4).translate(-0.07, 0.29, 0.38), dark),
-        colored(new THREE.ConeGeometry(0.05, 0.1, 4).translate(0.07, 0.29, 0.38), dark),
-      ]);
-      const root = new THREE.Group();
-      const torso = new THREE.Mesh(body, mat);
-      torso.position.y = 0.42;
-      torso.castShadow = true;
-      root.add(torso);
-      const legGeo = colored(new THREE.CylinderGeometry(0.035, 0.03, 0.36, 5).translate(0, -0.18, 0), dark);
-      const legs = [[-0.09, 0.22], [0.09, 0.22], [-0.09, -0.22], [0.09, -0.22]].map(([x, z]) => {
-        const l = new THREE.Mesh(legGeo, mat);
-        l.position.set(x, 0.38, z);
-        root.add(l);
-        return l;
-      });
-      const tail = new THREE.Mesh(colored(new THREE.CylinderGeometry(0.02, 0.03, 0.3, 5).translate(0, 0.15, 0), coat), mat);
-      tail.position.set(0, 0.5, -0.32);
-      tail.rotation.x = -0.9;
-      root.add(tail);
+      const kind = i % 3 === 2 ? 'cat' : 'dog', [coat, belly] = (kind === 'cat' ? CAT_COATS : COATS)[i % (kind === 'cat' ? CAT_COATS : COATS).length];
+      const beast = makeBeast(kind, coat, belly, lighting, rand), root = beast.root;
       this.group.add(root);
       const node = (i * 7) % graph.nodes.length;
       const pos = graph.nodes[node].clone().add(new THREE.Vector3(Math.random() * 2 - 1, 0, Math.random() * 2 - 1));
-      this.dogs.push({ node, queue: [], root, legs, tail, pos, target: pos.clone(), yaw: 0, speed: 0, idle: Math.random() * 4, phase: 0, panic: 0, gone: false });
+      this.dogs.push({ node, queue: [], root, beast, pos, target: pos.clone(), yaw: 0, speed: 0, idle: Math.random() * 4, phase: 0, panic: 0, gone: false });
     }
   }
 
@@ -120,13 +93,11 @@ export class Dogs {
       }
       d.pos.y = this.groundAt(d.pos.x, d.pos.z);
       d.phase += dt * (4 + d.speed * 3);
-      const swing = Math.min(1, d.speed / 2) * 0.7;
-      d.legs.forEach((l, i) => (l.rotation.x = Math.sin(d.phase + (i === 0 || i === 3 ? 0 : Math.PI)) * swing));
-      d.tail.rotation.z = Math.sin(d.phase * (d.panic > 0 ? 0.5 : 2)) * 0.4;
+      if (d.pos.distanceToSquared(camera) < 40 * 40) animateBeast(d.beast, d.phase, d.speed, d.phase * (d.panic > 0 ? 0.5 : 2));
       d.root.position.copy(d.pos);
       d.root.rotation.y = d.yaw;
       d.root.visible = d.pos.distanceToSquared(camera) < 90 * 90;
-      if (this.barkT <= 0 && d.root.visible && Math.random() < 0.15) {
+      if (this.barkT <= 0 && d.root.visible && d.beast.kind === 'dog' && Math.random() < 0.15) {
         this.barkT = 5 + Math.random() * 10;
         this.onBark(d.pos.clone());
       }

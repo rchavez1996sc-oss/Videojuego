@@ -8,6 +8,8 @@ import type { Heightfield } from '../world/heightfield';
 import type { Lighting } from '../render/lighting';
 import type { StreetGraph } from '../world/barrio';
 
+const UP_AXIS = new THREE.Vector3(0, 1, 0), IDENTITY = { x: 0, y: 0, z: 0, w: 1 }, PROBE = new RAPIER.Capsule(0.45, 0.28);
+
 type Mood = 'walk' | 'idle' | 'panic' | 'gone' | 'dead';
 
 interface Civilian {
@@ -34,7 +36,7 @@ export class Civilians {
     return this.graph.ground?.(x, z) ?? this.hf.heightAt(x, z);
   }
 
-  constructor(private graph: StreetGraph, private hf: Heightfield, lighting: Lighting, world: RAPIER.World, count: number, seed: number, private camera: THREE.Camera) {
+  constructor(private graph: StreetGraph, private hf: Heightfield, lighting: Lighting, private world: RAPIER.World, count: number, seed: number, private camera: THREE.Camera) {
     this.neighbors = graph.nodes.map(() => []);
     for (const [a, b] of graph.edges) {
       this.neighbors[a].push(b);
@@ -132,6 +134,17 @@ export class Civilians {
     }
   }
 
+  /** Walking straight into someone (police, squad, player, another passer-by) would shove them along: veer round or wait. */
+  private clearWay(c: Civilian, dir: THREE.Vector3): THREE.Vector3 | null {
+    for (const turn of [0, 1.1, -1.1]) {
+      const d = dir.clone().applyAxisAngle(UP_AXIS, turn), at = { x: c.pos.x + d.x * 0.7, y: c.pos.y + 0.9, z: c.pos.z + d.z * 0.7 };
+      let hit = false;
+      this.world.intersectionsWithShape(at, IDENTITY, PROBE, (o) => ((hit = !o.isSensor() && !!o.parent()?.isKinematic()), !hit), RAPIER.QueryFilterFlags.EXCLUDE_FIXED, undefined, c.collider);
+      if (!hit) return d;
+    }
+    return null;
+  }
+
   update(dt: number, player: THREE.Vector3): void {
     this.recycle(dt);
     for (const c of this.list) {
@@ -165,7 +178,8 @@ export class Civilians {
             c.target = options[Math.floor(Math.random() * options.length)];
           }
         } else {
-          c.pos.addScaledVector(to.divideScalar(d), Math.min(d, c.speed * dt));
+          const dir = this.clearWay(c, to.divideScalar(d));
+          if (dir) c.pos.addScaledVector(dir, Math.min(d, c.speed * dt));
           c.pos.y = this.groundAt(c.pos.x, c.pos.z);
           const want = Math.atan2(-to.x, -to.z);
           c.yaw += Math.atan2(Math.sin(want - c.yaw), Math.cos(want - c.yaw)) * Math.min(1, dt * 8);
