@@ -115,11 +115,17 @@ function entrance(b: Builder, at: At, q: THREE.Quaternion, x: number, zFace: num
 
 /** Red entrance tower standing proud of the +z face (Geológica): its own volume, a doorway and the sign plate. */
 function accentTower(b: Builder, at: At, q: THREE.Quaternion, zFace: number, H: number): THREE.Vector3 {
-  const w = 9, d = 4, h = H + 1.6;
-  b.box('uniRed', [w, h - 3, d], at(0, 3 + (h - 3) / 2, zFace + d / 2 - 0.5), q, true);
-  for (const s of [-1, 1]) b.box('uniRed', [1.2, 3, d], at(s * (w / 2 - 0.6), 1.5, zFace + d / 2 - 0.5), q, true);
-  b.box('darkGlass', [w - 2.6, 2.7, 0.08], at(0, 1.35, zFace + 0.1), q, false);
-  return at(0, h - 3.2, zFace + d - 0.48);
+  const w = 13, d = 3, h = H + 1.2, P = 5.6, zc = zFace + d / 2 - 0.4, box = (mat: string, size: [number, number, number], x: number, y: number, z: number, c = false) => b.box(mat, size, at(x, y, z), q, c);
+  box('uniRed', [w, h - P, d], 0, P + (h - P) / 2, zc, true);
+  for (const s of [-1, 1]) box('uniWhite', [0.9, P, d + 0.2], s * (w / 2 - 0.45), P / 2, zc, true);
+  box('uniWhite', [w, 0.7, d + 0.2], 0, P - 0.35, zc, true);
+  box('uniRed', [w - 1.8, P - 0.7, 0.2], 0, (P - 0.7) / 2, zFace + 0.05);
+  box('uniRed', [1.2, P - 0.7, 0.8], 0, (P - 0.7) / 2, zFace + 0.2, true);
+  for (let k = 0; k < 9; k++) box('concrete', [3.4, 0.17, 0.3], 2.8, 0.085 + k * 0.17, zFace - 0.2 - k * 0.3);
+  box('darkGlass', [w - 2, 1.0, 0.06], 0, P + 1.1, zc + d / 2 + 0.03);
+  for (let k = 0; k < 24; k++) box('fenceIron', [0.04, 1.0, 0.05], -w / 2 + 1.2 + k * 0.46, P + 1.1, zc + d / 2 + 0.08);
+  box('fenceIron', [w - 2, 0.05, 0.06], 0, P + 1.6, zc + d / 2 + 0.08);
+  return at(0, h - 2.2, zc + d / 2 + 0.03);
 }
 
 /** A campus building by style; returns where its name goes. */
@@ -137,7 +143,7 @@ export function pavilion(b: Builder, def: CampusBuilding, rand: () => number): N
   if (def.accent === 'red') tower = accentTower(b, at, q, def.d / 2, H);
   else if (def.style !== 'courtyard') entrance(b, at, q, (rand() - 0.5) * def.w * 0.3, def.d / 2, Math.min(5, def.w * 0.25));
   if (!def.name) return null;
-  if (tower) return { pos: tower, q, w: 5.8, text: def.name, ink: '#ffffff' };
+  if (tower) return { pos: tower, q, w: 6.2, text: def.name, ink: '#f4ead2' };
   if (sk.kind === 'bio') {
     const west = q.clone().multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2));
     return { pos: at(-def.w / 2 - 0.06, FLOOR * 1.6, 0), q: west, w: Math.min(def.d * 0.62, 9), text: def.name, ink: '#151515', font: 'sans' };

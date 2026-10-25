@@ -120,11 +120,18 @@ export function puerta1(b: Builder, g: { x: number; z: number; yaw: number }, fe
 /** Red portal into the Minas garden with the white "ING. DE MINAS" band. Local +z faces out. */
 export function minasPortal(b: Builder, p: { x: number; z: number; yaw: number }): NameSign {
   const at = framer(p), q = yawQ(p.yaw), box = (mat: string, size: [number, number, number], x: number, y: number, z: number, collide = true) => b.box(mat, size, at(x, y, z), q, collide);
-  for (const s of [-1, 1]) box('uniRed', [1.4, 4.2, 1.2], s * 3.6, 2.1, 0);
-  box('uniRed', [8.6, 1.4, 1.2], 0, 4.9, 0);
-  box('uniWhite', [7, 0.9, 0.08], 0, 4.9, 0.64, false);
-  for (const s of [-1, 1]) box('uniRed', [6, 2.2, 0.4], s * 7.3, 1.1, -0.2);
-  return { pos: at(0, 4.9, 0.7), q, w: 6.4, text: 'ING. DE MINAS', ink: '#3a3a3a' };
+  for (const s of [-1, 1]) {
+    box('brickRed', [3.6, 3.6, 6], s * 5.4, 1.8, -2);
+    box('uniRed', [3.8, 0.2, 6.2], s * 5.4, 3.7, -2, false);
+  }
+  box('darkGlass', [0.06, 1.3, 2.2], -3.57, 1.7, -1.6, false);
+  box('uniWhite', [7.6, 1.3, 0.5], 0, 3.05, 0.4);
+  for (let x = -20; x <= 20; x += 2.4) {
+    if (Math.abs(x) < 8) continue;
+    box('uniRed', [2.4, 1.4, 0.3], x, 0.7, -4.5);
+    box(Math.round(x / 2.4) % 2 ? 'uniRed' : 'uniWhite', [0.9, 0.5, 0.32], x, 1.65, -4.5, false);
+  }
+  return { pos: at(0, 3.05, 0.66), q, w: 6.8, text: 'ING. DE MINAS', ink: '#8c8a80', font: 'sans' };
 }
 
 export { bin };

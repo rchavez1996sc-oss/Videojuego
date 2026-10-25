@@ -56,6 +56,7 @@ export function campusMaterials(lighting: Lighting): Record<string, THREE.Materi
     flowerRed: std('flowerRed', { map: fo.map, normalMap: fo.normalMap, color: '#ff5a5a', emissive: '#3a0606', roughness: 0.95 }),
     flowerPurple: std('flowerPurple', { map: fo.map, normalMap: fo.normalMap, color: '#b05ad0', emissive: '#22062e', roughness: 0.95 }),
     kioskGreen: std('kioskGreen', { color: '#4f9a3c', roughness: 0.7 }),
+    brickRed: std('brickRed', { map: (photo('brick') ?? stone).map, normalMap: (photo('brick') ?? stone).normalMap, color: '#d8524a', roughness: 0.85 }),
     benchWood: std('benchWood', { map: wood().map, color: '#a07a52', roughness: 0.8 }),
   };
   for (const [k, c] of Object.entries(WALLS)) m[k] = std(k, { map: (k === 'uniStone' ? stone : pl).map, normalMap: (k === 'uniStone' ? stone : pl).normalMap, color: c, roughness: 0.88 });
