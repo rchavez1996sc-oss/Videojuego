@@ -69,7 +69,7 @@ export function campusHard(def: CampusDef, paths: Paths, extra: Rect[]): (x: num
     def.parkings.some((r) => inRect(r, x, z, 0.4 + m)) ||
     inRect(def.field, x, z, 3.4 + m) ||
     extra.some((r) => inRect(r, x, z, m)) ||
-    (!!def.gate2 && Math.abs(x - def.gate2.x - 1) < 17 + m && Math.abs(z - def.gate2.z) < 4 + m) ||
+    (!!def.gate2 && Math.abs(x - def.gate2.x + 8) < 29 + m && Math.abs(z - def.gate2.z) < 4 + m) ||
     paths.discs.some((d) => Math.hypot(x - d.x, z - d.z) < d.r + m) ||
     roads.some((r) => r.pts.some((a, i) => i + 1 < r.pts.length && segDist(x, z, a, r.pts[i + 1]) < r.w / 2 + 0.3 + m));
 }

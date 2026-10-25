@@ -90,6 +90,7 @@ function wing(b: Builder, at: At, q: THREE.Quaternion, cx: number, cz: number, w
     face(w - 0.3, 'x', s);
     face(d - 0.3, 'z', s);
   }
+  if (sk.kind === 'punched' && sk.base !== sk.wall) box(sk.base, [w + 0.02, 0.5, d + 0.02], 0, 0.25, 0);
   const cornice = sk.kind === 'band' || sk.kind === 'bio' ? 'uniTerracotta' : sk.kind === 'grid' || sk.kind === 'framed' ? sk.wall : 'uniFrame';
   box('uniFrame', [w + 0.3, 0.45, d + 0.3], 0, H + 0.22, 0);
   if (sk.kind === 'band') for (const s of [-1, 1]) {
@@ -154,5 +155,5 @@ export function pavilion(b: Builder, def: CampusBuilding, rand: () => number): N
   const band = sk.kind === 'band';
   const y = band ? FLOOR + (FLOOR - 0.3) / 2 : def.style === 'courtyard' ? FLOOR + 0.2 : Math.min(H - 0.6, FLOOR + SPANDREL / 2);
   const z = def.d / 2 + (band ? 0.04 : 0.32);
-  return { pos: at(0, y, z), q, w: Math.min(def.w * 0.7, def.name.length * 0.45), text: def.name, ink: band ? '#e6e6e2' : '#1c1c1c' };
+  return { pos: at(0, y, z), q, w: Math.min(def.w * 0.7, def.name.length * 0.45), text: def.name, ink: band ? '#e6e6e2' : '#1c1c1c', plate: band ? undefined : '#ebe8e0' };
 }

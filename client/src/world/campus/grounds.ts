@@ -28,7 +28,7 @@ export function fenceGaps(def: CampusDef): [number, number][] {
     const x = r.pts[r.pts.length - 1][0];
     return [x - r.w / 2 - 2.6, x + r.w / 2 + 2.6] as [number, number];
   });
-  if (def.gate2) gaps.push([def.gate2.x - 14, def.gate2.x + 16]);
+  if (def.gate2) gaps.push([def.gate2.x - 36, def.gate2.x + 19]);
   return gaps.sort((a, c) => a[0] - c[0]);
 }
 

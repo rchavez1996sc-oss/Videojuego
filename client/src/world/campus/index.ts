@@ -19,6 +19,7 @@ import { industrial } from './industrial';
 import { fisicasRotunda, mathEntrance } from './faculties';
 import { cie } from './cie';
 import { fisInst } from './fisInst';
+import { multired } from './kiosk';
 import { SwingGates } from './swingGates';
 import { studentLife, studentWalks } from './student';
 import { plazuela } from './plazuela';
@@ -49,7 +50,7 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
   const seals: { pos: THREE.Vector3; q: THREE.Quaternion; size: number; silver?: boolean }[] = [gate.crest];
   if (def.gate2) {
     const g2 = puerta2(b, def.gate2);
-    signs.push(g2.name);
+    signs.push(g2.name, g2.label);
     seals.push({ ...g2.crest, silver: true });
   }
   for (const bd of def.buildings) {
@@ -65,6 +66,7 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
     if (s) signs.push(s);
     if (bd.key === 'minas') signs.push(minasPortal(b, { yaw: bd.yaw, ...offsetFront(bd, 6) }));
   }
+  for (const k of def.atms ?? []) signs.push(multired(b, k));
   venezuelaFence(b, def);
   for (const p of def.parkings) parkingLot(b, p, rand);
   const turf = lighting.setup(new THREE.MeshStandardMaterial({ roughness: 0.95 }), 'turf');
@@ -76,7 +78,7 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
 
   const paths = comedorPark(b, hf, def, plants, rand);
   patioDetail(b, def, paths, plants, rand);
-  if (def.plazuela) plazuela(b, hf, def.plazuela, plants, paths, rand);
+  if (def.plazuela) group.add(plazuela(b, hf, def.plazuela, plants, paths, lighting, rand));
   const walks = studentWalks(b, hf, def, paths);
   const hard = campusHard(def, paths, gate.hard);
   paintCampusLawns(hf, def, hard);

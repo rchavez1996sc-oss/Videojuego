@@ -137,37 +137,48 @@ export function minasPortal(b: Builder, p: { x: number; z: number; yaw: number }
 export { bin };
 
 /**
- * Puerta 2 (Av. Venezuela at Universitaria; from the user's photo): a block of dark stacked slate carrying the silver
- * crest, a grey rendered box, a thick red cantilevered canopy with the university's name in white over a black-framed
- * glazed gatehouse, and the vehicle lane (local x −14…−6) with its sliding bar gate parked open. Local +z faces the avenue.
+ * Puerta 2 (Av. Venezuela y Universitaria; from the user's photos), local +z towards the avenue, the vehicle gate
+ * centred on local x −10: on the left a grey pillar, a cream booth with black gate panels under a red cantilever
+ * canopy topped by a dark box; a slate pier with the silver crest and "UNMSM"; a long red fascia with the name in
+ * white over two black grid gates (the left one slid open) split by a cream pier; a cream wall with notice cases.
  */
-export function puerta2(b: Builder, g: { x: number; z: number; yaw: number }): { name: NameSign; crest: { pos: THREE.Vector3; q: THREE.Quaternion; size: number } } {
+export function puerta2(b: Builder, g: { x: number; z: number; yaw: number }): { name: NameSign; label: NameSign; crest: { pos: THREE.Vector3; q: THREE.Quaternion; size: number } } {
   const at = framer(g), q = yawQ(g.yaw), box = (mat: string, size: [number, number, number], x: number, y: number, z: number, collide = true) => b.box(mat, size, at(x, y, z), q, collide);
-  box('slate', [6, 6.6, 3], 0, 3.3, 0);
-  box('uniGrey', [3, 5.6, 3.2], -4.5, 2.8, -0.1);
-  box('uniRed', [23, 1.7, 7], 5.5, 7.05, 0.4);
-  box('uniWhite', [22.6, 0.12, 6.6], 5.5, 6.14, 0.4, false);
-  box('fenceIron', [23.1, 0.18, 0.3], 5.5, 7.95, 3.8, false);
-  for (const z of [-2.2, 2.2]) {
-    box('glassClear', [11.6, 3.6, 0.05], 9.2, 1.8, z, false);
-    for (let x = 3.4; x <= 15.01; x += 1.45) box('fenceIron', [0.1, 3.6, 0.12], x, 1.8, z, false);
-    box('fenceIron', [11.8, 0.12, 0.14], 9.2, 3.6, z, false);
+  const gridGate = (x0: number, x1: number, z: number) => {
+    const w = x1 - x0, cx = (x0 + x1) / 2;
+    box('darkGlass', [w, 1.6, 0.04], cx, 2.6, z, false);
+    for (let x = x0; x <= x1 + 0.01; x += 0.55) box('fenceIron', [0.07, 3.5, 0.09], x, 1.75, z + 0.04, false);
+    for (const y of [0.15, 1.75, 3.45]) box('fenceIron', [w, 0.12, 0.1], cx, y, z + 0.04, false);
+  };
+  box('uniGrey', [0.9, 4.6, 0.9], -34.6, 2.3, 0.6);
+  box('uniCream', [3, 3.2, 3], -30.2, 1.6, 0);
+  box('darkGlass', [1.4, 1.2, 0.05], -30.2, 1.8, 1.53, false);
+  for (const [x0, x1] of [[-33.8, -31.7], [-28.7, -25.6]]) { gridGate(x0, x1, 0.2); box('grate', [x1 - x0, 3.5, 0.3], (x0 + x1) / 2, 1.75, 0.2); }
+  box('uniRed', [15.5, 1, 4.6], -28.5, 5.1, 0.5);
+  box('uniWhite', [15.3, 0.08, 4.4], -28.5, 4.56, 0.5, false);
+  box('slate', [6.5, 1.8, 3.6], -24, 6.5, 0.2, false);
+  for (const x of [-35.5, -23]) box('uniGrey', [0.5, 0.4, 0.5], x, 5.8, 2.2, false);
+  box('slate', [5.4, 5.4, 2.4], -18, 2.7, 0);
+  box('uniRed', [36.6, 1.5, 0.9], 0.3, 5, 0.25);
+  box('uniFrame', [36.6, 0.25, 2.2], 0.3, 4.2, -0.5, false);
+  box('uniCream', [3, 4.2, 2.4], -3.2, 2.1, -0.4);
+  box('darkGlass', [1.2, 1.4, 0.05], -3.2, 2, 0.82, false);
+  gridGate(-1.7, 8.7, -0.6);
+  gridGate(-1.2, 9.2, -1.4);
+  box('grate', [10.4, 3.6, 0.4], 3.5, 1.8, -0.6);
+  box('uniCream', [9.9, 4.3, 0.5], 13.7, 2.15, -0.3);
+  for (const [x, w] of [[11, 2.2], [14, 1.4], [16.5, 1.8]]) {
+    box('fenceIron', [w + 0.12, 1.4, 0.06], x, 2.3, -0.02, false);
+    box('paper', [w, 1.25, 0.04], x, 2.3, 0.0, false);
   }
-  box('fenceIron', [0.12, 3.6, 4.4], 15, 1.8, 0, false);
-  box('none', [12, 3.8, 4.6], 9.2, 1.9, 0);
-  box('uniCream', [1.5, 3.6, 1.6], 11.5, 1.8, 0.6, false);
-  for (const x of [3.6, 14.8]) box('uniGrey', [0.4, 6.2, 0.4], x, 3.1, 3.4);
-  box('uniFrame', [12, 0.25, 4.6], 9.2, 3.75, 0, false);
-  for (let k = 0; k < 30; k++) b.box('fenceIron', [0.05, 3, 0.05], at(-23.5 + k * 0.32, 1.5, -1.8), q, false);
-  for (const y of [0.2, 2.95]) box('fenceIron', [9.8, 0.08, 0.08], -18.8, y, -1.8, false);
-  box('grate', [9.8, 3, 0.3], -18.8, 1.5, -1.8);
-  for (const [x, z] of [[-11, 2.4], [-8.5, 2.6]]) {
+  for (const x of [-30, -13, 5, 14]) box('alu', [0.6, 0.4, 0.3], x, 5.75, 0.2, false);
+  for (const [x, z] of [[-11.5, 2.6], [-8.5, 2.8]]) {
     for (const s of [-1, 1]) b.box('kerbYellow', [0.05, 1.1, 0.05], at(x + s * 1, 0.55, z), q, false);
     b.box('kerbYellow', [2.1, 0.05, 0.05], at(x, 1.05, z), q, false);
-    for (let k = 1; k < 7; k++) b.box('kerbYellow', [0.03, 0.9, 0.03], at(x - 1 + k * 0.29, 0.55, z), q, false);
   }
   return {
-    name: { pos: at(5.5, 7.05, 3.92), q, w: 18, text: 'UNIVERSIDAD NACIONAL MAYOR DE SAN MARCOS', ink: '#ffffff' },
-    crest: { pos: at(0, 3.6, 1.53), q, size: 3.6 },
+    name: { pos: at(1, 4.9, 0.62), q, w: 22, text: 'UNIVERSIDAD NACIONAL MAYOR DE SAN MARCOS', ink: '#f4f4f0', font: 'sans' },
+    label: { pos: at(-18, 1.2, 1.22), q, w: 2.4, text: 'UNMSM', ink: '#d9dcdc', font: 'sans' },
+    crest: { pos: at(-18, 3.4, 1.22), q, size: 2.6 },
   };
 }

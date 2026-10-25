@@ -55,6 +55,8 @@ export function campusMaterials(lighting: Lighting): Record<string, THREE.Materi
     tableWhite: std('tableWhite', { color: '#ecebe6', roughness: 0.4 }),
     tubeLight: std('tubeLight', { color: '#ffffff', emissive: '#f4f8ff', emissiveIntensity: 1.2 }),
     hedgeGold: std('hedgeGold', { map: fo.map, normalMap: fo.normalMap, color: '#f0dc3a', roughness: 0.95 }),
+    pathRust: std('pathRust', { map: co.map, normalMap: co.normalMap, color: '#b08876', roughness: 0.9 }),
+    waterBlue: std('waterBlue', { color: '#3c6f86', roughness: 0.05, metalness: 0.3 }),
     hedgeLime: std('hedgeLime', { map: fo.map, normalMap: fo.normalMap, color: '#f6ff6a', roughness: 0.95 }),
     flowerSilver: std('flowerSilver', { map: fo.map, normalMap: fo.normalMap, color: '#c9d2cf', roughness: 0.95 }),
     flowerRed: std('flowerRed', { map: fo.map, normalMap: fo.normalMap, color: '#ff5a5a', emissive: '#3a0606', roughness: 0.95 }),
