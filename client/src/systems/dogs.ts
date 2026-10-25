@@ -1,14 +1,10 @@
 import * as THREE from 'three';
 import type { Heightfield } from '../world/heightfield';
-import type { Lighting } from '../render/lighting';
 import type { StreetGraph } from '../world/barrio';
-import { animateBeast, makeBeast, type Beast } from '../entities/quadruped';
+import { pets, type Pet } from '../render/pets';
 
-interface Dog { node: number; queue: THREE.Vector3[]; root: THREE.Group; beast: Beast; pos: THREE.Vector3; target: THREE.Vector3; yaw: number; speed: number; idle: number; phase: number; panic: number; gone: boolean }
+interface Dog { node: number; queue: THREE.Vector3[]; root: THREE.Group; beast: Pet; pos: THREE.Vector3; target: THREE.Vector3; yaw: number; speed: number; idle: number; panic: number; gone: boolean }
 
-/** Coat and belly colours: tan, black-and-tan, cream, brindle-brown, white, dark. */
-const COATS: [string, string][] = [['#8a6440', '#c9a77c'], ['#2a2622', '#9c6a3c'], ['#c4a57a', '#e6d6b8'], ['#6b4a30', '#a07850'], ['#e3dccd', '#f1ece2'], ['#3d3128', '#6a5644']];
-const CAT_COATS: [string, string][] = [['#9a7a58', '#e8dcc8'], ['#2a2724', '#2a2724'], ['#c98a4a', '#efe0c8'], ['#7d7a74', '#dcd8d0']];
 
 /** Stray dogs trotting around the streets; they bark now and then and run off when shooting starts. */
 export class Dogs {
@@ -22,20 +18,20 @@ export class Dogs {
     return this.graph.ground?.(x, z) ?? this.hf.heightAt(x, z);
   }
 
-  constructor(private graph: StreetGraph, private hf: Heightfield, lighting: Lighting, count: number) {
+  constructor(private graph: StreetGraph, private hf: Heightfield, count: number) {
     this.neighbors = graph.nodes.map(() => []);
     for (const [a, b] of graph.edges) {
       this.neighbors[a].push(b);
       this.neighbors[b].push(a);
     }
-    const rand = Math.random;
     for (let i = 0; i < count; i++) {
-      const kind = i % 3 === 2 ? 'cat' : 'dog', [coat, belly] = (kind === 'cat' ? CAT_COATS : COATS)[i % (kind === 'cat' ? CAT_COATS : COATS).length];
-      const beast = makeBeast(kind, coat, belly, lighting, rand), root = beast.root;
+      const kind = i % 3 === 2 && pets.has('cat') ? 'cat' : 'dog', beast = pets.make(kind, kind === 'dog' ? 0.85 + Math.random() * 0.3 : 0.9 + Math.random() * 0.2);
+      if (!beast) continue;
+      const root = beast.root;
       this.group.add(root);
       const node = (i * 7) % graph.nodes.length;
       const pos = graph.nodes[node].clone().add(new THREE.Vector3(Math.random() * 2 - 1, 0, Math.random() * 2 - 1));
-      this.dogs.push({ node, queue: [], root, beast, pos, target: pos.clone(), yaw: 0, speed: 0, idle: Math.random() * 4, phase: 0, panic: 0, gone: false });
+      this.dogs.push({ node, queue: [], root, beast, pos, target: pos.clone(), yaw: 0, speed: 0, idle: Math.random() * 4, panic: 0, gone: false });
     }
   }
 
@@ -86,14 +82,13 @@ export class Dogs {
           d.idle = 2 + Math.random() * 6;
         }
       } else {
-        d.speed = THREE.MathUtils.damp(d.speed, d.panic > 0 ? 7.5 : 1.6, 4, dt);
+        d.speed = THREE.MathUtils.damp(d.speed, d.panic > 0 ? 4.2 : 0.9, 4, dt);
         d.pos.addScaledVector(to.divideScalar(dist), Math.min(dist, d.speed * dt));
         const want = Math.atan2(to.x, to.z);
         d.yaw += Math.atan2(Math.sin(want - d.yaw), Math.cos(want - d.yaw)) * Math.min(1, dt * 6);
       }
       d.pos.y = this.groundAt(d.pos.x, d.pos.z);
-      d.phase += dt * (4 + d.speed * 3);
-      if (d.pos.distanceToSquared(camera) < 40 * 40) animateBeast(d.beast, d.phase, d.speed, d.phase * (d.panic > 0 ? 0.5 : 2));
+      if (d.pos.distanceToSquared(camera) < 45 * 45) d.beast.update(dt, d.speed);
       d.root.position.copy(d.pos);
       d.root.rotation.y = d.yaw;
       d.root.visible = d.pos.distanceToSquared(camera) < 90 * 90;

@@ -1,5 +1,5 @@
 {
- "version": 17,
+ "version": 18,
  "characters": {
   "pnp": {
    "near": "characters/pnp.glb",
@@ -174,5 +174,9 @@
   "file": "hdri/beach_parking_1k.hdr",
   "gain": 1.3,
   "source": "Poly Haven beach_parking (CC0)"
+ },
+ "pets": {
+  "dog": "pets/dog.glb",
+  "cat": "pets/cat.glb"
  }
 }

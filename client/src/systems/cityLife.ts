@@ -21,7 +21,7 @@ export class CityLife {
 
   constructor(def: LifeDef, world: RAPIER.World, hf: Heightfield, barrio: Barrio, lighting: Lighting, mixer: Mixer, private camera: THREE.Camera) {
     this.traffic = new Traffic(world, hf, lighting, barrio.materials, barrio.bake, def.roads ?? [{ z: 0, lane: 3.2, half: 7.6, count: def.traffic }]);
-    this.dogs = new Dogs(barrio.graph, hf, lighting, def.dogs);
+    this.dogs = new Dogs(barrio.graph, hf, def.dogs);
     this.birds = new Birds(def.birds, 250);
     this.ambience = new Ambience(mixer);
     this.group.add(this.traffic.group, this.dogs.group, this.birds.mesh);

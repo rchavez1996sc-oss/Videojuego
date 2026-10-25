@@ -4,10 +4,11 @@ import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.j
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { Lighting } from './lighting';
 import { LOOKS, variants } from './outfitTint';
+import { pets, type PetKind } from './pets';
 
 export type CharKind = 'pnp' | 'fls' | 'civ_a' | 'civ_b' | 'civ_c' | 'vip';
 
-interface Manifest { version?: number; characters: Record<CharKind, { near: string; far: string }>; animations: string }
+interface Manifest { version?: number; characters: Record<CharKind, { near: string; far: string }>; animations: string; pets?: Record<PetKind, string> }
 
 /** Instance pieces: the animated near model and a low-poly copy bound to the same bones. */
 export interface CharInstance { model: THREE.Object3D; near: THREE.SkinnedMesh[]; far: THREE.SkinnedMesh[]; bones: Map<string, THREE.Bone> }
@@ -72,6 +73,7 @@ class CharacterLibrary {
     const manifest = (await (await fetch(`${BASE}manifest.json`, { cache: 'no-cache' })).json()) as Manifest;
     const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
     const get = (url: string) => loader.loadAsync(`${BASE}${url}?v=${manifest.version ?? 0}`);
+    const petsReady = pets.load(lighting, manifest.version ?? 0, manifest.pets);
     const [anims, ...models] = await Promise.all([get(manifest.animations), ...Object.values(manifest.characters).flatMap((c) => [get(c.near), get(c.far)])]);
     for (const clip of anims.animations) this.clips.set(clip.name, clip);
     const walk = this.clips.get('civ_walk');
@@ -110,6 +112,7 @@ class CharacterLibrary {
       this.protos.set(kind as CharKind, { near, far });
     });
     this.ready = true;
+    await petsReady;
   }
 
   create(kind: CharKind): CharInstance {

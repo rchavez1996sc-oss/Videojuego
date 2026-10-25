@@ -7,3 +7,4 @@
   - Personajes: SWAT (PNP), Ch28 (FLS), Ch07, Ch02 y Ch42 (civiles), Ch33 Businessman (hombre de terno).
   - Animaciones: Pro Rifle Pack, Firing Rifle, Reloading, Hit Reaction, Knocked Down, Getting Up, Dying, Falling Back Death, Grenade Throw, Walking, Walking Backwards, Running, Terrified.
   - Originales en el Release `assets-v1` del repositorio; convertidos con `client/scripts/mixamo.mjs` (gltfpack, meshoptimizer).
+- Perro callejero animado (`dog-animated`) y gato (`Cat`): modelos de Sketchfab aportados por el usuario (Release `assets-v1`); revisar la licencia y el autor en las páginas de Sketchfab de origen antes de publicar.
