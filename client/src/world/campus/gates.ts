@@ -36,15 +36,15 @@ type Box = (mat: string, size: [number, number, number], x: number, y: number, z
 export interface Gate1 { name: NameSign; plate: NameSign; crest: { pos: THREE.Vector3; q: THREE.Quaternion; size: number }; leaves: LeafDef[]; palms: THREE.Vector3[]; hard: Rect[] }
 
 /**
- * Puerta 1 (from the user's photos, incl. one from the Huaca): it faces the road along the Huaca. Left to right: a low
+ * Puerta 1 (from the user's photos): it faces Av. Venezuela, with the Huaca behind it to the west across a side road. Left to right: a low
  * portico on grey pillars with chevron iron leaves and a red guard booth; the red pier carrying a long red lintel with
  * the university's name; the vehicle gate (two chevron leaves); a tall cream block with a red stripe that drops
  * diagonally and the "PUERTA 1" plate; a pedestrian passage and a bar gate; the square pylon in pale laja with the red
- * stepped key and the crest. To its side a flagstone plaza runs to Av. Venezuela, backed by a red wall with white
- * steps, with lawn beds, palms, benches, lamps and bins. In front: the entrance lane, a row of yellow bollards and a
- * planted median. All leaves swing when pushed. Local +z faces the road; local +x runs towards the avenue.
+ * stepped key and the crest. East of it a flagstone plaza backed by a red wall with white steps, with lawn beds,
+ * palms, benches, lamps and bins; in front a paved forecourt edged with yellow bollards down to the avenue. All leaves
+ * swing when pushed. Local +z faces the avenue; `fenceWest` metres of railing run west from the portico.
  */
-export function puerta1(b: Builder, g: { x: number; z: number; yaw: number }): Gate1 {
+export function puerta1(b: Builder, g: { x: number; z: number; yaw: number }, fenceWest: number): Gate1 {
   const at = framer(g), q = yawQ(g.yaw), box: Box = (mat, size, x, y, z, collide = true) => b.box(mat, size, at(x, y, z), q, collide);
   const dirX = at(1, 0, 0).sub(at(0, 0, 0)), leaves: LeafDef[] = [], palms: THREE.Vector3[] = [];
   const leaf = (x: number, sgn: number, w: number, look: LeafDef['look'], h = 2.6) => leaves.push({ hinge: at(x, 0, -0.3), dir: dirX.clone().multiplyScalar(sgn), w, h, look });
@@ -79,7 +79,7 @@ export function puerta1(b: Builder, g: { x: number; z: number; yaw: number }): G
   leaf(7, 1, 3, 'bars');
   leaf(13, -1, 3, 'bars');
 
-  const fence = 120, fx = -28.2 - fence / 2;
+  const fence = Math.max(0.5, fenceWest), fx = -28.2 - fence / 2;
   box('kerbYellow', [fence, 0.42, 0.36], fx, 0.21, 0, false);
   box('fenceBars', [fence, 1.9, 0.02], fx, 1.4, 0, false);
   for (const y of [0.55, 2.3]) box('fenceIron', [fence, 0.06, 0.05], fx, y, 0, false);
@@ -102,10 +102,8 @@ export function puerta1(b: Builder, g: { x: number; z: number; yaw: number }): G
   for (const x of [33, 38, 43, 50]) campusBench(b, at, q, x, PZ0 + 1.6);
   for (const [x, z] of [[31, -3], [40, -3], [50, -3], [58, -10], [36, -12], [-4, 3.2], [-20, 3.2]]) campusLamp(b, at(x, 0.19, z), (-g.yaw * Math.PI) / 180);
   for (const [x, z] of [[34, -2], [52, -11]]) bin(b, at(x, 0.19, z));
-  for (let x = -30; x <= 58; x += 1.6) b.geometry('kerbYellow', new THREE.CylinderGeometry(0.07, 0.08, 0.9, 10).translate(0, 0.45, 0), new THREE.Matrix4().makeTranslation(...at(x, 0.06, 8.5).toArray()));
-  box('kerbYellow', [98, 0.3, 2.4], 9, 0.15, 14, true);
-  box('lawnBed', [97.6, 0.05, 2], 9, 0.31, 14, false);
-  for (let x = -38; x < 57; x += 7) palms.push(at(x, 0.3, 14));
+  box('plazaStone', [PX1 + 32, 0.2, 10], (PX1 - 32) / 2, 0.09, 6.6, true);
+  for (let x = -30; x <= 58; x += 1.6) if (x < -16.5 || x > -6.5) b.geometry('kerbYellow', new THREE.CylinderGeometry(0.07, 0.08, 0.9, 10).translate(0, 0.45, 0), new THREE.Matrix4().makeTranslation(...at(x, 0.19, 9.5).toArray()));
   const mast = new THREE.Matrix4().compose(at(-32, 0, -8), q, new THREE.Vector3(1, 1, 1));
   b.geometry('lampPole', new THREE.CylinderGeometry(0.12, 0.22, 14, 8).translate(0, 7, 0), mast);
   for (let k = 0; k < 4; k++) b.geometry('globe', new THREE.BoxGeometry(0.7, 0.5, 0.25).translate(-0.6 + (k % 2) * 1.2, 14 + Math.floor(k / 2) * 0.6, 0.2), mast);
@@ -115,7 +113,7 @@ export function puerta1(b: Builder, g: { x: number; z: number; yaw: number }): G
     plate: { pos: at(-6.3, 3.4, F + 0.05), q, w: 1.3, text: 'PUERTA\n1', ink: '#ffffff', plate: '#1d2b5a', font: 'sans' },
     crest: { pos: at((P0 + P1) / 2 + 1.9, 6.9, PD / 2 + 0.14), q, size: 4.2 },
     leaves, palms,
-    hard: [rect((PX0 + PX1) / 2, (PZ0 + PZ1) / 2, PX1 - PX0, PZ1 - PZ0), rect(0, -0.7, 60, 5), rect(9, 14, 100, 3), rect(fx, 0, fence, 1.2)],
+    hard: [rect((PX0 + PX1) / 2, (PZ0 + PZ1) / 2, PX1 - PX0, PZ1 - PZ0), rect(0, -0.7, 60, 5), rect((PX1 - 32) / 2, 6.6, PX1 + 32, 10), rect(fx, 0, fence, 1.2)],
   };
 }
 

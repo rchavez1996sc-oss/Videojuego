@@ -37,7 +37,8 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
   const group = new THREE.Group(), signs: NameSign[] = [];
 
   buildCampusRoads(b, def, rand);
-  const v = def.venezuela, gate = puerta1(b, def.gate1);
+  const v = def.venezuela, side = def.roads.find((r) => r.name === 'huaca');
+  const gate = puerta1(b, def.gate1, side ? def.gate1.x - 28.2 - (side.pts[0][0] + side.w / 2) : 0);
   signs.push(gate.name, gate.plate);
   plants.palms.push(...gate.palms);
   const swing = new SwingGates(gate.leaves, world, lighting);
