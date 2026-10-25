@@ -63,7 +63,7 @@ function segDist(x: number, z: number, a: THREE.Vector2, c: THREE.Vector2): numb
 /** True where the ground is built over (buildings, roads with sidewalks, lots, pitch, plaza, park paths), grown by `m`. */
 export function campusHard(def: CampusDef, paths: Paths, plazaDepth: number): (x: number, z: number, m?: number) => boolean {
   const v = def.venezuela, g = def.gate1;
-  const plaza = { x: g.x, z: g.z + (plazaDepth - 4) / 2, w: 44, d: plazaDepth + 8, yaw: g.yaw };
+  const plaza = { x: g.x + 1, z: g.z + (plazaDepth - 4) / 2, w: 58, d: plazaDepth + 8, yaw: g.yaw };
   const roads = [...def.roads.map((r) => ({ pts: r.pts.map(([x, z]) => new THREE.Vector2(x, z)), w: r.w + 5 })), ...paths.lines];
   return (x, z, m = 0) =>
     z > v.z - v.half - v.sidewalk - 1 - m ||

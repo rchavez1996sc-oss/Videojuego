@@ -33,7 +33,7 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
   const group = new THREE.Group(), signs: NameSign[] = [];
 
   buildCampusRoads(b, def, rand);
-  const v = def.venezuela, g = def.gate1, plazaDepth = v.z - v.half - v.sidewalk - g.z - 1.4;
+  const v = def.venezuela, g = def.gate1, plazaDepth = v.z - v.half - v.sidewalk - g.z - 1.8;
   const gate = puerta1(b, g, plazaDepth);
   signs.push(gate.name);
   for (const bd of def.buildings) {

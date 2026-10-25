@@ -34,58 +34,45 @@ function lettering(s: NameSign, lighting: Lighting): THREE.Mesh {
   return mesh;
 }
 
-/** San Marcos seal: gold ring with the university's name around a shield and the founding year. */
+/** San Marcos coat of arms: baroque gold frame round an oval; left the evangelist in red with his book and lion, right a tower over the sea. */
 function crest(size: number, lighting: Lighting): THREE.Mesh {
-  const N = 512, c = document.createElement('canvas'), g = c.getContext('2d')!;
+  const N = 512, c = document.createElement('canvas'), g = c.getContext('2d')!, cx = N / 2, cy = N / 2;
   c.width = c.height = N;
-  const gold = '#d9b45a', r = N / 2 - 6;
-  g.fillStyle = '#efe9da';
-  g.beginPath();
-  g.arc(N / 2, N / 2, r, 0, Math.PI * 2);
-  g.fill();
-  g.lineWidth = 10;
-  g.strokeStyle = gold;
-  for (const rr of [r - 6, r - 74]) {
-    g.beginPath();
-    g.arc(N / 2, N / 2, rr, 0, Math.PI * 2);
-    g.stroke();
-  }
-  g.fillStyle = '#6b1a14';
-  g.font = '700 34px "Times New Roman", serif';
-  g.textAlign = 'center';
-  g.textBaseline = 'middle';
-  const text = 'UNIVERSIDAD NACIONAL MAYOR DE SAN MARCOS · ';
-  [...text].forEach((ch, i) => {
-    const a = (i / text.length) * Math.PI * 2 - Math.PI / 2;
-    g.save();
-    g.translate(N / 2 + Math.cos(a) * (r - 40), N / 2 + Math.sin(a) * (r - 40));
-    g.rotate(a + Math.PI / 2);
-    g.fillText(ch, 0, 0);
-    g.restore();
-  });
-  const cx = N / 2, top = N / 2 - 120;
-  g.fillStyle = '#7a1c16';
-  g.beginPath();
-  g.moveTo(cx - 90, top);
-  g.lineTo(cx + 90, top);
-  g.lineTo(cx + 90, top + 120);
-  g.quadraticCurveTo(cx + 80, top + 200, cx, top + 230);
-  g.quadraticCurveTo(cx - 80, top + 200, cx - 90, top + 120);
-  g.closePath();
-  g.fill();
-  g.strokeStyle = gold;
-  g.lineWidth = 8;
-  g.stroke();
+  const gold = g.createRadialGradient(cx - 60, cy - 80, 20, cx, cy, 260);
+  gold.addColorStop(0, '#fbe6a0'); gold.addColorStop(0.6, '#d6a940'); gold.addColorStop(1, '#8a6420');
   g.fillStyle = gold;
-  g.font = '700 54px "Times New Roman", serif';
-  g.fillText('1551', cx, top + 90);
-  g.fillRect(cx - 4, top + 120, 8, 80);
-  g.fillRect(cx - 40, top + 140, 80, 8);
+  for (let i = 0; i < 18; i++) {
+    const a = (i / 18) * Math.PI * 2, rx = 205, ry = 235;
+    g.beginPath(); g.ellipse(cx + Math.cos(a) * rx, cy + Math.sin(a) * ry, 34, 30, a, 0, Math.PI * 2); g.fill();
+  }
+  g.beginPath(); g.ellipse(cx, cy, 214, 244, 0, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = '#7a5418'; g.lineWidth = 5;
+  g.beginPath(); g.ellipse(cx, cy, 168, 198, 0, 0, Math.PI * 2); g.stroke();
+  g.save();
+  g.beginPath(); g.ellipse(cx, cy, 165, 195, 0, 0, Math.PI * 2); g.clip();
+  g.fillStyle = '#efe6cf'; g.fillRect(0, 0, cx, N);
+  const sky = g.createLinearGradient(0, cy - 200, 0, cy + 100); sky.addColorStop(0, '#5f9fd8'); sky.addColorStop(1, '#a8cdec');
+  g.fillStyle = sky; g.fillRect(cx, 0, cx, N);
+  g.fillStyle = '#23201d';
+  g.fillRect(cx + 50, cy - 40, 60, 120);
+  for (let k = 0; k < 4; k++) g.fillRect(cx + 48 + k * 18, cy - 60, 11, 22);
+  g.fillStyle = '#1d4f8f'; g.fillRect(cx, cy + 70, cx, 200);
+  g.strokeStyle = '#e8f2fb'; g.lineWidth = 6;
+  for (let y = cy + 90; y < cy + 200; y += 26) { g.beginPath(); for (let x = cx; x < N; x += 4) g.lineTo(x, y + Math.sin(x * 0.08) * 6); g.stroke(); }
+  g.fillStyle = '#b42a20'; g.beginPath(); g.ellipse(cx - 70, cy + 40, 52, 105, 0.05, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#e2b48c'; g.beginPath(); g.arc(cx - 68, cy - 80, 26, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#4a3020'; g.beginPath(); g.arc(cx - 68, cy - 92, 24, Math.PI, 0); g.fill();
+  g.fillStyle = '#f7f3e8'; g.fillRect(cx - 38, cy - 10, 44, 30);
+  g.fillStyle = '#d9822e'; g.beginPath(); g.ellipse(cx - 70, cy + 150, 60, 26, 0, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#5a2e14'; g.font = '700 30px "Times New Roman", serif'; g.textAlign = 'center'; g.fillText('S.M', cx - 95, cy - 140);
+  g.restore();
+  g.strokeStyle = '#c99a32'; g.lineWidth = 3;
+  g.beginPath(); g.moveTo(cx, cy - 195); g.lineTo(cx, cy + 195); g.stroke();
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = 8;
-  const mat = lighting.setup(new THREE.MeshStandardMaterial({ map: t, alphaTest: 0.3, roughness: 0.4, metalness: 0.3, polygonOffset: true, polygonOffsetFactor: -2 }), 'campus-crest');
-  return new THREE.Mesh(new THREE.CircleGeometry(size / 2, 48), mat);
+  const mat = lighting.setup(new THREE.MeshStandardMaterial({ map: t, alphaTest: 0.3, roughness: 0.4, metalness: 0.25, polygonOffset: true, polygonOffsetFactor: -2 }), 'campus-crest');
+  return new THREE.Mesh(new THREE.PlaneGeometry(size * 0.88, size), mat);
 }
 
 export function campusSigns(signs: NameSign[], seal: { pos: THREE.Vector3; q: THREE.Quaternion; size: number } | null, lighting: Lighting): THREE.Group {

@@ -4,7 +4,7 @@ import { concrete, plaster, slabs } from '../../render/urbanTextures';
 import { photo } from '../../render/photoTextures';
 import { deck, rock, wood, type PbrSet } from '../../render/textures';
 import { bakeGroups } from '../bake';
-import { foliage } from '../malecon/textures';
+import { flagstone, foliage } from '../malecon/textures';
 import { chainLink } from '../malecon/beach';
 import { barsTexture } from './grounds';
 
@@ -16,7 +16,7 @@ const WALLS: Record<string, string> = {
 
 export function campusMaterials(lighting: Lighting): Record<string, THREE.Material> {
   const std = (key: string, p: THREE.MeshStandardMaterialParameters) => lighting.setup(new THREE.MeshStandardMaterial(p), key);
-  const pl = plaster(), co = concrete(), fo = foliage(), rk = rock(), stone = photo('stoneWall') ?? rk;
+  const pl = plaster(), co = concrete(), fo = foliage(), rk = rock(), stone = photo('stoneWall') ?? rk, fs = flagstone();
   const m: Record<string, THREE.Material> = {
     winGlass: std('winGlass', { color: '#4d5f6a', roughness: 0.08, metalness: 0.7, envMapIntensity: 1.4 }),
     darkGlass: std('darkGlass', { color: '#15191d', roughness: 0.05, metalness: 0.85, envMapIntensity: 1.6 }),
@@ -24,7 +24,8 @@ export function campusMaterials(lighting: Lighting): Record<string, THREE.Materi
     paneBlue: std('paneBlue', { color: '#2f5c96', roughness: 0.3, metalness: 0.3 }),
     paneYellow: std('paneYellow', { color: '#d9ad2a', roughness: 0.35, metalness: 0.2 }),
     alu: std('alu', { color: '#b9bec2', roughness: 0.35, metalness: 0.8 }),
-    laja: std('laja', { map: stone.map, normalMap: stone.normalMap, color: '#5b5852', roughness: 0.8 }),
+    laja: std('laja', { map: fs.map, normalMap: fs.normalMap, color: '#fff6ea', roughness: 0.85 }),
+    plazaStone: std('plazaStone', { map: fs.map, normalMap: fs.normalMap, color: '#fff8ec', roughness: 0.9 }),
     pavers: std('pavers', { map: slabs().map, normalMap: slabs().normalMap, color: '#b9b2a6', roughness: 0.9 }),
     parkPath: std('parkPath', { map: co.map, normalMap: co.normalMap, color: '#bdb8ae', roughness: 0.9 }),
     lawnBed: std('lawnBed', { map: fo.map, normalMap: fo.normalMap, color: '#8fb85c', roughness: 0.95 }),
