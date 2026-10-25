@@ -16,23 +16,30 @@ export function venezuelaSouth(b: Builder, hf: Heightfield, def: CampusDef, rand
   b.box('none', [2 * X, 8, 0.5], new THREE.Vector3(0, 4, z + 0.6), new THREE.Quaternion(), true);
 }
 
-/** Estadio de San Marcos beyond the sector's north edge: yellow oval stands, a cantilevered roof on one side, floodlight masts. */
+/** Estadio de San Marcos past the sector's north edge (from the user's photo): an open bowl of grey terraces striped in
+ * yellow and red seats rising from a red running track round a green pitch, a press box on one side, floodlight masts. */
 export function stadium(b: Builder, s: CampusDef['stadium']): void {
-  const N = 56;
+  const N = 64, rows = 9, Q = new THREE.Quaternion();
+  b.box('lawnBed', [s.rx * 1.1, 0.1, s.rz * 1.0], new THREE.Vector3(s.x, 0.05, s.z), Q, false);
+  b.box('trackRed', [s.rx * 1.38, 0.08, s.rz * 1.3], new THREE.Vector3(s.x, 0.03, s.z), Q, false);
+  b.box('lawnBed', [s.rx * 0.9, 0.12, s.rz * 0.8], new THREE.Vector3(s.x, 0.07, s.z), Q, false);
   for (let i = 0; i < N; i++) {
     const a0 = (i / N) * Math.PI * 2, a1 = ((i + 1) / N) * Math.PI * 2, am = (a0 + a1) / 2;
-    const p0 = new THREE.Vector2(Math.cos(a0) * s.rx, Math.sin(a0) * s.rz), p1 = new THREE.Vector2(Math.cos(a1) * s.rx, Math.sin(a1) * s.rz);
-    const mid = p0.clone().lerp(p1, 0.5), len = p0.distanceTo(p1) + 0.4, yaw = Math.atan2(p1.x - p0.x, p1.y - p0.y) + Math.PI / 2;
-    const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw), tilt = q.clone().multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -0.5));
-    const at = (r: number, y: number) => new THREE.Vector3(s.x + mid.x * r, y, s.z + mid.y * r);
-    b.box('uniYellow', [len, 16, 1.2], at(1, 8), q, false);
-    b.box('concrete', [len * 0.9, 0.6, 22], at(0.9, 6.5), tilt, false);
-    if (Math.sin(am) > 0.55) b.box('roofWhite', [len, 0.5, 18], at(0.95, 22), q, false);
+    const yaw = Math.atan2(Math.cos(am) * s.rz, -Math.sin(am) * s.rx), q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+    for (let r = 0; r < rows; r++) {
+      const k = 0.75 + r * 0.045, len = Math.hypot(Math.cos(a1) - Math.cos(a0), Math.sin(a1) - Math.sin(a0)) * s.rx * k + 0.6;
+      const at = new THREE.Vector3(s.x + Math.cos(am) * s.rx * k, 0.8 + r * 1.1, s.z + Math.sin(am) * s.rz * k);
+      b.box('concrete', [len, 0.8 + r * 1.1 + 0.4, 4.5], at.clone().setY((0.8 + r * 1.1) / 2), q, false);
+      const band = Math.floor((am / (Math.PI * 2)) * 10 + r * 0.3) % 3;
+      b.box(band === 0 ? 'uniYellow' : band === 1 ? 'uniRed' : 'uniGrey', [len - 0.2, 0.25, 1.4], at.clone().setY(at.y + 0.55), q, false);
+    }
   }
+  b.box('uniGrey', [26, 6, 8], new THREE.Vector3(s.x, 3, s.z + s.rz * 1.22), Q, false);
+  b.box('alu', [27, 0.3, 9], new THREE.Vector3(s.x, 6.2, s.z + s.rz * 1.22), Q, false);
   for (const [cx, cz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
-    const p = new THREE.Vector3(s.x + cx * s.rx * 0.78, 0, s.z + cz * s.rz * 0.78);
-    b.box('lampPole', [1, 42, 1], p.clone().setY(21), new THREE.Quaternion(), false);
-    b.box('globe', [6, 3, 0.8], p.clone().setY(43), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(-cx, -cz)), false);
+    const p = new THREE.Vector3(s.x + cx * s.rx * 1.25, 0, s.z + cz * s.rz * 1.25);
+    b.box('lampPole', [0.8, 42, 0.8], p.clone().setY(21), Q, false);
+    b.box('globe', [5, 3, 0.6], p.clone().setY(43), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(-cx, -cz)), false);
   }
 }
 
