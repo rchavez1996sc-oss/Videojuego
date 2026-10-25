@@ -45,6 +45,8 @@ export function campusMaterials(lighting: Lighting): Record<string, THREE.Materi
     steelGrey: std('steelGrey', { color: '#8d9296', roughness: 0.45, metalness: 0.6 }),
     panePurple: std('panePurple', { color: '#7d6db0', roughness: 0.35, metalness: 0.2 }),
     curtainRed: std('curtainRed', { color: '#6a3a34', roughness: 0.7 }),
+    granite: std('granite', { map: co.map, normalMap: co.normalMap, color: '#9d988f', roughness: 0.7 }),
+    bronze: std('bronze', { color: '#6a5634', roughness: 0.42, metalness: 0.75 }),
     benchWood: std('benchWood', { map: wood().map, color: '#a07a52', roughness: 0.8 }),
   };
   for (const [k, c] of Object.entries(WALLS)) m[k] = std(k, { map: (k === 'uniStone' ? stone : pl).map, normalMap: (k === 'uniStone' ? stone : pl).normalMap, color: c, roughness: 0.88 });

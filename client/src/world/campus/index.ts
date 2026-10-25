@@ -17,6 +17,7 @@ import { comedor } from './comedor';
 import { minasPortal, puerta1, puerta2 } from './gates';
 import { industrial } from './industrial';
 import { SwingGates } from './swingGates';
+import { studentLife, studentWalks } from './student';
 import { plazuela } from './plazuela';
 import { footballField, parkingLot, venezuelaFence } from './grounds';
 import { perimeter } from './perimeter';
@@ -63,8 +64,10 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
 
   const paths = comedorPark(b, hf, def, plants, rand);
   if (def.plazuela) plazuela(b, hf, def.plazuela, plants, paths, rand);
+  const walks = studentWalks(b, hf, def, paths);
   const hard = campusHard(def, paths, gate.hard);
   paintCampusLawns(hf, def, hard);
+  if (def.politics) group.add(studentLife(b, def, def.politics, walks, hard, gate.hard, plants, lighting, mulberry32(def.seed + 9)));
   plantCampus(hf, def, hard, plants, rand);
 
   group.add(buildVegetation(b, plants, [], lighting));
@@ -75,7 +78,7 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
   if (atlas.geometries.length) group.add(Object.assign(new THREE.Mesh(mergeGeometries(atlas.geometries), mats.signs), { receiveShadow: true }));
 
   const solid = (x: number, z: number) => def.buildings.some((r) => inRect(r, x, z, 1)) || def.parkings.some((r) => inRect(r, x, z, 0)) || inRect(def.field, x, z, 3.2);
-  const graph = campusGraph(def, solid);
+  const graph = campusGraph(def, solid, walks);
   const B = def.bounds;
   return { group, materials: mats, bake, station: null, graph, bystanders, tick: (dt, movers) => swing.update(dt, movers),
     blocked: (x, z) => solid(x, z) || z > v.z + v.half + v.sidewalk,

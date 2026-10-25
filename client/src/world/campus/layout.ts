@@ -30,6 +30,7 @@ export interface CampusDef {
   /** Dense tree stands: rectangle and spacing. */
   forests?: { x0: number; x1: number; z0: number; z1: number; gap: number }[];
   plazuela?: import('./plazuela').PlazuelaDef;
+  politics?: import('./propaganda').PoliticsDef;
   /** Av. Universitaria beyond the east fence: centre x and half width (decor only). */
   universitaria?: { x: number; half: number };
   field: Rect;
@@ -78,12 +79,13 @@ export function offset(pts: [number, number][], off: number): [number, number][]
  * Walkable graph: the sidewalks on both sides of every campus road and Av. Venezuela's north sidewalk, sampled
  * every ~8 m, joined where they come close; nodes inside buildings are dropped.
  */
-export function campusGraph(def: CampusDef, solid: (x: number, z: number) => boolean): StreetGraph {
+export function campusGraph(def: CampusDef, solid: (x: number, z: number) => boolean, walks: [number, number][][] = []): StreetGraph {
   const nodes: THREE.Vector3[] = [], edges: [number, number][] = [];
   const b = def.bounds, v = def.venezuela;
   const side = v.z - v.half - v.sidewalk;
   const lines: [number, number][][] = [[[-b.x + 4, side + v.sidewalk / 2], [b.x - 4, side + v.sidewalk / 2]]];
   for (const r of def.roads) for (const s of [-1, 1]) lines.push(offset(r.pts, s * (r.w / 2 + 1.4)));
+  lines.push(...walks);
   const ok = (p: THREE.Vector2) => Math.abs(p.x) < b.x - 3 && p.y < b.south && !solid(p.x, p.y) && (p.y > side || (p.x > b.west + 3 && p.y > b.north + 3));
   for (const line of lines) {
     let prev = -1;

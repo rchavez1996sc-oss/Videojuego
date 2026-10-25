@@ -9,12 +9,13 @@ export interface BustDef { name: string; years: string; x: number; look: 'beard'
 
 const Q = new THREE.Quaternion();
 
-/** Bronze bust on a granite pedestal facing the path, with an engraved plaque. */
-function bust(b: Builder, at: THREE.Vector3, d: BustDef, signs: THREE.Group, lighting: Lighting): void {
-  b.box('granite', [1.2, 0.2, 1.2], at.clone().setY(at.y + 0.1), Q, true);
-  b.box('granite', [0.8, 1.4, 0.8], at.clone().setY(at.y + 0.9), Q, true);
-  b.box('granite', [0.95, 0.12, 0.95], at.clone().setY(at.y + 1.66), Q, false);
-  const m = new THREE.Matrix4().makeTranslation(at.x, at.y + 1.72, at.z);
+/** Bronze bust on a granite pedestal with an engraved plaque; with `yaw` 0 it looks towards −z. */
+export function bust(b: Builder, at: THREE.Vector3, d: Pick<BustDef, 'name' | 'years' | 'look'>, signs: THREE.Group, lighting: Lighting, yaw = 0): void {
+  const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+  b.box('granite', [1.2, 0.2, 1.2], at.clone().setY(at.y + 0.1), q, true);
+  b.box('granite', [0.8, 1.4, 0.8], at.clone().setY(at.y + 0.9), q, true);
+  b.box('granite', [0.95, 0.12, 0.95], at.clone().setY(at.y + 1.66), q, false);
+  const m = new THREE.Matrix4().compose(at.clone().setY(at.y + 1.72), q, new THREE.Vector3(1, 1, 1));
   const g = (geo: THREE.BufferGeometry) => b.geometry('bronze', geo, m);
   g(new THREE.SphereGeometry(1, 22, 12, 0, Math.PI * 2, 0, Math.PI / 2).scale(0.36, 0.34, 0.21));
   g(new THREE.CylinderGeometry(0.065, 0.075, 0.16, 12).translate(0, 0.38, -0.01));
@@ -44,8 +45,8 @@ function bust(b: Builder, at: THREE.Vector3, d: BustDef, signs: THREE.Group, lig
     ctx.fillText(d.years, w / 2, h * 0.76);
   }, 512, 256);
   const plaque = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.31), lighting.setup(new THREE.MeshStandardMaterial({ map: tex, metalness: 0.6, roughness: 0.4 }), 'plaque'));
-  plaque.position.set(at.x, at.y + 1.15, at.z - 0.41);
-  plaque.rotation.y = Math.PI;
+  plaque.position.copy(new THREE.Vector3(0, 1.15, -0.41).applyQuaternion(q).add(at));
+  plaque.rotation.y = Math.PI + yaw;
   signs.add(plaque);
 }
 
