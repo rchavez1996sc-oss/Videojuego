@@ -4,7 +4,7 @@ import { framer, yawQ, type CampusBuilding } from './layout';
 
 export const FLOOR = 3.6;
 const SPANDREL = 1.0, GLASS = 1.7, BAY = 3;
-export const WALLS: Record<string, string> = { cream: 'uniCream', grey: 'uniGrey', white: 'uniWhite', yellow: 'uniYellow', stone: 'uniStone', sand: 'uniSand', taupe: 'uniTaupe', ochre: 'uniOchre' };
+export const WALLS: Record<string, string> = { cream: 'uniCream', grey: 'uniGrey', white: 'uniWhite', yellow: 'uniYellow', stone: 'uniStone', travertine: 'travertine', brown: 'uniBrown', sand: 'uniSand', taupe: 'uniTaupe', ochre: 'uniOchre' };
 
 /** Where a building's name goes: centre of the lettering, facing, width, colours. */
 export interface NameSign { pos: THREE.Vector3; q: THREE.Quaternion; w: number; text: string; ink: string; plate?: string; font?: 'serif' | 'sans' }
@@ -76,7 +76,8 @@ function wing(b: Builder, at: At, q: THREE.Quaternion, cx: number, cz: number, w
         put(sk.wall, len, FLOOR - SPANDREL - GLASS, 0.3, 0, y0 + SPANDREL + GLASS + (FLOOR - SPANDREL - GLASS) / 2, 0.12);
         for (let i = 1; i < n; i++) {
           const pane = sk.kind === 'panels' && rand() < 0.3;
-          if (pane) put(rand() < 0.5 ? 'paneBlue' : 'paneYellow', bay - 0.3, GLASS - 0.2, 0.05, -len / 2 + (i - 0.5) * bay, y0 + SPANDREL + GLASS / 2, 0.04);
+          if (f === 2) put(i % 2 ? 'paneBlue' : 'paneYellow', bay - 0.1, 0.32, 0.05, -len / 2 + (i - 0.5) * bay, y0 + SPANDREL + GLASS - 0.2, 0.04);
+          else if (pane) put('alu', bay - 0.3, GLASS * 0.45, 0.05, -len / 2 + (i - 0.5) * bay, y0 + SPANDREL + GLASS * 0.3, 0.04);
           put('mullion', 0.06, GLASS, 0.1, -len / 2 + i * bay, y0 + SPANDREL + GLASS / 2, 0.06);
         }
       }
@@ -141,7 +142,7 @@ export function pavilion(b: Builder, def: CampusBuilding, rand: () => number): N
   } else wing(b, at, q, 0, 0, def.w, def.d, def.floors, sk, rand);
   let tower: THREE.Vector3 | null = null;
   if (def.accent === 'red') tower = accentTower(b, at, q, def.d / 2, H);
-  else if (def.style !== 'courtyard') entrance(b, at, q, (rand() - 0.5) * def.w * 0.3, def.d / 2, Math.min(5, def.w * 0.25));
+  else if (def.style !== 'courtyard' && def.key !== 'mate') entrance(b, at, q, (rand() - 0.5) * def.w * 0.3, def.d / 2, Math.min(5, def.w * 0.25));
   if (!def.name) return null;
   if (tower) return { pos: tower, q, w: 6.2, text: def.name, ink: '#f4ead2' };
   if (sk.kind === 'bio') {

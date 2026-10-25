@@ -16,6 +16,7 @@ import { pavilion, type NameSign } from './pavilion';
 import { comedor } from './comedor';
 import { minasPortal, puerta1, puerta2 } from './gates';
 import { industrial } from './industrial';
+import { fisicasRotunda, mathEntrance } from './faculties';
 import { SwingGates } from './swingGates';
 import { studentLife, studentWalks } from './student';
 import { plazuela } from './plazuela';
@@ -57,6 +58,8 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
       continue;
     }
     const s = bd.key === 'industrial' ? industrial(b, bd, rand) : pavilion(b, bd, rand);
+    if (bd.key === 'fisicas') signs.push(fisicasRotunda(b, bd));
+    if (bd.key === 'mate') signs.push(mathEntrance(b, bd));
     if (s) signs.push(s);
     if (bd.key === 'minas') signs.push(minasPortal(b, { yaw: bd.yaw, ...offsetFront(bd, 6) }));
   }

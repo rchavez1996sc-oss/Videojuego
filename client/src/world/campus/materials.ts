@@ -11,7 +11,7 @@ import { barsTexture } from './grounds';
 /** Painted plaster walls of the faculties (photos: cream Química, white/grey Geológica, yellow Comedor…). */
 const WALLS: Record<string, string> = {
   uniCream: '#e6dcc4', uniGrey: '#c8c6c0', uniWhite: '#efeee9', uniYellow: '#e3b443', uniRed: '#b02a22', uniFrame: '#d5d3cd',
-  uniTerracotta: '#a35a3c', uniOrange: '#d9772e', roofWhite: '#e9e8e3', uniStone: '#9a958c', uniSand: '#d2bf98', uniTaupe: '#968d80', uniOchre: '#d8ad2c',
+  uniTerracotta: '#a35a3c', uniOrange: '#d9772e', roofWhite: '#e9e8e3', uniStone: '#9a958c', uniSand: '#d2bf98', uniTaupe: '#968d80', uniOchre: '#d8ad2c', uniBrown: '#7c4a2c',
 };
 
 export function campusMaterials(lighting: Lighting): Record<string, THREE.Material> {
@@ -57,6 +57,7 @@ export function campusMaterials(lighting: Lighting): Record<string, THREE.Materi
     flowerPurple: std('flowerPurple', { map: fo.map, normalMap: fo.normalMap, color: '#b05ad0', emissive: '#22062e', roughness: 0.95 }),
     kioskGreen: std('kioskGreen', { color: '#4f9a3c', roughness: 0.7 }),
     brickRed: std('brickRed', { map: (photo('brick') ?? stone).map, normalMap: (photo('brick') ?? stone).normalMap, color: '#d8524a', roughness: 0.85 }),
+    awningStripe: std('awningStripe', { color: '#5a554e', roughness: 0.8, side: THREE.DoubleSide }),
     benchWood: std('benchWood', { map: wood().map, color: '#a07a52', roughness: 0.8 }),
   };
   for (const [k, c] of Object.entries(WALLS)) m[k] = std(k, { map: (k === 'uniStone' ? stone : pl).map, normalMap: (k === 'uniStone' ? stone : pl).normalMap, color: c, roughness: 0.88 });
