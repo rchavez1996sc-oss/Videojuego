@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { Rig } from '../entities/rig';
+import { gear, type GearDef } from '../entities/gear';
 import type { CharKind } from '../render/characters';
 import { mulberry32 } from '../core/rng';
 import { onHit } from '../world/surfaces';
@@ -36,7 +37,7 @@ export class Civilians {
     return this.graph.ground?.(x, z) ?? this.hf.heightAt(x, z);
   }
 
-  constructor(private graph: StreetGraph, private hf: Heightfield, lighting: Lighting, private world: RAPIER.World, count: number, seed: number, private camera: THREE.Camera) {
+  constructor(private graph: StreetGraph, private hf: Heightfield, lighting: Lighting, private world: RAPIER.World, count: number, seed: number, private camera: THREE.Camera, kit?: GearDef) {
     this.neighbors = graph.nodes.map(() => []);
     for (const [a, b] of graph.edges) {
       this.neighbors[a].push(b);
@@ -47,6 +48,7 @@ export class Civilians {
     for (let i = 0; i < count; i++) {
       const model = new Rig(pick<CharKind>(['civ_a', 'civ_b', 'civ_c']), lighting, false);
       model.far = true;
+      if (kit) gear(model.bones, kit, lighting, rand);
       const node = Math.floor(rand() * graph.nodes.length);
       const target = pick(this.neighbors[node]);
       const t = rand();

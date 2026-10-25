@@ -27,6 +27,10 @@ export interface CampusDef {
   gate2?: { x: number; z: number; yaw: number };
   /** Banco de la Nación ATM booths. */
   atms?: { x: number; z: number; yaw: number }[];
+  /** Backpacks/books on the standing extras. */
+  studentGear?: import('../../entities/gear').GearDef;
+  /** Small kiosks and offices: position, facing, kind (kiosk/photocopy/office), sign text. */
+  stalls?: { x: number; z: number; yaw: number; kind: 'kiosk' | 'copies' | 'office'; text: string }[];
   /** The Venezuela fence starts here (west of it the Puerta 1 plaza meets the avenue). */
   fenceWest?: number;
   /** Dense tree stands: rectangle and spacing. */

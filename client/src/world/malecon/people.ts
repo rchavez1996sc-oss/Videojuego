@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { gear, type GearDef } from '../../entities/gear';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { onHit } from '../surfaces';
 import { mulberry32 } from '../../core/rng';
@@ -93,7 +94,7 @@ function shootable(world: RAPIER.World, rig: Rig, floor: number, seated: boolean
 }
 
 /** Seated and standing extras (benches, café tables, chats, railing); built a few per frame once characters load; animated only up close. */
-export function crowd(seats: { pos: THREE.Vector3; yaw: number }[], standing: Extra[], lighting: Lighting, world: RAPIER.World, hurt: Bystanders): THREE.Group {
+export function crowd(seats: { pos: THREE.Vector3; yaw: number }[], standing: Extra[], lighting: Lighting, world: RAPIER.World, hurt: Bystanders, kit?: GearDef): THREE.Group {
   const g = new THREE.Group(), r = mulberry32(12);
   let rigs: Rig[] | null = null, last = 0, prev = performance.now();
   const near = new Set<Rig>(), slumps: Slump[] = [], limp = new Set<Rig>(), dying = new Map<Rig, number>();
@@ -107,6 +108,7 @@ export function crowd(seats: { pos: THREE.Vector3; yaw: number }[], standing: Ex
     for (let n = 0; n < 4 && rigs.length < seats.length + standing.length; n++) {
       const i = rigs.length, seated = i < seats.length, spot = seated ? seats[i] : standing[i - seats.length];
       const x = extra(lighting, r, spot.pos, spot.yaw, seated ? SEATED[Math.floor(r() * SEATED.length)] : (spot as Extra).key);
+      if (kit && !seated) gear(x.bones, kit, lighting, r);
       x.root.updateMatrixWorld(true);
       shootable(world, x, spot.pos.y, seated, hurt, slumps, limp, dying);
       x.root.visible = false;

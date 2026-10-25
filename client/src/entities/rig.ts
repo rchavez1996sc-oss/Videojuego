@@ -32,6 +32,9 @@ export class Rig {
   holster = false;
   private mixer: THREE.AnimationMixer;
   private inst: ReturnType<typeof characters.create>;
+  get bones(): Map<string, THREE.Bone> {
+    return this.inst.bones;
+  }
   private lowKey = '';
   private upKey = '';
   private lower: THREE.AnimationAction | null = null;

@@ -20,6 +20,7 @@ import { fisicasRotunda, mathEntrance } from './faculties';
 import { cie } from './cie';
 import { fisInst } from './fisInst';
 import { multired } from './kiosk';
+import { stall } from './stalls';
 import { SwingGates } from './swingGates';
 import { studentLife, studentWalks } from './student';
 import { plazuela } from './plazuela';
@@ -78,6 +79,10 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
 
   const paths = comedorPark(b, hf, def, plants, rand);
   patioDetail(b, def, paths, plants, rand);
+  for (const s of def.stalls ?? []) {
+    signs.push(stall(b, s, plants, rand));
+    paths.discs.push({ x: s.x, z: s.z, r: s.kind === 'office' ? 6 : 4 });
+  }
   if (def.plazuela) group.add(plazuela(b, hf, def.plazuela, plants, paths, lighting, rand));
   const walks = studentWalks(b, hf, def, paths);
   const hard = campusHard(def, paths, gate.hard);
@@ -87,7 +92,7 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
 
   group.add(buildVegetation(b, plants, [], lighting));
   const bystanders = { onHurt: (_p: THREE.Vector3) => {} };
-  group.add(crowd(plants.seats, plants.standing, lighting, world, bystanders));
+  group.add(crowd(plants.seats, plants.standing, lighting, world, bystanders, def.studentGear));
   group.add(campusSigns(signs, seals, lighting));
   group.add(...b.build(mats, 0.5, bake, 128));
   if (atlas.geometries.length) group.add(Object.assign(new THREE.Mesh(mergeGeometries(atlas.geometries), mats.signs), { receiveShadow: true }));
