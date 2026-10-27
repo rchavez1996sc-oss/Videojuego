@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { Lighting } from '../render/lighting';
 
 /** Share of passers-by carrying each item (chapter `civilians.gear`). */
@@ -10,28 +11,29 @@ const COVERS = ['#8a2a22', '#1e3a6a', '#2d5a3a', '#d8c27a', '#efece4', '#3a3a3a'
 const mats = new Map<string, THREE.Material>();
 const mat = (c: string, lighting: Lighting, r = 0.85) => mats.get(c) ?? mats.set(c, lighting.setup(new THREE.MeshStandardMaterial({ color: c, roughness: r }), `gear-${c}`)).get(c)!;
 
+let bagGeo: THREE.BufferGeometry | null = null;
+const bookGeo = [new THREE.BoxGeometry(3.2, 26, 20), new THREE.BoxGeometry(1.2, 26, 20)];
+
+/** Body and pocket (group 0, bag colour) plus zip and straps (group 1, black), merged once and shared. */
+function backpack(): THREE.BufferGeometry {
+  if (bagGeo) return bagGeo;
+  const strip = (g: THREE.BufferGeometry) => { for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'uv'].includes(k)) g.deleteAttribute(k); return g.index ? g.toNonIndexed() : g; };
+  const cloth = [new RoundedBoxGeometry(30, 40, 15, 3, 5), new RoundedBoxGeometry(22, 16, 6, 2, 3).translate(0, -9, -9)].map(strip);
+  const black = [new THREE.BoxGeometry(24, 1.2, 1).translate(0, 12, -7.6), ...[-1, 1].map((s) => new THREE.TorusGeometry(10, 1.4, 5, 12, Math.PI).rotateZ(Math.PI / 2).rotateY(Math.PI / 2).translate(s * 8, 8, 6))].map(strip);
+  bagGeo = mergeGeometries([mergeGeometries(cloth)!, mergeGeometries(black)!], true)!;
+  return bagGeo;
+}
+
 /** Student kit bound to bones (rig space is centimetres): a backpack on the upper spine, a book or folder in the left hand. */
 export function gear(bones: Map<string, THREE.Bone>, def: GearDef, lighting: Lighting, rand: () => number): void {
   const spine = bones.get('mixamorigSpine2'), hand = bones.get('mixamorigLeftHand');
   if (spine && rand() < (def.backpack ?? 0)) {
-    const c = BAGS[Math.floor(rand() * BAGS.length)], g = new THREE.Group();
-    const body = new THREE.Mesh(new RoundedBoxGeometry(30, 40, 15, 3, 5), mat(c, lighting));
-    const pocket = new THREE.Mesh(new RoundedBoxGeometry(22, 16, 6, 2, 3), mat(c, lighting));
-    pocket.position.set(0, -9, -9);
-    const zip = new THREE.Mesh(new THREE.BoxGeometry(24, 1.2, 1), mat('#1a1a1a', lighting));
-    zip.position.set(0, 12, -7.6);
-    g.add(body, pocket, zip);
-    for (const s of [-1, 1]) {
-      const strap = new THREE.Mesh(new THREE.TorusGeometry(10, 1.4, 5, 12, Math.PI), mat('#1a1a1a', lighting));
-      strap.rotation.set(0, Math.PI / 2, Math.PI / 2);
-      strap.position.set(s * 8, 8, 6);
-      g.add(strap);
-    }
-    g.position.set(0, 0, -16);
-    spine.add(g);
+    const bag = new THREE.Mesh(backpack(), [mat(BAGS[Math.floor(rand() * BAGS.length)], lighting), mat('#1a1a1a', lighting)]);
+    bag.position.set(0, 0, -16);
+    spine.add(bag);
   }
   if (hand && rand() < (def.book ?? 0)) {
-    const thick = rand() < 0.5 ? 3.2 : 1.2, b = new THREE.Mesh(new THREE.BoxGeometry(thick, 26, 20), mat(COVERS[Math.floor(rand() * COVERS.length)], lighting, 0.6));
+    const b = new THREE.Mesh(bookGeo[rand() < 0.5 ? 0 : 1], mat(COVERS[Math.floor(rand() * COVERS.length)], lighting, 0.6));
     b.position.set(-1, 11, 4);
     hand.add(b);
   }

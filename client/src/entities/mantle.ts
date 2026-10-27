@@ -108,3 +108,24 @@ export function steepContact(ctrl: RAPIER.KinematicCharacterController, falling:
   }
   return n > 0 && best!.y < (falling ? 0.8 : 0.67) ? new THREE.Vector3(best!.x, 0, best!.z) : null;
 }
+
+/**
+ * Standing on a ridge (wall top, parapet, rail) narrower than the feet: both sides of some axis drop away by more than
+ * 0.35 m. Returns the horizontal direction to step off (towards `prefer` when it points at one of the low sides).
+ */
+export function ridgeUnderFeet(world: RAPIER.World, feet: THREE.Vector3, exclude: number, prefer: THREE.Vector3): THREE.Vector3 | null {
+  const skip = (c: RAPIER.Collider) => c.handle !== exclude && !c.isSensor();
+  const floor = (dx: number, dz: number) => {
+    const hit = world.castRay(new RAPIER.Ray({ x: feet.x + dx, y: feet.y + 0.4, z: feet.z + dz }, DOWN), 1.4, true, undefined, undefined, undefined, undefined, skip);
+    return hit ? feet.y + 0.4 - hit.timeOfImpact : -Infinity;
+  };
+  const mid = floor(0, 0), r = 0.34;
+  for (let k = 0; k < 4; k++) {
+    const a = (k * Math.PI) / 4, dx = Math.cos(a) * r, dz = Math.sin(a) * r;
+    if (floor(dx, dz) < mid - 0.35 && floor(-dx, -dz) < mid - 0.35) {
+      const out = new THREE.Vector3(dx, 0, dz).normalize();
+      return out.dot(prefer) < 0 ? out.negate() : out;
+    }
+  }
+  return null;
+}

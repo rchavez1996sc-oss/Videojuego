@@ -5,7 +5,7 @@ import type { Input } from '../core/input';
 import type { Lighting } from '../render/lighting';
 import { Rig, type Outfit } from './rig';
 import { pickDeath, DEATHS } from './deathFall';
-import { findLedge, mantlePath, stepLedge, fallDamage, CLIMBS, type Climb, type Ledge, steepContact } from './mantle';
+import { findLedge, mantlePath, stepLedge, fallDamage, CLIMBS, type Climb, type Ledge, steepContact, ridgeUnderFeet } from './mantle';
 import { difficulty } from '../core/difficulty';
 import { ladderAt, type Ladder } from '../world/ladders';
 
@@ -67,9 +67,7 @@ export class Player {
     return this.collider.handle;
   }
 
-  get airborne(): boolean {
-    return !this.grounded;
-  }
+  get airborne(): boolean { return !this.grounded; }
 
   /** Run to `spot` and crouch there (cancelled by any movement key). */
   takeCover(spot: THREE.Vector3): void {
@@ -162,9 +160,7 @@ export class Player {
     return !!step;
   }
 
-  get climbing(): boolean {
-    return this.ladder !== null;
-  }
+  get climbing(): boolean { return this.ladder !== null; }
 
   /** On a ladder: W/S move up/down, Space lets go; reaching the top steps onto the roof. */
   private updateLadder(dt: number, input: Input): void {
@@ -265,6 +261,8 @@ export class Player {
     const falling = this.peakY - this.position.y > 6, slide = steepContact(this.ctrl, falling);
     this.grounded = this.ctrl.computedGrounded() && !slide;
     if (slide) this.vel.addScaledVector(slide, 14 * dt);
+    const ridge = this.grounded && !this.mantle ? ridgeUnderFeet(this.world, this.position, this.collider.handle, this.vel) : null;
+    if (ridge) [this.vel.x, this.vel.z, this.grounded] = [ridge.x * 3.2, ridge.z * 3.2, false];
     if (this.grounded && !wasGrounded && this.lastVy < -4) this.landImpact = Math.min(1, (-this.lastVy - 4) / 8 + 0.25);
     if (!this.grounded) this.peakY = Math.max(this.peakY, this.position.y);
     else if (!wasGrounded && fallDamage(this.peakY - this.position.y) > 0) this.hurt(fallDamage(this.peakY - this.position.y));
@@ -297,7 +295,5 @@ export class Player {
     this.model.root.rotation.y = this.yaw + Math.PI;
   }
 
-  get crouchAmount(): number {
-    return this.crouch;
-  }
+  get crouchAmount(): number { return this.crouch; }
 }

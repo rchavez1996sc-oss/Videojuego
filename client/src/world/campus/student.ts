@@ -90,7 +90,7 @@ export function studentLife(b: Builder, def: CampusDef, p: PoliticsDef, walks: [
     if (hard(x, z, 8) || taken.some((r) => inRect(r, x, z, 12))) continue;
     const at = (u: number, y: number, v: number) => new THREE.Vector3(u, y, v).applyQuaternion(q).add(new THREE.Vector3(x, 0, z));
     b.box('uniWhite', [L, 3.4, 0.35], at(0, 1.7, 0), q, true);
-    b.box('uniRed', [L + 0.1, 0.2, 0.45], at(0, 3.45, 0), q, false);
+    b.box('uniRed', [L + 0.1, 0.2, 0.45], at(0, 3.45, 0), q, true);
     murals.add(n % murals.count, at(0, 1.75, 0.18), q, L - 0.6, 3);
     for (const u of [-3.6, 3.6]) graffiti.add(Math.floor(rand() * graffiti.count), at(u, 1.6, -0.18), q.clone().multiply(new THREE.Quaternion().setFromAxisAngle(UP, Math.PI)), 6.2, 1.9);
     place(x, z, L, 1, yaw);
