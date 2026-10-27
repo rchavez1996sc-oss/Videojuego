@@ -107,6 +107,10 @@ export function crowd(seats: { pos: THREE.Vector3; yaw: number }[], standing: Ex
     }
     for (let n = 0; n < 4 && rigs.length < seats.length + standing.length; n++) {
       const i = rigs.length, seated = i < seats.length, spot = seated ? seats[i] : standing[i - seats.length];
+      if (!seated) {
+        const hit = world.castRay(new RAPIER.Ray({ x: spot.pos.x, y: spot.pos.y + 1.2, z: spot.pos.z }, { x: 0, y: -1, z: 0 }), 2.5, true);
+        if (hit) spot.pos.y = Math.max(spot.pos.y, spot.pos.y + 1.2 - hit.timeOfImpact);
+      }
       const x = extra(lighting, r, spot.pos, spot.yaw, seated ? SEATED[Math.floor(r() * SEATED.length)] : (spot as Extra).key);
       if (kit && !seated) gear(x.bones, kit, lighting, r);
       x.root.updateMatrixWorld(true);

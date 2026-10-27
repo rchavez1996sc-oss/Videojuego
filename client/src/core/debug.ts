@@ -108,6 +108,24 @@ export function installDebug(c: DebugContext): void {
       const hits = c.enemies.list.map((e, i) => (e.hp !== before[i] ? `${i}: ${before[i]}→${Math.max(0, e.hp).toFixed(0)} ${e.state} @${fmt(e.position)}` : '')).filter(Boolean);
       return `${hits.join(' | ')} · boom @ ${where ? fmt(where) : '-'} · player hp ${c.player.hp.toFixed(0)}`;
     },
+    /** Teleports the player and runs `n` frames at 60 Hz holding the given keys; logs frames spent off the ground and height jumps. */
+    runLog(x: number, z: number, yaw: number, n: number, keys: string[]) {
+      c.setFreeCam(false);
+      c.player.respawn(new THREE.Vector3(x, c.hf.heightAt(x, z) + 0.3, z), yaw);
+      c.tpc.yaw = yaw;
+      for (const k of keys) dispatchEvent(new KeyboardEvent('keydown', { code: k }));
+      let air = 0, runs = 0, cur = 0, prevY = c.player.position.y, jumps = 0;
+      for (let i = 0; i < n; i++) {
+        c.frame(1 / 60);
+        const y = c.player.position.y;
+        if (Math.abs(y - prevY) > 0.06) jumps++;
+        prevY = y;
+        if (c.player.airborne) (air++, cur++);
+        else (cur > 0 && runs++, (cur = 0));
+      }
+      for (const k of keys) dispatchEvent(new KeyboardEvent('keyup', { code: k }));
+      return `air ${air}/${n} in ${runs} runs, y jumps ${jumps}, end ${fmt(c.player.position)}`;
+    },
     /** Runs `n` frames in follow mode, firing every `every` frames (screenshot tests). */
     simulate(n: number, every: number, pitch = -0.02) {
       c.setFreeCam(false);
