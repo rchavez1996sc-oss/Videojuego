@@ -156,3 +156,6 @@ body.ended #overlay { display: none; }
 #hud .counter b { display: inline; font-size: 30px; color: #ff4a3a; text-shadow: var(--gta-line); }
 #hud .counter .civ { flex-basis: 100%; text-align: right; margin-top: 0; text-shadow: var(--gta-line); }
 #hud .toast { font-style: italic; font-weight: 800; letter-spacing: 0.08em; color: #ffcf3f; background: none; border: 0; text-shadow: var(--gta-line); font-size: 26px; }
+#objective .prog { display: flex; flex-direction: column; align-items: center; gap: 3px; margin-top: 4px; font: 700 11px 'Barlow', sans-serif; letter-spacing: 0.2em; color: #ffcf3f; }
+#objective .prog i { display: block; width: 240px; height: 7px; background: rgba(255, 255, 255, 0.15); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); }
+#objective .prog b { display: block; height: 100%; background: linear-gradient(90deg, #e08a1e, #ffcf3f); box-shadow: 0 0 8px rgba(255, 190, 60, 0.7); transition: width 0.3s; }

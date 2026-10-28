@@ -18,16 +18,22 @@ export interface DefenseDef {
   gates: { x: number; inX: number; inZ: number; drive: [number, number][]; dropX: number; dropZ: number }[];
   tank: [number, number][]; charge: [number, number, number];
   tankAlert: string; failed: string; complete: string; reward: string;
+  /** Opening hunt: kill `huntKills` police, then `news` sends the player to the faculty (within `arrive` m starts the hold). */
+  huntKills: number; huntTitle: string; news: string; goTitle: string; arrive: number; readyAlert: string; startDistance?: number;
 }
+
+type Phase = 'hunt' | 'go' | 'hold' | 'tank' | 'ready';
 
 export interface DefenseDeps { scene: THREE.Scene; world: RAPIER.World; lighting: Lighting; enemies: Enemies; sfx: Sfx; camera: THREE.Camera; refuge: THREE.Vector3[]; blast: (at: THREE.Vector3) => void }
 
 const clock = (s: number) => `${Math.floor(Math.ceil(s) / 60)}:${String(Math.ceil(s) % 60).padStart(2, '0')}`;
 
 /**
- * Chapter goal "hold out": students shelter in the faculty while police reinforcements pour in through the gates
- * for `seconds` (waves per minute, by pickup or on foot, dead or not). Then a tank rolls in and a demolition charge
- * turns up: carry it to the tank, hold E to plant it, get clear. Too many students dead loses the mission.
+ * Chapter goal in phases: hunt police until `huntKills` are down; news of a tank sends the player to the faculty, where
+ * students are building an improvised charge; reaching it starts the hold — `seconds` of police waves (by pickup or on
+ * foot, dead or not) while the charge's progress bar climbs to 95 %. At 0:00 the tank rolls in along the avenue and the
+ * bar reaches 100 % as it arrives; carry the charge to the tank, hold E to plant it, get clear. Too many students dead
+ * loses the mission.
  */
 export class Defense {
   readonly students: Students;
@@ -35,6 +41,7 @@ export class Defense {
   onComplete: () => void = () => {};
   onFail: (why: string) => void = () => {};
   private t = 0;
+  private phase: Phase = 'hunt';
   private drops: Drop[];
   private trucks: PoliceTruck[] = [];
   private mats: Record<string, THREE.Material>;
@@ -55,8 +62,8 @@ export class Defense {
     this.students = new Students(d.refuge, def.students, d.lighting, d.world, this.rand);
     d.scene.add(this.students.group);
     this.students.onLost = () => this.flash(`ESTUDIANTE CAÍDO · ${this.students.lost}/${def.limit}`);
-    d.enemies.victims = () => this.students.alive;
-    d.enemies.onVictimHit = (h, dmg) => this.students.policeHit(h, dmg);
+    d.enemies.victims = () => (this.besieged ? this.students.alive : []);
+    d.enemies.onVictimHit = (h, dmg) => this.besieged && this.students.policeHit(h, dmg);
     this.centre = d.refuge.reduce((a, p) => a.add(p), new THREE.Vector3()).divideScalar(Math.max(1, d.refuge.length));
     this.drops = schedule(def.waves, def.gates.length, this.rand);
     this.mats = vehicleMats(d.lighting);
@@ -74,20 +81,37 @@ export class Defense {
   /** Test summary: clock, students lost, police alive/arrived, pickups, tank. */
   status(): string {
     const e = this.d.enemies, live = e.list.filter((x) => x.alive), ds = live.map((x) => x.position.distanceTo(this.centre)).sort((a, b) => a - b);
-    return `t ${this.t.toFixed(0)} lost ${this.students.lost} police ${e.aliveCount}/${e.list.length} near40 ${ds.filter((d) => d < 40).length} closest ${ds[0]?.toFixed(0) ?? '-'} median ${ds[ds.length >> 1]?.toFixed(0) ?? '-'} trucks ${this.trucks.length} tank ${this.tank ? (this.tank.destroyed ? 'dead' : this.tank.arrived ? 'here' : 'moving') : '-'} carry ${this.carrying} fuse ${this.fuse.toFixed(1)} done ${this.done}`;
+    return `t ${this.t.toFixed(0)} lost ${this.students.lost} police ${e.aliveCount}/${e.list.length} near40 ${ds.filter((d) => d < 40).length} closest ${ds[0]?.toFixed(0) ?? '-'} median ${ds[ds.length >> 1]?.toFixed(0) ?? '-'} phase ${this.phase} kills ${this.kills} prog ${this.progress.toFixed(0)} trucks ${this.trucks.length} tank ${this.tank ? (this.tank.destroyed ? 'dead' : this.tank.arrived ? 'here' : 'moving') : '-'} carry ${this.carrying} fuse ${this.fuse.toFixed(1)} done ${this.done}`;
   }
 
-  /** Where the minimap points: the faculty while holding, then the charge, then the tank. */
-  get goal(): THREE.Vector3 {
-    if (!this.tank) return this.centre;
-    return this.carrying || this.fuse >= 0 ? this.tank.position : this.charge.position;
+  /** The siege has begun: police go for the students. */
+  private get besieged(): boolean {
+    return this.phase !== 'hunt' && this.phase !== 'go';
   }
 
-  private flash(text: string): void {
+  private get kills(): number {
+    return this.d.enemies.list.length - this.d.enemies.aliveCount;
+  }
+
+  /** Where the minimap points: nothing while hunting, the faculty, the tank as it comes, then the charge and the tank. */
+  get goal(): THREE.Vector3 | undefined {
+    if (this.phase === 'hunt') return undefined;
+    if (this.phase === 'go' || this.phase === 'hold') return this.centre;
+    return this.phase === 'ready' && !this.carrying && this.fuse < 0 ? this.charge.position : this.tank!.position;
+  }
+
+  /** The improvised charge: 95 % over the hold, the last 5 % while the tank drives in. */
+  private get progress(): number {
+    return this.phase === 'hold' ? (95 * this.t) / this.def.seconds : this.phase === 'tank' ? 95 + 5 * this.tank!.progress : 100;
+  }
+
+  private flash(text: string, seconds = 4.5): void {
     this.alert.textContent = text;
     this.alert.classList.add('on');
-    setTimeout(() => this.alert.classList.remove('on'), 4500);
+    clearTimeout(this.alertT);
+    this.alertT = window.setTimeout(() => this.alert.classList.remove('on'), seconds * 1000);
   }
+  private alertT = 0;
 
   private squad(x: number, z: number, size: number): void {
     for (let i = 0; i < size; i++) {
@@ -111,8 +135,10 @@ export class Defense {
 
   update(dt: number, player: THREE.Vector3, input: Input, alive: boolean): void {
     if (this.done) return;
-    this.t += dt;
-    while (this.drops.length && this.drops[0].t <= this.t) this.arrive(this.drops.shift()!);
+    if (this.phase === 'hunt' && this.kills >= this.def.huntKills) (this.phase = 'go'), this.flash(this.def.news, 11);
+    if (this.phase === 'go' && player.distanceTo(this.centre) < this.def.arrive) this.phase = 'hold';
+    if (this.phase === 'hold') this.t += dt;
+    while (this.phase === 'hold' && this.drops.length && this.drops[0].t <= this.t) this.arrive(this.drops.shift()!);
     for (const tr of this.trucks) tr.update(dt);
     this.students.update(dt, this.d.camera.position);
     if (this.students.lost >= this.def.limit) {
@@ -121,9 +147,10 @@ export class Defense {
       return;
     }
     const left = this.def.seconds - this.t;
-    if (left <= 0 && !this.tank) this.rollIn();
+    if (this.phase === 'hold' && left <= 0) this.rollIn();
+    if (this.phase === 'tank' && this.tank!.arrived) this.ready();
     this.tank?.update(dt, alive ? player.clone().setY(player.y + 1) : null);
-    this.objectiveText(left);
+    this.objectiveText(left, player);
     this.chargeLogic(dt, player, input, alive);
     this.showMarker(player);
   }
@@ -133,26 +160,36 @@ export class Defense {
     this.tank = new Tank(this.d.lighting, this.d.world, path);
     this.tank.onShell = (_from, at) => this.d.blast(at);
     this.d.scene.add(this.tank.group);
+    this.phase = 'tank';
+    this.flash(this.def.tankAlert, 7);
+  }
+
+  private ready(): void {
     const [x, z, y] = this.def.charge;
     this.charge.position.set(x, y + 0.14, z);
     this.charge.visible = true;
-    this.flash(this.def.tankAlert);
+    this.phase = 'ready';
+    this.flash(this.def.readyAlert, 8);
   }
 
-  private objectiveText(left: number): void {
-    const wave = Math.min(this.def.waves.length, Math.floor(this.t / 60) + 1), dead = `CAÍDOS ${this.students.lost}/${this.def.limit}`;
-    const line = !this.tank ? `<em>${clock(left)}</em> · OLEADA ${wave}/${this.def.waves.length} · ${dead}` : this.fuse >= 0 ? `<em>DETONACIÓN ${Math.ceil(this.fuse)}</em> · ¡ALÉJATE!` : this.carrying ? `COLOCA EL EXPLOSIVO EN EL TANQUE · ${dead}` : `TOMA EL EXPLOSIVO · ${dead}`;
-    const html = `<span class="k">OBJETIVO</span><b>${this.tank ? 'DESTRUYE EL TANQUE' : this.def.title}</b><span class="d">${line}</span>`;
+  private objectiveText(left: number, player: THREE.Vector3): void {
+    const p = this.phase, wave = Math.min(this.def.waves.length, Math.floor(this.t / 60) + 1), dead = `CAÍDOS ${this.students.lost}/${this.def.limit}`;
+    const title = p === 'hunt' ? this.def.huntTitle : p === 'go' ? this.def.goTitle : p === 'hold' ? this.def.title : p === 'tank' ? 'EL TANQUE SE ACERCA' : 'DESTRUYE EL TANQUE';
+    const line = p === 'hunt' ? `BAJAS ${Math.min(this.kills, this.def.huntKills)}/${this.def.huntKills}` : p === 'go' ? `${Math.round(player.distanceTo(this.centre))} m`
+      : p === 'hold' ? `<em>${clock(left)}</em> · OLEADA ${wave}/${this.def.waves.length} · ${dead}` : p === 'tank' ? `RESISTAN · ${dead}`
+      : this.fuse >= 0 ? `<em>DETONACIÓN ${Math.ceil(this.fuse)}</em> · ¡ALÉJATE!` : this.carrying ? `COLOCA EL EXPLOSIVO EN EL TANQUE · ${dead}` : `TOMA EL EXPLOSIVO · ${dead}`;
+    const pct = Math.floor(this.progress), bar = p === 'hold' || p === 'tank' ? `<span class="prog"><i><b style="width:${pct}%"></b></i>EXPLOSIVO IMPROVISADO ${pct}%</span>` : '';
+    const html = `<span class="k">OBJETIVO</span><b>${title}</b><span class="d">${line}</span>${bar}`;
     if (this.panel.innerHTML !== html) this.panel.innerHTML = html;
   }
 
   private chargeLogic(dt: number, player: THREE.Vector3, input: Input, alive: boolean): void {
     let text = '';
-    if (this.tank && this.fuse < 0 && alive) {
+    if (this.phase === 'ready' && this.fuse < 0 && alive) {
       if (!this.carrying && player.distanceTo(this.charge.position) < 2) {
         text = '<kbd>E</kbd> TOMAR EL EXPLOSIVO';
         if (input.hit('KeyE')) (this.carrying = true), (this.charge.visible = false), this.d.sfx.grenadePin();
-      } else if (this.carrying && Math.hypot(player.x - this.tank.position.x, player.z - this.tank.position.z) < 6.5) {
+      } else if (this.carrying && Math.hypot(player.x - this.tank!.position.x, player.z - this.tank!.position.z) < 6.5) {
         this.plantT = input.down('KeyE') ? this.plantT + dt : 0;
         const pct = Math.min(100, Math.round((this.plantT / 2) * 100));
         text = this.plantT > 0 ? `COLOCANDO EXPLOSIVO <span>${pct}%</span><i class="bar"><b style="width:${pct}%"></b></i>` : '<kbd>E</kbd> MANTÉN PARA COLOCAR EL EXPLOSIVO';
@@ -191,7 +228,9 @@ export class Defense {
   }
 
   private showMarker(player: THREE.Vector3): void {
-    const goal = this.goal, far = player.distanceTo(goal), cam = this.d.camera as THREE.PerspectiveCamera;
+    const goal = this.goal;
+    if (!goal) return void (this.marker.style.opacity = '0');
+    const far = player.distanceTo(goal), cam = this.d.camera as THREE.PerspectiveCamera;
     const v = goal.clone().setY(goal.y + (this.tank ? 3 : 4)).project(cam), ahead = goal.clone().sub(cam.position).dot(cam.getWorldDirection(new THREE.Vector3())) > 0;
     const on = ahead && Math.abs(v.x) < 0.95 && Math.abs(v.y) < 0.95 && far > (this.tank ? 3 : 35);
     this.marker.style.opacity = on ? '1' : '0';

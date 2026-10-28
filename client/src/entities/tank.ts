@@ -73,6 +73,19 @@ export class Tank {
     this.face(path[1]);
   }
 
+  /** Share of the drive done (0 at the start of the path, 1 on arrival). */
+  get progress(): number {
+    if (this.arrived) return 1;
+    let total = 0, done = 0;
+    for (let i = 1; i < this.path.length; i++) {
+      const l = this.path[i].distanceTo(this.path[i - 1]);
+      total += l;
+      if (i < this.leg) done += l;
+      else if (i === this.leg) done += l - this.path[i].distanceTo(this.position);
+    }
+    return THREE.MathUtils.clamp(done / total, 0, 1);
+  }
+
   get position(): THREE.Vector3 {
     return this.group.position;
   }

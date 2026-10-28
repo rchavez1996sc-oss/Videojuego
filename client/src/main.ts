@@ -121,7 +121,8 @@ async function boot(): Promise<void> {
   await characters.load(lighting);
   world.step();
   const respawnPts = barrio ? streetPoints(barrio.graph) : undefined;
-  const start = respawnPts && barrio?.station && !shotMode ? startSpot(world, hf, respawnPts, ch.objective?.capture ?? barrio.station.entrance, ch.enemies ?? [], barrio.inside) : null;
+  const startGoal = ch.objective?.capture ?? barrio?.station?.entrance ?? barrio?.refuge?.[0];
+  const start = respawnPts && startGoal && !shotMode ? startSpot(world, hf, respawnPts, startGoal, ch.enemies ?? [], barrio!.inside, ch.defense?.startDistance) : null;
   const spawn = start?.pos ?? new THREE.Vector3(ch.spawn.x, hf.heightAt(ch.spawn.x, ch.spawn.z), ch.spawn.z), startYaw = start?.yaw ?? ch.spawn.yaw;
   const wdef = (weapons as unknown as Record<string, WeaponDef>)[ch.weapon ?? 'ak'], player = new Player(world, lighting, spawn, startYaw, wdef.model);
   scene.add(player.model.root);
@@ -266,7 +267,7 @@ async function boot(): Promise<void> {
     objective?.update(dt, player.position, enemies.list, input, deadT <= 0);
     defense?.update(dt, player.position, input, deadT <= 0);
     corpses.update(dt, { dead: enemies.list.filter((e) => !e.alive), fallen: squad?.fallen ?? [] });
-    const threats = gatherThreats(enemies, civilians, pickups.markers, player.position, camera, squad?.positions, goal ? (objective?.position ?? defense!.goal) : undefined);
+    const threats = gatherThreats(enemies, civilians, pickups.markers, player.position, camera, squad?.positions, objective?.position ?? defense?.goal);
     minimap.update(player.position, tpc.yaw, threats);
     damageFx.update(dt, player.hp / 100);
     hud.enemies = enemies.aliveCount;
