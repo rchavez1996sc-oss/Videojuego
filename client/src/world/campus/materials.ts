@@ -57,6 +57,10 @@ export function campusMaterials(lighting: Lighting): Record<string, THREE.Materi
     hedgeGold: std('hedgeGold', { map: fo.map, normalMap: fo.normalMap, color: '#f0dc3a', roughness: 0.95 }),
     pathRust: std('pathRust', { map: co.map, normalMap: co.normalMap, color: '#b08876', roughness: 0.9 }),
     waterBlue: std('waterBlue', { color: '#3c6f86', roughness: 0.05, metalness: 0.3 }),
+    graniteBlack: std('graniteBlack', { color: '#101112', roughness: 0.12, metalness: 0.35, envMapIntensity: 1.7 }),
+    libFloor: std('libFloor', { map: terrazzo(), color: '#5fb3a2', roughness: 0.3 }),
+    tileCream: std('tileCream', { map: tiles(), color: '#efe2cc', roughness: 0.35 }),
+    books: std('books', { map: books(), roughness: 0.75 }),
     hedgeLime: std('hedgeLime', { map: fo.map, normalMap: fo.normalMap, color: '#f6ff6a', roughness: 0.95 }),
     flowerSilver: std('flowerSilver', { map: fo.map, normalMap: fo.normalMap, color: '#c9d2cf', roughness: 0.95 }),
     flowerRed: std('flowerRed', { map: fo.map, normalMap: fo.normalMap, color: '#ff5a5a', emissive: '#3a0606', roughness: 0.95 }),
@@ -162,6 +166,27 @@ function tiles(): THREE.CanvasTexture {
     for (let k = 0; k <= s; k += s / 8) {
       g.fillRect(k - 1, 0, 2, s);
       g.fillRect(0, k - 1, s, 2);
+    }
+  });
+}
+
+/** Library stacks: three shelves of coloured spines per 1.2 m tile, grey steel shelf boards between. */
+function books(): THREE.CanvasTexture {
+  return canvasTex(512, (g, s) => {
+    g.fillStyle = '#3c3e40';
+    g.fillRect(0, 0, s, s);
+    const row = s / 3, cols = ['#7a2a22', '#24456e', '#2e5a3a', '#c8b07a', '#e6e0d2', '#8a6a2a', '#5a2a5a', '#2a6a7a', '#b04a2a', '#1e1e20'];
+    for (let r = 0; r < 3; r++) {
+      for (let x = 2; x < s - 2; ) {
+        const w = 6 + Math.random() * 12, h = row * (0.62 + Math.random() * 0.3);
+        g.fillStyle = cols[Math.floor(Math.random() * cols.length)];
+        g.fillRect(x, (r + 1) * row - 10 - h, w - 1, h);
+        g.fillStyle = 'rgba(255,255,255,0.18)';
+        g.fillRect(x + 1, (r + 1) * row - 10 - h * 0.7, w - 3, 2);
+        x += w;
+      }
+      g.fillStyle = '#9a9ea2';
+      g.fillRect(0, (r + 1) * row - 10, s, 10);
     }
   });
 }

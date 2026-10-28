@@ -52,6 +52,8 @@ export interface Barrio {
   bystanders?: import('./malecon/people').Bystanders;
   /** Where the player may start (inside the playable district); everywhere when absent. */
   inside?: (x: number, z: number) => boolean;
+  /** Where the people to defend shelter (defense chapters). */
+  refuge?: THREE.Vector3[];
   /** Per-frame upkeep of moving set pieces (push gates), given everyone's feet positions. */
   tick?: (dt: number, movers: THREE.Vector3[]) => void;
 }

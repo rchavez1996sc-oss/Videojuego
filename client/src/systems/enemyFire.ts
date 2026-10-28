@@ -50,6 +50,10 @@ export function enemyFire(e: Enemy, en: Enemies, ctx: AIContext, attacker: boole
     en.onPlayerHit(e.def.damage * difficulty.value.damage * PLAYER_ARMOUR * (0.85 + Math.random() * 0.3), muzzle);
     return;
   }
+  if (hit && en.onVictimHit(hit.collider.handle, e.def.damage * difficulty.value.damage * (0.85 + Math.random() * 0.3))) {
+    combat.bloodPuff(end);
+    return;
+  }
   if (hit && en.onAllyHit(hit.collider.handle, e.def.damage * difficulty.value.damage * 0.8 * (0.85 + Math.random() * 0.3), muzzle)) {
     combat.bloodPuff(end);
     return;

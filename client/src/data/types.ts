@@ -72,6 +72,7 @@ export interface ChapterDef {
   /** Prologue paragraphs shown while the chapter loads. */
   intro?: string[];
   objective?: import('../systems/objective').ObjectiveDef;
+  defense?: import('../systems/defense').DefenseDef;
   scatter: { rocks: number; trees: number; seed: number };
   spawn: { x: number; z: number; yaw: number };
   /** Facing used to lay out the practice range and test structures around the spawn. */

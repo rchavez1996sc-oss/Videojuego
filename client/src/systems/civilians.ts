@@ -48,7 +48,7 @@ export class Civilians {
     for (let i = 0; i < count; i++) {
       const model = new Rig(pick<CharKind>(['civ_a', 'civ_b', 'civ_c']), lighting, false);
       model.far = true;
-      if (kit) gear(model.bones, kit, lighting, rand);
+      if (kit) model.nearOnly(...gear(model.bones, kit, lighting, rand));
       const node = Math.floor(rand() * graph.nodes.length);
       const target = pick(this.neighbors[node]);
       const t = rand();
@@ -199,7 +199,7 @@ export class Civilians {
       }
       c.body.setNextKinematicTranslation({ x: c.pos.x, y: c.pos.y + 0.9, z: c.pos.z });
       const camD = c.pos.distanceToSquared(this.camera.position);
-      c.model.root.visible = camD < 70 * 70;
+      c.model.root.visible = camD < 55 * 55;
       c.model.far = camD > 25 * 25;
       const near = camD < 30 * 30;
       if (near !== c.shadowed) c.model.castShadow = c.shadowed = near;

@@ -15,11 +15,15 @@ import { HealthBars } from '../ui/healthbars';
 import type { StreetNav } from '../ai/nav';
 import { difficulty } from '../core/difficulty';
 import { enemyFire } from './enemyFire';
+import { fleeGrenade } from './enemyFlee';
 
 /** `leash`: a garrison post — the enemy fights and takes cover but never goes farther than this from its spawn. */
 export interface SpawnDef { type: string; x: number; z: number; y?: number; at?: number; patrol?: [number, number][]; leash?: number }
 
 export interface KillEvent { headshot: boolean; distance: number }
+
+/** Anyone an enemy can take aim at instead of the player. */
+export interface Target { position: THREE.Vector3; alive: boolean; crouched?: boolean }
 
 export class Enemies {
   readonly group = new THREE.Group();
@@ -32,7 +36,12 @@ export class Enemies {
   allies: () => Enemy[] = () => [];
   /** Returns true when `handle` was a squad member (who then takes the damage). */
   onAllyHit: (handle: number, damage: number, from: THREE.Vector3) => boolean = () => false;
-  private focus = new Map<number, { unit: Enemy | null; t: number }>();
+  /** People the police hunt besides the player and squad (students to defend); `onVictimHit` lands their rounds. */
+  victims: () => Target[] = () => [];
+  onVictimHit: (handle: number, damage: number) => boolean = () => false;
+  /** Adds an enemy mid-game (reinforcement waves). */
+  readonly add: (s: SpawnDef) => Enemy;
+  private focus = new Map<number, { unit: Target | null; t: number }>();
   private byCollider = new Map<number, Enemy>();
   private pFeet = new THREE.Vector3();
   private pChest = new THREE.Vector3();
@@ -47,20 +56,22 @@ export class Enemies {
 
   constructor(defs: Record<string, EnemyDef>, spawns: SpawnDef[], private world: RAPIER.World, private hf: Heightfield, lighting: Lighting, private player: Player, private combat: Combat, private sfx: Sfx, private camera: THREE.PerspectiveCamera, nav: StreetNav | null = null) {
     if (nav && !shotMode) spawns = shuffleRoamers(spawns, nav.nodes, world, hf, player.position);
-    spawns.forEach((s, i) => {
+    this.add = (s) => {
       const def = defs[s.type], spot = new THREE.Vector3(s.x, hf.heightAt(s.x, s.z), s.z);
       if (s.y === undefined && s.at === undefined && nav && world.castRay(new RAPIER.Ray({ x: spot.x, y: spot.y + 0.6, z: spot.z }, { x: 0, y: 1, z: 0 }), 40, true)) {
         const n = nav.route(spot, spot)[0];
         spot.set(n.x, hf.heightAt(n.x, n.z), n.z);
       }
       const patrol = (s.patrol ?? []).map(([x, z]) => new THREE.Vector3(x, hf.heightAt(x, z), z));
-      const e = new Enemy(i, def, world, lighting, new THREE.Vector3(spot.x, s.at ?? spot.y + (s.y ?? 0), spot.z), patrol, s.y !== undefined || s.at !== undefined);
+      const e = new Enemy(this.list.length, def, world, lighting, new THREE.Vector3(spot.x, s.at ?? spot.y + (s.y ?? 0), spot.z), patrol, s.y !== undefined || s.at !== undefined);
       if (s.leash) e.leash = { at: e.position.clone(), r: s.leash };
       this.list.push(e);
       this.group.add(e.model.root, e.flash.group);
       onHit(e.handle, (dmg, p) => this.hit(e, dmg, new THREE.Vector3(p.x, p.y, p.z)));
       this.byCollider.set(e.handle, e);
-    });
+      return e;
+    };
+    spawns.forEach((s) => this.add(s));
     const ray = (from: THREE.Vector3, to: THREE.Vector3, self: number, glass = true) => {
       const dir = to.clone().sub(from);
       const len = dir.length();
@@ -193,8 +204,8 @@ export class Enemies {
     if ((f.t -= dt) <= 0) {
       f.t = 1.5;
       const dp = e.position.distanceTo(this.pFeet), eye = e.position.clone().setY(e.position.y + e.eyeY);
-      f.unit = this.allies()
-        .filter((a) => a.position.distanceTo(e.position) < Math.min(dp * 0.8, e.def.sight))
+      f.unit = [...this.allies(), ...this.victims().filter((v) => v.position.distanceTo(e.position) < 25)]
+        .filter((a) => a.alive && a.position.distanceTo(e.position) < Math.min(dp * 0.8, e.def.sight))
         .sort((a, b) => a.position.distanceToSquared(e.position) - b.position.distanceToSquared(e.position))
         .find((a) => c.sees(eye, a.position.clone().setY(a.position.y + 1.2), e.handle)) ?? null;
     }
@@ -233,19 +244,7 @@ export class Enemies {
 
   /** Some enemies who notice a live grenade nearby sprint away from it after a short reaction delay. */
   fleeFrom(at: THREE.Vector3): void {
-    for (const e of this.list) {
-      if (!e.alive || e.isStatic || e.position.distanceTo(at) > 8 || Math.random() > 0.6) continue;
-      setTimeout(() => {
-        if (!e.alive) return;
-        const away = e.position.clone().sub(at).setY(0).normalize();
-        e.moveTarget = e.position.clone().addScaledVector(away, 9);
-        e.path = [];
-        e.running = true;
-        e.crouched = false;
-        if (e.cover) e.cover.owner = -1;
-        e.cover = null;
-      }, 500 + Math.random() * 700);
-    }
+    fleeGrenade(this.list, at);
   }
 
   private fire(e: Enemy): void {

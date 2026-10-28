@@ -32,6 +32,8 @@ import { universitaria, venezuelaSouth } from './south';
 import { stadium } from './stadium';
 import { moreStudents } from './crowds';
 import { facultyParks } from './parks';
+import { quimica, quimicaOpen } from './quimica';
+import { quimicaFront } from './quimicaFront';
 import { campusMaterials, campusBake } from './materials';
 import { campusSigns } from './signs';
 
@@ -43,7 +45,7 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
   const mats = { ...barrioMaterials(lighting, atlas), ...campusMaterials(lighting) };
   const bake = campusBake(lighting);
   const plants: Plants = { palms: [], phoenix: [], trees: [], bent: [], pines: [], seats: [], standing: [], arch: [] };
-  const group = new THREE.Group(), signs: NameSign[] = [];
+  const group = new THREE.Group(), signs: NameSign[] = [], refuge: THREE.Vector3[] = [];
 
   buildCampusRoads(b, def, rand);
   const v = def.venezuela, gate = puerta1(b, def.gate1, def.gate1.x - 28.2 - def.bounds.west);
@@ -58,6 +60,16 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
     seals.push({ ...g2.crest, silver: true });
   }
   for (const bd of def.buildings) {
+    if (bd.key === 'quimica') {
+      refuge.push(...quimica(b, bd, plants, rand));
+      continue;
+    }
+    if (bd.key === 'quimicaFront') {
+      const f = quimicaFront(b, bd, rand);
+      signs.push(f.sign);
+      refuge.push(...f.spots);
+      continue;
+    }
     if (bd.key === 'comedor') {
       const c = comedor(b, bd, plants);
       signs.push(c.sign, c.inner);
@@ -102,10 +114,10 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
   group.add(...b.build(mats, 0.5, bake, 128));
   if (atlas.geometries.length) group.add(Object.assign(new THREE.Mesh(mergeGeometries(atlas.geometries), mats.signs), { receiveShadow: true }));
 
-  const solid = (x: number, z: number) => def.buildings.some((r) => inRect(r, x, z, 1)) || def.parkings.some((r) => inRect(r, x, z, 0)) || inRect(def.field, x, z, 3.2);
-  const graph = campusGraph(def, solid, walks);
+  const solid = (x: number, z: number) => def.buildings.some((r) => inRect(r, x, z, 1) && !(r.key === 'quimica' && quimicaOpen(r, x, z))) || def.parkings.some((r) => inRect(r, x, z, 0)) || inRect(def.field, x, z, 3.2);
+  const graph = campusGraph(def, solid, [...walks, ...(def.extraWalks ?? [])]);
   const B = def.bounds;
-  return { group, materials: mats, bake, station: null, graph, bystanders, tick: (dt, movers) => swing.update(dt, movers),
+  return { group, materials: mats, bake, station: null, graph, bystanders, refuge, tick: (dt, movers) => swing.update(dt, movers),
     blocked: (x, z) => solid(x, z) || z > v.z + v.half + v.sidewalk,
     inside: (x, z) => x > B.west + 4 && x < B.x - 4 && z > northAt(B, x) + 4 && z < v.z - v.half - v.sidewalk - 1 };
 }

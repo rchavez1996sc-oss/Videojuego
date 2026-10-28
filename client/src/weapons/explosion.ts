@@ -9,7 +9,9 @@ import type { Player } from '../entities/player';
 export const BLAST_RADIUS = 11;
 
 /** Grenade detonation: effects, sound, camera shake, enemy alert/damage and self-damage behind no cover. */
-export function detonate(at: THREE.Vector3, d: { combat: Combat; sfx: Sfx; tpc: ThirdPersonCamera; enemies: Enemies; player: Player; world: RAPIER.World; playerAlive: boolean }): void {
+/** `also`: other crowds hurt by the blast (civilians, squad, traffic, students). */
+export function detonate(at: THREE.Vector3, d: { combat: Combat; sfx: Sfx; tpc: ThirdPersonCamera; enemies: Enemies; player: Player; world: RAPIER.World; playerAlive: boolean; also?: ({ explosion: (at: THREE.Vector3, r: number) => void } | null | undefined)[] }): void {
+  for (const o of d.also ?? []) o?.explosion(at, BLAST_RADIUS);
   const cam = d.tpc.camera.position, right = new THREE.Vector3(1, 0, 0).applyQuaternion(d.tpc.camera.quaternion);
   const dist = at.distanceTo(cam);
   d.combat.explosionFx(at);

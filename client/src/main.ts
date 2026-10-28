@@ -38,7 +38,7 @@ import { startSpot } from './systems/startSpot';
 import { Melee } from './systems/melee';
 import { coverSeeker } from './systems/takeCover';
 import { Grenades } from './weapons/grenades';
-import { detonate, BLAST_RADIUS } from './weapons/explosion';
+import { detonate } from './weapons/explosion';
 import { Minimap } from './ui/minimap';
 import { loadPhotoTextures, photoEnvironment } from './render/photoTextures';
 import { installDebug } from './core/debug';
@@ -59,6 +59,7 @@ import { MoveFeel } from './core/moveFeel';
 import { characters } from './render/characters';
 import { Loot } from './systems/loot';
 import { Objective } from './systems/objective';
+import { Defense } from './systems/defense';
 import { showMissionComplete } from './ui/missionComplete';
 import { prologueQuiet, showPrologue } from './ui/prologue';
 import { showLauncher } from './ui/launcher';
@@ -136,8 +137,7 @@ async function boot(): Promise<void> {
     sfx.hitmarker(h.kill);
     hud.hitmarker(h.kill, h.headshot);
   });
-  scene.add(range.group);
-  scene.add(buildStructures(hf, lighting, world, rangeOrigin, ch.structures ?? []));
+  scene.add(range.group, buildStructures(hf, lighting, world, rangeOrigin, ch.structures ?? []));
   player.onMantle = () => sfx.footstep(1.3, 'hard');
   const dynRes = new DynamicResolution(renderer), damageFx = new DamageFx((k) => (sfx.thud(k), tpc.kick(0, 0, 0.12 + 0.2 * k)));
   const nav = barrio ? new StreetNav(barrio.graph) : null;
@@ -158,8 +158,7 @@ async function boot(): Promise<void> {
   const squad = createSquad(ch.squad ?? 0, { ...(allyDef as unknown as AllyDef), gun: wdef.model }, { world, hf, lighting, player, enemies, combat, sfx, hud, camera, nav, alarm }, spawn, startYaw);
   if (squad) scene.add(squad.group);
   if (life) wireRoad(life.trafficEvents, { player, enemies, squad, playerHit: (dmg, from) => enemies.onPlayerHit(dmg, from), alive: () => deadT <= 0 });
-  let deadT = 0, skipRender = false, shieldT = 0;
-  const deathPos = new THREE.Vector3();
+  const deathPos = new THREE.Vector3(); let deadT = 0, skipRender = false, shieldT = 0;
   enemies.onPlayerHit = (dmg, from) => {
     if (deadT > 0) return;
     player.hurt(shieldT > 0 ? dmg * 0.15 : dmg);
@@ -171,31 +170,26 @@ async function boot(): Promise<void> {
     tpc.kick(0.006, (Math.random() - 0.5) * 0.008, 0.03);
   };
   const pickups = new Pickups(lighting, hf, ch.medkits ?? [], ch.ammo ?? []);
-  scene.add(pickups.group);
   const grenades = new Grenades(world, hf, lighting, () => player.collisionHandle);
-  scene.add(grenades.group);
   grenades.onSettled = (at) => enemies.fleeFrom(at);
   const nadeMode = new GrenadeMode(grenades, world, camera, player, sfx, hud);
-  scene.add(nadeMode.group);
+  scene.add(pickups.group, grenades.group, nadeMode.group);
   const corpses = new Loot(pickups, (at) => combat.bloodStain(at));
   const objective = ch.objective && barrio?.station ? new Objective(ch.objective, barrio.station, camera, { lighting, world, scene, mixer, cinematic: (eye, look) => (freeCam = true, tpc.place(eye, look)) }) : null;
   let lives = (hud.lives = ch.lives ?? 3);
-  if (objective) objective.onFail = (why) => !failed && window.setTimeout(() => !failed && ((failed = true), showMissionFailed(why)), 4200);
-  if (objective) objective.onComplete = () => {
+  const defense = ch.defense && barrio?.refuge ? new Defense(ch.defense, { scene, world, lighting, enemies, sfx, camera, refuge: barrio.refuge, blast: (at) => blast(at) }) : null;
+  const goal = objective ?? defense, lose = (why: string) => !failed && window.setTimeout(() => !failed && ((failed = true), showMissionFailed(why)), 4200);
+  if (goal) (goal.onFail = lose), (goal.onComplete = () => {
     failed = true;
-    showMissionComplete(objective.def.complete, objective.def.reward, `ENEMIGOS ABATIDOS ${enemies.list.length - enemies.aliveCount}/${enemies.list.length} · BAJAS CIVILES ${populace.casualties} · VIDAS ${lives}`, objective.def.loot, objective.def.unlock, ch.next);
-  };
-  grenades.onExplode = (at) => {
-    detonate(at, { combat, sfx, tpc, enemies, player, world, playerAlive: deadT <= 0 });
-    civilians?.explosion(at, BLAST_RADIUS);
-    squad?.explosion(at, BLAST_RADIUS);
-    life?.alarm(at, 150);
-    life?.explosion(at, BLAST_RADIUS);
-  };
+    const g = (objective?.def ?? defense!.def) as { complete: string; reward: string; loot?: string[]; unlock?: string };
+    showMissionComplete(g.complete, g.reward, `ENEMIGOS ABATIDOS ${enemies.list.length - enemies.aliveCount}/${enemies.list.length} · ${defense ? `ESTUDIANTES CAÍDOS ${defense.students.lost}` : `BAJAS CIVILES ${populace.casualties}`} · VIDAS ${lives}`, g.loot, g.unlock, ch.next);
+  });
+  const blast = (at: THREE.Vector3) => (life?.alarm(at, 150), detonate(at, { combat, sfx, tpc, enemies, player, world, playerAlive: deadT <= 0, also: [civilians, squad, life, defense?.students] }));
+  grenades.onExplode = blast;
   enemies.onEnemyHit = (kill, headshot) => {
     sfx.hitmarker(kill);
     hud.hitmarker(kill, headshot, 'BAJA');
-    if (kill && enemies.aliveCount === 0) setTimeout(() => hud.showToast('ZONA DESPEJADA'), 1200);
+    if (kill && enemies.aliveCount === 0 && !defense) setTimeout(() => hud.showToast('ZONA DESPEJADA'), 1200);
   };
   world.step();
   cover.prune(world, (x, z) => hf.heightAt(x, z));
@@ -270,8 +264,9 @@ async function boot(): Promise<void> {
     barrio?.tick?.(dt, [player.position, ...enemies.list.filter((e) => e.alive).map((e) => e.position), ...(squad?.positions ?? []), ...(civilians?.present ?? [])]);
     collectSupplies(dt, pickups, { player, gun: combat.gun, grenades, sfx, hud, alive: deadT <= 0 });
     objective?.update(dt, player.position, enemies.list, input, deadT <= 0);
+    defense?.update(dt, player.position, input, deadT <= 0);
     corpses.update(dt, { dead: enemies.list.filter((e) => !e.alive), fallen: squad?.fallen ?? [] });
-    const threats = gatherThreats(enemies, civilians, pickups.markers, player.position, camera, squad?.positions, objective?.position);
+    const threats = gatherThreats(enemies, civilians, pickups.markers, player.position, camera, squad?.positions, goal ? (objective?.position ?? defense!.goal) : undefined);
     minimap.update(player.position, tpc.yaw, threats);
     damageFx.update(dt, player.hp / 100);
     hud.enemies = enemies.aliveCount;

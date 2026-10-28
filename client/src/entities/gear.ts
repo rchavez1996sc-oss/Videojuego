@@ -25,16 +25,20 @@ function backpack(): THREE.BufferGeometry {
 }
 
 /** Student kit bound to bones (rig space is centimetres): a backpack on the upper spine, a book or folder in the left hand. */
-export function gear(bones: Map<string, THREE.Bone>, def: GearDef, lighting: Lighting, rand: () => number): void {
+export function gear(bones: Map<string, THREE.Bone>, def: GearDef, lighting: Lighting, rand: () => number): THREE.Mesh[] {
+  const out: THREE.Mesh[] = [];
   const spine = bones.get('mixamorigSpine2'), hand = bones.get('mixamorigLeftHand');
   if (spine && rand() < (def.backpack ?? 0)) {
     const bag = new THREE.Mesh(backpack(), [mat(BAGS[Math.floor(rand() * BAGS.length)], lighting), mat('#1a1a1a', lighting)]);
     bag.position.set(0, 0, -16);
     spine.add(bag);
+    out.push(bag);
   }
   if (hand && rand() < (def.book ?? 0)) {
     const b = new THREE.Mesh(bookGeo[rand() < 0.5 ? 0 : 1], mat(COVERS[Math.floor(rand() * COVERS.length)], lighting, 0.6));
     b.position.set(-1, 11, 4);
     hand.add(b);
+    out.push(b);
   }
+  return out;
 }

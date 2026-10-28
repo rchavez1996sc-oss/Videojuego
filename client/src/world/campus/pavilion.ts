@@ -17,7 +17,7 @@ type At = (x: number, y: number, z: number) => THREE.Vector3;
  * of slabs and fins over recessed glass (Industrial, old wing); `bio` steel curtain grid with coloured panes and louvres on
  * the long faces, blind travertine ends (Biológicas); `framed` punched windows in proud white frames (Biológicas annex).
  */
-interface Skin { kind: NonNullable<CampusBuilding['skin']>; wall: string; spandrel: string; base: string }
+export interface Skin { kind: NonNullable<CampusBuilding['skin']>; wall: string; spandrel: string; base: string }
 
 function skinOf(def: CampusBuilding): Skin {
   const wall = WALLS[def.color] ?? 'uniGrey';
@@ -25,7 +25,7 @@ function skinOf(def: CampusBuilding): Skin {
 }
 
 /** One wing (local box cx, cz, w × d): solid core plus the skin on all four faces, roof slab, parapet, rooftop kit. */
-function wing(b: Builder, at: At, q: THREE.Quaternion, cx: number, cz: number, w: number, d: number, floors: number, sk: Skin, rand: () => number): void {
+export function wing(b: Builder, at: At, q: THREE.Quaternion, cx: number, cz: number, w: number, d: number, floors: number, sk: Skin, rand: () => number): void {
   const H = floors * FLOOR, box = (mat: string, size: [number, number, number], x: number, y: number, z: number, collide = false) => b.box(mat, size, at(cx + x, y, cz + z), q, collide);
   box(sk.wall, [w - 0.3, H, d - 0.3], 0, H / 2, 0, true);
   const face = (len: number, along: 'x' | 'z', s: number) => {

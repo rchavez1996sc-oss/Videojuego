@@ -31,6 +31,9 @@ export class Rig {
   private mixer: THREE.AnimationMixer;
   private inst: ReturnType<typeof characters.create>;
   get bones(): Map<string, THREE.Bone> { return this.inst.bones; }
+  private extraNear: THREE.Object3D[] = [];
+  /** Props on the bones (backpack, book) shown only with the near LOD. */
+  nearOnly(...o: THREE.Object3D[]): void { this.extraNear.push(...o); }
   private lowKey = ''; private upKey = '';
   private lower: THREE.AnimationAction | null = null; private upper: THREE.AnimationAction | null = null;
   private overlay: { key: string; t: number; from: number } | null = null;
@@ -39,8 +42,7 @@ export class Rig {
   private lockT = 0; private aimT = 0;
   private kick = 0;
   private ikW = 0;
-  dead = false;
-  private isFar = false;
+  dead = false; private isFar = false;
   private skip = 0; private acc = 0;
   private last = new THREE.Vector3();
   /** Smoothed ground velocity in the body frame (forward, side): frame-time jitter must not flip the gait. */
@@ -220,7 +222,6 @@ export class Rig {
   }
 
   durationOf(key: string): number { return characters.clips.get(key)?.duration ?? 1; }
-
   die(kind: string): void {
     this.held = null;
     this.overlay = null;
@@ -292,9 +293,8 @@ export class Rig {
     this.isFar = v;
     this.inst.near.forEach((m) => (m.visible = !v));
     this.inst.far.forEach((m) => (m.visible = v));
+    this.extraNear.forEach((m) => (m.visible = !v));
   }
 
-  set castShadow(v: boolean) {
-    this.root.traverse((o) => o instanceof THREE.Mesh && (o.castShadow = v));
-  }
+  set castShadow(v: boolean) { this.root.traverse((o) => o instanceof THREE.Mesh && (o.castShadow = v)); }
 }

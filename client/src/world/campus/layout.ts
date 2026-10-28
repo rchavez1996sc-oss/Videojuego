@@ -27,6 +27,8 @@ export interface CampusDef {
   seed: number;
   venezuela: { z: number; half: number; median: number; sidewalk: number };
   /** Walkable campus: west < x < x (east), z > north (walled on the north and east, open towards the Huaca); `south` bounds the avenue side. */
+  /** Extra pedestrian lines for the street graph (into courtyards). */
+  extraWalks?: [number, number][][];
   /** Faculty lawns with diagonal walks (`parks.ts`). */
   parks?: (Rect & { name?: string })[];
   /** Campus extras multiplied to this many times the base crowd (`crowds.ts`). */

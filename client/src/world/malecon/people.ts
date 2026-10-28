@@ -112,7 +112,7 @@ export function crowd(seats: { pos: THREE.Vector3; yaw: number }[], standing: Ex
         if (hit) spot.pos.y = Math.max(spot.pos.y, spot.pos.y + 1.2 - hit.timeOfImpact);
       }
       const x = extra(lighting, r, spot.pos, spot.yaw, seated ? SEATED[Math.floor(r() * SEATED.length)] : (spot as Extra).key);
-      if (kit && !seated) gear(x.bones, kit, lighting, r);
+      if (kit && !seated) x.nearOnly(...gear(x.bones, kit, lighting, r));
       x.root.updateMatrixWorld(true);
       shootable(world, x, spot.pos.y, seated, hurt, slumps, limp, dying);
       x.root.visible = false;
@@ -131,8 +131,8 @@ export function crowd(seats: { pos: THREE.Vector3; yaw: number }[], standing: Ex
     near.clear();
     for (const x of rigs) {
       const d = x.root.position.distanceTo(camera.position);
-      x.root.visible = d < 40;
-      if (!x.dead) x.far = d > 16;
+      x.root.visible = d < 36;
+      if (!x.dead) x.far = d > 12;
       if (d < 22) near.add(x);
     }
   }));

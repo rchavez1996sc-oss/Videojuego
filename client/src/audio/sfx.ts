@@ -166,6 +166,12 @@ export class Sfx {
     this.filtered(t + 0.18, 'bandpass', 1300, 3, 0.2, 0.002, 0.08);
   }
 
+  /** Demolition charge armed: a short electronic beep, higher when `urgent`. */
+  chargeBeep(urgent = false): void {
+    const t = this.m.ctx.currentTime, f = urgent ? 2200 : 1600;
+    this.tone(t, 'square', f, f, 0.18, 0.08);
+  }
+
   /** Brass rounds rattling into a pouch, then a magazine seated with a solid click. */
   pickupAmmo(): void {
     const t = this.m.ctx.currentTime;
