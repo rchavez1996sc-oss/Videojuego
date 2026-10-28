@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {
-  BlendFunction, BloomEffect, EffectComposer, EffectPass, LUT3DEffect, NoiseEffect,
+  BlendFunction, BloomEffect, DepthOfFieldEffect, EffectComposer, EffectPass, LUT3DEffect, NoiseEffect,
   RenderPass, SMAAEffect, ToneMappingEffect, ToneMappingMode, VignetteEffect,
 } from 'postprocessing';
 import { cinematicLut } from './grade';
@@ -41,6 +41,13 @@ export class Renderer {
       ao.enabled = preset.ao;
       onQuality(() => (ao.enabled = preset.ao));
       this.composer.addPass(ao);
+    }
+    {
+      const dof = new DepthOfFieldEffect(camera, { worldFocusDistance: 30, worldFocusRange: 90, bokehScale: 1.1, resolutionScale: 0.5 });
+      const pass = new EffectPass(camera, dof);
+      pass.enabled = preset.ao;
+      onQuality(() => (pass.enabled = preset.ao));
+      this.composer.addPass(pass);
     }
     this.composer.addPass(new EffectPass(
       camera,
