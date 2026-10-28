@@ -16,7 +16,7 @@ import { unblamed } from './blame';
 /** Gate: squads on foot enter at (`inX`, `inZ`); pickups from that side follow `drive` in through the nearest vehicle entrance and drop at (`dropX`, `dropZ`). */
 export interface DefenseDef {
   title: string; seconds: number; waves: number[]; students: number; limit: number;
-  gates: { x: number; inX: number; inZ: number; drive: [number, number][]; dropX: number; dropZ: number }[];
+  gates: { x: number; inX: number; inZ: number; foot?: [number, number][]; drive: [number, number][]; dropX: number; dropZ: number }[];
   tank: [number, number][]; charge: [number, number, number];
   tankAlert: string; failed: string; complete: string; reward: string;
   /** Opening hunt: kill `huntKills` police, then `news` sends the player to the faculty (within `arrive` m starts the hold). */
@@ -25,7 +25,7 @@ export interface DefenseDef {
 
 type Phase = 'hunt' | 'go' | 'hold' | 'tank' | 'ready';
 
-export interface DefenseDeps { scene: THREE.Scene; world: RAPIER.World; lighting: Lighting; enemies: Enemies; sfx: Sfx; camera: THREE.Camera; refuge: THREE.Vector3[]; blast: (at: THREE.Vector3) => void }
+export interface DefenseDeps { scene: THREE.Scene; world: RAPIER.World; lighting: Lighting; enemies: Enemies; sfx: Sfx; camera: THREE.Camera; refuge: THREE.Vector3[]; entry?: THREE.Vector3; blast: (at: THREE.Vector3) => void }
 
 const clock = (s: number) => `${Math.floor(Math.ceil(s) / 60)}:${String(Math.ceil(s) % 60).padStart(2, '0')}`;
 
@@ -97,7 +97,7 @@ export class Defense {
   /** Where the minimap points: nothing while hunting, the faculty, the tank as it comes, then the charge and the tank. */
   get goal(): THREE.Vector3 | undefined {
     if (this.phase === 'hunt') return undefined;
-    if (this.phase === 'go' || this.phase === 'hold') return this.centre;
+    if (this.phase === 'go' || this.phase === 'hold') return this.d.entry ?? this.centre;
     return this.phase === 'ready' && !this.carrying && this.fuse < 0 ? this.charge.position : this.tank!.position;
   }
 
@@ -126,7 +126,10 @@ export class Defense {
 
   private arrive(drop: Drop): void {
     const gate = this.def.gates[drop.gate];
-    if (!drop.truck) return this.squad(gate.inX, gate.inZ, drop.size);
+    if (!drop.truck) {
+      const [x, z] = gate.foot?.[Math.floor(this.rand() * gate.foot.length)] ?? [gate.inX, gate.inZ];
+      return this.squad(x, z, drop.size);
+    }
     const truck = new PoliceTruck(this.mats, gate.drive.map(([x, z]) => new THREE.Vector3(x, 0, z)), this.d.world);
     truck.onParked = () => this.squad(gate.dropX, gate.dropZ, drop.size);
     this.trucks.push(truck);
@@ -137,7 +140,7 @@ export class Defense {
   update(dt: number, player: THREE.Vector3, input: Input, alive: boolean): void {
     if (this.done) return;
     if (this.phase === 'hunt' && this.kills >= this.def.huntKills) (this.phase = 'go'), this.flash(this.def.news, 11);
-    if (this.phase === 'go' && player.distanceTo(this.centre) < this.def.arrive) this.phase = 'hold';
+    if (this.phase === 'go' && Math.min(player.distanceTo(this.centre), player.distanceTo(this.d.entry ?? this.centre) * 2) < this.def.arrive) this.phase = 'hold';
     if (this.phase === 'hold') this.t += dt;
     while (this.phase === 'hold' && this.drops.length && this.drops[0].t <= this.t) this.arrive(this.drops.shift()!);
     for (const tr of this.trucks) tr.update(dt);

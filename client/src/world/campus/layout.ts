@@ -33,6 +33,8 @@ export interface CampusDef {
   parks?: (Rect & { name?: string })[];
   /** Campus extras multiplied to this many times the base crowd (`crowds.ts`). */
   crowdFactor?: number;
+  /** Thin the extras round a spot (keep this share within `r` m). */
+  thinNear?: { x: number; z: number; r: number; keep: number };
   bounds: { x: number; west: number; north: number; south: number; bulges?: { x0: number; x1: number; z1: number }[] };
   gate1: { x: number; z: number; yaw: number };
   gate2?: { x: number; z: number; yaw: number };

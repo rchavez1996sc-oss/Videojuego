@@ -54,6 +54,8 @@ export interface Barrio {
   inside?: (x: number, z: number) => boolean;
   /** Where the people to defend shelter (defense chapters). */
   refuge?: THREE.Vector3[];
+  /** Doorstep the objective marker points at (instead of the middle of the building). */
+  entry?: THREE.Vector3;
   /** Per-frame upkeep of moving set pieces (push gates), given everyone's feet positions. */
   tick?: (dt: number, movers: THREE.Vector3[]) => void;
 }

@@ -48,6 +48,7 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
   const bake = campusBake(lighting);
   const plants: Plants = { palms: [], phoenix: [], trees: [], bent: [], pines: [], seats: [], standing: [], arch: [] };
   const group = new THREE.Group(), signs: NameSign[] = [], refuge: THREE.Vector3[] = [];
+  let entry: THREE.Vector3 | undefined;
 
   buildCampusRoads(b, def, rand);
   const v = def.venezuela, gate = puerta1(b, def.gate1, def.gate1.x - 28.2 - def.bounds.west);
@@ -78,6 +79,7 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
       const f = quimicaFront(b, bd, rand);
       signs.push(f.sign);
       refuge.push(...f.spots);
+      entry = f.entry;
       continue;
     }
     if (bd.key === 'comedor') {
@@ -116,6 +118,11 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
   if (def.politics) group.add(studentLife(b, def, def.politics, walks, hard, gate.hard, plants, lighting, mulberry32(def.seed + 9)));
   plantCampus(hf, def, hard, plants, rand);
   moreStudents(def, plants, rand, def.crowdFactor ?? 1);
+  if (def.thinNear) {
+    const t = def.thinNear, keep = <T extends { pos: THREE.Vector3 }>(a: T[]) => a.filter((s) => Math.hypot(s.pos.x - t.x, s.pos.z - t.z) > t.r || rand() < t.keep);
+    plants.standing.splice(0, Infinity, ...keep(plants.standing));
+    plants.seats.splice(0, Infinity, ...keep(plants.seats));
+  }
 
   group.add(buildVegetation(b, plants, [], lighting));
   const bystanders = { onHurt: (_p: THREE.Vector3) => {} };
@@ -127,7 +134,7 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
   const solid = (x: number, z: number) => def.buildings.some((r) => inRect(r, x, z, 1) && !(r.key === 'quimica' && quimicaOpen(r, x, z))) || def.parkings.some((r) => inRect(r, x, z, 0)) || inRect(def.field, x, z, 3.2);
   const graph = campusGraph(def, solid, [...walks, ...(def.extraWalks ?? [])]);
   const B = def.bounds;
-  return { group, materials: mats, bake, station: null, graph, bystanders, refuge, tick: (dt, movers) => swing.update(dt, movers),
+  return { group, materials: mats, bake, station: null, graph, bystanders, refuge, entry, tick: (dt, movers) => swing.update(dt, movers),
     blocked: (x, z) => solid(x, z) || z > v.z + v.half + v.sidewalk,
     inside: (x, z) => x > B.west + 4 && x < B.x - 4 && z > northAt(B, x) + 4 && z < v.z - v.half - v.sidewalk - 1 };
 }

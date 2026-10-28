@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { Builder } from '../buildingKit';
 import { framer, yawQ, type CampusBuilding } from './layout';
 import type { NameSign } from './pavilion';
+import { quimicaEntry } from './quimicaEntry';
 
 const G = 3.6, SET = 0.7;
 
@@ -12,7 +13,7 @@ const G = 3.6, SET = 0.7;
  * lights), with doors to the courtyard and an east entrance: tiled ramp with railings under a curved canopy,
  * yellow fin walls and a bike rack. Returns the sign and spots for the students.
  */
-export function quimicaFront(b: Builder, def: CampusBuilding, rand: () => number): { sign: NameSign; spots: THREE.Vector3[] } {
+export function quimicaFront(b: Builder, def: CampusBuilding, rand: () => number): { sign: NameSign; spots: THREE.Vector3[]; entry: THREE.Vector3 } {
   const at = framer(def), q = yawQ(def.yaw), W = def.w / 2, D = def.d / 2;
   const box = (mat: string, size: [number, number, number], x: number, y: number, z: number, collide = false) => b.box(mat, size, at(x, y, z), q, collide);
   box('graniteBlack', [def.w, 4, def.d], 0, G + 2, 0, true);
@@ -55,19 +56,10 @@ export function quimicaFront(b: Builder, def: CampusBuilding, rand: () => number
     for (const s of [-1, 1]) for (const k of [-1, 0, 1]) box('desk', [0.45, 0.5, 0.45], u + s * 1.0, 0.4, v + k * 1.0);
   }
 
-  box('tileCream', [7, 0.14, 3.2], W + 3.5, 0.07, 0);
-  for (const s of [-1, 1]) {
-    box('alu', [7, 0.05, 0.05], W + 3.5, 1.05, s * 1.7);
-    box('none', [7, 1.1, 0.1], W + 3.5, 0.55, s * 1.7, true);
-    for (const x of [W + 1, W + 6]) box('uniCream', [0.35, 3.6, 0.35], x, 1.8, s * 2.1, true);
-    box('uniCream', [6, 0.35, 0.35], W + 3.5, 3.5, s * 2.1);
-  }
-  b.geometry('steelGrey', new THREE.CylinderGeometry(2.6, 2.6, 6.6, 24, 1, true, 0, Math.PI).rotateZ(Math.PI / 2), new THREE.Matrix4().compose(at(W + 3.5, 3.2, 0), q, new THREE.Vector3(1, 0.45, 1)));
-  for (const v of [3.6, 5.6, 7.6]) box('uniYellow', [2.2, 6.5 + rand(), 0.45], W + 1.1, 3.3, v, true);
-  for (let k = 0; k < 5; k++) box('alu', [0.04, 0.7, 0.9], W + 1.5 + k * 0.7, 0.35, -3.6);
+  const entry = quimicaEntry(b, box, at, q, W - SET, rand);
 
   const spots: THREE.Vector3[] = [];
   for (let k = 0; k < 5; k++) spots.push(at(-41.7 + k * 4.6, 0.2, 2.8 + rand()));
   for (let k = 0; k < 7; k++) spots.push(at(-3 + k * 6 + rand() * 2, 0.2, -0.6));
-  return { sign: { pos: at(0, G + 2.1, D + 0.03), q, w: 34, text: def.name ?? 'FACULTAD DE QUÍMICA E INGENIERÍA QUÍMICA', ink: '#dcdcd8' }, spots };
+  return { sign: { pos: at(0, G + 2.1, D + 0.03), q, w: 34, text: def.name ?? 'FACULTAD DE QUÍMICA E INGENIERÍA QUÍMICA', ink: '#dcdcd8' }, spots, entry };
 }
