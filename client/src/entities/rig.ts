@@ -50,6 +50,8 @@ export class Rig {
   private skip = 0;
   private acc = 0;
   private last = new THREE.Vector3();
+  /** Smoothed ground velocity in the body frame (forward, side): frame-time jitter must not flip the gait. */
+  private move = new THREE.Vector2();
   private spine: THREE.Bone[];
   /** Spine before the aim bend: the mixer skips bones whose value did not change (still poses), so the bend must not pile up. */
   private bent: THREE.Quaternion[] = [];
@@ -255,9 +257,12 @@ export class Rig {
     const ang = (Math.atan2(side, fwd) + Math.PI * 2) % (Math.PI * 2);
     if (crouch > 0.5) return speed < 0.3 ? ['crouch_idle', 1] : [`crouch_${DIR4[Math.round(ang / (Math.PI / 2)) % 4]}`, speed / PACE.crouch];
     if (speed < 0.3) return ['idle', 1];
-    if (speed > 5 && fwd > speed * 0.8 && !this.aiming) return ['sprint', speed / PACE.sprint];
-    const dir = DIR8[Math.round(ang / (Math.PI / 4)) % 8];
-    return speed < 2.8 ? [`walk_${dir}`, speed / PACE.walk] : [`run_${dir}`, speed / PACE.run];
+    const was = this.lowKey.replace('+', ''), sprinting = was === 'sprint';
+    if (!this.aiming && (sprinting ? speed > 4.4 && fwd > speed * 0.6 : speed > 5 && fwd > speed * 0.8)) return ['sprint', speed / PACE.sprint];
+    const prev = DIR8.indexOf(was.split('_')[1] ?? ''), off = prev < 0 ? Math.PI : Math.abs(Math.atan2(Math.sin(ang - prev * (Math.PI / 4)), Math.cos(ang - prev * (Math.PI / 4))));
+    const dir = off < Math.PI / 6 ? DIR8[prev] : DIR8[Math.round(ang / (Math.PI / 4)) % 8];
+    const running = was.startsWith('run_') || sprinting ? speed > 2.4 : speed > 2.8;
+    return running ? [`run_${dir}`, speed / PACE.run] : [`walk_${dir}`, speed / PACE.walk];
   }
 
   private chooseUpper(low: string, crouch: number): string {
@@ -278,9 +283,10 @@ export class Rig {
     if (this.lockT <= 0 && this.held?.key === 'getup') this.release();
     if (!this.dead && !this.held) {
       const delta = this.root.position.clone().sub(this.last), yaw = this.root.rotation.y, inv = 1 / Math.max(step, 1e-3);
-      const fwd = (delta.x * Math.sin(yaw) + delta.z * Math.cos(yaw)) * inv;
-      const side = (delta.x * -Math.cos(yaw) + delta.z * Math.sin(yaw)) * inv;
-      const [low, rate] = this.chooseLower(speed, crouch, fwd, side);
+      const k = 1 - Math.exp(-step * 10);
+      this.move.x += ((delta.x * Math.sin(yaw) + delta.z * Math.cos(yaw)) * inv - this.move.x) * k;
+      this.move.y += ((delta.x * -Math.cos(yaw) + delta.z * Math.sin(yaw)) * inv - this.move.y) * k;
+      const [low, rate] = this.chooseLower(speed, crouch, this.move.x, this.move.y);
       if (this.overlay && (this.overlay.t -= step) <= 0) {
         this.overlay = null;
         this.upKey = '';

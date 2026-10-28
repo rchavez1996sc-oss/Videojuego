@@ -109,17 +109,20 @@ export function installDebug(c: DebugContext): void {
       return `${hits.join(' | ')} · boom @ ${where ? fmt(where) : '-'} · player hp ${c.player.hp.toFixed(0)}`;
     },
     /** Teleports the player and runs `n` frames at 60 Hz holding the given keys; logs frames spent off the ground and height jumps. */
-    runLog(x: number, z: number, yaw: number, n: number, keys: string[], y?: number) {
+    runLog(x: number, z: number, yaw: number, n: number, keys: string[], y?: number, jitter = 0) {
       c.setFreeCam(false);
       c.player.respawn(new THREE.Vector3(x, y ?? c.hf.heightAt(x, z) + 0.3, z), yaw);
       c.tpc.yaw = yaw;
       c.setSkipRender(true);
       for (const k of keys) dispatchEvent(new KeyboardEvent('keydown', { code: k }));
       let air = 0, runs = 0, cur = 0, prevY = c.player.position.y, jumps = 0;
-      const ms: number[] = [];
+      const ms: number[] = [], rig = c.player.model as unknown as { lowKey: string };
+      let swaps = 0, key = '', seen = '';
       for (let i = 0; i < n; i++) {
         const t0 = performance.now();
-        c.frame(1 / 60);
+        c.frame(1 / 60 + (Math.random() - 0.5) * jitter);
+        if (i > 40 && rig.lowKey !== key) (swaps++, seen.length < 160 && (seen += rig.lowKey + ' '));
+        key = rig.lowKey;
         ms.push(performance.now() - t0);
         const y = c.player.position.y;
         if (Math.abs(y - prevY) > 0.06) jumps++;
@@ -130,7 +133,7 @@ export function installDebug(c: DebugContext): void {
       c.setSkipRender(false);
       for (const k of keys) dispatchEvent(new KeyboardEvent('keyup', { code: k }));
       ms.sort((a, b) => a - b);
-      return `air ${air}/${n} in ${runs} runs, y jumps ${jumps}, end ${fmt(c.player.position)}, sim ms p50 ${ms[n >> 1].toFixed(1)} p95 ${ms[Math.floor(n * 0.95)].toFixed(1)} max ${ms[n - 1].toFixed(1)}`;
+      return `swaps ${swaps} [${seen}] air ${air}/${n} in ${runs} runs, y jumps ${jumps}, end ${fmt(c.player.position)}, sim ms p50 ${ms[n >> 1].toFixed(1)} p95 ${ms[Math.floor(n * 0.95)].toFixed(1)} max ${ms[n - 1].toFixed(1)}`;
     },
     /** Runs `n` frames in follow mode, firing every `every` frames (screenshot tests). */
     simulate(n: number, every: number, pitch = -0.02) {
