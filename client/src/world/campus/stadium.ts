@@ -26,12 +26,12 @@ export function stadium(b: Builder, s: CampusDef['stadium'], plants: Plants): Na
   const signs: NameSign[] = [];
   for (let i = 0; i < N; i++) {
     const a0 = (i / N) * Math.PI * 2, a1 = ((i + 1) / N) * Math.PI * 2, am = (a0 + a1) / 2;
-    const yaw = Math.atan2(Math.cos(am) * s.rz, -Math.sin(am) * s.rx), q = new THREE.Quaternion().setFromAxisAngle(UP, yaw);
+    const yaw = Math.atan2(-Math.cos(am) * s.rz, -Math.sin(am) * s.rx), q = new THREE.Quaternion().setFromAxisAngle(UP, yaw);
     if (i % 16 === 8) {
       const out = 0.75 + ROWS * 0.045 + 0.04, gate = at(Math.cos(am) * s.rx * out, 0, Math.sin(am) * s.rz * out);
       for (const side of [-1, 1]) b.box('uniRed', [0.9, 5.2, 0.9], gate.clone().add(new THREE.Vector3(-Math.sin(yaw) * 0, 2.6, 0)).add(new THREE.Vector3(Math.cos(yaw) * side * 4.2, 0, -Math.sin(yaw) * side * 4.2)), q, true);
       b.box('uniRed', [9.3, 1.1, 1], gate.clone().setY(5.7), q, false);
-      signs.push({ pos: gate.clone().setY(5.7).add(new THREE.Vector3(Math.sin(yaw) * 0.52, 0, Math.cos(yaw) * 0.52)), q, w: 7.5, text: `PUERTA ${(i - 8) / 16 + 1}`, ink: '#ffffff', font: 'sans' });
+      signs.push({ pos: gate.clone().setY(5.7).add(new THREE.Vector3(-Math.sin(yaw) * 0.52, 0, -Math.cos(yaw) * 0.52)), q: q.clone().multiply(new THREE.Quaternion().setFromAxisAngle(UP, Math.PI)), w: 7.5, text: `PUERTA ${(i - 8) / 16 + 1}`, ink: '#ffffff', font: 'sans' });
       continue;
     }
     const kw = 0.75 + ROWS * 0.045, lw = Math.hypot(Math.cos(a1) - Math.cos(a0), Math.sin(a1) - Math.sin(a0)) * s.rx * kw + 0.5;

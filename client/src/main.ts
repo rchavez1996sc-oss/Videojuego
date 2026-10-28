@@ -170,7 +170,7 @@ async function boot(): Promise<void> {
     damageFx.hit(Math.atan2(to.dot(right), to.dot(fwd)), dmg);
     tpc.kick(0.006, (Math.random() - 0.5) * 0.008, 0.03);
   };
-  const pickups = new Pickups(lighting, hf, ch.medkits ?? [], ch.ammo ?? []);
+  const pickups = new Pickups(lighting, hf, ch.medkits ?? [], ch.ammo ?? [], ch.lootRounds);
   const grenades = new Grenades(world, hf, lighting, () => player.collisionHandle);
   grenades.onSettled = (at) => enemies.fleeFrom(at);
   const nadeMode = new GrenadeMode(grenades, world, camera, player, sfx, hud);

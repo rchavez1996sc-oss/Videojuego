@@ -71,6 +71,8 @@ export interface ChapterDef {
   enemyHealth?: number;
   /** The first `count` roaming police are placed `min`–`max` m from the player's start; the rest spread out. */
   enemyNear?: NearStart;
+  /** Rounds left by each fallen policeman (default 15–45). */
+  lootRounds?: [number, number];
   /** Prologue paragraphs shown while the chapter loads. */
   intro?: string[];
   objective?: import('../systems/objective').ObjectiveDef;

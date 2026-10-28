@@ -26,7 +26,8 @@ export class Pickups {
   private geo: Record<string, THREE.BufferGeometry>;
   private mat: Record<string, THREE.Material>;
 
-  constructor(lighting: Lighting, private hf: Heightfield, medkits: [number, number][], ammo: [number, number][]) {
+  constructor(lighting: Lighting, private hf: Heightfield, medkits: [number, number][], ammo: [number, number][], loot?: [number, number]) {
+    if (loot) lootRounds.splice(0, 2, ...loot);
     this.geo = {
       bag: flat([new THREE.BoxGeometry(0.42, 0.2, 0.28), new THREE.BoxGeometry(0.16, 0.04, 0.05).translate(0, 0.12, 0)]),
       cross: flat([new THREE.BoxGeometry(0.13, 0.04, 0.005), new THREE.BoxGeometry(0.04, 0.13, 0.005)].map((g) => g.translate(0, 0, 0.142))),
@@ -93,10 +94,13 @@ export class Pickups {
   }
 }
 
+/** Rounds a fallen policeman leaves (min, max); a chapter may raise it (`lootRounds`). */
+export const lootRounds: [number, number] = [15, 45];
+
 /** Every fallen policeman leaves his rounds on the body; sometimes (by difficulty) a medkit beside them, gone after 30 s. */
 export function dropLoot(pickups: Pickups, at: THREE.Vector3, ground: number): void {
   const a = Math.random() * Math.PI * 2, side = new THREE.Vector3(Math.cos(a) * 0.45, 0, Math.sin(a) * 0.45);
-  pickups.spawn(at.clone().add(side), 'ammo', 90, ground, 15 + Math.round(Math.random() * 30));
+  pickups.spawn(at.clone().add(side), 'ammo', 90, ground, lootRounds[0] + Math.round(Math.random() * (lootRounds[1] - lootRounds[0])));
   if (Math.random() < difficulty.value.medkitDrop) pickups.spawn(at.clone().sub(side), 'medkit', 30, ground);
 }
 

@@ -116,7 +116,7 @@ export class Defense {
 
   private squad(x: number, z: number, size: number): void {
     for (let i = 0; i < size; i++) {
-      const e = this.d.enemies.add({ type: this.rand() < 0.15 ? 'marksman' : 'rifleman', x: x + (this.rand() - 0.5) * 6, z: z + (this.rand() - 0.5) * 4 });
+      const e = this.d.enemies.add({ type: this.rand() < 0.15 ? 'marksman' : 'rifleman', x: x + (this.rand() - 0.5) * (4 + size), z: z + (this.rand() - 0.5) * (3 + size) });
       const prey = this.students.alive[Math.floor(this.rand() * this.students.alive.length)];
       e.engaged = true;
       e.awareness = 0.8;

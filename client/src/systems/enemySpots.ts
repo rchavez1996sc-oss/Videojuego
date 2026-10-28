@@ -16,7 +16,7 @@ export const isDefender = (s: SpawnDef): boolean => !!s.leash || s.y !== undefin
 export function shuffleRoamers(spawns: SpawnDef[], nodes: THREE.Vector3[], world: RAPIER.World, hf: Heightfield, start: THREE.Vector3, near?: NearStart): SpawnDef[] {
   const open = nodes.filter((n) => Math.abs(n.y - hf.heightAt(n.x, n.z)) < 0.8
     && !world.castRay(new RAPIER.Ray({ x: n.x, y: n.y + 0.6, z: n.z }, { x: 0, y: 1, z: 0 }), 40, true));
-  const far = open.filter((n) => n.distanceTo(start) > FROM_PLAYER);
+  const far = open.filter((n) => n.distanceTo(start) > (near?.max ?? FROM_PLAYER));
   const close = near ? open.filter((n) => { const d = n.distanceTo(start); return d > near.min && d < near.max; }) : [];
   let placed = 0;
   const taken = spawns.filter(isDefender).map((s) => new THREE.Vector3(s.x, 0, s.z));
