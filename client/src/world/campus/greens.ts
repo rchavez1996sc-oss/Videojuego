@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { addStrip } from '../groundStrips';
 import type { Builder } from '../buildingKit';
 import type { Heightfield } from '../heightfield';
 import { bench, chatGroup, ribbon, type Plants } from '../malecon/park';
@@ -35,6 +36,7 @@ export function comedorPark(b: Builder, hf: Heightfield, def: CampusDef, plants:
   b.geometry('parkPath', new THREE.CylinderGeometry(6, 6, 0.2, 40).translate(0, -0.1, 0), disc);
   b.geometry('kerbYellow', new THREE.TorusGeometry(6, 0.12, 6, 48).rotateX(Math.PI / 2).translate(0, 0.05, 0), disc);
   paths.discs.push({ x: centre.x, z: centre.z, r: 6.2 });
+  addStrip([new THREE.Vector2(centre.x, centre.z), new THREE.Vector2(centre.x, centre.z)], 12, 'parkPath');
   for (let k = 0; k < 4; k++) {
     const a = Math.PI / 4 + (k * Math.PI) / 2, pos = centre.clone().add(new THREE.Vector3(Math.sin(a) * 4.6, 0.17, Math.cos(a) * 4.6));
     bench(b, pos, a);

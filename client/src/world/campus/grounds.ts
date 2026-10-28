@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { addStrip } from '../groundStrips';
 import type { Builder } from '../buildingKit';
 import { car, type CarKind } from '../urbanProps';
 import { framer, yawQ, type CampusDef, type Rect } from './layout';
@@ -108,6 +109,7 @@ export function footballField(b: Builder, f: Rect, turf: THREE.MeshStandardMater
   mesh.position.copy(at(0, 0.05, 0));
   mesh.quaternion.copy(q);
   mesh.receiveShadow = true;
+  addStrip([at(-W / 2, 0, 0), at(W / 2, 0, 0)].map((v) => new THREE.Vector2(v.x, v.z)), D, 'turf');
   for (const s of [-1, 1]) {
     const z = s * (D / 2 - 3);
     for (const x of [-1.5, 1.5]) b.box('roadWhite', [0.1, 2, 0.1], at(x, 1, z), q, true);

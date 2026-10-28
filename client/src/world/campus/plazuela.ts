@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { addStrip } from '../groundStrips';
 import type { Builder } from '../buildingKit';
 import type { Heightfield } from '../heightfield';
 import type { Lighting } from '../../render/lighting';
@@ -60,6 +61,8 @@ export function plazuela(b: Builder, hf: Heightfield, p: PlazuelaDef, plants: Pl
   b.geometry('pathRust', new THREE.RingGeometry(p.r, ring, 64).rotateX(-Math.PI / 2), new THREE.Matrix4().makeTranslation(p.x, 0.14, p.z));
   b.geometry('concrete', new THREE.CylinderGeometry(p.r, p.r, 0.3, 48, 1, true), new THREE.Matrix4().makeTranslation(p.x, 0.1, p.z));
   paths.discs.push({ x: p.x, z: p.z, r: ring + 0.2 });
+  addStrip(Array.from({ length: 33 }, (_, i) => new THREE.Vector2(p.x + Math.cos((i / 32) * Math.PI * 2) * (p.r + ring) / 2, p.z + Math.sin((i / 32) * Math.PI * 2) * (p.r + ring) / 2)), ring - p.r, 'pathRust');
+  addStrip([c, c], p.r * 2, 'lawn');
   plants.trees.push(new THREE.Vector3(p.x + 1, 0, p.z - 0.5));
   const walks: THREE.Vector2[][] = [];
   for (const [x, z] of p.corners) {

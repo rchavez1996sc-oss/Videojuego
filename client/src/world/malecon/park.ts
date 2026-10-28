@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { addStrip } from '../groundStrips';
 import type { Builder } from '../buildingKit';
 import type { Heightfield } from '../heightfield';
 import { edgeZ, ravineCentre, ravineHalf, type CoastDef } from '../coast';
@@ -37,6 +38,7 @@ export function ribbon(b: Builder, hf: Heightfield, pts: THREE.Vector2[], width:
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   geo.computeVertexNormals();
   b.geometry(mat, geo, new THREE.Matrix4());
+  addStrip(pts, width, mat);
 }
 
 /** Green tubular railing: posts, two rails and X braces, one collider per bay. */

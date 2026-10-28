@@ -1,4 +1,4 @@
-export type Surface = 'dirt' | 'rock' | 'wood' | 'adobe' | 'tile' | 'metal';
+export type Surface = 'dirt' | 'rock' | 'wood' | 'adobe' | 'tile' | 'metal' | 'grass';
 
 const byCollider = new Map<number, Surface>();
 /** Handlers return `false` when the bullet's normal impact effects should still play. */
@@ -41,4 +41,5 @@ export const SURFACE_FX: Record<Surface, { dust: string; sparks: boolean; decal:
   adobe: { dust: '#b39474', sparks: false, decal: 0.09, decalColor: '#4a3626' },
   tile: { dust: '#9c5236', sparks: false, decal: 0.08, decalColor: '#3a1a10' },
   metal: { dust: '#555555', sparks: true, decal: 0.05, decalColor: '#202020' },
+  grass: { dust: '#6f7048', sparks: false, decal: 0.14, decalColor: '#2a2a18' },
 };

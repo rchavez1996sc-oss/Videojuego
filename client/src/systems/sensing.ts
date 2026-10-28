@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { stripAt } from '../world/groundStrips';
 import RAPIER from '@dimforge/rapier3d-compat';
 import type { Enemies } from './enemies';
 import type { Civilians } from './civilians';
@@ -38,7 +39,13 @@ export function surfaceUnder(world: RAPIER.World, hf: Heightfield, player: Playe
   const p = player.position;
   const hit = world.castRay(new RAPIER.Ray({ x: p.x, y: p.y + 0.3, z: p.z }, { x: 0, y: -1, z: 0 }), 0.8, true, undefined, undefined, undefined, undefined, (c) => c.handle !== player.collisionHandle);
   const surf = hit ? surfaceOf(hit.collider.handle) : 'dirt';
-  if (surf === 'dirt' && hit && hf.heightAt(p.x, p.z) < p.y - 0.25) return 'dirt';
+  const onTerrain = !hit || hf.heightAt(p.x, p.z) >= p.y - 0.25;
+  if (surf === 'dirt' && onTerrain) {
+    const strip = stripAt(p.x, p.y, p.z);
+    if (strip) return strip;
+  }
+  if (surf === 'grass') return 'grass';
+  if (surf === 'dirt' && !onTerrain) return 'dirt';
   if (surf === 'dirt') return hf.maskAt(p.x, p.z, 0) > 0.5 || hf.isPaved(p.z) ? 'hard' : hf.maskAt(p.x, p.z, 1) > 0.3 ? 'grass' : 'dirt';
   return surf === 'wood' ? 'wood' : surf === 'metal' ? 'metal' : 'hard';
 }

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { setPorous, setSurface, type Surface } from './surfaces';
+import { addStrip } from './groundStrips';
 import { cover } from '../ai/cover';
 
 const SURFACE: Record<string, Surface> = {
@@ -8,12 +9,22 @@ const SURFACE: Record<string, Surface> = {
   brick: 'adobe', concrete: 'rock', calamina: 'metal', estera: 'wood', door: 'metal', shutter: 'metal', sandbag: 'dirt', moto: 'metal',
 };
 
+/** Surface (bullets, footsteps) of materials not listed in SURFACE, from their name. */
+function guessSurface(mat: string): Surface {
+  if (mat.startsWith('paint')) return 'adobe';
+  if (/wood|deck|parquet|plank|bench|desk|timber|board/i.test(mat)) return 'wood';
+  if (/lawn|turf|grass|hedge/i.test(mat)) return 'grass';
+  if (/alu|iron|steel|metal|pole|rail|shutter|tin|corrug|fence|grill/i.test(mat)) return 'metal';
+  return 'rock';
+}
+
 export interface Opening { x: number; w: number; y: number; h: number }
 
 /** Accumulates world-space boxes per material, then emits merged meshes and box colliders. */
 export class Builder {
   private parts = new Map<string, THREE.BufferGeometry[]>();
   private tmp = new THREE.Object3D();
+  private up = new THREE.Vector3();
 
   /** Pass `null` world/body to build visual-only meshes (e.g. moving vehicles) without static colliders. */
   constructor(private world: RAPIER.World | null, private body: RAPIER.RigidBody | null) {}
@@ -25,6 +36,10 @@ export class Builder {
     this.tmp.updateMatrix();
     g.applyMatrix4(this.tmp.matrix);
     if (mat !== 'none' && mat !== 'grate' && mat !== 'glasswall') (this.parts.get(mat) ?? this.parts.set(mat, []).get(mat)!).push(g);
+    if (!collide && this.world && size[1] <= 0.45 && Math.min(size[0], size[2]) >= 0.8 && mat !== 'none' && Math.abs(this.up.set(0, 1, 0).applyQuaternion(quat).y) > 0.995) {
+      const long = size[0] >= size[2], half = (long ? size[0] : size[2]) / 2, axis = this.up.set(long ? 1 : 0, 0, long ? 0 : 1).applyQuaternion(quat);
+      addStrip([new THREE.Vector2(pos.x - axis.x * half, pos.z - axis.z * half), new THREE.Vector2(pos.x + axis.x * half, pos.z + axis.z * half)], long ? size[2] : size[0], mat, pos.y + size[1] / 2);
+    }
     if (collide && this.world && this.body) {
       const col = this.world.createCollider(
         RAPIER.ColliderDesc.cuboid(size[0] / 2, size[1] / 2, size[2] / 2)
@@ -32,7 +47,7 @@ export class Builder {
           .setRotation({ x: quat.x, y: quat.y, z: quat.z, w: quat.w }),
         this.body,
       );
-      setSurface(col.handle, mat === 'grate' ? 'metal' : SURFACE[mat] ?? (mat.startsWith('paint') ? 'adobe' : 'rock'));
+      setSurface(col.handle, mat === 'grate' ? 'metal' : SURFACE[mat] ?? guessSurface(mat));
       if (mat === 'grate' || mat === 'glasswall') setPorous(col.handle, mat === 'grate' ? 0.45 : 1);
       else if (mat !== 'roof' && mat !== 'glasswall') cover.addBox(pos, size, quat);
     }

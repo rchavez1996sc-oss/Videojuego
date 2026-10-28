@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { surfaceUnder } from '../systems/sensing';
 import type { Pickups } from '../systems/pickups';
 import RAPIER from '@dimforge/rapier3d-compat';
 import type { ThirdPersonCamera } from './camera';
@@ -134,6 +135,11 @@ export function installDebug(c: DebugContext): void {
       for (const k of keys) dispatchEvent(new KeyboardEvent('keyup', { code: k }));
       ms.sort((a, b) => a - b);
       return `swaps ${swaps} [${seen}] air ${air}/${n} in ${runs} runs, y jumps ${jumps}, end ${fmt(c.player.position)}, sim ms p50 ${ms[n >> 1].toFixed(1)} p95 ${ms[Math.floor(n * 0.95)].toFixed(1)} max ${ms[n - 1].toFixed(1)}`;
+    },
+    ground(x: number, z: number, y?: number) {
+      c.player.respawn(new THREE.Vector3(x, y ?? c.hf.heightAt(x, z) + 0.3, z), 0);
+      for (let i = 0; i < 20; i++) c.frame(1 / 60);
+      return `${x},${z} → ${surfaceUnder(c.world!, c.hf, c.player)} y ${c.player.position.y.toFixed(2)}`;
     },
     /** Runs `n` frames in follow mode, firing every `every` frames (screenshot tests). */
     simulate(n: number, every: number, pitch = -0.02) {

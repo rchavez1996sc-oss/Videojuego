@@ -124,3 +124,35 @@ body.ended #overlay { display: none; }
 @keyframes done-flash { 0% { opacity: 0; } 12% { opacity: 1; } 100% { opacity: 0; } }
 @keyframes done-stamp { to { opacity: 1; transform: scale(1); } }
 @keyframes done-sweep { to { left: 120%; } }
+
+/* GTA-like layout: thin health/stamina strips under the minimap, weapon and threat count top right, outlined white text. */
+#hud { --gta-ink: #fafafa; --gta-line: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 6px rgba(0, 0, 0, 0.55); }
+#hud .vitals { left: 28px; bottom: 28px; width: 196px; display: block; padding: 3px; gap: 0; background: rgba(0, 0, 0, 0.82); border: 0; border-radius: 0 0 3px 3px; }
+#hud .vitals .hpnum { position: absolute; left: 0; bottom: 150px; min-width: 0; }
+#hud .vitals .hpnum b { display: none; }
+#hud .vitals .lives i { width: 14px; height: 5px; transform: none; box-shadow: 0 0 0 1px #000; }
+#hud .bars { width: 100%; display: flex; gap: 3px; }
+#hud .meter { height: 8px; transform: none; background: rgba(255, 255, 255, 0.08); }
+#hud .meter.hp { flex: 2; }
+#hud .hp::after { display: none; }
+#hud .hp div { background: linear-gradient(180deg, #78c766, #4f9a40); box-shadow: none; }
+#hud .vitals.low .hp div { background: linear-gradient(180deg, #e0483a, #a8251c); animation: gta-low 0.9s ease-in-out infinite; }
+@keyframes gta-low { 50% { filter: brightness(1.6); } }
+#hud .meter.stamina { flex: 1; height: 8px; margin: 0; }
+#hud .stamina.hidden { opacity: 1; }
+#hud .stamina div { background: linear-gradient(180deg, #6aa8f0, #3f78c4); }
+#hud .ammo { top: 24px; bottom: auto; right: 30px; width: auto; padding: 0; background: none; border: 0; }
+#hud .ammo .head { gap: 8px; }
+#hud .ammo .weapon { font: 700 15px 'Barlow Condensed', sans-serif; letter-spacing: 0.08em; color: var(--gta-ink); text-shadow: var(--gta-line); }
+#hud .ammo .mode { font-size: 10px; padding: 0 5px; box-shadow: 0 0 0 1px #000; }
+#hud .ammo .count { margin-top: 0; text-shadow: var(--gta-line); }
+#hud .ammo .mag { font-size: 44px; color: var(--gta-ink); }
+#hud .ammo .res { font-size: 22px; color: #d8d8d8; }
+#hud .ticks { display: none; }
+#hud .slots { margin-top: 4px; gap: 4px; }
+#hud .slot { padding: 2px 6px; font-size: 11px; background: rgba(0, 0, 0, 0.55); }
+#hud .counter { top: 132px; right: 30px; min-width: 0; padding: 0; background: none; border: 0; display: flex; align-items: baseline; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+#hud .counter .k { font: 700 13px 'Barlow Condensed', sans-serif; letter-spacing: 0.12em; color: var(--gta-ink); text-shadow: var(--gta-line); }
+#hud .counter b { display: inline; font-size: 30px; color: #ff4a3a; text-shadow: var(--gta-line); }
+#hud .counter .civ { flex-basis: 100%; text-align: right; margin-top: 0; text-shadow: var(--gta-line); }
+#hud .toast { font-style: italic; font-weight: 800; letter-spacing: 0.08em; color: #ffcf3f; background: none; border: 0; text-shadow: var(--gta-line); font-size: 26px; }
