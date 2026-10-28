@@ -107,7 +107,10 @@ export function studentLife(b: Builder, def: CampusDef, p: PoliticsDef, walks: [
   const busts = p.busts, pl = def.plazuela;
   busts.forEach((d, k) => {
     let pos: THREE.Vector3, look: THREE.Vector3;
-    if (pl && k < 6) {
+    if (d.at) {
+      pos = new THREE.Vector3(d.at[0], 0, d.at[1]);
+      look = pos.clone().add(new THREE.Vector3(-Math.sin(d.at[2]), 0, -Math.cos(d.at[2])));
+    } else if (pl && k < 6) {
       const a = (k / 6) * Math.PI * 2 + Math.PI / 6;
       pos = new THREE.Vector3(pl.x + Math.sin(a) * (pl.r + 6.5), 0, pl.z + Math.cos(a) * (pl.r + 6.5));
       look = new THREE.Vector3(pl.x, 0, pl.z);

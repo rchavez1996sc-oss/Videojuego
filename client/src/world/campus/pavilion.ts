@@ -159,5 +159,6 @@ export function pavilion(b: Builder, def: CampusBuilding, rand: () => number): N
   const low = def.floors === 1;
   const y = band ? FLOOR + (FLOOR - 0.3) / 2 : def.style === 'courtyard' ? FLOOR + 0.2 : low ? H + 0.62 : FLOOR + SPANDREL / 2;
   const z = def.d / 2 + (band ? 0.04 : low ? 0.27 : sk.kind === 'punched' ? -0.12 : 0.32);
-  return { pos: at(0, y, z), q, w: Math.min(def.w * 0.7, def.name.length * 0.45, low ? (0.72 * (def.name.length * 0.65 + 0.6)) / 1.55 : 99), text: def.name, ink: band ? '#e6e6e2' : '#1c1c1c', plate: band ? undefined : '#ebe8e0' };
+  const lines = def.name.split('\n'), chars = Math.max(...lines.map((l) => l.length));
+  return { pos: at(0, y + (lines.length - 1) * 0.55, z), q, w: Math.min(def.w * 0.7, chars * 0.45, low ? (0.72 * (def.name.length * 0.65 + 0.6)) / 1.55 : 99), text: def.name, ink: band ? '#e6e6e2' : '#1c1c1c', plate: band ? undefined : '#ebe8e0' };
 }

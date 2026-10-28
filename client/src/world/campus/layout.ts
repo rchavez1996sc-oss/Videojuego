@@ -17,12 +17,21 @@ export interface CampusBuilding extends Rect {
   key?: string;
 }
 
+/** Northern limit at `x`: the campus edge, or the far side of a bulge (stadium, Sociales/Derecho) reaching north. */
+export function northAt(b: CampusDef['bounds'], x: number): number {
+  return b.bulges?.find((k) => x > k.x0 && x < k.x1)?.z1 ?? b.north;
+}
+
 /** Ciudad Universitaria (UNMSM) sector, from the user's Google Maps sketches; Av. Venezuela runs along +x at `venezuela.z`. */
 export interface CampusDef {
   seed: number;
   venezuela: { z: number; half: number; median: number; sidewalk: number };
   /** Walkable campus: west < x < x (east), z > north (walled on the north and east, open towards the Huaca); `south` bounds the avenue side. */
-  bounds: { x: number; west: number; north: number; south: number };
+  /** Faculty lawns with diagonal walks (`parks.ts`). */
+  parks?: (Rect & { name?: string })[];
+  /** Campus extras multiplied to this many times the base crowd (`crowds.ts`). */
+  crowdFactor?: number;
+  bounds: { x: number; west: number; north: number; south: number; bulges?: { x0: number; x1: number; z1: number }[] };
   gate1: { x: number; z: number; yaw: number };
   gate2?: { x: number; z: number; yaw: number };
   /** Banco de la Nación ATM booths. */
@@ -92,7 +101,7 @@ export function campusGraph(def: CampusDef, solid: (x: number, z: number) => boo
   const lines: [number, number][][] = [[[-b.x + 4, side + v.sidewalk / 2], [b.x - 4, side + v.sidewalk / 2]]];
   for (const r of def.roads) for (const s of [-1, 1]) lines.push(offset(r.pts, s * (r.w / 2 + 1.4)));
   lines.push(...walks);
-  const ok = (p: THREE.Vector2) => Math.abs(p.x) < b.x - 3 && p.y < b.south && !solid(p.x, p.y) && (p.y > side || (p.x > b.west + 3 && p.y > b.north + 3));
+  const ok = (p: THREE.Vector2) => Math.abs(p.x) < b.x - 3 && p.y < b.south && !solid(p.x, p.y) && (p.y > side || (p.x > b.west + 3 && p.y > northAt(b, p.x) + 3));
   for (const line of lines) {
     let prev = -1;
     for (const p of sample(line, 8)) {

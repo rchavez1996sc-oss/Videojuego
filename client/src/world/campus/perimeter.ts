@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { Builder } from '../buildingKit';
 import type { Lighting } from '../../render/lighting';
 import { pavilion } from './pavilion';
-import type { CampusDef } from './layout';
+import { northAt, type CampusDef } from './layout';
 
 type Design = (g: CanvasRenderingContext2D, w: number, h: number) => void;
 
@@ -65,10 +65,15 @@ function mosaic(design: Design): THREE.CanvasTexture {
 export function perimeter(b: Builder, def: CampusDef, rand: () => number, group: THREE.Group, lighting: Lighting): void {
   const B = def.bounds, side = def.venezuela.z - def.venezuela.half - def.venezuela.sidewalk - 0.5;
   const mats = DESIGNS.map((d) => lighting.setup(new THREE.MeshStandardMaterial({ map: mosaic(d), roughness: 0.35, metalness: 0.05, polygonOffset: true, polygonOffsetFactor: -2 }), 'mosaic'));
-  const edges: { a: THREE.Vector2; c: THREE.Vector2; inward: THREE.Vector2 }[] = [
-    { a: new THREE.Vector2(B.west, B.north), c: new THREE.Vector2(B.x, B.north), inward: new THREE.Vector2(0, 1) },
-    { a: new THREE.Vector2(B.x, B.north), c: new THREE.Vector2(B.x, side), inward: new THREE.Vector2(-1, 0) },
-  ];
+  const V = (x: number, z: number) => new THREE.Vector2(x, z), edges: { a: THREE.Vector2; c: THREE.Vector2; inward: THREE.Vector2 }[] = [];
+  const cuts = [...new Set([B.west, B.x, ...(B.bulges ?? []).flatMap((k) => [k.x0, k.x1])])].filter((x) => x >= B.west && x <= B.x).sort((p, q) => p - q);
+  for (let i = 0; i + 1 < cuts.length; i++) {
+    const z = northAt(B, (cuts[i] + cuts[i + 1]) / 2), prev = i ? northAt(B, (cuts[i - 1] + cuts[i]) / 2) : z;
+    if (prev !== z) edges.push(prev > z ? { a: V(cuts[i], prev), c: V(cuts[i], z), inward: V(1, 0) } : { a: V(cuts[i], prev), c: V(cuts[i], z), inward: V(-1, 0) });
+    edges.push({ a: V(cuts[i], z), c: V(cuts[i + 1], z), inward: V(0, 1) });
+  }
+  const east = northAt(B, B.x - 0.1);
+  edges.push({ a: V(B.x, east), c: V(B.x, side), inward: V(-1, 0) });
   let mural = 0;
   for (const e of edges) {
     const len = e.a.distanceTo(e.c), dir = e.c.clone().sub(e.a).normalize(), yaw = Math.atan2(dir.y, dir.x) * (180 / Math.PI);

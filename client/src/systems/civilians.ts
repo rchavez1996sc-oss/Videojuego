@@ -156,6 +156,7 @@ export class Civilians {
         continue;
       }
       let moving = c.mood !== 'idle';
+      const away = c.pos.distanceToSquared(this.camera.position) > 75 * 75;
       if (c.mood === 'idle') {
         c.timer -= dt;
         if (c.timer <= 0) {
@@ -180,7 +181,7 @@ export class Civilians {
             c.target = options[Math.floor(Math.random() * options.length)];
           }
         } else {
-          const dir = this.clearWay(c, to.divideScalar(d));
+          const dir = away ? to.divideScalar(d) : this.clearWay(c, to.divideScalar(d));
           if (dir) c.pos.addScaledVector(dir, Math.min(d, c.speed * dt));
           c.pos.y = this.groundAt(c.pos.x, c.pos.z);
           const want = Math.atan2(-to.x, -to.z);
@@ -205,7 +206,7 @@ export class Civilians {
       c.model.root.position.copy(c.pos).setY(c.pos.y - 0.03);
       c.model.root.rotation.set(0, c.yaw + Math.PI, 0);
       c.model.scared = c.mood === 'panic';
-      c.model.animate(dt, moving ? c.speed : 0, 0, 0);
+      if (!away) c.model.animate(dt, moving ? c.speed : 0, 0, 0);
     }
   }
 }

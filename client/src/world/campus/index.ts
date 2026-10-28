@@ -10,7 +10,7 @@ import { SignAtlas } from '../signs';
 import type { Plants } from '../malecon/park';
 import { buildVegetation } from '../malecon/vegetation';
 import { crowd } from '../malecon/people';
-import { campusGraph, framer, inRect, type CampusDef } from './layout';
+import { campusGraph, framer, inRect, northAt, type CampusDef } from './layout';
 import { buildCampusRoads } from './roads';
 import { pavilion, type NameSign } from './pavilion';
 import { comedor } from './comedor';
@@ -28,7 +28,10 @@ import { patioDetail } from './patio';
 import { footballField, parkingLot, venezuelaFence } from './grounds';
 import { perimeter } from './perimeter';
 import { campusHard, comedorPark, paintCampusLawns, plantCampus } from './greens';
-import { stadium, universitaria, venezuelaSouth } from './south';
+import { universitaria, venezuelaSouth } from './south';
+import { stadium } from './stadium';
+import { moreStudents } from './crowds';
+import { facultyParks } from './parks';
 import { campusMaterials, campusBake } from './materials';
 import { campusSigns } from './signs';
 
@@ -74,7 +77,7 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
   group.add(footballField(b, def.field, turf));
   perimeter(b, def, mulberry32(def.seed + 3), group, lighting);
   venezuelaSouth(b, hf, def, rand, (pos, q, w) => atlas.add(pos, q, w, 'shop', rand, rand() < 0.6 ? brands[Math.floor(rand() * brands.length)] : undefined));
-  stadium(b, def.stadium);
+  signs.push(...stadium(b, def.stadium, plants));
   universitaria(b, def);
 
   const paths = comedorPark(b, hf, def, plants, rand);
@@ -83,12 +86,14 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
     signs.push(stall(b, s, plants, rand));
     paths.discs.push({ x: s.x, z: s.z, r: s.kind === 'office' ? 6 : 4 });
   }
+  facultyParks(b, hf, def, paths, plants, rand);
   if (def.plazuela) group.add(plazuela(b, hf, def.plazuela, plants, paths, lighting, rand));
   const walks = studentWalks(b, hf, def, paths);
   const hard = campusHard(def, paths, gate.hard);
   paintCampusLawns(hf, def, hard);
   if (def.politics) group.add(studentLife(b, def, def.politics, walks, hard, gate.hard, plants, lighting, mulberry32(def.seed + 9)));
   plantCampus(hf, def, hard, plants, rand);
+  moreStudents(def, plants, rand, def.crowdFactor ?? 1);
 
   group.add(buildVegetation(b, plants, [], lighting));
   const bystanders = { onHurt: (_p: THREE.Vector3) => {} };
@@ -102,7 +107,7 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
   const B = def.bounds;
   return { group, materials: mats, bake, station: null, graph, bystanders, tick: (dt, movers) => swing.update(dt, movers),
     blocked: (x, z) => solid(x, z) || z > v.z + v.half + v.sidewalk,
-    inside: (x, z) => x > B.west + 4 && x < B.x - 4 && z > B.north + 4 && z < v.z - v.half - v.sidewalk - 1 };
+    inside: (x, z) => x > B.west + 4 && x < B.x - 4 && z > northAt(B, x) + 4 && z < v.z - v.half - v.sidewalk - 1 };
 }
 
 /** Centre of a point `ahead` metres in front of a footprint's +z face (for porches, portals). */

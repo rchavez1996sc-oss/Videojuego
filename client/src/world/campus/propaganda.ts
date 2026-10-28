@@ -8,7 +8,7 @@ export interface PoliticsDef {
   orgs: string[];
   quotes: { text: string; author: string }[];
   posters: string[];
-  busts: { name: string; years: string; look: 'beard' | 'kepi' | 'woman' | 'plain' }[];
+  busts: { name: string; years: string; look: 'beard' | 'kepi' | 'woman' | 'plain'; at?: [number, number, number] }[];
 }
 
 type Draw = (g: CanvasRenderingContext2D, w: number, h: number, i: number) => void;

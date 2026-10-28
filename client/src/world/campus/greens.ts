@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { Builder } from '../buildingKit';
 import type { Heightfield } from '../heightfield';
 import { bench, chatGroup, ribbon, type Plants } from '../malecon/park';
-import { framer, inRect, type CampusDef, type Rect } from './layout';
+import { framer, inRect, northAt, type CampusDef, type Rect } from './layout';
 import { campusLamp } from './roads';
 
 /** Hard ground laid out by the park (path centrelines with widths, round plazas), for the lawn painter. */
@@ -68,6 +68,7 @@ export function campusHard(def: CampusDef, paths: Paths, extra: Rect[]): (x: num
     def.buildings.some((r) => inRect(r, x, z, 1.2 + m)) ||
     def.parkings.some((r) => inRect(r, x, z, 0.4 + m)) ||
     inRect(def.field, x, z, 3.4 + m) ||
+    ((x - def.stadium.x) / (def.stadium.rx * 1.3 + m)) ** 2 + ((z - def.stadium.z) / (def.stadium.rz * 1.3 + m)) ** 2 < 1 ||
     extra.some((r) => inRect(r, x, z, m)) ||
     (!!def.gate2 && Math.abs(x - def.gate2.x + 8) < 29 + m && Math.abs(z - def.gate2.z) < 4 + m) ||
     paths.discs.some((d) => Math.hypot(x - d.x, z - d.z) < d.r + m) ||
@@ -79,7 +80,7 @@ export function paintCampusLawns(hf: Heightfield, def: CampusDef, hard: (x: numb
   const B = def.bounds;
   for (let zi = 0; zi < hf.n; zi++) for (let xi = 0; xi < hf.n; xi++) {
     const x = -hf.half + xi * hf.step, z = -hf.half + zi * hf.step;
-    if (x < B.west || x > B.x || z < B.north || z > B.south) continue;
+    if (x < B.west || x > B.x || z < northAt(B, x) || z > B.south) continue;
     if (hf.plainOut(x, z) > 0 || hf.heightAt(x, z) > 0.4 || hard(x, z)) continue;
     const k = (zi * hf.n + xi) * 4, worn = Math.sin(x * 0.21 + Math.sin(z * 0.13) * 2) * Math.sin(z * 0.17 + Math.sin(x * 0.11) * 2);
     hf.mask[k + 1] = (worn > 0.55 ? 0.45 : 0.95) * 255;
@@ -96,7 +97,7 @@ export function plantCampus(hf: Heightfield, def: CampusDef, hard: (x: number, z
   const B = def.bounds, want: [THREE.Vector3[], number, number][] = [[plants.trees, 150, 4.5], [plants.palms, 40, 3], [plants.pines, 6, 5]];
   for (const [list, count, gap] of want) {
     for (let tries = 0, n = 0; n < count && tries < count * 40; tries++) {
-      const x = B.west + 4 + rand() * (B.x - B.west - 8), z = B.north + 6 + rand() * (B.south - 30 - B.north);
+      const x = B.west + 4 + rand() * (B.x - B.west - 8), nz = northAt(B, x), z = nz + 6 + rand() * (B.south - 30 - nz);
       if (hf.heightAt(x, z) > 0.3 || hard(x, z, gap) || [...plants.trees, ...plants.palms, ...plants.pines].some((p) => Math.hypot(p.x - x, p.z - z) < 7)) continue;
       list.push(new THREE.Vector3(x, 0, z));
       n++;
