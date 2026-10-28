@@ -9,6 +9,7 @@ import { Rig } from '../../entities/rig';
 import { characters, type CharKind } from '../../render/characters';
 import type { CoastDef } from '../coast';
 import type { Extra } from './park';
+import { startFlee, stepFlee, type Fleer } from './flee';
 
 const KINDS: CharKind[] = ['civ_a', 'civ_b', 'civ_c'];
 
@@ -47,7 +48,7 @@ function extra(lighting: Lighting, rand: () => number, at: THREE.Vector3, yaw: n
 }
 
 /** Called when a bystander (extra, paraglider) is shot; set by the populace. */
-export interface Bystanders { onHurt: (p: THREE.Vector3) => void }
+export interface Bystanders { onHurt: (p: THREE.Vector3) => void; alarm?: (at: THREE.Vector3, radius: number) => void }
 
 /** A seated body going limp in place: the sitting pose freezes, the torso folds forward, the head drops, it leans a little. */
 interface Slump { rig: Rig; t: number; bones: [THREE.Object3D, THREE.Quaternion, number, number][]; fold: THREE.Vector3; lean: THREE.Vector3 }
@@ -69,14 +70,15 @@ function slumpStep(s: Slump, dt: number): boolean {
 }
 
 /** Static capsule collider on an extra; standing ones play a death clip on the ground, seated ones slump on the seat. */
-function shootable(world: RAPIER.World, rig: Rig, floor: number, seated: boolean, hurt: Bystanders, slumps: Slump[], limp: Set<Rig>, dying: Map<Rig, number>): void {
+function shootable(world: RAPIER.World, rig: Rig, floor: number, seated: boolean, hurt: Bystanders, slumps: Slump[], limp: Set<Rig>, dying: Map<Rig, number>, fleeing: Map<Rig, Fleer>): RAPIER.Collider {
   const p = rig.root.position, y = seated ? rig.hips().y : floor + 0.9;
   const col = world.createCollider(RAPIER.ColliderDesc.capsule(seated ? 0.3 : 0.55, 0.32).setTranslation(p.x, y, p.z));
   innocents.add(col.handle);
   onHit(col.handle, () => {
     col.setEnabled(false);
     rig.far = false;
-    if (seated) {
+    const ran = fleeing.delete(rig);
+    if (seated && !ran) {
       rig.dead = true;
       limp.add(rig);
       const bones = SLUMP.flatMap(([n, fwd, lean]) => {
@@ -87,12 +89,13 @@ function shootable(world: RAPIER.World, rig: Rig, floor: number, seated: boolean
       const facing = knees[0].add(knees[1]).multiplyScalar(0.5).sub(rig.hips()).setY(0).normalize();
       slumps.push({ rig, t: 0, bones, fold: new THREE.Vector3(0, 1, 0).cross(facing).normalize(), lean: facing.multiplyScalar(Math.random() < 0.5 ? 1 : -1) });
     } else {
-      rig.root.position.y = floor;
+      if (!ran) rig.root.position.y = floor;
       rig.die(Math.random() < 0.5 ? 'fall_back' : 'dying');
       dying.set(rig, 4);
     }
-    hurt.onHurt(new THREE.Vector3(p.x, y, p.z));
+    hurt.onHurt(new THREE.Vector3(p.x, p.y + 0.9, p.z));
   });
+  return col;
 }
 
 /** Seated and standing extras (benches, café tables, chats, railing); built a few per frame once characters load; animated only up close. */
@@ -100,6 +103,15 @@ export function crowd(seats: { pos: THREE.Vector3; yaw: number }[], standing: Ex
   const g = new THREE.Group(), r = mulberry32(12);
   let rigs: Rig[] | null = null, last = 0, prev = performance.now();
   const near = new Set<Rig>(), slumps: Slump[] = [], limp = new Set<Rig>(), dying = new Map<Rig, number>();
+  const fleeing = new Map<Rig, Fleer>(), gone = new Set<Rig>(), info = new Map<Rig, { col: RAPIER.Collider; floor: number; calm: boolean }>();
+  hurt.alarm = (at, radius) => {
+    for (const [x, s] of info) {
+      if (x.dead || !s.calm || fleeing.has(x) || gone.has(x) || x.root.position.distanceTo(at) > radius) continue;
+      s.col.setEnabled(true);
+      x.root.visible = true;
+      fleeing.set(x, startFlee(x, s.col, at, s.floor));
+    }
+  };
   g.add(ticker((camera) => {
     const now = performance.now(), dt = Math.min(0.1, (now - prev) / 1000);
     prev = now;
@@ -116,13 +128,15 @@ export function crowd(seats: { pos: THREE.Vector3; yaw: number }[], standing: Ex
       const x = extra(lighting, r, spot.pos, spot.yaw, seated ? SEATED[Math.floor(r() * SEATED.length)] : (spot as Extra).key);
       if (kit && !seated) x.nearOnly(...gear(x.bones, kit, lighting, r));
       x.root.updateMatrixWorld(true);
-      shootable(world, x, spot.pos.y, seated, hurt, slumps, limp, dying);
+      const col = shootable(world, x, spot.pos.y, seated, hurt, slumps, limp, dying, fleeing);
+      info.set(x, { col, floor: spot.pos.y, calm: seated || (spot as Extra).key !== 'terrified' });
       x.root.visible = false;
       rigs.push(x);
       g.add(x.root);
     }
     for (let i = slumps.length - 1; i >= 0; i--) if (!slumpStep(slumps[i], dt)) slumps.splice(i, 1);
-    for (const x of near) if (!limp.has(x) && !dying.has(x)) x.tick(dt);
+    for (const [x, f] of fleeing) if (!stepFlee(f, dt, world, camera)) (fleeing.delete(x), gone.add(x));
+    for (const x of near) if (!limp.has(x) && !dying.has(x) && !fleeing.has(x)) x.tick(dt);
     for (const [x, t] of dying) {
       x.tick(dt);
       if (t - dt <= 0) dying.delete(x);
@@ -132,10 +146,14 @@ export function crowd(seats: { pos: THREE.Vector3; yaw: number }[], standing: Ex
     last = now;
     near.clear();
     for (const x of rigs) {
-      const d = x.root.position.distanceTo(camera.position);
-      x.root.visible = d < 36;
-      if (!x.dead) x.far = d > 12;
-      if (d < 22) near.add(x);
+      if (fleeing.has(x) || gone.has(x)) continue;
+      const d = x.root.position.distanceTo(camera.position), seen = d < 36;
+      x.root.visible = seen;
+      if (!x.dead) {
+        x.far = d > 12;
+        info.get(x)!.col.setEnabled(seen);
+      }
+      if (seen) near.add(x);
     }
   }));
   return g;

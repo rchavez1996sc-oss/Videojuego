@@ -26,6 +26,7 @@ export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world
   };
   const alarm = (p: THREE.Vector3, r: number) => {
     civilians?.alarm(p, r);
+    barrio?.bystanders?.alarm?.(p, r);
     life?.alarm(p, r);
   };
   if (civilians) {

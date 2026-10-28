@@ -202,6 +202,7 @@ export class Civilians {
       c.body.setNextKinematicTranslation({ x: c.pos.x, y: c.pos.y + 0.9, z: c.pos.z });
       const camD = c.pos.distanceToSquared(this.camera.position);
       c.model.root.visible = camD < 55 * 55;
+      if (c.collider.isEnabled() !== c.model.root.visible) c.collider.setEnabled(c.model.root.visible);
       c.model.far = camD > 25 * 25;
       const near = camD < 30 * 30;
       if (near !== c.shadowed) c.model.castShadow = c.shadowed = near;

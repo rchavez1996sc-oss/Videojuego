@@ -185,7 +185,7 @@ async function boot(): Promise<void> {
     const g = (objective?.def ?? defense!.def) as { complete: string; reward: string; loot?: string[]; unlock?: string };
     showMissionComplete(g.complete, g.reward, `ENEMIGOS ABATIDOS ${enemies.list.length - enemies.aliveCount}/${enemies.list.length} · ${defense ? `ESTUDIANTES CAÍDOS ${defense.students.lost}` : `BAJAS CIVILES ${populace.casualties}`} · VIDAS ${lives}`, g.loot, g.unlock, ch.next);
   });
-  const blast = (at: THREE.Vector3) => (life?.alarm(at, 150), detonate(at, { combat, sfx, tpc, enemies, player, world, playerAlive: deadT <= 0, also: [civilians, squad, life, defense?.students] }));
+  const blast = (at: THREE.Vector3) => (alarm(at, 150), detonate(at, { combat, sfx, tpc, enemies, player, world, playerAlive: deadT <= 0, also: [civilians, squad, life, defense?.students] }));
   grenades.onExplode = blast;
   enemies.onEnemyHit = (kill, headshot) => {
     sfx.hitmarker(kill);

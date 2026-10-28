@@ -50,6 +50,10 @@ export function installDebug(c: DebugContext): void {
       if (c.shotMode) c.frame(1 / 60);
     },
     views: () => c.views.length,
+    gunfire(x: number, z: number, frames = 60) {
+      c.combat.onShot(new THREE.Vector3(x, c.hf.heightAt(x, z) + 1.5, z));
+      for (let i = 0; i < frames; i++) c.frame(1 / 30);
+    },
     look(x: number, y: number, z: number, lx: number, ly: number, lz: number) {
       c.setFreeCam(true);
       c.tpc.place(new THREE.Vector3(x, y, z), new THREE.Vector3(lx, ly, lz));
