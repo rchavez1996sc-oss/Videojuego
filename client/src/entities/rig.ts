@@ -6,6 +6,7 @@ import { dress, type Outfit } from './outfit';
 import { addWound } from './wounds';
 import { parts, pistolUpper } from './clipParts';
 import { chooseGait } from './gait';
+import { supportHand } from './handIk';
 import type { Lighting } from '../render/lighting';
 
 export type { Outfit } from './outfit';
@@ -30,20 +31,17 @@ export class Rig {
   private mixer: THREE.AnimationMixer;
   private inst: ReturnType<typeof characters.create>;
   get bones(): Map<string, THREE.Bone> { return this.inst.bones; }
-  private lowKey = '';
-  private upKey = '';
-  private lower: THREE.AnimationAction | null = null;
-  private upper: THREE.AnimationAction | null = null;
+  private lowKey = ''; private upKey = '';
+  private lower: THREE.AnimationAction | null = null; private upper: THREE.AnimationAction | null = null;
   private overlay: { key: string; t: number; from: number } | null = null;
   private nade: THREE.Mesh | null = null;
   private held: { key: string; action: THREE.AnimationAction } | null = null;
-  private lockT = 0;
-  private aimT = 0;
+  private lockT = 0; private aimT = 0;
   private kick = 0;
+  private ikW = 0;
   dead = false;
   private isFar = false;
-  private skip = 0;
-  private acc = 0;
+  private skip = 0; private acc = 0;
   private last = new THREE.Vector3();
   /** Smoothed ground velocity in the body frame (forward, side): frame-time jitter must not flip the gait. */
   private move = new THREE.Vector2();
@@ -283,6 +281,8 @@ export class Rig {
       this.spine.forEach((b, i) => (this.bent[i] ??= new THREE.Quaternion()).copy(b.quaternion));
       for (const [i, b] of this.spine.entries()) b.rotateX(-bend - (i === 2 ? k * 0.07 : k * 0.025));
       this.kick = Math.max(0, this.kick - step * 14);
+      this.ikW = THREE.MathUtils.damp(this.ikW, this.gunModel === 'pistol' && !this.holster && speed < 3 && (!this.overlay || this.overlay.key === 'hit') ? 1 : 0, 10, step);
+      supportHand(this.inst.bones, this.inst.model, this.ikW);
     }
     if (this.armed) this.weapon.visible = !this.holster && (!this.held || this.dead);
   }
