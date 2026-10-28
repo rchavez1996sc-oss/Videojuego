@@ -69,6 +69,8 @@ export interface ChapterDef {
   weapon?: string;
   /** Scales every enemy's health (weaker guns early on). */
   enemyHealth?: number;
+  /** The first `count` roaming police are placed `min`–`max` m from the player's start; the rest spread out. */
+  enemyNear?: NearStart;
   /** Prologue paragraphs shown while the chapter loads. */
   intro?: string[];
   objective?: import('../systems/objective').ObjectiveDef;
@@ -83,3 +85,5 @@ export interface ChapterDef {
   enemies?: { type: string; x: number; z: number; y?: number; at?: number; patrol?: [number, number][]; leash?: number }[];
   structures?: import('../world/structures').StructureDef[];
 }
+
+export interface NearStart { count: number; min: number; max: number }

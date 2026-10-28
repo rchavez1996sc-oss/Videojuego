@@ -11,7 +11,7 @@ import { barsTexture } from './grounds';
 /** Painted plaster walls of the faculties (photos: cream Química, white/grey Geológica, yellow Comedor…). */
 const WALLS: Record<string, string> = {
   uniCream: '#e6dcc4', uniGrey: '#c8c6c0', uniWhite: '#efeee9', uniYellow: '#e3b443', uniRed: '#b02a22', uniFrame: '#d5d3cd',
-  uniTerracotta: '#a35a3c', uniOrange: '#d9772e', roofWhite: '#e9e8e3', uniStone: '#9a958c', uniSand: '#d2bf98', uniTaupe: '#968d80', uniOchre: '#d8ad2c', uniBrown: '#7c4a2c', uniBlue: '#4f86c9',
+  uniTerracotta: '#a35a3c', socBeige: '#c9b9a3', uniOrange: '#d9772e', roofWhite: '#e9e8e3', uniStone: '#9a958c', uniSand: '#d2bf98', uniTaupe: '#968d80', uniOchre: '#d8ad2c', uniBrown: '#7c4a2c', uniBlue: '#4f86c9',
 };
 
 export function campusMaterials(lighting: Lighting): Record<string, THREE.Material> {
@@ -57,6 +57,12 @@ export function campusMaterials(lighting: Lighting): Record<string, THREE.Materi
     hedgeGold: std('hedgeGold', { map: fo.map, normalMap: fo.normalMap, color: '#f0dc3a', roughness: 0.95 }),
     pathRust: std('pathRust', { map: co.map, normalMap: co.normalMap, color: '#b08876', roughness: 0.9 }),
     waterBlue: std('waterBlue', { color: '#3c6f86', roughness: 0.05, metalness: 0.3 }),
+    poolTile: std('poolTile', { map: tiles(), color: '#a8dcea', roughness: 0.3 }),
+    poolWater: std('poolWater', { color: '#36b3d6', roughness: 0.04, metalness: 0.15, transparent: true, opacity: 0.82, envMapIntensity: 1.5 }),
+    poolBlue: std('poolBlue', { map: photo('paintPlaster')?.map ?? null, color: '#2f8fd0', roughness: 0.85 }),
+    roofTileRed: std('roofTileRed', { map: photo('roofTiles')?.map ?? null, color: '#c98a6e', roughness: 0.8 }),
+    woodRed: std('woodRed', { map: wood().map, color: '#8a3a26', roughness: 0.6 }),
+    muralWall: std('muralWall', { map: mural(), roughness: 0.85 }),
     graniteBlack: std('graniteBlack', { color: '#101112', roughness: 0.12, metalness: 0.35, envMapIntensity: 1.7 }),
     libFloor: std('libFloor', { map: terrazzo(), color: '#5fb3a2', roughness: 0.3 }),
     tileCream: std('tileCream', { map: tiles(), color: '#efe2cc', roughness: 0.35 }),
@@ -187,6 +193,31 @@ function books(): THREE.CanvasTexture {
       }
       g.fillStyle = '#9a9ea2';
       g.fillRect(0, (r + 1) * row - 10, s, 10);
+    }
+  });
+}
+
+/** Student graffiti mural: overlapping bright blobs, a sun, faces in profile and lettering strokes on cream. */
+function mural(): THREE.CanvasTexture {
+  return canvasTex(512, (g, s) => {
+    g.fillStyle = '#efe4c8';
+    g.fillRect(0, 0, s, s);
+    const cols = ['#d8402a', '#2a7ac0', '#f2b632', '#3f8f4a', '#8a3a9a', '#e86a9a', '#1e1e1e'];
+    for (let i = 0; i < 70; i++) {
+      g.fillStyle = cols[i % cols.length];
+      g.globalAlpha = 0.85;
+      g.beginPath();
+      g.ellipse(Math.random() * s, Math.random() * s, 10 + Math.random() * 60, 8 + Math.random() * 40, Math.random() * 3, 0, Math.PI * 2);
+      g.fill();
+    }
+    g.globalAlpha = 1;
+    g.strokeStyle = '#111';
+    g.lineWidth = 6;
+    for (let i = 0; i < 14; i++) {
+      g.beginPath();
+      g.moveTo(Math.random() * s, Math.random() * s);
+      g.bezierCurveTo(Math.random() * s, Math.random() * s, Math.random() * s, Math.random() * s, Math.random() * s, Math.random() * s);
+      g.stroke();
     }
   });
 }

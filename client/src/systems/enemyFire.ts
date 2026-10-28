@@ -9,6 +9,7 @@ import type { Sfx } from '../audio/sfx';
 import type { Player } from '../entities/player';
 import { surfaceOf, pierceChance } from '../world/surfaces';
 import { difficulty } from '../core/difficulty';
+import { strayHit } from './blame';
 
 /** Rounds hit the player 15 % softer; allies are not covered. */
 const PLAYER_ARMOUR = 0.85;
@@ -48,6 +49,10 @@ export function enemyFire(e: Enemy, en: Enemies, ctx: AIContext, attacker: boole
   sfx.distantShot(muzzle.distanceTo(cam), pan, e.def.rpm < 100);
   if (hit?.collider.handle === player.collisionHandle) {
     en.onPlayerHit(e.def.damage * difficulty.value.damage * PLAYER_ARMOUR * (0.85 + Math.random() * 0.3), muzzle);
+    return;
+  }
+  if (hit && strayHit(hit.collider.handle, e.def.damage, end)) {
+    combat.bloodPuff(end);
     return;
   }
   if (hit && en.onVictimHit(hit.collider.handle, e.def.damage * difficulty.value.damage * (0.85 + Math.random() * 0.3))) {

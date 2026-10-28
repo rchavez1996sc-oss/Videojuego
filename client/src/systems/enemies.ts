@@ -16,6 +16,7 @@ import type { StreetNav } from '../ai/nav';
 import { difficulty } from '../core/difficulty';
 import { enemyFire } from './enemyFire';
 import { fleeGrenade } from './enemyFlee';
+import type { NearStart } from '../data/types';
 
 /** `leash`: a garrison post — the enemy fights and takes cover but never goes farther than this from its spawn. */
 export interface SpawnDef { type: string; x: number; z: number; y?: number; at?: number; patrol?: [number, number][]; leash?: number }
@@ -54,8 +55,8 @@ export class Enemies {
   private intelHold = 0;
   private alerted = false;
 
-  constructor(defs: Record<string, EnemyDef>, spawns: SpawnDef[], private world: RAPIER.World, private hf: Heightfield, lighting: Lighting, private player: Player, private combat: Combat, private sfx: Sfx, private camera: THREE.PerspectiveCamera, nav: StreetNav | null = null) {
-    if (nav && !shotMode) spawns = shuffleRoamers(spawns, nav.nodes, world, hf, player.position);
+  constructor(defs: Record<string, EnemyDef>, spawns: SpawnDef[], private world: RAPIER.World, private hf: Heightfield, lighting: Lighting, private player: Player, private combat: Combat, private sfx: Sfx, private camera: THREE.PerspectiveCamera, nav: StreetNav | null = null, near?: NearStart) {
+    if (nav && !shotMode) spawns = shuffleRoamers(spawns, nav.nodes, world, hf, player.position, near);
     this.add = (s) => {
       const def = defs[s.type], spot = new THREE.Vector3(s.x, hf.heightAt(s.x, s.z), s.z);
       if (s.y === undefined && s.at === undefined && nav && world.castRay(new RAPIER.Ray({ x: spot.x, y: spot.y + 0.6, z: spot.z }, { x: 0, y: 1, z: 0 }), 40, true)) {

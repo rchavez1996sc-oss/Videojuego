@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { gear, type GearDef } from '../../entities/gear';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { onHit } from '../surfaces';
+import { innocents } from '../../systems/blame';
 import { mulberry32 } from '../../core/rng';
 import type { Lighting } from '../../render/lighting';
 import { Rig } from '../../entities/rig';
@@ -71,6 +72,7 @@ function slumpStep(s: Slump, dt: number): boolean {
 function shootable(world: RAPIER.World, rig: Rig, floor: number, seated: boolean, hurt: Bystanders, slumps: Slump[], limp: Set<Rig>, dying: Map<Rig, number>): void {
   const p = rig.root.position, y = seated ? rig.hips().y : floor + 0.9;
   const col = world.createCollider(RAPIER.ColliderDesc.capsule(seated ? 0.3 : 0.55, 0.32).setTranslation(p.x, y, p.z));
+  innocents.add(col.handle);
   onHit(col.handle, () => {
     col.setEnabled(false);
     rig.far = false;

@@ -5,6 +5,7 @@ import { gear, type GearDef } from '../entities/gear';
 import type { CharKind } from '../render/characters';
 import { mulberry32 } from '../core/rng';
 import { onHit } from '../world/surfaces';
+import { innocents } from './blame';
 import type { Heightfield } from '../world/heightfield';
 import type { Lighting } from '../render/lighting';
 import type { StreetGraph } from '../world/barrio';
@@ -62,6 +63,7 @@ export class Civilians {
       };
       this.list.push(c);
       this.group.add(model.root);
+      innocents.add(collider.handle);
       onHit(collider.handle, (_dmg, p) => this.kill(c, new THREE.Vector3(p.x, p.y, p.z)));
     }
   }

@@ -11,6 +11,7 @@ import type { Sfx } from '../audio/sfx';
 import type { Combat } from '../weapons/combat';
 import type { Hud } from '../ui/hud';
 import { difficulty } from '../core/difficulty';
+import { blame } from './blame';
 
 /** Pedestrians plus city life (traffic, strays, birds, ambience) and the shared "something scary happened" alarm. */
 export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world: RAPIER.World; hf: Heightfield; lighting: Lighting; mixer: Mixer; sfx: Sfx; combat: Combat; hud: Hud; camera: THREE.Camera; scene: THREE.Scene }) {
@@ -18,6 +19,7 @@ export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world
   const life = barrio && ch.life ? new CityLife(ch.life, d.world, d.hf, barrio, d.lighting, d.mixer, d.camera) : null;
   const state = { casualties: 0, onFail: () => {} };
   const casualty = (weight = 1) => {
+    if (!blame.player) return;
     state.casualties += weight;
     d.hud.civilians = { count: state.casualties, limit: difficulty.value.civilianLimit };
     if (state.casualties >= difficulty.value.civilianLimit) state.onFail();
@@ -29,15 +31,17 @@ export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world
   if (civilians) {
     d.scene.add(civilians.group);
     civilians.onHurt = () => {
+      if (!blame.player) return;
       d.hud.showToast('CIVIL HERIDO');
       d.sfx.hurt();
       casualty();
     };
   }
   if (barrio?.bystanders) barrio.bystanders.onHurt = (p) => {
+    alarm(p, 60);
+    if (!blame.player) return;
     d.hud.showToast('CIVIL HERIDO');
     d.sfx.hurt();
-    alarm(p, 60);
     casualty();
   };
   if (life) {
@@ -46,6 +50,7 @@ export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world
     tr.onSmoke = (p) => d.combat.smokePuff(p);
     tr.onCrash = (p) => d.sfx.crash(p.distanceTo(d.camera.position));
     tr.onDisabled = (p, weight) => {
+      if (!blame.player) return alarm(p, 80);
       d.hud.showToast(`VEHÍCULO CIVIL   ${weight} BAJA${weight > 1 ? 'S' : ''}`);
       alarm(p, 80);
       casualty(weight);

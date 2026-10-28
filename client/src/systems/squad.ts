@@ -15,6 +15,7 @@ import type { Enemies } from './enemies';
 import type { StreetNav } from '../ai/nav';
 import { roomy } from './respawn';
 import { holdingFire } from './truce';
+import { strayHit } from './blame';
 
 const CATCH_UP = 35;
 
@@ -204,7 +205,8 @@ export class Squad {
     if (Math.random() < 0.4) combat.tracer(muzzle, end);
     sfx.distantShot(muzzle.distanceTo(cam), muzzle.clone().sub(cam).normalize().dot(new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion)), 'own', 0.5);
     const foe = hit ? enemies.byHandle(hit.collider.handle) : undefined;
-    if (foe) {
+    if (hit && strayHit(hit.collider.handle, this.def.damage, end)) combat.bloodPuff(end);
+    else if (foe) {
       if (enemies.allyHit(foe, this.def.damage * (0.85 + Math.random() * 0.3), end, u.position)) this.allyKills++;
     } else if (hit && end.distanceTo(cam) < 90) combat.impact(end, new THREE.Vector3(hit.normal.x, hit.normal.y, hit.normal.z), surfaceOf(hit.collider.handle), dir);
     enemies.hearShot(muzzle);

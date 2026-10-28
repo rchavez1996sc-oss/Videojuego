@@ -11,6 +11,7 @@ import type { Input } from '../core/input';
 import type { Sfx } from '../audio/sfx';
 import { mulberry32 } from '../core/rng';
 import { shotMode } from '../core/settings';
+import { unblamed } from './blame';
 
 /** Gate: squads on foot enter at (`inX`, `inZ`); pickups from that side follow `drive` in through the nearest vehicle entrance and drop at (`dropX`, `dropZ`). */
 export interface DefenseDef {
@@ -158,7 +159,7 @@ export class Defense {
   private rollIn(): void {
     const path = this.def.tank.map(([x, z]) => new THREE.Vector3(x, 0, z));
     this.tank = new Tank(this.d.lighting, this.d.world, path);
-    this.tank.onShell = (_from, at) => this.d.blast(at);
+    this.tank.onShell = (_from, at) => unblamed(() => this.d.blast(at));
     this.d.scene.add(this.tank.group);
     this.phase = 'tank';
     this.flash(this.def.tankAlert, 7);

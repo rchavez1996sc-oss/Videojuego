@@ -17,7 +17,7 @@ type At = (x: number, y: number, z: number) => THREE.Vector3;
  * of slabs and fins over recessed glass (Industrial, old wing); `bio` steel curtain grid with coloured panes and louvres on
  * the long faces, blind travertine ends (Biológicas); `framed` punched windows in proud white frames (Biológicas annex).
  */
-export interface Skin { kind: NonNullable<CampusBuilding['skin']>; wall: string; spandrel: string; base: string }
+export interface Skin { kind: NonNullable<CampusBuilding['skin']>; wall: string; spandrel: string; base: string; plain?: boolean }
 
 function skinOf(def: CampusBuilding): Skin {
   const wall = WALLS[def.color] ?? 'uniGrey';
@@ -78,7 +78,7 @@ export function wing(b: Builder, at: At, q: THREE.Quaternion, cx: number, cz: nu
         put(sk.wall, len, FLOOR - SPANDREL - GLASS, 0.3, 0, y0 + SPANDREL + GLASS + (FLOOR - SPANDREL - GLASS) / 2, 0.12);
         for (let i = 1; i < n; i++) {
           const pane = sk.kind === 'panels' && rand() < 0.3;
-          if (f === 2) put(i % 2 ? 'paneBlue' : 'paneYellow', bay - 0.1, 0.32, 0.05, -len / 2 + (i - 0.5) * bay, y0 + SPANDREL + GLASS - 0.2, 0.04);
+          if (f === 2 && !sk.plain) put(i % 2 ? 'paneBlue' : 'paneYellow', bay - 0.1, 0.32, 0.05, -len / 2 + (i - 0.5) * bay, y0 + SPANDREL + GLASS - 0.2, 0.04);
           else if (pane) put('alu', bay - 0.3, GLASS * 0.45, 0.05, -len / 2 + (i - 0.5) * bay, y0 + SPANDREL + GLASS * 0.3, 0.04);
           put('mullion', 0.06, GLASS, 0.1, -len / 2 + i * bay, y0 + SPANDREL + GLASS / 2, 0.06);
         }

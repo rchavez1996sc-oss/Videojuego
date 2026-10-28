@@ -33,6 +33,8 @@ import { stadium } from './stadium';
 import { moreStudents } from './crowds';
 import { facultyParks } from './parks';
 import { quimica, quimicaOpen } from './quimica';
+import { pool } from './pool';
+import { sociales } from './sociales';
 import { quimicaFront } from './quimicaFront';
 import { campusMaterials, campusBake } from './materials';
 import { campusSigns } from './signs';
@@ -62,6 +64,14 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
   for (const bd of def.buildings) {
     if (bd.key === 'quimica') {
       refuge.push(...quimica(b, bd, plants, rand));
+      continue;
+    }
+    if (bd.key === 'sociales') {
+      signs.push(...sociales(b, bd, plants, rand));
+      continue;
+    }
+    if (bd.key === 'pool') {
+      signs.push(pool(b, bd, plants, rand));
       continue;
     }
     if (bd.key === 'quimicaFront') {
