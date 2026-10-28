@@ -5,14 +5,11 @@ import { bakeLod } from '../render/merge';
 import { dress, type Outfit } from './outfit';
 import { addWound } from './wounds';
 import { parts, pistolUpper } from './clipParts';
+import { chooseGait } from './gait';
 import type { Lighting } from '../render/lighting';
 
 export type { Outfit } from './outfit';
 
-/** Reference ground speed (m/s) of each locomotion clip, to keep feet from sliding. */
-const PACE: Record<string, number> = { walk: 1.5, run: 3.7, sprint: 5.8, crouch: 1.2, civ_walk: 1.4, civ_run: 3.9 };
-const DIR8 = ['f', 'fr', 'r', 'br', 'b', 'bl', 'l', 'fl'];
-const DIR4 = ['f', 'r', 'b', 'l'];
 const FADE = 0.2;
 /** Clips authored facing away from the viewer and starting mid-ladder: turn the body round and drop it to the rungs. */
 const HOLD_FIX: Record<string, { yaw: number; y: number }> = { ladder: { yaw: Math.PI, y: -0.75 } };
@@ -32,9 +29,7 @@ export class Rig {
   holster = false;
   private mixer: THREE.AnimationMixer;
   private inst: ReturnType<typeof characters.create>;
-  get bones(): Map<string, THREE.Bone> {
-    return this.inst.bones;
-  }
+  get bones(): Map<string, THREE.Bone> { return this.inst.bones; }
   private lowKey = '';
   private upKey = '';
   private lower: THREE.AnimationAction | null = null;
@@ -226,9 +221,7 @@ export class Rig {
     return this.inst.bones.get('mixamorigHips')!.getWorldPosition(new THREE.Vector3());
   }
 
-  durationOf(key: string): number {
-    return characters.clips.get(key)?.duration ?? 1;
-  }
+  durationOf(key: string): number { return characters.clips.get(key)?.duration ?? 1; }
 
   die(kind: string): void {
     this.held = null;
@@ -246,23 +239,6 @@ export class Rig {
     this.held = null;
     this.hold('getup', 1, true);
     this.lockT = this.durationOf('getup') * 0.9;
-  }
-
-  private chooseLower(speed: number, crouch: number, fwd: number, side: number): [string, number] {
-    if (!this.armed) {
-      if (speed < 0.3) return [this.scared ? 'terrified' : this.idleKey, 1];
-      return speed < 2.6 ? ['civ_walk', speed / PACE.civ_walk] : ['civ_run', speed / PACE.civ_run];
-    }
-    if (this.airborne) return ['jump', 1];
-    const ang = (Math.atan2(side, fwd) + Math.PI * 2) % (Math.PI * 2);
-    if (crouch > 0.5) return speed < 0.3 ? ['crouch_idle', 1] : [`crouch_${DIR4[Math.round(ang / (Math.PI / 2)) % 4]}`, speed / PACE.crouch];
-    if (speed < 0.3) return ['idle', 1];
-    const was = this.lowKey.replace('+', ''), sprinting = was === 'sprint';
-    if (!this.aiming && (sprinting ? speed > 4.4 && fwd > speed * 0.6 : speed > 5 && fwd > speed * 0.8)) return ['sprint', speed / PACE.sprint];
-    const prev = DIR8.indexOf(was.split('_')[1] ?? ''), off = prev < 0 ? Math.PI : Math.abs(Math.atan2(Math.sin(ang - prev * (Math.PI / 4)), Math.cos(ang - prev * (Math.PI / 4))));
-    const dir = off < Math.PI / 6 ? DIR8[prev] : DIR8[Math.round(ang / (Math.PI / 4)) % 8];
-    const running = was.startsWith('run_') || sprinting ? speed > 2.4 : speed > 2.8;
-    return running ? [`run_${dir}`, speed / PACE.run] : [`walk_${dir}`, speed / PACE.walk];
   }
 
   private chooseUpper(low: string, crouch: number): string {
@@ -286,7 +262,7 @@ export class Rig {
       const k = 1 - Math.exp(-step * 10);
       this.move.x += ((delta.x * Math.sin(yaw) + delta.z * Math.cos(yaw)) * inv - this.move.x) * k;
       this.move.y += ((delta.x * -Math.cos(yaw) + delta.z * Math.sin(yaw)) * inv - this.move.y) * k;
-      const [low, rate] = this.chooseLower(speed, crouch, this.move.x, this.move.y);
+      const [low, rate] = chooseGait({ armed: this.armed, airborne: this.airborne, aiming: this.aiming, idle: this.scared ? 'terrified' : this.idleKey, was: this.lowKey.replace('+', '') }, speed, crouch, this.move.x, this.move.y);
       if (this.overlay && (this.overlay.t -= step) <= 0) {
         this.overlay = null;
         this.upKey = '';
@@ -319,8 +295,6 @@ export class Rig {
   }
 
   set castShadow(v: boolean) {
-    this.root.traverse((o) => {
-      if (o instanceof THREE.Mesh) o.castShadow = v;
-    });
+    this.root.traverse((o) => o instanceof THREE.Mesh && (o.castShadow = v));
   }
 }
