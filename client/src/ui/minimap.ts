@@ -11,8 +11,8 @@ const PALETTE = { road: [150, 156, 162], block: [72, 79, 85], roof: [88, 95, 101
 export class Minimap {
   private canvas = document.createElement('canvas');
   private ctx: CanvasRenderingContext2D;
-  private map = document.createElement('canvas');
-  private half: number;
+  readonly map = document.createElement('canvas');
+  readonly half: number;
   private frame = 0;
 
   /**

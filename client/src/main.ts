@@ -40,6 +40,7 @@ import { coverSeeker } from './systems/takeCover';
 import { Grenades } from './weapons/grenades';
 import { detonate } from './weapons/explosion';
 import { Minimap } from './ui/minimap';
+import { setupWorldMap } from './ui/worldMap';
 import { loadPhotoTextures, photoEnvironment } from './render/photoTextures';
 import { installDebug } from './core/debug';
 import { ShadowCull } from './render/shadowCull';
@@ -205,9 +206,8 @@ async function boot(): Promise<void> {
     throwGrenade: () => nadeMode.throwNow(),
     traffic: () => life?.trafficEvents,
   });
-
   setupStartMenu(overlay, status, canvas, () => !failed && (mixer.resume(), input.lock()), { chapters: cards, current: chId });
-
+  setupWorldMap(minimap, overlay, canvas, () => ({ player: player.position, forward: camera.getWorldDirection(new THREE.Vector3()), goal: objective?.position ?? defense?.goal, allies: squad?.positions ?? [], supplies: pickups.markers }));
   const gpu = gpuName.replace(/^ANGLE \((.*)\)$/, '$1').slice(0, 60);
   const melee = new Melee(player, enemies, sfx, tpc);
   const seekCover = coverSeeker({ world, cover, hf, player, enemies, camera, hud });
