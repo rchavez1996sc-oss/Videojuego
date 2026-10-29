@@ -21,6 +21,8 @@ export interface DefenseDef {
   tankAlert: string; failed: string; complete: string; reward: string;
   /** Opening hunt: kill `huntKills` police, then `news` sends the player to the faculty (within `arrive` m starts the hold). */
   huntKills: number; huntTitle: string; news: string; goTitle: string; arrive: number; readyAlert: string; startDistance?: number;
+  /** Farthest the player may start from the faculty (m). */
+  startMax?: number;
 }
 
 type Phase = 'hunt' | 'go' | 'hold' | 'tank' | 'ready';

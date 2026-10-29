@@ -122,7 +122,7 @@ async function boot(): Promise<void> {
   world.step();
   const respawnPts = barrio ? streetPoints(barrio.graph) : undefined;
   const startGoal = ch.objective?.capture ?? barrio?.station?.entrance ?? barrio?.refuge?.[0];
-  const start = respawnPts && startGoal && !shotMode ? startSpot(world, hf, respawnPts, startGoal, ch.enemies ?? [], barrio!.inside, ch.defense?.startDistance) : null;
+  const start = respawnPts && startGoal && !shotMode ? startSpot(world, hf, respawnPts, startGoal, ch.enemies ?? [], barrio!.inside, ch.defense?.startDistance, ch.defense?.startMax) : null;
   const spawn = start?.pos ?? new THREE.Vector3(ch.spawn.x, hf.heightAt(ch.spawn.x, ch.spawn.z), ch.spawn.z), startYaw = start?.yaw ?? ch.spawn.yaw;
   const wdef = (weapons as unknown as Record<string, WeaponDef>)[ch.weapon ?? 'ak'], player = new Player(world, lighting, spawn, startYaw, wdef.model);
   scene.add(player.model.root);
