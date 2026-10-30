@@ -73,6 +73,8 @@ export interface ChapterDef {
   enemyNear?: NearStart;
   /** Rounds left by each fallen policeman (default 15–45). */
   lootRounds?: [number, number];
+  /** Civilian casualties that fail the mission (0 = no limit; default by difficulty). */
+  civilianLimit?: number;
   /** Prologue paragraphs shown while the chapter loads. */
   intro?: string[];
   objective?: import('../systems/objective').ObjectiveDef;

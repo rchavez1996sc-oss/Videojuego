@@ -153,7 +153,7 @@ export class Hud {
   }
 
   set civilians(v: { count: number; limit: number }) {
-    this.civ.innerHTML = v.count ? `BAJAS CIVILES <b>${v.count}/${v.limit}</b>` : '';
+    this.civ.innerHTML = v.count ? `BAJAS CIVILES <b>${v.count}${v.limit === Infinity ? '' : `/${v.limit}`}</b>` : '';
     this.civ.classList.toggle('warn', v.count >= v.limit - 1);
   }
 
