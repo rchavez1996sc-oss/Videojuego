@@ -23,6 +23,7 @@ export class Renderer {
   constructor(canvas: HTMLCanvasElement, scene: THREE.Scene, camera: THREE.PerspectiveCamera, exposure: number) {
     this.gl = new THREE.WebGLRenderer({ canvas, powerPreference: 'high-performance', antialias: false, stencil: false, depth: true });
     this.gl.setPixelRatio(preset.pixelRatio);
+    this.gl.debug.checkShaderErrors = import.meta.env.DEV;
     this.gl.shadowMap.enabled = true;
     this.gl.shadowMap.type = quality === 'ultra' ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
     this.gl.toneMappingExposure = exposure;
@@ -43,7 +44,7 @@ export class Renderer {
       this.composer.addPass(ao);
     }
     {
-      const dof = new DepthOfFieldEffect(camera, { worldFocusDistance: 30, worldFocusRange: 90, bokehScale: 1.1, resolutionScale: 0.5 });
+      const dof = new DepthOfFieldEffect(camera, { worldFocusDistance: 30, worldFocusRange: 70, bokehScale: 1.5, resolutionScale: 0.5 });
       const pass = new EffectPass(camera, dof);
       pass.enabled = preset.ao;
       onQuality(() => (pass.enabled = preset.ao));

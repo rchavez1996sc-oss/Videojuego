@@ -31,7 +31,7 @@ function bike(b: Builder, at: At, q: THREE.Quaternion, x: number, z: number, fra
  * a bike rack with bicycles, hedges and an agave. `x0` is the outer face of the glass wall. Returns the doorstep.
  */
 export function quimicaEntry(b: Builder, box: Box, at: At, q: THREE.Quaternion, x0: number, rand: () => number): THREE.Vector3 {
-  const L = 9, w = 3.2, mid = x0 + L / 2;
+  const L = 9, w = 4.4, mid = x0 + L / 2;
   box('tileCream', [L, 0.14, w], mid, 0.07, 0);
   for (const s of [-1, 1]) {
     for (const y of [0.5, 0.95]) box('alu', [L, 0.045, 0.045], mid, y, s * (w / 2 + 0.05));

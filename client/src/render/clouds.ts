@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { NOISE_GLSL } from './glsl';
+import { fbmField } from './noiseTex';
 
 export interface CloudDef { cover: number; height?: number; color?: string; shade?: string; speed?: number }
 
@@ -9,22 +9,26 @@ export interface CloudDef { cover: number; height?: number; color?: string; shad
  * "panza de burro" is a high `cover`.
  */
 export function cloudDeck(def: CloudDef, sunDir: THREE.Vector3): THREE.Mesh {
+  const f = fbmField(256, 7, 4, 128), lo = Math.min(...f), hi = Math.max(...f), px = new Uint8Array(256 * 256 * 4);
+  f.forEach((v, i) => (px[i * 4] = px[i * 4 + 1] = px[i * 4 + 2] = Math.round(((v - lo) / (hi - lo)) * 255), (px[i * 4 + 3] = 255)));
+  const tex = new THREE.DataTexture(px, 256, 256);
+  [tex.wrapS, tex.wrapT, tex.magFilter, tex.minFilter, tex.generateMipmaps, tex.needsUpdate] = [THREE.RepeatWrapping, THREE.RepeatWrapping, THREE.LinearFilter, THREE.LinearMipmapLinearFilter, true, true];
   const mat = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, fog: false,
     uniforms: {
-      uTime: { value: 0 }, uCover: { value: def.cover }, uSun: { value: sunDir.clone() }, uSpeed: { value: def.speed ?? 1 },
+      uTime: { value: 0 }, uTex: { value: tex }, uCover: { value: def.cover }, uSun: { value: sunDir.clone() }, uSpeed: { value: def.speed ?? 1 },
       uColor: { value: new THREE.Color(def.color ?? '#f2f0ea') }, uShade: { value: new THREE.Color(def.shade ?? '#9ea3a8') },
     },
     vertexShader: /* glsl */ `
       varying vec3 vWorld;
       void main() { vec4 w = modelMatrix * vec4(position, 1.0); vWorld = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
     fragmentShader: /* glsl */ `
-      ${NOISE_GLSL}
+      uniform sampler2D uTex;
       uniform float uTime, uCover, uSpeed; uniform vec3 uSun, uColor, uShade;
       varying vec3 vWorld;
       void main() {
         vec2 p = vWorld.xz * 0.0042 + vec2(uTime * 0.012, uTime * 0.005) * uSpeed;
-        float n = clamp(tq_fbm(p) * 0.85 + 0.5, 0.0, 1.0), fine = clamp(tq_fbm(p * 3.7 + 9.1) * 0.8 + 0.5, 0.0, 1.0);
+        float n = texture2D(uTex, p * 0.25).r, fine = texture2D(uTex, p * 0.92 + 0.37).r;
         float d = n * 0.8 + fine * 0.2;
         float a = smoothstep(1.0 - uCover - 0.12, 1.0 - uCover + 0.22, d);
         float belly = smoothstep(0.38, 0.85, d) * (0.75 + 0.25 * (1.0 - uSun.y));

@@ -31,6 +31,8 @@ export function shuffleRoamers(spawns: SpawnDef[], nodes: THREE.Vector3[], world
       const mate = pool.find((q) => { const d = q.distanceTo(p); return d > 30 && d < 70 && Math.random() < 0.15; });
       return { ...s, x: p.x, z: p.z, patrol: mate && Math.random() < 0.5 ? [[p.x, p.z], [mate.x, mate.z]] : undefined };
     }
-    return s;
+    if (pool !== close) return s;
+    const p = close[Math.floor(Math.random() * close.length)];
+    return { ...s, x: p.x + (Math.random() - 0.5) * 4, z: p.z + (Math.random() - 0.5) * 4, patrol: undefined };
   });
 }

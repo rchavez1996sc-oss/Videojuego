@@ -4,7 +4,7 @@ import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { cloudDeck } from './clouds';
 import { CSM } from 'three/examples/jsm/csm/CSM.js';
 import { onQuality, preset, quality } from '../core/settings';
-import { weathering } from './weathering';
+import { weatherClass, weathering } from './weathering';
 import type { BiomeDef } from '../data/types';
 
 type Hook = (shader: THREE.WebGLProgramParametersWithUniforms, renderer: THREE.WebGLRenderer) => void;
@@ -85,7 +85,8 @@ export class Lighting {
   setup<T extends THREE.Material>(mat: T, key: string, hook?: Hook): T {
     this.csm.setupMaterial(mat);
     if (mat instanceof THREE.MeshStandardMaterial && mat.map && !mat.roughnessMap) mat.roughnessMap = roughFor(mat.map) ?? null;
-    mat.customProgramCacheKey = () => key;
+    const cacheKey = hook ? key : weatherClass(key);
+    mat.customProgramCacheKey = () => cacheKey;
     const csmHook = mat.onBeforeCompile.bind(mat), wear = quality !== 'low';
     mat.onBeforeCompile = (shader, r) => {
       csmHook(shader, r);

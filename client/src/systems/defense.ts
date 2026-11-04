@@ -23,6 +23,8 @@ export interface DefenseDef {
   huntKills: number; huntTitle: string; news: string; goTitle: string; arrive: number; readyAlert: string; startDistance?: number;
   /** Farthest the player may start from the faculty (m). */
   startMax?: number;
+  /** Max distance (m) from the entrance while defending; past it, 10 s to return or `leashFailed`. */
+  leash?: number; leashFailed?: string;
 }
 
 type Phase = 'hunt' | 'go' | 'hold' | 'tank' | 'ready';
@@ -152,6 +154,7 @@ export class Defense {
       this.onFail(this.def.failed);
       return;
     }
+    if (this.tether(dt, player, alive)) return;
     const left = this.def.seconds - this.t;
     if (this.phase === 'hold' && left <= 0) this.rollIn();
     if (this.phase === 'tank' && this.tank!.arrived) this.ready();
@@ -159,6 +162,26 @@ export class Defense {
     this.objectiveText(left, player);
     this.chargeLogic(dt, player, input, alive);
     this.showMarker(player);
+  }
+
+  private awayT = -1;
+  /** Once defending, straying past `leash` m from the entrance gives 10 s to come back before the mission is lost. */
+  private tether(dt: number, player: THREE.Vector3, alive: boolean): boolean {
+    const at = this.d.entry ?? this.centre, on = alive && this.fuse < 0 && (this.phase === 'hold' || this.phase === 'tank' || this.phase === 'ready');
+    if (!on || Math.hypot(player.x - at.x, player.z - at.z) <= (this.def.leash ?? 150)) {
+      if (this.awayT >= 0) this.alert.classList.remove('on');
+      this.awayT = -1;
+      return false;
+    }
+    if (this.awayT < 0) (this.awayT = 10), clearTimeout(this.alertT);
+    this.awayT -= dt;
+    this.alert.textContent = `¡VUELVE A LA FACULTAD! ${clock(Math.max(0, Math.ceil(this.awayT)))}`;
+    this.alert.classList.add('on');
+    if (this.awayT > 0) return false;
+    this.done = true;
+    this.alert.classList.remove('on');
+    this.onFail(this.def.leashFailed ?? this.def.failed);
+    return true;
   }
 
   private rollIn(): void {

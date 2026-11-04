@@ -51,7 +51,7 @@ export function sociales(b: Builder, def: CampusBuilding, plants: Plants, rand: 
     const p = at(u, 0, v);
     const lolly = i % 2 === 0, r = 0.5 + rand() * 0.25;
     if (lolly) b.box('wood', [0.12, 1.2, 0.12], new THREE.Vector3(p.x, 0.6, p.z), q);
-    b.geometry('hedge', lolly ? new THREE.SphereGeometry(r, 12, 8) : new THREE.ConeGeometry(r, r * 2.4, 10), new THREE.Matrix4().makeTranslation(p.x, lolly ? 1.2 + r * 0.7 : 0.16 + r * 1.2, p.z));
+    b.geometry('hedge', lolly ? new THREE.SphereGeometry(r, 12, 8) : new THREE.ConeGeometry(r, r * 2.4, 10), new THREE.Matrix4().makeTranslation(p.x, lolly ? 1.2 + r * 0.7 : 0.16 + r * 1.2, p.z), { size: [r * 1.4, lolly ? 1.2 + r * 1.7 : 0.16 + r * 2.4, r * 1.4], pos: new THREE.Vector3(p.x, lolly ? (1.2 + r * 1.7) / 2 : (0.16 + r * 2.4) / 2, p.z), quat: new THREE.Quaternion() });
     b.geometry('uniWhite', new THREE.TorusGeometry(0.9, 0.12, 6, 20).rotateX(Math.PI / 2), new THREE.Matrix4().makeTranslation(p.x, 0.16, p.z));
   }
   box('muralWall', [gw * 0.6, 1.3, 0.3], gx - gw * 0.15, 0.65, gz - 2, true);

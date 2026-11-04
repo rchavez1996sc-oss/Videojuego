@@ -30,6 +30,7 @@ export class Builder {
   constructor(private world: RAPIER.World | null, private body: RAPIER.RigidBody | null) {}
 
   box(mat: string, size: [number, number, number], pos: THREE.Vector3, quat: THREE.Quaternion, collide = true): void {
+    if (!collide && size[1] >= 0.3 && Math.min(size[0], size[2]) >= 0.3 && /^hedge/.test(mat)) collide = true;
     const g = new THREE.BoxGeometry(...size);
     this.tmp.position.copy(pos);
     this.tmp.quaternion.copy(quat);

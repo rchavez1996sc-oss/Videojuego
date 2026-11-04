@@ -13,18 +13,17 @@ export function setWeatherGround(heights: Float32Array, n: number, size: number)
   ground.tex.value = t;
   ground.half.value = size / 2;
 }
-
+/** Foot of walls: a faint damp band up to ~0.35–0.6 m (darkest at the ground) with a ragged top, a little duller. */
 /** Foot of walls: a damp, darker band 0.6–1.2 m high (darkest at the ground) with a ragged top and splash speckle, a little warmer and duller. */
 const BASE_GRIME = /* glsl */ `
-  if (tq_ground_half > 0.0) {
-    float g = texture2D(tq_ground, (tq_wpos.xz + tq_ground_half) / (2.0 * tq_ground_half)).r;
-    float above = tq_wpos.y - g;
-    float edge = 0.6 + 0.6 * (tq_noise(vec2((tq_wpos.x + tq_wpos.z) * 0.9, 1.3)) * 0.5 + 0.5);
-    float damp = (1.0 - smoothstep(edge * 0.6, edge, above)) * step(-0.3, above) * tq_wall;
-    float speck = step(0.55, tq_noise((tq_wpos.xz + tq_wpos.y) * 9.0)) * (1.0 - smoothstep(0.0, 0.35, above)) * tq_wall;
-    diffuseColor.rgb *= 1.0 - damp * 0.95 - speck * 0.12;
-    diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.02, 0.98, 0.9), damp);
-    tq_damp = damp;
+  if (tq_ground_half > 0.0 && tq_wall > 0.01) {
+    float above = tq_wpos.y - texture2D(tq_ground, (tq_wpos.xz + tq_ground_half) / (2.0 * tq_ground_half)).r;
+    if (above < 0.7 && above > -0.3) {
+      float edge = 0.35 + 0.25 * (tq_noise(vec2((tq_wpos.x + tq_wpos.z) * 0.9, 1.3)) * 0.5 + 0.5);
+      float damp = (1.0 - smoothstep(edge * 0.4, edge, above)) * tq_wall;
+      diffuseColor.rgb *= 1.0 - damp * 0.18;
+      tq_damp = damp;
+    }
   }`;
 
 const SKIP = new Set(['grass', 'terrain', 'ocean', 'signs']);
@@ -56,6 +55,9 @@ const PAINT_WEAR = /* glsl */ `
  * World-space wear on every lit surface, so tiled textures stop repeating: large blotches of tone and roughness,
  * rain streaks down walls and a dusty tint on whatever faces up. A few noise lookups per pixel, no extra passes.
  */
+/** Program cache key: materials whose weathered shader comes out the same share one compiled program. */
+export const weatherClass = (key: string): string => (SKIP.has(key) ? `skip-${key}` : ROAD.has(key) ? 'wear-road' : PAINT.has(key) ? 'wear-paint' : 'wear');
+
 export function weathering(shader: THREE.WebGLProgramParametersWithUniforms & { skinning?: boolean }, key: string): void {
   if (SKIP.has(key) || shader.skinning || !shader.fragmentShader.includes('#include <map_fragment>') || !shader.fragmentShader.includes('#include <roughnessmap_fragment>')) return;
   shader.uniforms.tq_ground = ground.tex;

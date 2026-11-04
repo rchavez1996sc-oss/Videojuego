@@ -347,7 +347,8 @@ export function installDebug(c: DebugContext): void {
       const dead = c.enemies.list.length - c.enemies.aliveCount;
       return `allyKills=${s.allyKills}/${dead} ` + s.list.map((a) => `${a.name}:${a.lost ? 'X' : a.unit.alive ? a.unit.state[0] : 'down'} hp=${a.unit.hp.toFixed(0)} d=${a.unit.position.distanceTo(c.player.position).toFixed(1)} @${a.unit.position.x.toFixed(0)},${a.unit.position.z.toFixed(0)}${a.unit.moveTarget ? ' mv' + a.unit.path.length + '>' + a.unit.moveTarget.x.toFixed(0) + ',' + a.unit.moveTarget.z.toFixed(0) : ''}${a.target ? ' →' + a.target.id : ''}`).join(' | ');
     },
-    info: () => ({ calls: c.renderer.gl.info.render.calls, tris: c.renderer.gl.info.render.triangles, pos: c.player.position.toArray().map(Math.round) }),
+    programs: () => Object.entries((c.renderer.gl.info.programs ?? []).reduce((m: Record<string, number>, p: { name: string }) => ((m[p.name] = (m[p.name] ?? 0) + 1), m), {})).sort((a, b) => b[1] - a[1]).slice(0, 25),
+    info: () => ({ calls: c.renderer.gl.info.render.calls, tris: c.renderer.gl.info.render.triangles, pos: c.player.position.toArray().map(Math.round), programs: c.renderer.gl.info.programs?.length, colliders: c.world?.colliders.len() }),
     /** Disables the nearest moving vehicle and logs every vehicle's state for 3 s. */
     vehicleTest(kind?: string) {
       const tr = c.traffic?.();

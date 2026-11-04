@@ -43,6 +43,7 @@ import { Minimap } from './ui/minimap';
 import { setupWorldMap } from './ui/worldMap';
 import { loadPhotoTextures, photoEnvironment } from './render/photoTextures';
 import { installDebug } from './core/debug';
+import { physicsStep } from './physics/fastStep';
 import { ShadowCull } from './render/shadowCull';
 import { buildBarrio } from './world/barrio';
 import { buildFarCity } from './world/farCity';
@@ -120,7 +121,7 @@ async function boot(): Promise<void> {
 
   await step('Cargando personajes…');
   await characters.load(lighting);
-  world.step();
+  physicsStep(world);
   const respawnPts = barrio ? streetPoints(barrio.graph) : undefined;
   const startGoal = ch.objective?.capture ?? barrio?.station?.entrance ?? barrio?.refuge?.[0];
   const start = respawnPts && startGoal && !shotMode ? startSpot(world, hf, respawnPts, startGoal, ch.enemies ?? [], barrio!.inside, ch.defense?.startDistance, ch.defense?.startMax) : null;
@@ -143,7 +144,7 @@ async function boot(): Promise<void> {
   player.onMantle = () => sfx.footstep(1.3, 'hard');
   const dynRes = new DynamicResolution(renderer), damageFx = new DamageFx((k) => (sfx.thud(k), tpc.kick(0, 0, 0.12 + 0.2 * k)));
   const nav = barrio ? Object.assign(new StreetNav(barrio.graph), { clear: walkClear(world) }) : null;
-  world.step();
+  physicsStep(world);
   const enemies = new Enemies(Object.fromEntries(Object.entries(enemyDefs as unknown as Record<string, EnemyDef>).map(([k, d]) => [k, { ...d, hp: Math.round(d.hp * (ch.enemyHealth ?? 1)) }])), ch.enemies ?? [], world, hf, lighting, player, combat, sfx, camera, nav, ch.enemyNear);
   scene.add(enemies.group);
   const { civilians, life, alarm, state: populace } = createPopulace(ch, barrio, { world, hf, lighting, mixer, sfx, combat, hud, camera, scene });
@@ -193,7 +194,7 @@ async function boot(): Promise<void> {
     hud.hitmarker(kill, headshot, 'BAJA');
     if (kill && enemies.aliveCount === 0 && !defense) setTimeout(() => hud.showToast('ZONA DESPEJADA'), 1200);
   };
-  world.step();
+  physicsStep(world);
   cover.prune(world, (x, z) => hf.heightAt(x, z));
 
   let freeCam = false;
@@ -250,8 +251,7 @@ async function boot(): Promise<void> {
       civilians?.update(dt, player.position);
       const inCombat = enemies.list.some((e) => e.alive && e.state === 'combat');
       life?.update(dt, player.position, inCombat);
-      world.timestep = dt;
-      world.step();
+      physicsStep(world, dt);
       player.syncPosition();
       feel.update(dt, input);
       tpc.update(dt, input, player.position, player.crouchAmount, player.collisionHandle);

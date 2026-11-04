@@ -26,7 +26,7 @@ export function quimicaFront(b: Builder, def: CampusBuilding, rand: () => number
 
   const glass = (u0: number, v0: number, u1: number, v1: number, doors: number[] = []) => {
     const alongU = Math.abs(u1 - u0) > 0.1, a = alongU ? u0 : v0, c = alongU ? u1 : v1, fixed = alongU ? v0 : u0;
-    const cuts = [a, ...doors.flatMap((d) => [d - 1.2, d + 1.2]), c];
+    const cuts = [a, ...doors.flatMap((d) => [d - 1.8, d + 1.8]), c];
     for (let i = 0; i + 1 < cuts.length; i += 2) {
       const len = cuts[i + 1] - cuts[i], m = (cuts[i] + cuts[i + 1]) / 2, size = (h: number, t: number): [number, number, number] => (alongU ? [len, h, t] : [t, h, len]);
       const put = (mat: string, s: [number, number, number], y: number, collide = false) => (alongU ? box(mat, s, m, y, fixed, collide) : box(mat, s, fixed, y, m, collide));
