@@ -37,6 +37,7 @@ import { pool } from './pool';
 import { sociales } from './sociales';
 import { letras } from './letras';
 import { economicas } from './economicas';
+import { derecho } from './derecho';
 import { quimicaFront } from './quimicaFront';
 import { campusMaterials, campusBake } from './materials';
 import { campusSigns } from './signs';
@@ -67,6 +68,10 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
   for (const bd of def.buildings) {
     if (bd.key === 'quimica') {
       refuge.push(...quimica(b, bd, plants, rand));
+      continue;
+    }
+    if (bd.key === 'derecho') {
+      signs.push(...derecho(b, bd, plants, rand));
       continue;
     }
     if (bd.key === 'economicas') {

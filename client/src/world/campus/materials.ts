@@ -11,7 +11,7 @@ import { barsTexture } from './grounds';
 /** Painted plaster walls of the faculties (photos: cream Química, white/grey Geológica, yellow Comedor…). */
 const WALLS: Record<string, string> = {
   uniCream: '#e6dcc4', uniGrey: '#c8c6c0', uniWhite: '#efeee9', uniYellow: '#e3b443', uniRed: '#b02a22', uniFrame: '#d5d3cd',
-  uniTerracotta: '#a35a3c', socBeige: '#c9b9a3', uniOrange: '#d9772e', roofWhite: '#e9e8e3', uniStone: '#9a958c', uniSand: '#d2bf98', uniTaupe: '#968d80', uniOchre: '#d8ad2c', uniBrown: '#7c4a2c', uniBlue: '#4f86c9', letBlue: '#8fb6dd', letNavy: '#2f58a3',
+  uniTerracotta: '#a35a3c', socBeige: '#c9b9a3', uniOrange: '#d9772e', roofWhite: '#e9e8e3', uniStone: '#9a958c', uniSand: '#d2bf98', uniTaupe: '#968d80', uniOchre: '#d8ad2c', uniBrown: '#7c4a2c', uniBlue: '#4f86c9', letBlue: '#8fb6dd', letNavy: '#2f58a3', derBrown: '#a88a7c', derCream: '#d9cfb8',
 };
 
 export function campusMaterials(lighting: Lighting): Record<string, THREE.Material> {
@@ -20,6 +20,7 @@ export function campusMaterials(lighting: Lighting): Record<string, THREE.Materi
   const laja = photo('laja') ?? fs, flags = photo('plazaFlag') ?? fs, slate = photo('slateDark') ?? stone;
   const m: Record<string, THREE.Material> = {
     bioGlass: std('bioGlass', { color: '#8e9ca2', roughness: 0.1, metalness: 0.55, envMapIntensity: 1.3 }),
+    frieze: std('frieze', { map: frieze(), roughness: 0.7 }),
     paneGrid: std('paneGrid', { map: paneGrid(), roughness: 0.25, metalness: 0.3 }),
     louvre: std('louvre', { map: louvreTex(), color: '#d4d8da', roughness: 0.4, metalness: 0.6 }),
     winGlass: std('winGlass', { color: '#4d5f6a', roughness: 0.08, metalness: 0.7, envMapIntensity: 1.4 }),
@@ -153,6 +154,22 @@ function paneGrid(): THREE.CanvasTexture {
     }
     g.fillStyle = '#a7adb0';
     for (let c = 0; c <= 2; c++) g.fillRect(c * cw - 3, 0, 6, s);
+  });
+}
+
+/** Pre-Columbian frieze panel (Derecho): blocky Chavín/Moche-style felines and figures in red and brown on white. */
+function frieze(): THREE.CanvasTexture {
+  return canvasTex(256, (g, s) => {
+    g.fillStyle = '#f1eee6';
+    g.fillRect(0, 0, s, s);
+    const u = s / 16, cell = (x: number, y: number, w = 1, h = 1) => g.fillRect(x * u, y * u, w * u, h * u);
+    g.fillStyle = '#9a2a1e';
+    cell(3, 7, 10, 2); cell(2, 6, 2, 2); cell(12, 5, 2, 3); cell(14, 5, 1, 1);
+    cell(4, 9, 1, 3); cell(7, 9, 1, 3); cell(10, 9, 1, 3); cell(12, 9, 1, 3);
+    g.fillStyle = '#6a4024';
+    cell(5, 7, 1, 1); cell(8, 7, 1, 1); cell(13, 6, 1, 1); cell(1, 8, 2, 1);
+    g.fillStyle = '#1a1a1a';
+    g.fillRect(0, 0, s, u * 0.6); g.fillRect(0, s - u * 0.6, s, u * 0.6);
   });
 }
 
