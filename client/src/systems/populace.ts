@@ -12,11 +12,13 @@ import type { Combat } from '../weapons/combat';
 import type { Hud } from '../ui/hud';
 import { difficulty } from '../core/difficulty';
 import { blame } from './blame';
+import { litter } from '../world/litter';
 
 /** Pedestrians plus city life (traffic, strays, birds, ambience) and the shared "something scary happened" alarm. */
 export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world: RAPIER.World; hf: Heightfield; lighting: Lighting; mixer: Mixer; sfx: Sfx; combat: Combat; hud: Hud; camera: THREE.Camera; scene: THREE.Scene }) {
   const civilians = barrio && ch.civilians ? new Civilians(barrio.graph, d.hf, d.lighting, d.world, ch.civilians.count, ch.civilians.seed, d.camera, ch.civilians.gear) : null;
   const life = barrio && ch.life ? new CityLife(ch.life, d.world, d.hf, barrio, d.lighting, d.mixer, d.camera) : null;
+  if (barrio && ch.litter) d.scene.add(litter(barrio.graph, d.world, ch.litter, d.lighting));
   const state = { casualties: 0, onFail: () => {} };
   const casualty = (weight = 1) => {
     if (!blame.player) return;

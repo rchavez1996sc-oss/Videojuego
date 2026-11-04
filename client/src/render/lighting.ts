@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { roughFor } from './photoTextures';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
+import { cloudDeck } from './clouds';
 import { CSM } from 'three/examples/jsm/csm/CSM.js';
 import { onQuality, preset, quality } from '../core/settings';
 import { weathering } from './weathering';
@@ -38,6 +39,7 @@ export class Lighting {
     u.mieDirectionalG.value = biome.mieDirectionalG;
     u.sunPosition.value.copy(this.sunDir);
     scene.add(sky);
+    if (biome.clouds) scene.add(cloudDeck(biome.clouds, this.sunDir));
 
     const envScene = new THREE.Scene();
     const envSky = sky.clone();

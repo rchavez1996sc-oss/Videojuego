@@ -1,3 +1,4 @@
+import type { CloudDef } from '../render/clouds';
 export interface TerrainDef {
   size: number;
   playable: number;
@@ -37,6 +38,7 @@ export interface BiomeDef {
   colors: Record<'grassLush' | 'grassDry' | 'dirt' | 'road' | 'rock' | 'snow', string>;
   snowLine: number;
   grass: { height: number; colorBase: string; colorTip: string; density?: number };
+  clouds?: CloudDef;
 }
 
 export interface ChapterDef {
@@ -75,6 +77,8 @@ export interface ChapterDef {
   lootRounds?: [number, number];
   /** Civilian casualties that fail the mission (0 = no limit; default by difficulty). */
   civilianLimit?: number;
+  /** Litter items per 10 m of pedestrian graph edge. */
+  litter?: number;
   /** Prologue paragraphs shown while the chapter loads. */
   intro?: string[];
   objective?: import('../systems/objective').ObjectiveDef;
