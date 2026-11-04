@@ -1,5 +1,31 @@
-import type * as THREE from 'three';
+import * as THREE from 'three';
 import { NOISE_GLSL } from './glsl';
+
+/** Terrain heights as a texture, so walls know how high above the ground each pixel is (damp and grime at their foot). */
+const ground = { tex: { value: null as THREE.Texture | null }, half: { value: 512 } };
+
+export function setWeatherGround(heights: Float32Array, n: number, size: number): void {
+  const half = new Uint16Array(heights.length);
+  for (let i = 0; i < heights.length; i++) half[i] = THREE.DataUtils.toHalfFloat(heights[i]);
+  const t = new THREE.DataTexture(half, n, n, THREE.RedFormat, THREE.HalfFloatType);
+  t.magFilter = t.minFilter = THREE.LinearFilter;
+  t.needsUpdate = true;
+  ground.tex.value = t;
+  ground.half.value = size / 2;
+}
+
+/** Foot of walls: a damp, darker band 0.6–1.2 m high (darkest at the ground) with a ragged top and splash speckle, a little warmer and duller. */
+const BASE_GRIME = /* glsl */ `
+  if (tq_ground_half > 0.0) {
+    float g = texture2D(tq_ground, (tq_wpos.xz + tq_ground_half) / (2.0 * tq_ground_half)).r;
+    float above = tq_wpos.y - g;
+    float edge = 0.6 + 0.6 * (tq_noise(vec2((tq_wpos.x + tq_wpos.z) * 0.9, 1.3)) * 0.5 + 0.5);
+    float damp = (1.0 - smoothstep(edge * 0.6, edge, above)) * step(-0.3, above) * tq_wall;
+    float speck = step(0.55, tq_noise((tq_wpos.xz + tq_wpos.y) * 9.0)) * (1.0 - smoothstep(0.0, 0.35, above)) * tq_wall;
+    diffuseColor.rgb *= 1.0 - damp * 0.95 - speck * 0.12;
+    diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.02, 0.98, 0.9), damp);
+    tq_damp = damp;
+  }`;
 
 const SKIP = new Set(['grass', 'terrain', 'ocean', 'signs']);
 const ROAD = new Set(['asphalt', 'asphaltWorn', 'cobble']);
@@ -32,6 +58,8 @@ const PAINT_WEAR = /* glsl */ `
  */
 export function weathering(shader: THREE.WebGLProgramParametersWithUniforms & { skinning?: boolean }, key: string): void {
   if (SKIP.has(key) || shader.skinning || !shader.fragmentShader.includes('#include <map_fragment>') || !shader.fragmentShader.includes('#include <roughnessmap_fragment>')) return;
+  shader.uniforms.tq_ground = ground.tex;
+  shader.uniforms.tq_ground_half = ground.half;
   shader.vertexShader = shader.vertexShader
     .replace('#include <common>', '#include <common>\nvarying vec3 tq_wpos;\nvarying vec3 tq_wnrm;')
     .replace('#include <project_vertex>', `#include <project_vertex>
@@ -42,7 +70,7 @@ export function weathering(shader: THREE.WebGLProgramParametersWithUniforms & { 
   tq_wpos = (tq_m * vec4(transformed, 1.0)).xyz;
   tq_wnrm = normalize(mat3(tq_m) * objectNormal);`);
   shader.fragmentShader = shader.fragmentShader
-    .replace('#include <common>', `#include <common>\nvarying vec3 tq_wpos;\nvarying vec3 tq_wnrm;\n${NOISE_GLSL}`)
+    .replace('#include <common>', `#include <common>\nvarying vec3 tq_wpos;\nvarying vec3 tq_wnrm;\nuniform sampler2D tq_ground;\nuniform float tq_ground_half;\nfloat tq_damp = 0.0;\n${NOISE_GLSL}`)
     .replace('#include <map_fragment>', `#include <map_fragment>
   vec3 tq_n = normalize(tq_wnrm);
   float tq_wall = 1.0 - smoothstep(0.25, 0.6, abs(tq_n.y));
@@ -51,8 +79,9 @@ export function weathering(shader: THREE.WebGLProgramParametersWithUniforms & { 
   float tq_streak = smoothstep(0.15, 0.9, tq_noise(vec2((tq_wpos.x + tq_wpos.z) * 2.3, tq_wpos.y * 0.18))) * tq_wall;
   float tq_up = smoothstep(0.75, 0.95, tq_n.y);
   diffuseColor.rgb *= 1.0 + tq_macro * 0.09 - tq_streak * 0.13;
+  ${BASE_GRIME}
   ${ROAD.has(key) ? ROAD_WEAR : PAINT.has(key) ? PAINT_WEAR : ''}
   diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.62, 0.57, 0.5) * dot(diffuseColor.rgb, vec3(0.33)) * 1.6, tq_up * (0.08 + 0.08 * max(tq_macro, 0.0)));`)
     .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
-  roughnessFactor = clamp(roughnessFactor + tq_macro * 0.12 + tq_streak * 0.08, 0.04, 1.0);`);
+  roughnessFactor = clamp(roughnessFactor + tq_macro * 0.12 + tq_streak * 0.08 + tq_damp * 0.1, 0.04, 1.0);`);
 }

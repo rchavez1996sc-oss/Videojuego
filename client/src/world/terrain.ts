@@ -7,6 +7,7 @@ import { rock, soil } from '../render/textures';
 import { photo } from '../render/photoTextures';
 import * as S from './terrainShader';
 import { setSurface } from './surfaces';
+import { setWeatherGround } from '../render/weathering';
 
 const CHUNK = 64;
 const LOD_STEPS = [1, 2, 4];
@@ -54,6 +55,7 @@ export class Terrain {
   private chunks: { mesh: THREE.Mesh; lods: THREE.BufferGeometry[]; center: THREE.Vector3 }[] = [];
 
   constructor(hf: Heightfield, biome: BiomeDef, lighting: Lighting, world: RAPIER.World) {
+    setWeatherGround(hf.heights, hf.n, hf.size);
     const mat = terrainMaterial(hf, biome, lighting);
     for (let cz = 0; cz < hf.n - 1; cz += CHUNK) {
       for (let cx = 0; cx < hf.n - 1; cx += CHUNK) {
