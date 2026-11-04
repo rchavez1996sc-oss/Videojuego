@@ -34,7 +34,7 @@ export function buildLarcomar(b: Builder, def: MaleconDef, c: CoastDef, lighting
     m.rotation.y = yaw;
     signs.add(m);
   };
-  b.box('confetti', [l.x1 - l.x0, 0.3, zEdge - l.z0 + 1], new THREE.Vector3(cx, y0 - 0.15, (l.z0 + zEdge) / 2), Q, true);
+  b.box('confetti', [l.x1 - l.x0, 0.3, zEdge - l.z0 + 1], new THREE.Vector3(cx, y0 - 0.1, (l.z0 + zEdge) / 2), Q, true);
   b.box('lattice', [l.x1 - l.x0 + 2, H, 12], new THREE.Vector3(cx, y0 + H / 2, l.z0 - 6), Q, true);
   for (const s of [-1, 1]) {
     const wx = s < 0 ? l.x0 : l.x1, gap = Array.from({ length: 5 }, (_, k) => wx - s * (8 - k * 2));
@@ -74,7 +74,7 @@ export function buildLarcomar(b: Builder, def: MaleconDef, c: CoastDef, lighting
     ctx.textAlign = 'center';
     for (let k = 0; k < 3; k++) ctx.fillText('28.07.36', w / 2, h * (0.3 + k * 0.25));
   }, 256, 256);
-  const scr = new THREE.Mesh(new THREE.PlaneGeometry(5, 5), new THREE.MeshBasicMaterial({ map: screen, color: new THREE.Color(1.4, 1.4, 1.4), fog: true }));
+  const scr = new THREE.Mesh(new THREE.PlaneGeometry(5, 5), new THREE.MeshBasicMaterial({ map: screen, color: new THREE.Color(0.95, 0.95, 0.95), fog: true }));
   scr.position.set(cx + 18, y0 + 5.2, wallZ + 0.1);
   signs.add(scr);
   sign('LARCOMAR', '#f4f1ea', '#1b1b1b', new THREE.Vector3(cx - 16, y0 + 5.6, wallZ + 0.06), 0, 9);
