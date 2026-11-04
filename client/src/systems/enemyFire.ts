@@ -46,7 +46,7 @@ export function enemyFire(e: Enemy, en: Enemies, ctx: AIContext, attacker: boole
   const cam = camera.position;
   const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
   const pan = muzzle.clone().sub(cam).normalize().dot(right);
-  sfx.distantShot(muzzle.distanceTo(cam), pan, e.def.rpm < 100);
+  sfx.distantShot(muzzle.distanceTo(cam), pan, e.def.gun === 'pistol' ? 'own' : e.def.rpm < 100);
   if (hit?.collider.handle === player.collisionHandle) {
     en.onPlayerHit(e.def.damage * difficulty.value.damage * PLAYER_ARMOUR * (0.85 + Math.random() * 0.3), muzzle);
     return;

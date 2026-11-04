@@ -58,5 +58,36 @@
       "helmet": "#3a3a2e"
     },
     "rig": "pnp"
+  },
+  "officer": {
+    "hp": 130,
+    "damage": 10,
+    "rpm": 150,
+    "burst": [
+      2,
+      4
+    ],
+    "burstPause": [
+      0.6,
+      1.5
+    ],
+    "spread": 2.3,
+    "spreadPerMeter": 0.018,
+    "reaction": 0.85,
+    "sight": 120,
+    "fov": 120,
+    "hearing": 170,
+    "walk": 1.7,
+    "run": 4.3,
+    "preferredRange": 18,
+    "palette": {
+      "id": "pnp",
+      "cloth": "#3e4650",
+      "vest": "#23282e",
+      "skin": "#8f6650",
+      "helmet": "#2c3238"
+    },
+    "rig": "pnp",
+    "gun": "pistol"
   }
 }
