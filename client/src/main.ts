@@ -48,7 +48,7 @@ import { buildBarrio } from './world/barrio';
 import { buildFarCity } from './world/farCity';
 import { buildMalecon } from './world/malecon';
 import { buildCampus } from './world/campus';
-import { StreetNav } from './ai/nav';
+import { StreetNav, walkClear } from './ai/nav';
 import { cover } from './ai/cover';
 import { createPopulace } from './systems/populace';
 import { showMissionFailed } from './ui/missionFail';
@@ -142,7 +142,7 @@ async function boot(): Promise<void> {
   scene.add(range.group, buildStructures(hf, lighting, world, rangeOrigin, ch.structures ?? []));
   player.onMantle = () => sfx.footstep(1.3, 'hard');
   const dynRes = new DynamicResolution(renderer), damageFx = new DamageFx((k) => (sfx.thud(k), tpc.kick(0, 0, 0.12 + 0.2 * k)));
-  const nav = barrio ? new StreetNav(barrio.graph) : null;
+  const nav = barrio ? Object.assign(new StreetNav(barrio.graph), { clear: walkClear(world) }) : null;
   world.step();
   const enemies = new Enemies(Object.fromEntries(Object.entries(enemyDefs as unknown as Record<string, EnemyDef>).map(([k, d]) => [k, { ...d, hp: Math.round(d.hp * (ch.enemyHealth ?? 1)) }])), ch.enemies ?? [], world, hf, lighting, player, combat, sfx, camera, nav, ch.enemyNear);
   scene.add(enemies.group);

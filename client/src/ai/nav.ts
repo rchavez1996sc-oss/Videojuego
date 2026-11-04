@@ -1,9 +1,12 @@
 import * as THREE from 'three';
+import RAPIER from '@dimforge/rapier3d-compat';
 import type { StreetGraph } from '../world/barrio';
 
 /** A* over the street graph: turns "go there" into a list of street corners to walk through. */
 export class StreetNav {
   private neighbors: number[][];
+  /** Optional line-of-sight test: the start/end corner must be reachable in a straight line (not behind a fence or wall). */
+  clear: ((a: THREE.Vector3, b: THREE.Vector3) => boolean) | null = null;
 
   constructor(private g: StreetGraph) {
     this.neighbors = g.nodes.map(() => []);
@@ -18,15 +21,17 @@ export class StreetNav {
   }
 
   nearest(p: THREE.Vector3): number {
-    let best = 0, bd = Infinity;
+    const near: [number, number][] = [];
     this.g.nodes.forEach((n, i) => {
       const d = (n.x - p.x) ** 2 + (n.z - p.z) ** 2;
-      if (d < bd) {
-        bd = d;
-        best = i;
+      if (near.length < 6 || d < near[near.length - 1][1]) {
+        near.push([i, d]);
+        near.sort((a, b) => a[1] - b[1]);
+        if (near.length > 6) near.pop();
       }
     });
-    return best;
+    if (!this.clear) return near[0][0];
+    return near.find(([i]) => this.clear!(p, this.g.nodes[i]))?.[0] ?? near[0][0];
   }
 
   /** Corners between `from` and `to` (excluding `to` itself). Empty when both are by the same corner. */
@@ -62,4 +67,14 @@ export class StreetNav {
     for (let c: number | undefined = goal; c !== undefined; c = came.get(c)) path.unshift(nodes[c].clone());
     return path;
   }
+}
+
+/** Straight-line walkability between two points: no fixed collider (wall, fence, building) at waist height. */
+export function walkClear(world: RAPIER.World): (a: THREE.Vector3, b: THREE.Vector3) => boolean {
+  return (a, b) => {
+    const from = { x: a.x, y: a.y + 1, z: a.z }, d = new THREE.Vector3(b.x - a.x, b.y - a.y, b.z - a.z), len = d.length();
+    if (len < 0.5) return true;
+    d.divideScalar(len);
+    return !world.castRay(new RAPIER.Ray(from, d), len, true, RAPIER.QueryFilterFlags.EXCLUDE_DYNAMIC | RAPIER.QueryFilterFlags.EXCLUDE_KINEMATIC | RAPIER.QueryFilterFlags.EXCLUDE_SENSORS);
+  };
 }

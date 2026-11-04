@@ -15,7 +15,6 @@ const OUTFIT: Outfit = { color: '#8e1b14', bands: ['Left', 'Right'], scarf: '#8e
 const LADDER = 1.5, LADDER_CLIP = 0.61;
 const WALK = 3.2, RUN = 6.2, CROUCH = 1.7, AIM = 2.2, JUMP = 7.2, GRAVITY = 22, SLIDE = 8.5;
 const RADIUS = 0.35, HALF = 0.55;
-
 export class Player {
   readonly model: Rig;
   readonly position = new THREE.Vector3();
@@ -265,6 +264,7 @@ export class Player {
     if (ridge) [this.vel.x, this.vel.z, this.grounded] = [ridge.x * 3.2, ridge.z * 3.2, false];
     if (this.grounded && !wasGrounded && this.lastVy < -4) this.landImpact = Math.min(1, (-this.lastVy - 4) / 8 + 0.25);
     if (!this.grounded) this.peakY = Math.max(this.peakY, this.position.y);
+    if (slide) this.peakY = Math.min(this.peakY, this.position.y + 6);
     else if (!wasGrounded && fallDamage(this.peakY - this.position.y) > 0) this.hurt(fallDamage(this.peakY - this.position.y));
     if (this.grounded) this.peakY = this.position.y;
     this.landImpact = Math.max(0, this.landImpact - dt * 2.5);

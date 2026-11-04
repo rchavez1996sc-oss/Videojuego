@@ -56,10 +56,10 @@ export function playBot(c: DebugContext, seconds: number, extra: () => string = 
       const goal = c.goal?.() ?? c.enemies.list.filter((e) => e.alive).sort((a, b) => a.position.distanceTo(p) - b.position.distanceTo(p))[0]?.position;
       if (goal && (replan -= dt) <= 0) {
         route = c.nav ? [...c.nav.route(p, goal), goal.clone()] : [goal.clone()];
-        wp = 0;
+        wp = route.length > 2 && Math.hypot(route[1].x - p.x, route[1].z - p.z) < Math.hypot(route[1].x - route[0].x, route[1].z - route[0].z) ? 1 : 0;
         replan = 6;
       }
-      while (wp < route.length - 1 && Math.hypot(route[wp].x - p.x, route[wp].z - p.z) < 2.2) wp++;
+      while (wp < route.length - 1 && Math.hypot(route[wp].x - p.x, route[wp].z - p.z) < 1.3) wp++;
       const to = route[wp];
       if (to) {
         const far = Math.hypot(to.x - p.x, to.z - p.z);

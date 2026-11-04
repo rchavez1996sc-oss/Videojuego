@@ -137,8 +137,17 @@ export function maleconGraph(def: MaleconDef, c: CoastDef, hf: Heightfield): Str
   const inner = grid[grid.length - 2];
   const near = inner.filter((k) => k >= 0).sort((a, b) => nodes[a].distanceTo(nodes[top]) - nodes[b].distanceTo(nodes[top]))[0];
   link(top, near);
-  const beach = xs.map((x) => add(x, def.beachRoad.z - def.beachRoad.half - 1.6));
+  const beach = xs.map((x) => add(x, def.beachRoad.z - def.beachRoad.half - 0.6));
   for (let i = 0; i + 1 < beach.length; i++) link(beach[i], beach[i + 1]);
+  const nearestOf = (ids: number[], p: THREE.Vector3) => ids.filter((k) => k >= 0).sort((a, b) => nodes[a].distanceTo(p) - nodes[b].distanceTo(p))[0];
+  for (const r of c.ravines ?? []) {
+    const zb = def.beachRoad.z - def.beachRoad.half - 0.6, chain: number[] = [];
+    for (let z = r.head + 4; z < zb - 4; z += 8) chain.push(add(ravineCentre(r, z), z));
+    if (!chain.length) continue;
+    chain.forEach((k, i) => i && link(chain[i - 1], k));
+    link(nearestOf(grid.flat(), nodes[chain[0]]), chain[0]);
+    link(chain[chain.length - 1], nearestOf(beach, nodes[chain[chain.length - 1]]));
+  }
   const ends = [...grid, beach].flatMap((row) => [row.find((k) => k >= 0)!, [...row].reverse().find((k) => k >= 0)!]);
   const ground = (x: number, z: number) => {
     if (Math.abs(z - def.bridge.z) < def.bridge.width / 2 && onBridge(x)) return 0.35;

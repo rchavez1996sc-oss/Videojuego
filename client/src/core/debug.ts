@@ -56,6 +56,10 @@ export function installDebug(c: DebugContext): void {
     },
     views: () => c.views.length,
     bot: (seconds: number) => playBot(c, seconds, c.status),
+    route(x: number, z: number, tx: number, tz: number) {
+      const r = c.nav?.route(new THREE.Vector3(x, 0, z), new THREE.Vector3(tx, 0, tz)) ?? [];
+      return `${r.length} nodes: ${r.map(fmt).join(' ')} · goal ${c.goal?.() ? fmt(c.goal()!) : '-'}`;
+    },
     gunfire(x: number, z: number, frames = 60) {
       c.combat.onShot(new THREE.Vector3(x, c.hf.heightAt(x, z) + 1.5, z));
       for (let i = 0; i < frames; i++) c.frame(1 / 30);
@@ -144,7 +148,7 @@ export function installDebug(c: DebugContext): void {
       c.setSkipRender(false);
       for (const k of keys) dispatchEvent(new KeyboardEvent('keyup', { code: k }));
       ms.sort((a, b) => a - b);
-      return `swaps ${swaps} [${seen}] air ${air}/${n} in ${runs} runs, y jumps ${jumps}, end ${fmt(c.player.position)}, sim ms p50 ${ms[n >> 1].toFixed(1)} p95 ${ms[Math.floor(n * 0.95)].toFixed(1)} max ${ms[n - 1].toFixed(1)}`;
+      return `hp ${c.player.hp.toFixed(0)} swaps ${swaps} [${seen}] air ${air}/${n} in ${runs} runs, y jumps ${jumps}, end ${fmt(c.player.position)}, sim ms p50 ${ms[n >> 1].toFixed(1)} p95 ${ms[Math.floor(n * 0.95)].toFixed(1)} max ${ms[n - 1].toFixed(1)}`;
     },
     ground(x: number, z: number, y?: number) {
       c.player.respawn(new THREE.Vector3(x, y ?? c.hf.heightAt(x, z) + 0.3, z), 0);
