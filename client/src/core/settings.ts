@@ -62,6 +62,8 @@ export function chooseQuality(q: Quality): void {
   for (const fn of listeners) fn();
 }
 export const shotMode = params.has('shot');
+/** Playtest: like a real game (random start and police) but without launcher and prologue, driven by `__game.bot`. */
+export const testMode = params.has('test');
 
 /** Chapter reached in a previous session (set when one is completed). */
 export function savedChapter(): string | null {

@@ -13,6 +13,8 @@ import type { Traffic } from '../systems/traffic';
 import type { Squad } from '../systems/squad';
 import type { GrenadeMode } from '../weapons/grenadeMode';
 import type { Objective } from '../systems/objective';
+import type { StreetNav } from '../ai/nav';
+import { playBot } from './bot';
 
 export interface DebugContext {
   views: [number, number, number, number, number, number][];
@@ -37,6 +39,9 @@ export interface DebugContext {
   objective?: Objective | null;
   civilians?: () => THREE.Vector3[];
   world?: RAPIER.World;
+  nav?: StreetNav | null;
+  goal?: () => THREE.Vector3 | undefined;
+  status?: () => string;
 }
 
 /** `window.__game`: hooks used by the Playwright screenshot / AI / grenade scripts. */
@@ -50,6 +55,7 @@ export function installDebug(c: DebugContext): void {
       if (c.shotMode) c.frame(1 / 60);
     },
     views: () => c.views.length,
+    bot: (seconds: number) => playBot(c, seconds, c.status),
     gunfire(x: number, z: number, frames = 60) {
       c.combat.onShot(new THREE.Vector3(x, c.hf.heightAt(x, z) + 1.5, z));
       for (let i = 0; i < frames; i++) c.frame(1 / 30);

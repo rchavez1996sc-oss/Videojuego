@@ -7,7 +7,7 @@ import ch04 from './data/chapters/ch04_aldea.json';
 import type { ChapterDef } from './data/types';
 import { Input } from './core/input';
 import { ThirdPersonCamera } from './core/camera';
-import { preset, PRESETS, quality, shotMode, gpuName, savedChapter } from './core/settings';
+import { preset, PRESETS, quality, shotMode, testMode, gpuName, savedChapter } from './core/settings';
 import { guardFrame } from './core/guard';
 import { FpsMeter } from './core/fpsMeter';
 import { Renderer } from './render/renderer';
@@ -77,9 +77,9 @@ async function boot(): Promise<void> {
   if (shotMode) document.body.classList.add('shot');
   const asked = new URLSearchParams(location.search).get('ch') ?? savedChapter() ?? '1';
   const cards = (['1', '2', '3'] as const).map((id) => ({ id, number: (CHAPTERS[id] as ChapterDef).number ?? +id, title: (CHAPTERS[id] as ChapterDef).title }));
-  const chId = shotMode ? asked : await showLauncher(cards, asked), ch = (CHAPTERS[chId] ?? ch01) as ChapterDef;
+  const chId = shotMode || testMode ? asked : await showLauncher(cards, asked), ch = (CHAPTERS[chId] ?? ch01) as ChapterDef;
   document.querySelector('#overlay .sub')!.textContent = `Capítulo ${ch.number ?? 1} — ${ch.title}`;
-  const prologue = shotMode ? Promise.resolve() : showPrologue(`CAPÍTULO ${ch.number ?? 1}`, ch.title.toUpperCase(), ch.intro ?? [], ch.introPlates, ch.introScore, true);
+  const prologue = shotMode || testMode ? Promise.resolve() : showPrologue(`CAPÍTULO ${ch.number ?? 1}`, ch.title.toUpperCase(), ch.intro ?? [], ch.introPlates, ch.introScore, true);
   await prologueQuiet().then(() => RAPIER.init());
   const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
   const canvas = document.getElementById('game') as HTMLCanvasElement;
@@ -199,7 +199,7 @@ async function boot(): Promise<void> {
   let freeCam = false;
   installDebug({
     extraLog: () => (civilians ? `civ:${civilians.list.map((c) => c.mood[0]).join('')}` : ''),
-    views: ch.views ?? [], tpc, hf, player, combat, enemies, grenades, pickups, renderer, shotMode, scene, squad, grenadeMode: nadeMode, objective, civilians: () => civilians?.present ?? [], world,
+    views: ch.views ?? [], tpc, hf, player, combat, enemies, grenades, pickups, renderer, shotMode, scene, squad, grenadeMode: nadeMode, objective, civilians: () => civilians?.present ?? [], world, nav, goal: () => objective?.position ?? defense?.goal, status: () => (defense ? defense.status() : objective ? `obj ${objective.position ? 'on' : '-'}` : '') + ` civ=${populace.casualties} lives=${lives}`,
     frame: (dt) => frame(dt),
     setFreeCam: (v) => (freeCam = v),
     setSkipRender: (v) => (skipRender = v),
