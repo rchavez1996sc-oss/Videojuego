@@ -41,10 +41,10 @@ export class Gun {
     this.mode = this.def.modes[(i + 1) % this.def.modes.length];
   }
 
-  /** Returns 'empty' when reloading starts automatically or the mag is dry. */
-  startReload(): boolean {
+  /** Starts a reload taking `scale` × the weapon's time; false when there is nothing to do. */
+  startReload(scale = 1): boolean {
     if (this.reloading > 0 || this.ammo === this.def.magazine || this.reserve === 0) return false;
-    this.reloadTotal = this.reloading = this.ammo === 0 ? this.def.reloadEmptyTime : this.def.reloadTime;
+    this.reloadTotal = this.reloading = (this.ammo === 0 ? this.def.reloadEmptyTime : this.def.reloadTime) * scale;
     return true;
   }
 

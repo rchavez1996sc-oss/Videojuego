@@ -127,7 +127,7 @@ export class Hud {
       this.reload.classList.toggle('on', s.reload > 0);
       (this.reload.querySelector('.fg') as SVGCircleElement).style.strokeDashoffset = String(125.7 * (1 - s.reload));
     });
-    const held = s.reloadHold ?? 0, hint = s.slot === 'rifle' && s.reserve > 0 && (s.ammo <= s.mag * 0.25 || held > 0);
+    const held = s.reloadHold ?? 0, hint = s.slot === 'rifle' && s.reserve > 0 && (s.ammo <= s.mag * 0.25 || held > 0) && !(s.reload > 0 && held === 0);
     this.set('rh', `${hint}${held.toFixed(2)}${s.ammo === 0}`, () => {
       const el = this.root.querySelector('.reload-hint')!;
       el.classList.toggle('on', hint);

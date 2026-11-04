@@ -43,14 +43,17 @@ export class Combat {
     this.group.add(this.dust.points, this.sparks.points, this.decals.mesh, this.tracers.group, this.flash.group, this.shells.mesh, this.blast.group);
   }
 
-  /** Progress 0..1 of a manual reload: it runs only while R is held and is abandoned if R is let go. */
+  /** Progress 0..1 of a manual reload (hold R, half the usual time, abandoned if R is let go). An empty magazine reloads by itself at full length. */
   reloadHold = 0;
   private manual = false;
 
   update(dt: number, input: Input, aiming: boolean, airborne: boolean): void {
     const g = this.gun;
-    if (input.down('KeyR')) {
-      if (g.reloading <= 0 && g.startReload()) {
+    if (g.ammo === 0 && g.reloading <= 0 && g.startReload()) {
+      this.manual = false;
+      this.reloadFx();
+    } else if (input.down('KeyR')) {
+      if (g.reloading <= 0 && g.startReload(0.5)) {
         this.manual = true;
         this.reloadFx();
       }
