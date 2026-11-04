@@ -6,8 +6,9 @@ const Q = new THREE.Quaternion();
 const at = (x: number, y: number, z: number) => new THREE.Matrix4().makeTranslation(x, y, z);
 const yaw = (a: number) => new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), a);
 
-/** Dark green chairs with orange cushions round a white-clothed table (as in the photos). */
-export function diningTable(b: Builder, x: number, y: number, z: number, seats: number, turn: number): void {
+type Seat = { pos: THREE.Vector3; yaw: number };
+/** Dark green chairs with orange cushions round a white-clothed table (as in the photos); ~30 % of the chairs go to `diners`. */
+export function diningTable(b: Builder, x: number, y: number, z: number, seats: number, turn: number, diners?: Seat[]): void {
   b.geometry('linen', new THREE.CylinderGeometry(0.62, 0.66, 0.74, 14).translate(0, 0.37, 0), at(x, y, z), { size: [1.2, 0.8, 1.2], pos: new THREE.Vector3(x, y + 0.4, z), quat: Q });
   b.geometry('lampGold', new THREE.CylinderGeometry(0.03, 0.03, 0.2, 6).translate(0, 0.84, 0), at(x, y, z));
   for (let i = 0; i < seats; i++) {
@@ -15,6 +16,7 @@ export function diningTable(b: Builder, x: number, y: number, z: number, seats: 
     b.box('chairGreen', [0.48, 0.42, 0.46], new THREE.Vector3(cx, y + 0.21, cz), q, false);
     b.box('cushionOrange', [0.5, 0.07, 0.48], new THREE.Vector3(cx, y + 0.45, cz), q, false);
     b.box('chairGreen', [0.48, 0.55, 0.06], new THREE.Vector3(cx + Math.sin(a) * 0.22, y + 0.75, cz + Math.cos(a) * 0.22), q, false);
+    if (diners && Math.abs(Math.sin(cx * 12.9898 + cz * 78.233) * 43758.5) % 1 < 0.3) diners.push({ pos: new THREE.Vector3(cx - Math.sin(a) * 0.05, y, cz - Math.cos(a) * 0.05), yaw: a + Math.PI });
   }
 }
 
@@ -44,7 +46,7 @@ function chandelier(b: Builder, x: number, top: number, z: number, n: number, sp
  * Walkable glazed dining hall between x0..x1, z0..z1 on the deck at `y`: low wall, tall sea windows, white ceiling,
  * a door in the west end and the east end open into the pavilion; tables down both sides and pendant lamps.
  */
-export function wingHall(b: Builder, x0: number, x1: number, z0: number, z1: number, y: number): void {
+export function wingHall(b: Builder, x0: number, x1: number, z0: number, z1: number, y: number, diners?: Seat[]): void {
   const h = 4.1, len = x1 - x0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
   for (const z of [z0, z1]) {
     b.box('creamWall', [len, 0.9, 0.25], new THREE.Vector3(cx, y + 0.45, z), Q, false);
@@ -62,7 +64,7 @@ export function wingHall(b: Builder, x0: number, x1: number, z0: number, z1: num
   b.box('parquet', [len, 0.04, z1 - z0], new THREE.Vector3(cx, y + 0.02, cz), Q, false);
   for (let x = x0 + 1.2; x < x1; x += 2.4) b.box('greenTrim', [0.16, 0.22, z1 - z0], new THREE.Vector3(x, y + h - 0.12, cz), Q, false);
   for (let x = x0 + 3; x < x1 - 2; x += 4.2) {
-    for (const s of [-1, 1]) diningTable(b, x, y, cz + s * 3.6, 3, s > 0 ? Math.PI / 3 : 0);
+    for (const s of [-1, 1]) diningTable(b, x, y, cz + s * 3.6, 3, s > 0 ? Math.PI / 3 : 0, diners);
     chandelier(b, x + 2.1, y + h, cz, 3, 0.5);
   }
   for (let x = x0 + 5.1; x < x1 - 3; x += 8.4) for (const s of [-1, 1]) column(b, x, y, cz + s * 1.7, h, 0);
@@ -73,7 +75,7 @@ export function wingHall(b: Builder, x0: number, x1: number, z0: number, z1: num
  * columns, sea windows above a lattice balustrade, a gold-lit chandelier, tables round the ring; the facets facing
  * `openTo` (angles, 0 = +z) are left open. The upper storey, balconies, awnings and roof are shell only.
  */
-export function diningPavilion(b: Builder, x: number, y: number, z: number, r: number, openTo: number[]): void {
+export function diningPavilion(b: Builder, x: number, y: number, z: number, r: number, openTo: number[], diners?: Seat[]): void {
   const h = 3.8, ap = r * Math.cos(Math.PI / 8), fw = 2 * r * Math.sin(Math.PI / 8);
   for (let k = 0; k < 8; k++) {
     const a = (k * Math.PI) / 4;
@@ -108,11 +110,11 @@ export function diningPavilion(b: Builder, x: number, y: number, z: number, r: n
     b.box('greenTrim', [0.16, 0.24, r - 0.3], new THREE.Vector3(x + Math.sin(a) * r * 0.5, y + h - 0.14, z + Math.cos(a) * r * 0.5), yaw(a), false);
   }
   chandelier(b, x, y + h, z, 9, 1.3);
-  diningTable(b, x, y, z, 4, Math.PI / 4);
+  diningTable(b, x, y, z, 4, Math.PI / 4, diners);
   for (let k = 0; k < 8; k++) {
     const a = (k * Math.PI) / 4 + Math.PI / 8;
     if (openTo.some((o) => Math.abs(Math.atan2(Math.sin(a - o), Math.cos(a - o))) < 0.5)) continue;
-    diningTable(b, x + Math.sin(a) * r * 0.68, y, z + Math.cos(a) * r * 0.68, 3, a + Math.PI / 3);
+    diningTable(b, x + Math.sin(a) * r * 0.68, y, z + Math.cos(a) * r * 0.68, 3, a + Math.PI / 3, diners);
   }
 }
 

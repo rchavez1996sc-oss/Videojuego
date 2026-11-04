@@ -24,16 +24,13 @@ export class Player {
   private body: RAPIER.RigidBody;
   private collider: RAPIER.Collider;
   private ctrl: RAPIER.KinematicCharacterController;
-  private grounded = false;
-  private crouch = 0;
-  private slideT = 0;
+  private grounded = false; private crouch = 0; private slideT = 0;
   private slideDir = new THREE.Vector3();
   private exhausted = false;
   private lastVy = 0;
   stamina = 100;
-  private airT = 0;
-  private stepT = 0;
-  private down = false;
+  private airT = 0; private stepT = 0;
+  private recoverT = 0;
   private peakY = -Infinity;
   /** Q: running to a cover spot, then holding a crouch there until the player moves. */
   private coverGoal: THREE.Vector3 | null = null;
@@ -42,9 +39,7 @@ export class Player {
   /** Regeneration ceiling: drops to 50 once health falls below half, restored by medkits. */
   regenCap = 100;
   private sinceHit = 99;
-  sprinting = false;
-  landImpact = 0;
-  stepPhase = 0;
+  sprinting = false; landImpact = 0; stepPhase = 0;
   onMantle: (vault: boolean) => void = () => {};
   private mantle: { ledge: Ledge; start: THREE.Vector3; t: number; dur: number; step?: boolean; clip?: Climb } | null = null;
   private ladder: Ladder | null = null;
@@ -105,23 +100,19 @@ export class Player {
 
   /** Drops with a death clip; the body keeps animating where it fell until `respawn`, which gets it back up. */
   die(): void {
-    [this.mantle, this.ladder, this.down] = [null, null, true];
+    [this.mantle, this.ladder] = [null, null];
     const fall = pickDeath(this.world, this.position, this.yaw, [DEATHS[Math.floor(Math.random() * 5)]], this.collider.handle);
     this.model.root.position.add(fall.shift);
     this.model.die(fall.key);
   }
 
   respawn(feet: THREE.Vector3, yaw: number): void {
-    if (this.down) this.model.revive();
-    [this.down, this.peakY] = [false, -Infinity];
-    this.body.setTranslation({ x: feet.x, y: feet.y + HALF + RADIUS + 0.2, z: feet.z }, true);
+    [this.peakY, this.recoverT, this.speed, this.slideT, this.crouch] = [-Infinity, 0.9, 0, 0, 0];
+    this.body.setTranslation({ x: feet.x, y: feet.y + HALF + RADIUS + 0.02, z: feet.z }, true);
     this.vel.set(0, 0, 0);
-    this.hp = 100;
-    this.regenCap = 100;
-    this.stamina = 100;
-    this.yaw = yaw;
-    this.mantle = null;
+    [this.hp, this.regenCap, this.stamina, this.yaw, this.mantle] = [100, 100, 100, yaw, null];
     this.syncPosition();
+    this.model.revive(true);
   }
 
   get mantling(): boolean {
@@ -194,6 +185,7 @@ export class Player {
   update(dt: number, input: Input, camYaw: number, aiming: boolean, aimPitch: number, firing: boolean): void {
     if (this.mantle) return this.updateMantle(dt);
     if (this.ladder) return this.updateLadder(dt, input);
+    if ((this.recoverT -= dt) > 0) return this.settle(dt);
     if (input.down('KeyW')) {
       const l = ladderAt(this.position);
       const facing = new THREE.Vector3(-Math.sin(camYaw), 0, -Math.cos(camYaw));
@@ -285,6 +277,15 @@ export class Player {
     this.model.airborne = this.airT > 0.2;
     this.model.aiming = facing;
     this.model.animate(dt, this.speed, this.crouch, facing ? aimPitch : 0);
+  }
+
+  /** Freshly respawned: stands still on the spot, ignoring input, until the fade-in ends. */
+  private settle(dt: number): void {
+    this.ctrl.computeColliderMovement(this.collider, { x: 0, y: -2 * dt, z: 0 });
+    const m = this.ctrl.computedMovement(), p = this.body.translation();
+    this.body.setNextKinematicTranslation({ x: p.x, y: p.y + m.y, z: p.z });
+    [this.grounded, this.speed, this.peakY] = [true, 0, this.position.y];
+    this.model.animate(dt, 0, 0, 0);
   }
 
   syncPosition(): void {

@@ -39,9 +39,7 @@ export class Rig {
   private overlay: { key: string; t: number; from: number } | null = null;
   private nade: THREE.Mesh | null = null;
   private held: { key: string; action: THREE.AnimationAction } | null = null;
-  private lockT = 0; private aimT = 0;
-  private kick = 0;
-  private ikW = 0;
+  private lockT = 0; private aimT = 0; private kick = 0; private ikW = 0;
   dead = false; private isFar = false;
   private skip = 0; private acc = 0;
   private last = new THREE.Vector3();
@@ -231,11 +229,13 @@ export class Rig {
     this.dead = true;
   }
 
-  /** Back on their feet: plays the get-up clip before locomotion resumes. */
-  revive(): void {
+  /** Back on their feet: plays the get-up clip before locomotion resumes, or `stand` goes straight to idle. */
+  revive(stand = false): void {
     this.dead = false;
     this.mixer.stopAllAction();
-    this.held = null;
+    [this.held, this.lowKey, this.upKey] = [null, '', ''];
+    [this.move.x, this.move.y] = [0, 0];
+    if (stand) return void (this.lockT = 0);
     this.hold('getup', 1, true);
     this.lockT = this.durationOf('getup') * 0.9;
   }

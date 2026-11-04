@@ -39,6 +39,7 @@ export class Builder {
     if (!collide && this.world && size[1] <= 0.45 && Math.min(size[0], size[2]) >= 0.8 && mat !== 'none' && Math.abs(this.up.set(0, 1, 0).applyQuaternion(quat).y) > 0.995) {
       const long = size[0] >= size[2], half = (long ? size[0] : size[2]) / 2, axis = this.up.set(long ? 1 : 0, 0, long ? 0 : 1).applyQuaternion(quat);
       addStrip([new THREE.Vector2(pos.x - axis.x * half, pos.z - axis.z * half), new THREE.Vector2(pos.x + axis.x * half, pos.z + axis.z * half)], long ? size[2] : size[0], mat, pos.y + size[1] / 2);
+      if (this.body && !/water/i.test(mat)) setSurface(this.world.createCollider(RAPIER.ColliderDesc.cuboid(size[0] / 2, size[1] / 2, size[2] / 2).setTranslation(pos.x, pos.y, pos.z).setRotation({ x: quat.x, y: quat.y, z: quat.z, w: quat.w }), this.body).handle, SURFACE[mat] ?? guessSurface(mat));
     }
     if (collide && this.world && this.body) {
       const col = this.world.createCollider(

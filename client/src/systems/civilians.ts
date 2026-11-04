@@ -6,18 +6,23 @@ import type { CharKind } from '../render/characters';
 import { mulberry32 } from '../core/rng';
 import { onHit } from '../world/surfaces';
 import { innocents } from './blame';
+import { hideSpot, HIDE_RANGE } from './civilianHide';
 import type { Heightfield } from '../world/heightfield';
 import type { Lighting } from '../render/lighting';
 import type { StreetGraph } from '../world/barrio';
 
 const UP_AXIS = new THREE.Vector3(0, 1, 0), IDENTITY = { x: 0, y: 0, z: 0, w: 1 }, PROBE = new RAPIER.Capsule(0.45, 0.28);
 
-type Mood = 'walk' | 'idle' | 'panic' | 'gone' | 'dead';
+type Mood = 'walk' | 'idle' | 'panic' | 'hide' | 'gone' | 'dead';
 
 interface Civilian {
   model: Rig; body: RAPIER.RigidBody; collider: RAPIER.Collider;
   pos: THREE.Vector3; yaw: number; mood: Mood; node: number; target: number; exit: number;
   speed: number; timer: number; panicT: number; fallDir: THREE.Vector3; fallT: number; shadowed: boolean;
+  /** Blocked by others this long → walks through them for `passT` s (a crowd jammed at one node never untangles otherwise). */
+  stuckT: number; passT: number;
+  /** Startle before reacting; where they crouch (`hide`) and for how long after the last shot; where the shooting came from. */
+  reactT: number; hideAt: THREE.Vector3 | null; hideT: number; threat: THREE.Vector3;
 }
 
 export const SHIRTS = ['#b8342b', '#2f5e9e', '#e0c24a', '#3f7a3c', '#d9d4c7', '#6b3c7a', '#1e1e22', '#c46a2c', '#7aa7c7'];
@@ -59,7 +64,7 @@ export class Civilians {
       const collider = world.createCollider(RAPIER.ColliderDesc.capsule(0.5, 0.3), body);
       const c: Civilian = {
         model, body, collider, pos, yaw: 0, mood: rand() < 0.35 ? 'idle' : 'walk', node, target, exit: -1,
-        speed: 1.1 + rand() * 0.5, timer: 2 + rand() * 6, panicT: 0, fallDir: new THREE.Vector3(), fallT: 0, shadowed: true,
+        speed: 1.1 + rand() * 0.5, timer: 2 + rand() * 6, panicT: 0, fallDir: new THREE.Vector3(), fallT: 0, shadowed: true, stuckT: 0, passT: 0, reactT: 0, hideAt: null, hideT: 0, threat: new THREE.Vector3(),
       };
       this.list.push(c);
       this.group.add(model.root);
@@ -72,8 +77,17 @@ export class Civilians {
   alarm(at: THREE.Vector3, radius: number): void {
     this.calmT = 0;
     for (const c of this.list) {
-      if (c.mood === 'gone' || c.mood === 'dead' || c.pos.distanceTo(at) > radius) continue;
-      if (c.mood !== 'panic') {
+      const d = c.pos.distanceTo(at);
+      if (c.mood === 'gone' || c.mood === 'dead' || d > radius) continue;
+      if (c.mood === 'hide' && d > 6) {
+        c.hideT = 6 + Math.random() * 6;
+        continue;
+      }
+      c.threat.copy(at);
+      if (c.mood !== 'panic' && c.mood !== 'hide') c.reactT = 0.15 + Math.random() * 0.55;
+      const spot = c.mood !== 'hide' && d < HIDE_RANGE && Math.random() < 0.7 && c.collider.isEnabled() ? hideSpot(this.world, c.pos, at, c.collider) : null;
+      if (spot) Object.assign(c, { mood: 'hide', hideAt: spot, hideT: 6 + Math.random() * 6, speed: 4.6 + Math.random() * 1.2 });
+      else if (c.mood !== 'panic') {
         c.mood = 'panic';
         c.panicT = 0;
         c.speed = 4.6 + Math.random() * 1.2;
@@ -138,15 +152,20 @@ export class Civilians {
     }
   }
 
-  /** Walking straight into someone (police, squad, player, another passer-by) would shove them along: veer round or wait. */
-  private clearWay(c: Civilian, dir: THREE.Vector3): THREE.Vector3 | null {
+  /** Walking straight into someone (police, squad, player, another passer-by) would shove them along: veer round or wait; `pass` lets other passers-by through. */
+  private clearWay(c: Civilian, dir: THREE.Vector3, pass = false): THREE.Vector3 | null {
     for (const turn of [0, 1.1, -1.1]) {
       const d = dir.clone().applyAxisAngle(UP_AXIS, turn), at = { x: c.pos.x + d.x * 0.7, y: c.pos.y + 0.9, z: c.pos.z + d.z * 0.7 };
       let hit = false;
-      this.world.intersectionsWithShape(at, IDENTITY, PROBE, (o) => ((hit = !o.isSensor() && !!o.parent()?.isKinematic()), !hit), RAPIER.QueryFilterFlags.EXCLUDE_FIXED, undefined, c.collider);
+      this.world.intersectionsWithShape(at, IDENTITY, PROBE, (o) => ((hit = !o.isSensor() && !!o.parent()?.isKinematic()), !hit), RAPIER.QueryFilterFlags.EXCLUDE_FIXED, undefined, c.collider, undefined, pass ? (o) => !innocents.has(o.handle) : undefined);
       if (!hit) return d;
     }
     return null;
+  }
+
+  private face(c: Civilian, at: THREE.Vector3, dt: number): void {
+    const want = Math.atan2(-(at.x - c.pos.x), -(at.z - c.pos.z));
+    c.yaw += Math.atan2(Math.sin(want - c.yaw), Math.cos(want - c.yaw)) * Math.min(1, dt * 8);
   }
 
   update(dt: number, player: THREE.Vector3): void {
@@ -159,7 +178,16 @@ export class Civilians {
       }
       let moving = c.mood !== 'idle';
       const away = c.pos.distanceToSquared(this.camera.position) > 75 * 75;
-      if (c.mood === 'idle') {
+      if (c.reactT > 0 || (c.mood === 'hide' && c.pos.distanceToSquared(c.hideAt!.clone().setY(c.pos.y)) < 0.16)) {
+        moving = false;
+        this.face(c, c.threat, dt);
+        if ((c.reactT -= dt) <= 0 && c.mood === 'hide' && (c.hideT -= dt) <= 0) Object.assign(c, { mood: 'panic', panicT: 0, target: this.fleeNeighbor(c.node, c.threat) });
+      } else if (c.mood === 'hide') {
+        const to = c.hideAt!.clone().sub(c.pos).setY(0), d = to.length(), dir = this.clearWay(c, to.divideScalar(d), true) ?? to;
+        c.pos.addScaledVector(dir, Math.min(d, c.speed * dt));
+        c.pos.y = this.groundAt(c.pos.x, c.pos.z);
+        this.face(c, c.hideAt!, dt);
+      } else if (c.mood === 'idle') {
         c.timer -= dt;
         if (c.timer <= 0) {
           c.mood = 'walk';
@@ -183,8 +211,11 @@ export class Civilians {
             c.target = options[Math.floor(Math.random() * options.length)];
           }
         } else {
-          const dir = away ? to.divideScalar(d) : this.clearWay(c, to.divideScalar(d));
+          const dir = away ? to.divideScalar(d) : this.clearWay(c, to.divideScalar(d), (c.passT -= dt) > 0);
+          c.stuckT = dir ? 0 : c.stuckT + dt;
+          if (c.stuckT > (c.mood === 'panic' ? 0.5 : 1.5)) [c.stuckT, c.passT] = [0, 1.5];
           if (dir) c.pos.addScaledVector(dir, Math.min(d, c.speed * dt));
+          else moving = false;
           c.pos.y = this.groundAt(c.pos.x, c.pos.z);
           const want = Math.atan2(-to.x, -to.z);
           c.yaw += Math.atan2(Math.sin(want - c.yaw), Math.cos(want - c.yaw)) * Math.min(1, dt * 8);
@@ -208,7 +239,7 @@ export class Civilians {
       if (near !== c.shadowed) c.model.castShadow = c.shadowed = near;
       c.model.root.position.copy(c.pos).setY(c.pos.y - 0.03);
       c.model.root.rotation.set(0, c.yaw + Math.PI, 0);
-      c.model.scared = c.mood === 'panic';
+      c.model.scared = c.mood === 'panic' || c.mood === 'hide';
       if (!away) c.model.animate(dt, moving ? c.speed : 0, 0, 0);
     }
   }

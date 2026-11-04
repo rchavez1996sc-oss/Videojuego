@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import type { Rig } from '../../entities/rig';
+import { innocents } from '../../systems/blame';
+
+/** Other bystanders never block a fleer (they'd jam in a running-on-the-spot knot): only walls, cars and armed men do. */
+const solid = (c: RAPIER.Collider) => !innocents.has(c.handle);
 
 const TURNS = [0, 0.8, -0.8, 1.6, -1.6, 2.4, -2.4];
 
@@ -28,18 +32,21 @@ export function stepFlee(f: Fleer, dt: number, world: RAPIER.World, camera: THRE
     f.col.setEnabled(false);
     return false;
   }
+  let moved = false;
   for (const turn of TURNS) {
     const dir = f.dir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), turn);
-    const hit = world.castRay(new RAPIER.Ray({ x: p.x, y: p.y + 0.8, z: p.z }, dir), 1.6, true, undefined, undefined, f.col);
+    const hit = world.castRay(new RAPIER.Ray({ x: p.x, y: p.y + 0.8, z: p.z }, dir), 1.6, true, undefined, undefined, f.col, undefined, solid);
     if (hit) continue;
     f.dir.lerp(dir, Math.min(1, dt * 6)).normalize();
     p.addScaledVector(f.dir, f.speed * dt);
+    moved = true;
     break;
   }
+  if (!moved) f.dir.negate();
   const down = world.castRay(new RAPIER.Ray({ x: p.x, y: p.y + 1.2, z: p.z }, { x: 0, y: -1, z: 0 }), 3, true, undefined, undefined, f.col);
   if (down) p.y += (p.y + 1.2 - down.timeOfImpact - p.y) * Math.min(1, dt * 12);
   f.rig.root.rotation.y = Math.atan2(f.dir.x, f.dir.z);
   f.col.setTranslation({ x: p.x, y: p.y + 0.9, z: p.z });
-  f.rig.tick(dt * f.speed / 3.9);
+  if (moved) f.rig.tick(dt * f.speed / 3.9);
   return true;
 }

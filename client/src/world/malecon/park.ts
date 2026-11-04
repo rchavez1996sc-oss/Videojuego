@@ -39,6 +39,14 @@ export function ribbon(b: Builder, hf: Heightfield, pts: THREE.Vector2[], width:
   geo.computeVertexNormals();
   b.geometry(mat, geo, new THREE.Matrix4());
   addStrip(pts, width, mat);
+  const p3 = pts.map((p) => new THREE.Vector3(p.x, hf.heightAt(p.x, p.y) + lift, p.y)), m = new THREE.Matrix4();
+  for (let i = 0; i + 1 < p3.length; i++) {
+    const dir = p3[i + 1].clone().sub(p3[i]), len = dir.length();
+    if (len < 0.05) continue;
+    const x = new THREE.Vector3().crossVectors(UP, dir.normalize()).normalize(), y = new THREE.Vector3().crossVectors(dir, x);
+    const q = new THREE.Quaternion().setFromRotationMatrix(m.makeBasis(x, y, dir));
+    b.box('none', [width, 0.1, len + 0.1], p3[i].clone().lerp(p3[i + 1], 0.5).addScaledVector(y, -0.05), q, true);
+  }
 }
 
 /** Green tubular railing: posts, two rails and X braces, one collider per bay. */
