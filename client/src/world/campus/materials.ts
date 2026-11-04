@@ -11,7 +11,7 @@ import { barsTexture } from './grounds';
 /** Painted plaster walls of the faculties (photos: cream Química, white/grey Geológica, yellow Comedor…). */
 const WALLS: Record<string, string> = {
   uniCream: '#e6dcc4', uniGrey: '#c8c6c0', uniWhite: '#efeee9', uniYellow: '#e3b443', uniRed: '#b02a22', uniFrame: '#d5d3cd',
-  uniTerracotta: '#a35a3c', socBeige: '#c9b9a3', uniOrange: '#d9772e', roofWhite: '#e9e8e3', uniStone: '#9a958c', uniSand: '#d2bf98', uniTaupe: '#968d80', uniOchre: '#d8ad2c', uniBrown: '#7c4a2c', uniBlue: '#4f86c9',
+  uniTerracotta: '#a35a3c', socBeige: '#c9b9a3', uniOrange: '#d9772e', roofWhite: '#e9e8e3', uniStone: '#9a958c', uniSand: '#d2bf98', uniTaupe: '#968d80', uniOchre: '#d8ad2c', uniBrown: '#7c4a2c', uniBlue: '#4f86c9', letBlue: '#8fb6dd', letNavy: '#2f58a3',
 };
 
 export function campusMaterials(lighting: Lighting): Record<string, THREE.Material> {
@@ -20,6 +20,7 @@ export function campusMaterials(lighting: Lighting): Record<string, THREE.Materi
   const laja = photo('laja') ?? fs, flags = photo('plazaFlag') ?? fs, slate = photo('slateDark') ?? stone;
   const m: Record<string, THREE.Material> = {
     bioGlass: std('bioGlass', { color: '#8e9ca2', roughness: 0.1, metalness: 0.55, envMapIntensity: 1.3 }),
+    paneGrid: std('paneGrid', { map: paneGrid(), roughness: 0.25, metalness: 0.3 }),
     louvre: std('louvre', { map: louvreTex(), color: '#d4d8da', roughness: 0.4, metalness: 0.6 }),
     winGlass: std('winGlass', { color: '#4d5f6a', roughness: 0.08, metalness: 0.7, envMapIntensity: 1.4 }),
     darkGlass: std('darkGlass', { color: '#15191d', roughness: 0.05, metalness: 0.85, envMapIntensity: 1.6 }),
@@ -135,6 +136,23 @@ function louvreTex(): THREE.CanvasTexture {
       g.fillStyle = '#e4e8ea'; g.fillRect(0, y, s, 5);
       g.fillStyle = '#5a6064'; g.fillRect(0, y + 5, s, 1);
     }
+  });
+}
+
+/** Steel-framed window wall (Letras): two units per 2 m, six panes each, some frosted, some hopper panes tilted open. */
+function paneGrid(): THREE.CanvasTexture {
+  return canvasTex(256, (g, s) => {
+    g.fillStyle = '#d9dcdc';
+    g.fillRect(0, 0, s, s);
+    const cw = s / 2, rh = s / 6;
+    for (let c = 0; c < 2; c++) for (let r = 0; r < 6; r++) {
+      const v = Math.random(), x = c * cw + 5, y = r * rh + 4;
+      g.fillStyle = v < 0.25 ? '#c9d2d6' : v < 0.4 ? '#8c9aa2' : `rgb(${70 + v * 40},${84 + v * 40},${96 + v * 40})`;
+      g.fillRect(x, y, cw - 10, rh - 8);
+      if (v > 0.85) { g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(x, y + rh - 16, cw - 10, 6); }
+    }
+    g.fillStyle = '#a7adb0';
+    for (let c = 0; c <= 2; c++) g.fillRect(c * cw - 3, 0, 6, s);
   });
 }
 

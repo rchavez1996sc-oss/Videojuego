@@ -17,7 +17,7 @@ type At = (x: number, y: number, z: number) => THREE.Vector3;
  * of slabs and fins over recessed glass (Industrial, old wing); `bio` steel curtain grid with coloured panes and louvres on
  * the long faces, blind travertine ends (Biológicas); `framed` punched windows in proud white frames (Biológicas annex).
  */
-export interface Skin { kind: NonNullable<CampusBuilding['skin']>; wall: string; spandrel: string; base: string; plain?: boolean }
+export interface Skin { kind: NonNullable<CampusBuilding['skin']>; wall: string; spandrel: string; base: string; plain?: boolean; glass?: string; frame?: string }
 
 function skinOf(def: CampusBuilding): Skin {
   const wall = WALLS[def.color] ?? 'uniGrey';
@@ -73,7 +73,8 @@ export function wing(b: Builder, at: At, q: THREE.Quaternion, cx: number, cz: nu
         put('winGlass', len - 0.2, 0.9, 0.06, 0, y0 + FLOOR - 0.55, 0.02);
         for (let i = 1; i < n * 2; i++) put('mullion', 0.06, 0.9, 0.1, -len / 2 + (i * bay) / 2, y0 + FLOOR - 0.55, 0.06);
       } else {
-        put('winGlass', len - 0.2, GLASS, 0.06, 0, y0 + SPANDREL + GLASS / 2, 0.02);
+        put(sk.glass ?? 'winGlass', len - 0.2, GLASS, 0.06, 0, y0 + SPANDREL + GLASS / 2, 0.02);
+        if (sk.frame) for (const y of [SPANDREL, SPANDREL + GLASS]) put(sk.frame, len, 0.14, 0.34, 0, y0 + y, 0.14);
         put(f === 0 ? sk.base : sk.spandrel, len, SPANDREL, 0.3, 0, y0 + SPANDREL / 2, 0.12);
         put(sk.wall, len, FLOOR - SPANDREL - GLASS, 0.3, 0, y0 + SPANDREL + GLASS + (FLOOR - SPANDREL - GLASS) / 2, 0.12);
         for (let i = 1; i < n; i++) {
@@ -84,7 +85,7 @@ export function wing(b: Builder, at: At, q: THREE.Quaternion, cx: number, cz: nu
         }
       }
     }
-    if (sk.kind === 'frame' || sk.kind === 'panels') for (let i = 0; i <= n; i += 2) put('uniFrame', 0.45, H + 0.4, 0.45, -len / 2 + Math.min(i, n) * bay, H / 2 + 0.2, 0.2);
+    if (sk.kind === 'frame' || sk.kind === 'panels') for (let i = 0; i <= n; i += 2) put(sk.frame ?? 'uniFrame', 0.45, H + 0.4, 0.45, -len / 2 + Math.min(i, n) * bay, H / 2 + 0.2, 0.2);
   };
   for (const s of [-1, 1]) {
     face(w - 0.3, 'x', s);
