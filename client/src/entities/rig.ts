@@ -6,6 +6,7 @@ import { dress, type Outfit } from './outfit';
 import { addWound } from './wounds';
 import { parts, pistolUpper } from './clipParts';
 import { chooseGait } from './gait';
+import { Lean } from './lean';
 import { supportHand } from './handIk';
 import type { Lighting } from '../render/lighting';
 
@@ -18,14 +19,10 @@ const HOLD_FIX: Record<string, { yaw: number; y: number }> = { ladder: { yaw: Ma
 /** Skinned Mixamo character with layered animation: legs from speed/direction, torso from stance and gestures. */
 export class Rig {
   readonly root = new THREE.Group();
-
-  readonly muzzle: THREE.Object3D;
-  readonly ejector: THREE.Object3D;
-  readonly weapon: THREE.Object3D;
+  readonly muzzle: THREE.Object3D; readonly ejector: THREE.Object3D; readonly weapon: THREE.Object3D;
   scared = false;
   /** Shouldered rifle (aiming, firing or in a firefight). */
-  aiming = false;
-  airborne = false;
+  aiming = false; airborne = false;
   /** Weapon put away (grenade in hand, climbing). */
   holster = false;
   private mixer: THREE.AnimationMixer;
@@ -41,14 +38,13 @@ export class Rig {
   private held: { key: string; action: THREE.AnimationAction } | null = null;
   private lockT = 0; private aimT = 0; private kick = 0; private ikW = 0;
   dead = false; private isFar = false;
-  private skip = 0; private acc = 0;
-  private last = new THREE.Vector3();
+  private skip = 0; private acc = 0; private last = new THREE.Vector3();
   /** Smoothed ground velocity in the body frame (forward, side): frame-time jitter must not flip the gait. */
   private move = new THREE.Vector2();
   private spine: THREE.Bone[];
   /** Spine before the aim bend: the mixer skips bones whose value did not change (still poses), so the bend must not pile up. */
   private bent: THREE.Quaternion[] = [];
-  private wounds = 0;
+  readonly lean = new Lean(); private wounds = 0;
   private idleKey = ['civ_idle', 'civ_idle', 'texting', 'look_around'].filter((k) => characters.clips.has(k))[Math.floor(Math.random() * 4)] ?? 'civ_stand';
 
   constructor(kind: CharKind, private lighting: Lighting, private armed = true, detailedGun = false, outfit?: Outfit, private gunModel: GunModel = 'ak') {
@@ -277,10 +273,14 @@ export class Rig {
     this.bent.forEach((q, i) => this.spine[i].quaternion.copy(q));
     this.bent.length = 0;
     this.mixer.update(step);
-    if (!this.dead && !this.held && this.armed) {
-      const bend = aimPitch / 3, k = this.kick;
+    this.lean.update(step, this.root.rotation.y, this.dead || this.held ? 0 : this.move.x);
+    if (!this.dead && !this.held && (this.armed || this.lean.active)) {
+      const bend = this.armed ? aimPitch / 3 : 0, k = this.kick;
       this.spine.forEach((b, i) => (this.bent[i] ??= new THREE.Quaternion()).copy(b.quaternion));
       for (const [i, b] of this.spine.entries()) b.rotateX(-bend - (i === 2 ? k * 0.07 : k * 0.025));
+      this.lean.apply(this.spine);
+    }
+    if (!this.dead && !this.held && this.armed) {
       this.kick = Math.max(0, this.kick - step * 14);
       this.ikW = THREE.MathUtils.damp(this.ikW, this.gunModel === 'pistol' && !this.holster && speed < 3 && (!this.overlay || this.overlay.key === 'hit') ? 1 : 0, 10, step);
       supportHand(this.inst.bones, this.inst.model, this.ikW);

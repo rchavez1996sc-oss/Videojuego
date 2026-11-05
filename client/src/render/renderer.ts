@@ -31,9 +31,9 @@ export class Renderer {
     this.composer.addPass(new RenderPass(scene, camera));
     {
       const ao = new N8AOPostPass(scene, camera);
-      ao.configuration.aoRadius = 2.5;
+      ao.configuration.aoRadius = 3;
       ao.configuration.distanceFalloff = 1.2;
-      ao.configuration.intensity = 2.2;
+      ao.configuration.intensity = 3;
       ao.configuration.halfRes = true;
       ao.configuration.depthAwareUpsampling = true;
       ao.setQualityMode(quality === 'ultra' ? 'Medium' : 'Low');

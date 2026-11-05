@@ -351,6 +351,12 @@ export function installDebug(c: DebugContext): void {
       c.frame(1 / 60);
       return `${kind}${i} @${p.x.toFixed(1)},${p.z.toFixed(1)}`;
     },
+    leanTest(i: number, roll: number, pitch = 0) {
+      const l = c.enemies.list[i].model.lean;
+      l.update = () => {};
+      [l.roll, l.pitch] = [roll, pitch];
+      return 'ok';
+    },
     woundTest(i: number, side = Math.PI) {
       const e = c.enemies.list[i], f = new THREE.Vector3(Math.sin(e.yaw + side), 0, Math.cos(e.yaw + side));
       for (const [y, s] of [[1.35, 0], [1.1, 0.12], [1.62, 0.05], [1.3, -0.15]]) e.damage(5, e.position.clone().add(new THREE.Vector3(0, y, 0)).addScaledVector(f, 0.4).add(new THREE.Vector3(f.z, 0, -f.x).multiplyScalar(s)));
