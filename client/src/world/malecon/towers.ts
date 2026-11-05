@@ -59,7 +59,7 @@ function storefronts(b: Builder, x0: number, w: number, zFace: number, s: 1 | -1
 /** Residential tower: facade box (one collider), sea-facing balconies with glass rails, lobby (or shops), roof plant. */
 function tower(t: Builder, b: Builder, x0: number, w: number, zFace: number, d: number, s: 1 | -1, floors: number, style: string, rand: () => number, shop?: ShopSign): { pos: THREE.Vector3; yaw: number } | null {
   const H = floors * FLOOR, cx = x0 + w / 2, cz = zFace - s * d / 2;
-  const banded = style !== 'glassWall' && rand() < 0.4;
+  const banded = style !== 'glassWall' && rand() < 0.25;
   t.box(banded ? 'glassWall' : style, [w, H + 0.6, d], new THREE.Vector3(cx, H / 2 - 0.3, cz), Q);
   const glass = style === 'glassWall';
   if (banded) {
@@ -82,6 +82,16 @@ function tower(t: Builder, b: Builder, x0: number, w: number, zFace: number, d: 
     }
   } else {
     for (let k = 0; k <= w / 3; k++) b.box('alu', [0.18, H, 0.35], new THREE.Vector3(x0 + k * 3, H / 2, zFace + s * 0.17), Q, false);
+  }
+  if (!glass && !banded && floors >= 12 && rand() < 0.35) {
+    let y = H + 0.3, ww = w, dd = d, zz = zFace;
+    for (let k = 0; k < 2 && ww > 12; k++) {
+      ww -= 4; dd -= 3; zz -= s * 2.5;
+      const h = FLOOR * (2 + Math.floor(rand() * 2));
+      t.box(style, [ww, h, dd], new THREE.Vector3(cx, y + h / 2, zz - s * dd / 2), Q);
+      b.box('railGlass', [ww + 2, 1, 0.05], new THREE.Vector3(cx, y + 0.5, zz + s * 2.3), Q, false);
+      y += h;
+    }
   }
   if (shop) storefronts(b, x0, w, zFace, s, shop, rand);
   else b.box('lobby', [w - 2, 2.7, 0.12], new THREE.Vector3(cx, 1.35, zFace + s * 0.07), Q, false);
@@ -130,7 +140,7 @@ export function buildTowers(t: Builder, b: Builder, def: MaleconDef, paints: str
         if (!front && !commercial && r < 0.16) casona(t, b, x, w, zFace, d, s, paints[Math.floor(rand() * paints.length)], rand);
         else {
           const floors = front ? 13 + Math.floor(rand() * 13) : 5 + Math.floor(rand() * (avenue ? 12 : 9));
-          const style = rand() < (front ? 0.18 : 0.08) ? 'glassWall' : FACADES[Math.floor(rand() * FACADES.length)];
+          const style = rand() < (front ? 0.1 : 0.06) ? 'glassWall' : FACADES[Math.floor(rand() * FACADES.length)];
           const guard = tower(t, b, x, w, zFace, d, s, floors, style, rand, commercial ? shop : undefined);
           if (guard) guards.push(guard);
           if (front && style !== 'glassWall') fronts.push({ x: x + w / 2, w, z: zFace, h: floors * FLOOR });
