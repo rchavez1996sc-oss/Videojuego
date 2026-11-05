@@ -200,7 +200,7 @@ async function boot(): Promise<void> {
   let freeCam = false;
   installDebug({
     extraLog: () => (civilians ? `civ:${civilians.list.map((c) => c.mood[0]).join('')}` : ''),
-    views: ch.views ?? [], tpc, hf, player, combat, enemies, grenades, pickups, renderer, shotMode, scene, squad, grenadeMode: nadeMode, objective, civilians: () => civilians?.present ?? [], world, nav, goal: () => objective?.position ?? defense?.goal, status: () => (defense ? defense.status() : objective ? `obj ${objective.position ? 'on' : '-'}` : '') + ` civ=${populace.casualties} lives=${lives}`,
+    views: ch.views ?? [], lighting, tpc, hf, player, combat, enemies, grenades, pickups, renderer, shotMode, scene, squad, grenadeMode: nadeMode, objective, civilians: () => civilians?.present ?? [], world, nav, goal: () => objective?.position ?? defense?.goal, status: () => (defense ? defense.status() : objective ? `obj ${objective.position ? 'on' : '-'}` : '') + ` civ=${populace.casualties} lives=${lives}`,
     frame: (dt) => frame(dt),
     setFreeCam: (v) => (freeCam = v),
     setSkipRender: (v) => (skipRender = v),

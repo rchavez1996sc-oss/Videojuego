@@ -5,7 +5,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { Builder } from '../world/buildingKit';
 import { car, mototaxi, type CarKind } from '../world/urbanProps';
 import { deliveryBike } from '../world/deliveryBike';
-import { onHit, setSurface } from '../world/surfaces';
+import { markGhost, onHit, setSurface } from '../world/surfaces';
 import { seatedPerson, seatedRig, SEATS } from '../entities/occupants';
 import type { Heightfield } from '../world/heightfield';
 import type { Lighting } from '../render/lighting';
@@ -52,7 +52,7 @@ export class Traffic {
     [this.xMin, this.xMax] = span;
     this.riders = new Riders(this.group, hf);
     const lanes = roads.flatMap((r) => Array<Road>(r.count).fill(r)), count = lanes.length;
-    const glass = lighting.setup(new THREE.MeshStandardMaterial({ color: '#2a3238', roughness: 0.1, metalness: 0.5, transparent: true, opacity: 0.35 }), 'glass-see');
+    const glass = lighting.setup(new THREE.MeshStandardMaterial({ color: '#1c2228', roughness: 0.05, metalness: 0.2, envMapIntensity: 1.6, transparent: true, opacity: 0.72 }), 'glass-see');
     const mats = { ...materials, glass };
     const bakeNoGlass = bake.map((g) => ({ ...g, keys: g.keys.filter((k) => k !== 'glass') }));
     const kinds: (CarKind | 'moto' | 'delivery')[] = ['combi', 'moto', 'tico', 'sedan', 'delivery', 'moto', 'combi', 'wagon', 'pickup', 'moto', 'tico', 'delivery'];
@@ -86,6 +86,7 @@ export class Traffic {
       const len = kind === 'delivery' ? 1.9 : kind === 'moto' ? 2.3 : kind === 'combi' ? 4.8 : 4.4;
       const body = this.world.createRigidBody(RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(0, -50, 0));
       const collider = this.world.createCollider(RAPIER.ColliderDesc.cuboid(kind === 'delivery' ? 0.4 : 0.9, 0.8, len / 2).setTranslation(0, 0.8, 0), body);
+      markGhost(collider.handle);
       setSurface(collider.handle, 'metal');
       const dir = i % 2 ? 1 : -1;
       const cruise = kind === 'delivery' ? 9 : kind === 'moto' ? 7 : kind === 'combi' ? 11 : 10;

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
-import { setPorous, setSurface, type Surface } from './surfaces';
+import { markGhost, setPorous, setSurface, type Surface } from './surfaces';
 import { addStrip } from './groundStrips';
 import { cover } from '../ai/cover';
 
@@ -53,6 +53,7 @@ export class Builder {
         this.body,
       );
       setSurface(col.handle, mat === 'grate' ? 'metal' : SURFACE[mat] ?? guessSurface(mat));
+      if (mat === 'none' || mat === 'grate' || mat === 'glasswall') markGhost(col.handle);
       if (mat === 'grate' || mat === 'glasswall') setPorous(col.handle, mat === 'grate' ? 0.45 : 1);
       else if (mat !== 'roof' && mat !== 'glasswall') cover.addBox(pos, size, quat);
     }

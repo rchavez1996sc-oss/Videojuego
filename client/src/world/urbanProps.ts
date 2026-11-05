@@ -54,6 +54,18 @@ export function wheel(b: Builder, at: (x: number, y: number, z: number) => THREE
   b.geometry('rim', new THREE.CylinderGeometry(r * 0.58, r * 0.58, w + 0.02, 10).rotateZ(Math.PI / 2), m);
 }
 
+/** Window band of a combi/micro: dark panes with black rubber frames between painted pillars, windscreen and rear glass. */
+function busWindows(b: Builder, at: (x: number, y: number, z: number) => THREE.Vector3, q: THREE.Quaternion, w: number, belt: number, top: number): void {
+  const h = top - belt - 0.28, y = belt + 0.1 + h / 2, x = w / 2 * 0.92 + 0.012;
+  for (const s of [1, -1]) for (let z = -1.95; z < 1.45; z += 0.84) {
+    b.box('glass', [0.02, h, 0.72], at(s * x, y, z + 0.36), q, false);
+    b.box('plastic', [0.025, h + 0.06, 0.04], at(s * (x - 0.003), y, z), q, false);
+  }
+  b.box('glass', [w * 0.8, h + 0.12, 0.02], at(0, y + 0.02, 2.27), q.clone().multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -0.12)), false);
+  b.box('plastic', [0.05, h + 0.12, 0.03], at(0, y + 0.02, 2.275), q, false);
+  b.box('glass', [w * 0.75, h * 0.8, 0.02], at(0, y + 0.05, -2.38), q, false);
+}
+
 /** Car wheel: tyre with rounded sidewall, five-spoke rim facing out on either side. */
 function carWheel(b: Builder, at: (x: number, y: number, z: number) => THREE.Vector3, q: THREE.Quaternion, x: number, z: number, r: number, w: number): void {
   const parts = WHEELS.get(r) ?? WHEELS.set(r, wheelParts(r, w)).get(r)!;
@@ -167,9 +179,11 @@ export function car(b: Builder, pos: THREE.Vector3, yaw: number, paint: string, 
   const belt = kind === 'combi' ? 1.2 : kind === 'pickup' ? 1.02 : 0.88, boxy = kind === 'combi';
   const body = carBody(shape, d.w, belt, Math.min(...shape.map(([, y]) => y)), boxy);
   g(paint, body.lower);
-  if (body.cabin) g('glass', body.cabin);
+  if (body.cabin) g(boxy ? paint : 'glass', body.cabin);
+  if (boxy) busWindows(b, at, q, d.w, belt, Math.max(...shape.map(([, y]) => y)));
   if (body.roof) g(paint, body.roof);
   const glass = GLASS[kind];
+  if (kind !== 'combi') b.box('plastic', [d.w * 0.82, 0.16, 0.42], at(0, belt + 0.02, glass[1][0] - 0.38), q, false);
   const roofZ = [glass[2][0], glass[3][0]], midZ = (roofZ[0] + roofZ[1]) / 2, topY = Math.max(...shape.map(([, y]) => y));
   if (kind !== 'combi') {
     const lean = Math.atan2(d.w / 2 * (0.95 - 0.8), topY - belt);

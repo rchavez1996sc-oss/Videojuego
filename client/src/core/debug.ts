@@ -18,6 +18,7 @@ import type { Objective } from '../systems/objective';
 import type { StreetNav } from '../ai/nav';
 import { playBot } from './bot';
 import { carShowcase } from './carShowcase';
+import type { Lighting } from '../render/lighting';
 
 export interface DebugContext {
   views: [number, number, number, number, number, number][];
@@ -37,6 +38,7 @@ export interface DebugContext {
   extraLog?: () => string;
   traffic?: () => Traffic | undefined;
   scene?: THREE.Scene;
+  lighting?: Lighting;
   squad?: Squad | null;
   grenadeMode?: GrenadeMode;
   objective?: Objective | null;
@@ -471,7 +473,7 @@ export function installDebug(c: DebugContext): void {
     programs: () => Object.entries((c.renderer.gl.info.programs ?? []).reduce((m: Record<string, number>, p: { name: string }) => ((m[p.name] = (m[p.name] ?? 0) + 1), m), {})).sort((a, b) => b[1] - a[1]).slice(0, 25),
     info: () => ({ calls: c.renderer.gl.info.render.calls, tris: c.renderer.gl.info.render.triangles, pos: c.player.position.toArray().map(Math.round), programs: c.renderer.gl.info.programs?.length, colliders: c.world?.colliders.len() }),
     /** Disables the nearest moving vehicle and logs every vehicle's state for 3 s. */
-    carShowcase: (x: number, z: number) => carShowcase(c.scene!, c.hf, x, z),
+    carShowcase: (x: number, z: number) => carShowcase(c.scene!, c.hf, x, z, c.lighting),
     vehicles(kind?: string) {
       const list = (c.traffic?.() as unknown as { list: { kind: string; x: number; z: number; dir: number }[] } | undefined)?.list ?? [];
       return list.filter((v) => !kind || v.kind === kind).map((v) => [v.x, c.hf.heightAt(v.x, v.z), v.z, v.dir > 0 ? Math.PI / 2 : -Math.PI / 2].map((n) => +n.toFixed(2)));

@@ -9,6 +9,17 @@ export function setSurface(handle: number, s: Surface): void {
   byCollider.set(handle, s);
 }
 
+const ghosts = new Set<number>();
+
+/** Invisible stand-in colliders (cover boxes, car bounds, ramps): bullets stop there but leave no hole in the air. */
+export function markGhost(handle: number): void {
+  ghosts.add(handle);
+}
+
+export function isGhost(handle: number): boolean {
+  return ghosts.has(handle);
+}
+
 const porous = new Map<number, number>();
 
 /** Fences, railings and mesh (a bullet sometimes slips through) or glass (`chance` 1: always, and the AI sees through). */

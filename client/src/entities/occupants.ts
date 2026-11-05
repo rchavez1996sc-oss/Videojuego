@@ -19,7 +19,7 @@ export function seatedPerson(lighting: Lighting, rand: () => number): THREE.Mesh
 
 const RIDERS: CharKind[] = ['civ_a', 'civ_b', 'civ_c'];
 /** Chair pose shins hang straight down; in a car they reach forward to the pedals (rad about the knee). */
-const CAR_KNEE = -0.75;
+const CAR_KNEE = -1.25, CAR_THIGH = -0.18;
 
 /**
  * A Mixamo civilian frozen in the sitting pose, facing +z with the hips at the returned group's origin (for open
@@ -30,7 +30,10 @@ export function seatedRig(lighting: Lighting, rand: () => number, inCar = false)
   const rig = new Rig(RIDERS[Math.floor(rand() * RIDERS.length)], lighting, false);
   rig.loop('sit');
   rig.tick(0.5 + rand());
-  if (inCar) for (const s of ['Left', 'Right']) rig.root.getObjectByName(`mixamorig${s}Leg`)!.rotateX(CAR_KNEE);
+  if (inCar) for (const s of ['Left', 'Right']) {
+    rig.root.getObjectByName(`mixamorig${s}UpLeg`)!.rotateX(CAR_THIGH);
+    rig.root.getObjectByName(`mixamorig${s}Leg`)!.rotateX(CAR_KNEE);
+  }
   rig.root.updateMatrixWorld(true);
   const knees = ['Left', 'Right'].map((s) => rig.root.getObjectByName(`mixamorig${s}Leg`)!.getWorldPosition(new THREE.Vector3()));
   const ahead = knees[0].add(knees[1]).multiplyScalar(0.5).sub(rig.hips());

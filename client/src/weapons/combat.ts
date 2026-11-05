@@ -12,7 +12,7 @@ import { Tracers } from '../fx/tracers';
 import { MuzzleFlash } from '../fx/muzzleFlash';
 import { Shells } from '../fx/shells';
 import { Blast } from '../fx/blast';
-import { SURFACE_FX, hitHandler, pierceChance, surfaceOf, type Surface } from '../world/surfaces';
+import { SURFACE_FX, hitHandler, isGhost, pierceChance, surfaceOf, type Surface } from '../world/surfaces';
 
 
 import type { Lighting } from '../render/lighting';
@@ -160,7 +160,7 @@ export class Combat {
     const falloff = travelled <= def.falloffStart ? 1 : THREE.MathUtils.lerp(1, def.falloffMin, Math.min(1, (travelled - def.falloffStart) / (def.range - def.falloffStart)));
     const handler = hitHandler(handle);
     if (handler && handler(def.damage * falloff, end) !== false) return;
-    this.impact(end, normal, surfaceOf(handle), toAim);
+    this.impact(end, normal, surfaceOf(handle), toAim, !isGhost(handle));
     this.afterHit(end, normal, surfaceOf(handle), toAim, handle, def.damage * falloff, def.range - travelled);
   }
 
@@ -190,13 +190,13 @@ export class Combat {
   private landed(hit: RAPIER.RayColliderHit & { normal: RAPIER.Vector }, from: THREE.Vector3, dir: THREE.Vector3, dmg: number): void {
     const end = from.clone().addScaledVector(dir, hit.timeOfImpact), h = hit.collider.handle, handler = hitHandler(h);
     if (handler && handler(dmg, end) !== false) return;
-    this.impact(end, new THREE.Vector3(hit.normal.x, hit.normal.y, hit.normal.z), surfaceOf(h), dir);
+    this.impact(end, new THREE.Vector3(hit.normal.x, hit.normal.y, hit.normal.z), surfaceOf(h), dir, !isGhost(h));
   }
 
-  impact(point: THREE.Vector3, normal: THREE.Vector3, surface: Surface, dir: THREE.Vector3): void {
+  impact(point: THREE.Vector3, normal: THREE.Vector3, surface: Surface, dir: THREE.Vector3, mark = true): void {
     const fx = SURFACE_FX[surface];
     const color = new THREE.Color(fx.dust);
-    this.decals.place(point, normal, fx.decal, new THREE.Color(fx.decalColor).multiplyScalar(3));
+    if (mark) this.decals.place(point, normal, fx.decal, new THREE.Color(fx.decalColor).multiplyScalar(3));
     for (let i = 0; i < 7; i++) {
       this.tmp.copy(normal).multiplyScalar(1 + Math.random() * 2.5).add(new THREE.Vector3((Math.random() - 0.5) * 1.6, Math.random() * 1.2, (Math.random() - 0.5) * 1.6));
       this.dust.emit({ pos: point.clone().addScaledVector(normal, 0.05), vel: this.tmp.clone(), color: color.clone().multiplyScalar(0.8 + Math.random() * 0.3), size: 0.12 + Math.random() * 0.12, grow: 0.9, life: 0.9 + Math.random() * 0.9, gravity: 0.6, drag: 2.5, alpha: 0.55 });

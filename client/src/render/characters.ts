@@ -15,12 +15,23 @@ interface Manifest { version?: number; characters: Record<CharKind, { near: stri
 export interface CharInstance { model: THREE.Object3D; near: THREE.SkinnedMesh[]; far: THREE.SkinnedMesh[]; bones: Map<string, THREE.Bone> }
 
 const BASE = `${import.meta.env.BASE_URL}assets/`;
-/** Generous pose-independent cull sphere from the bind-pose geometry (in the mesh's own, possibly quantized, space). */
-function bounds(m: THREE.SkinnedMesh): THREE.Sphere {
-  if (!m.geometry.boundingSphere) m.geometry.computeBoundingSphere();
-  const s = m.geometry.boundingSphere!.clone();
-  s.radius *= 1.6;
-  return s;
+/**
+ * One pose-independent cull sphere for the whole body, expressed in each mesh's own (possibly quantized) space: the
+ * union of all parts' bind spheres, doubled so a lying, sitting or climbing body stays inside. Per-part spheres
+ * (head, hair) culled a fallen body's face when zoomed in, since the head's bind sphere is 1.7 m up.
+ */
+function bodyBounds(meshes: THREE.SkinnedMesh[]): void {
+  const all = new THREE.Box3();
+  for (const m of meshes) {
+    if (!m.geometry.boundingSphere) m.geometry.computeBoundingSphere();
+    all.union(m.geometry.boundingSphere!.clone().applyMatrix4(m.matrixWorld).getBoundingBox(new THREE.Box3()));
+  }
+  const world = all.getBoundingSphere(new THREE.Sphere());
+  world.radius *= 2;
+  for (const m of meshes) {
+    const inv = m.matrixWorld.clone().invert();
+    m.boundingSphere = new THREE.Sphere(world.center.clone().applyMatrix4(inv), world.radius / m.matrixWorld.getMaxScaleOnAxis());
+  }
 }
 
 /** Same joints in the same order with the same bind pose: the meshes can share one bone texture upload per frame. */
@@ -126,18 +137,19 @@ class CharacterLibrary {
       if (o instanceof THREE.Bone) bones.set(o.name, o);
       if (o instanceof THREE.SkinnedMesh) near.push(o);
     });
-    near.forEach((m) => (m.boundingSphere = bounds(m)));
+    model.updateMatrixWorld(true);
     const shared = near[0].skeleton;
     for (const m of near.slice(1)) if (sameSkin(m.skeleton, shared)) m.bind(shared, m.bindMatrix);
     const far = proto.far.map((src) => {
       const m = new THREE.SkinnedMesh(src.geometry, src.material);
-      m.boundingSphere = bounds(m);
       near[0].parent!.add(m);
       const skel = sameSkin(src.skeleton, shared) ? shared : new THREE.Skeleton(src.skeleton.bones.map((b) => bones.get(b.name)!), src.skeleton.boneInverses);
       m.bind(skel, near[0].bindMatrix);
       m.visible = false;
       return m;
     });
+    model.updateMatrixWorld(true);
+    bodyBounds([...near, ...far]);
     const look = Math.floor(Math.random() * LOOKS);
     for (const m of [...near, ...far]) m.material = this.looks.get(m.material as THREE.Material)?.[look] ?? m.material;
     return { model, near, far, bones };
