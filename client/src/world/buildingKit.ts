@@ -112,7 +112,7 @@ export class Builder {
         boxProjectUV(merged, uvScale);
         const m = new THREE.Mesh(merged, material);
         m.receiveShadow = true;
-        m.castShadow = !material.transparent && !/glass|globe|tube|shade|lamp|lit$/i.test(material.name);
+        m.castShadow = !material.transparent && !/glass|globe|tube|shade|lamp|lit$|^tire$|^rim$/i.test(material.name);
         out.push(m);
       }
     };

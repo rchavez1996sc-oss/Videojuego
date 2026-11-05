@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { carBody, topAt, wheelParts } from './carBody';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import type { Builder } from './buildingKit';
 import type { Heightfield } from './heightfield';
 
@@ -51,6 +53,15 @@ export function wheel(b: Builder, at: (x: number, y: number, z: number) => THREE
   b.geometry('tire', new THREE.CylinderGeometry(r, r, w, 16).rotateZ(Math.PI / 2), m);
   b.geometry('rim', new THREE.CylinderGeometry(r * 0.58, r * 0.58, w + 0.02, 10).rotateZ(Math.PI / 2), m);
 }
+
+/** Car wheel: tyre with rounded sidewall, five-spoke rim facing out on either side. */
+function carWheel(b: Builder, at: (x: number, y: number, z: number) => THREE.Vector3, q: THREE.Quaternion, x: number, z: number, r: number, w: number): void {
+  const parts = WHEELS.get(r) ?? WHEELS.set(r, wheelParts(r, w)).get(r)!;
+  const m = new THREE.Matrix4().compose(at(x, r, z), q, new THREE.Vector3(1, 1, 1)).multiply(new THREE.Matrix4().makeRotationY(x < 0 ? Math.PI : 0));
+  b.geometry('tire', parts.tire, m);
+  b.geometry('rim', parts.rim, m);
+}
+const WHEELS = new Map<number, ReturnType<typeof wheelParts>>();
 
 /** Parked three-wheeled mototaxi: motorcycle front (fork, tank, bars, lamp) and a covered passenger cab. Acts as low cover. */
 export function mototaxi(b: Builder, pos: THREE.Vector3, yaw: number, paint: string): void {
@@ -153,21 +164,30 @@ export function car(b: Builder, pos: THREE.Vector3, yaw: number, paint: string, 
   const q = new THREE.Quaternion().setFromAxisAngle(UP, yaw);
   const at = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z).applyQuaternion(q).add(pos);
   const g = (mat: string, geo: THREE.BufferGeometry) => b.geometry(mat, geo, new THREE.Matrix4().compose(pos, q, new THREE.Vector3(1, 1, 1)));
-  const belt = kind === 'combi' ? 1.2 : kind === 'pickup' ? 1.02 : 0.88;
-  g(paint, profile(shape.map(([z, y]) => [z, Math.min(y, belt)] as [number, number]), d.w));
+  const belt = kind === 'combi' ? 1.2 : kind === 'pickup' ? 1.02 : 0.88, boxy = kind === 'combi';
+  const body = carBody(shape, d.w, belt, Math.min(...shape.map(([, y]) => y)), boxy);
+  g(paint, body.lower);
+  if (body.cabin) g('glass', body.cabin);
+  if (body.roof) g(paint, body.roof);
   const glass = GLASS[kind];
-  g('glass', profile(glass, d.w + 0.02));
   const roofZ = [glass[2][0], glass[3][0]], midZ = (roofZ[0] + roofZ[1]) / 2, topY = Math.max(...shape.map(([, y]) => y));
-  b.box(paint, [d.w - 0.06, 0.06, Math.abs(roofZ[0] - roofZ[1]) + 0.04], at(0, Math.max(glass[2][1], glass[3][1]) + 0.02, midZ), q, false);
-  if (kind !== 'combi') b.box(paint, [d.w + 0.03, topY - belt - 0.05, 0.1], at(0, (topY + belt) / 2, midZ), q, false);
+  if (kind !== 'combi') {
+    const lean = Math.atan2(d.w / 2 * (0.95 - 0.8), topY - belt);
+    for (const s of [1, -1]) {
+      for (const [z, wz] of [[midZ, 0.13], [glass[1][0] - 0.05, 0.08], [glass[0][0] + 0.08, 0.16]] as const) {
+        const top = topAt(shape, z) - 0.04, y = (top + belt) / 2, hw = d.w / 2 * (0.95 + 0.8) / 2;
+        b.box(paint, [0.05, top - belt, wz], at(s * hw, y, z), q.clone().multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), s * lean)), false);
+      }
+    }
+  }
   if (kind === 'pickup') for (const s of [1, -1]) b.box(paint, [0.07, 0.35, 2.15], at(s * (d.w / 2 - 0.035), 1.17, -1.4), q, false);
   if (kind === 'combi') b.box('stripe', [d.w + 0.02, 0.16, d.l - 0.5], at(0, 0.8, 0), q, false);
   if (kind === 'tico') b.box('checker', [0.5, 0.15, 0.25], at(0, topY + 0.08, midZ), q, false);
   const zf = d.l / 2, wheelZ = d.l / 2 - (kind === 'tico' ? 0.6 : 0.8);
   for (const s of [1, -1]) {
-    b.box('plastic', [d.w + 0.04, 0.2, 0.16], at(0, 0.45, s * (zf + 0.02)), q, false);
-    b.box('plate', [0.42, 0.13, 0.02], at(0, 0.46, s * (zf + 0.11)), q, false);
-    for (const x of [-1, 1]) b.box(s > 0 ? 'light' : 'tail', [0.3, 0.13, 0.05], at(x * (d.w / 2 - 0.24), s > 0 ? 0.68 : 0.78, s * (zf + 0.01)), q, false);
+    b.geometry('plastic', new RoundedBoxGeometry(d.w * (boxy ? 0.98 : 0.86), 0.2, 0.2, 2, 0.07), new THREE.Matrix4().compose(at(0, 0.45, s * (zf - 0.02)), q, new THREE.Vector3(1, 1, 1)));
+    b.box('plate', [0.42, 0.13, 0.02], at(0, 0.46, s * (zf + 0.085)), q, false);
+    for (const x of [-1, 1]) b.geometry(s > 0 ? 'light' : 'tail', new RoundedBoxGeometry(0.3, 0.13, 0.08, 1, 0.025), new THREE.Matrix4().compose(at(x * (d.w / 2 - (boxy ? 0.2 : 0.36)), s > 0 ? 0.68 : 0.78, s * (zf - 0.035)), q, new THREE.Vector3(1, 1, 1)));
     b.box('plastic', [0.07, 0.1, 0.16], at(s * (d.w / 2 + 0.05), belt + 0.08, glass[1][0] - 0.15), q, false);
   }
   b.box('plastic', [d.w * 0.5, 0.16, 0.03], at(0, 0.62, zf + 0.01), q, false);
@@ -182,7 +202,8 @@ export function car(b: Builder, pos: THREE.Vector3, yaw: number, paint: string, 
   if (kind === 'combi') for (const z of [-1.6, -0.4, 0.8]) b.box('bars', [1.24, 0.04, 0.04], at(0, topY + 0.14, z), q, false);
   for (const [x, z] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) {
     b.box('plastic', [0.06, 0.12, 0.8], at(x * (d.w / 2 + 0.005), 0.66, z * wheelZ), q, false);
-    wheel(b, at, q, x * (d.w / 2 - 0.13), z * wheelZ, 0.31, 0.21);
+    carWheel(b, at, q, x * (d.w / 2 - 0.13), z * wheelZ, 0.31, 0.21);
+    b.geometry('plastic', new THREE.TorusGeometry(0.4, 0.035, 3, 9, Math.PI).rotateY(Math.PI / 2), new THREE.Matrix4().compose(at(x * (d.w / 2 - 0.005), 0.33, z * wheelZ), q, new THREE.Vector3(1, 1, 1)));
   }
   b.box('none', [d.w, topY - 0.1, d.l], at(0, (topY + 0.1) / 2, 0), q, true);
 }
