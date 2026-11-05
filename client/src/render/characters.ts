@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { smoothClip } from './smoothClips';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
@@ -75,7 +76,7 @@ class CharacterLibrary {
     const get = (url: string) => loader.loadAsync(`${BASE}${url}?v=${manifest.version ?? 0}`);
     const petsReady = pets.load(lighting, manifest.version ?? 0, manifest.pets);
     const [anims, ...models] = await Promise.all([get(manifest.animations), ...Object.values(manifest.characters).flatMap((c) => [get(c.near), get(c.far)])]);
-    for (const clip of anims.animations) this.clips.set(clip.name, clip);
+    for (const clip of anims.animations) this.clips.set(clip.name, smoothClip(clip));
     const walk = this.clips.get('civ_walk');
     if (walk) this.clips.set('civ_stand', still(walk, 'civ_stand', walk.duration * STAND_AT));
     const shoot = this.clips.get('p_shoot');

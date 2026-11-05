@@ -8,6 +8,8 @@ import { pickDeath, DEATHS } from './deathFall';
 import { findLedge, mantlePath, stepLedge, fallDamage, CLIMBS, type Climb, type Ledge, steepContact, ridgeUnderFeet } from './mantle';
 import { difficulty } from '../core/difficulty';
 import { ladderAt, type Ladder } from '../world/ladders';
+import { floorAt, stepAssist } from '../physics/floor';
+import { surfaceTop } from '../world/groundStrips';
 
 /** The player's FLS dress: red scarf and arm bands. */
 const OUTFIT: Outfit = { color: '#8e1b14', bands: ['Left', 'Right'], scarf: '#8e1b14' };
@@ -18,16 +20,14 @@ const RADIUS = 0.35, HALF = 0.55;
 export class Player {
   readonly model: Rig;
   readonly position = new THREE.Vector3();
-  yaw = 0;
-  speed = 0;
+  yaw = 0; speed = 0;
   private vel = new THREE.Vector3();
   private body: RAPIER.RigidBody;
   private collider: RAPIER.Collider;
   private ctrl: RAPIER.KinematicCharacterController;
   private grounded = false; private crouch = 0; private slideT = 0;
   private slideDir = new THREE.Vector3();
-  private exhausted = false;
-  private lastVy = 0;
+  private exhausted = false; private lastVy = 0;
   stamina = 100;
   private airT = 0; private stepT = 0;
   private recoverT = 0;
@@ -37,9 +37,7 @@ export class Player {
   private inCover = false;
   hp = 100;
   /** Regeneration ceiling: drops to 50 once health falls below half, restored by medkits. */
-  regenCap = 100;
-  private sinceHit = 99;
-  sprinting = false; landImpact = 0; stepPhase = 0;
+  regenCap = 100; private sinceHit = 99; sprinting = false; landImpact = 0; stepPhase = 0;
   onMantle: (vault: boolean) => void = () => {};
   private mantle: { ledge: Ledge; start: THREE.Vector3; t: number; dur: number; step?: boolean; clip?: Climb } | null = null;
   private ladder: Ladder | null = null;
@@ -50,7 +48,7 @@ export class Player {
     this.body = world.createRigidBody(RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(spawn.x, spawn.y + HALF + RADIUS + 0.2, spawn.z));
     this.collider = world.createCollider(RAPIER.ColliderDesc.capsule(HALF, RADIUS), this.body);
     this.ctrl = world.createCharacterController(0.05);
-    this.ctrl.enableAutostep(0.45, 0.25, true);
+    this.ctrl.enableAutostep(0.45, 0.1, true);
     this.ctrl.enableSnapToGround(0.5);
     this.ctrl.setMaxSlopeClimbAngle(THREE.MathUtils.degToRad(48));
     this.ctrl.setSlideEnabled(true);
@@ -108,7 +106,7 @@ export class Player {
 
   respawn(feet: THREE.Vector3, yaw: number): void {
     [this.peakY, this.recoverT, this.speed, this.slideT, this.crouch] = [-Infinity, 0.9, 0, 0, 0];
-    this.body.setTranslation({ x: feet.x, y: feet.y + HALF + RADIUS + 0.02, z: feet.z }, true);
+    this.body.setTranslation({ x: feet.x, y: floorAt(this.world, feet.x, feet.y, feet.z) + HALF + RADIUS + 0.02, z: feet.z }, true);
     this.vel.set(0, 0, 0);
     [this.hp, this.regenCap, this.stamina, this.yaw, this.mantle] = [100, 100, 100, yaw, null];
     this.syncPosition();
@@ -247,7 +245,7 @@ export class Player {
     this.vel.y -= GRAVITY * dt;
 
     this.ctrl.computeColliderMovement(this.collider, { x: this.vel.x * dt, y: this.vel.y * dt, z: this.vel.z * dt });
-    const m = this.ctrl.computedMovement();
+    const m = stepAssist(this.world, this.ctrl, { x: this.vel.x * dt, z: this.vel.z * dt }, this.ctrl.computedMovement(), this.position, RADIUS);
     const wasGrounded = this.grounded;
     const falling = this.peakY - this.position.y > 6, slide = steepContact(this.ctrl, falling);
     this.grounded = this.ctrl.computedGrounded() && !slide;
@@ -292,7 +290,7 @@ export class Player {
     const p = this.body.translation();
     this.position.set(p.x, p.y - HALF - RADIUS, p.z);
     this.model.root.position.copy(this.position);
-    this.model.root.position.y -= 0.03 + Math.min(this.speed / 6, 1) * 0.03;
+    this.model.root.position.y = surfaceTop(p.x, this.position.y, p.z) - 0.03 - Math.min(this.speed / 6, 1) * 0.03;
     this.model.root.rotation.y = this.yaw + Math.PI;
   }
 

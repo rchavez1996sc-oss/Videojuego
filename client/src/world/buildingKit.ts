@@ -27,6 +27,9 @@ export class Builder {
   private up = new THREE.Vector3();
 
   /** Pass `null` world/body to build visual-only meshes (e.g. moving vehicles) without static colliders. */
+  /** Terrain height; with it, flat slabs get a floor collider only where they stand ≥ 9 cm proud of the ground. */
+  ground?: (x: number, z: number) => number;
+
   constructor(private world: RAPIER.World | null, private body: RAPIER.RigidBody | null) {}
 
   box(mat: string, size: [number, number, number], pos: THREE.Vector3, quat: THREE.Quaternion, collide = true): void {
@@ -40,7 +43,7 @@ export class Builder {
     if (!collide && this.world && size[1] <= 0.45 && Math.min(size[0], size[2]) >= 0.8 && mat !== 'none' && Math.abs(this.up.set(0, 1, 0).applyQuaternion(quat).y) > 0.995) {
       const long = size[0] >= size[2], half = (long ? size[0] : size[2]) / 2, axis = this.up.set(long ? 1 : 0, 0, long ? 0 : 1).applyQuaternion(quat);
       addStrip([new THREE.Vector2(pos.x - axis.x * half, pos.z - axis.z * half), new THREE.Vector2(pos.x + axis.x * half, pos.z + axis.z * half)], long ? size[2] : size[0], mat, pos.y + size[1] / 2);
-      if (this.body && !/water/i.test(mat)) setSurface(this.world.createCollider(RAPIER.ColliderDesc.cuboid(size[0] / 2, size[1] / 2, size[2] / 2).setTranslation(pos.x, pos.y, pos.z).setRotation({ x: quat.x, y: quat.y, z: quat.z, w: quat.w }), this.body).handle, SURFACE[mat] ?? guessSurface(mat));
+      if (this.body && size[1] >= 0.05 && !/water/i.test(mat) && pos.y + size[1] / 2 - (this.ground?.(pos.x, pos.z) ?? -1) >= 0.09) setSurface(this.world.createCollider(RAPIER.ColliderDesc.cuboid(size[0] / 2, Math.min(size[1], 0.04) / 2, size[2] / 2).setTranslation(pos.x, pos.y + (size[1] - Math.min(size[1], 0.04)) / 2, pos.z).setRotation({ x: quat.x, y: quat.y, z: quat.z, w: quat.w }), this.body).handle, SURFACE[mat] ?? guessSurface(mat));
     }
     if (collide && this.world && this.body) {
       const col = this.world.createCollider(

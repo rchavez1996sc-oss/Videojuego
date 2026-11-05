@@ -79,6 +79,10 @@ export interface ChapterDef {
   civilianLimit?: number;
   /** Litter items per 10 m of pedestrian graph edge. */
   litter?: number;
+  /** Street fittings and wear (manholes, meter lids, drains, oil stains, cracks, patches) per 10 m of street. */
+  groundDetail?: number;
+  /** Street-name plates on the corner sign posts (`world/streetSigns.ts`); also turns the posts on. */
+  streetNames?: string[];
   /** Prologue paragraphs shown while the chapter loads. */
   intro?: string[];
   objective?: import('../systems/objective').ObjectiveDef;

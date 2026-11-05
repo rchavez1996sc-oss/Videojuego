@@ -6,6 +6,7 @@ import type { CharKind } from '../render/characters';
 import { mulberry32 } from '../core/rng';
 import { onHit } from '../world/surfaces';
 import { innocents } from './blame';
+import { surfaceTop } from '../world/groundStrips';
 import { hideSpot, HIDE_RANGE } from './civilianHide';
 import type { Heightfield } from '../world/heightfield';
 import type { Lighting } from '../render/lighting';
@@ -40,7 +41,8 @@ export class Civilians {
   private recycleT = 0;
 
   private groundAt(x: number, z: number): number {
-    return this.graph.ground?.(x, z) ?? this.hf.heightAt(x, z);
+    const y = this.graph.ground?.(x, z) ?? this.hf.heightAt(x, z);
+    return surfaceTop(x, y, z);
   }
 
   constructor(private graph: StreetGraph, private hf: Heightfield, lighting: Lighting, private world: RAPIER.World, count: number, seed: number, private camera: THREE.Camera, kit?: GearDef) {

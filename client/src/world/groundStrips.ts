@@ -6,7 +6,7 @@ export function groundOfMaterial(mat: string): Ground {
   return /gravel|pebble|sand/i.test(mat) ? 'dirt' : /lawn|turf|grass/i.test(mat) ? 'grass' : /wood|deck|plank/i.test(mat) ? 'wood' : 'hard';
 }
 
-const CELL = 8, grid = new Map<number, { a: THREE.Vector2; c: THREE.Vector2; hw: number; g: Ground; top: number }[]>();
+const CELL = 8, grid = new Map<number, { a: THREE.Vector2; c: THREE.Vector2; hw: number; g: Ground; top: number; road: boolean }[]>();
 const key = (i: number, j: number) => i * 4099 + j;
 
 /**
@@ -16,7 +16,7 @@ const key = (i: number, j: number) => i * 4099 + j;
 export function addStrip(pts: THREE.Vector2[], width: number, mat: string, top = NaN): void {
   const g = groundOfMaterial(mat), hw = width / 2;
   for (let i = 0; i + 1 < pts.length; i++) {
-    const a = pts[i], c = pts[i + 1], seg = { a, c, hw, g, top };
+    const a = pts[i], c = pts[i + 1], seg = { a, c, hw, g, top, road: /asphalt|cobble/i.test(mat) };
     const x0 = Math.floor((Math.min(a.x, c.x) - hw) / CELL), x1 = Math.floor((Math.max(a.x, c.x) + hw) / CELL);
     const z0 = Math.floor((Math.min(a.y, c.y) - hw) / CELL), z1 = Math.floor((Math.max(a.y, c.y) + hw) / CELL);
     for (let x = x0; x <= x1; x++) for (let z = z0; z <= z1; z++) (grid.get(key(x, z)) ?? grid.set(key(x, z), []).get(key(x, z))!).push(seg);
@@ -35,4 +35,24 @@ export function stripAt(x: number, y: number, z: number): Ground | null {
 
 export function clearStrips(): void {
   grid.clear();
+}
+
+/** Top of the visible strip (road, path) covering (x, z) within 0.12 m above `y`, else `y`: collider-less slabs a few cm proud of the ground. */
+export function surfaceTop(x: number, y: number, z: number): number {
+  let top = y;
+  for (const s of grid.get(key(Math.floor(x / CELL), Math.floor(z / CELL))) ?? []) {
+    if (!(s.top > top && s.top - y < 0.12)) continue;
+    const dx = s.c.x - s.a.x, dz = s.c.y - s.a.y, l2 = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((x - s.a.x) * dx + (z - s.a.y) * dz) / l2));
+    if (Math.hypot(x - s.a.x - dx * t, z - s.a.y - dz * t) < s.hw) top = s.top;
+  }
+  return top;
+}
+
+/** True when a road strip (asphalt, cobbles) covers (x, z), whatever its height. */
+export function roadAt(x: number, z: number): boolean {
+  return (grid.get(key(Math.floor(x / CELL), Math.floor(z / CELL))) ?? []).some((s) => {
+    if (!s.road) return false;
+    const dx = s.c.x - s.a.x, dz = s.c.y - s.a.y, l2 = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((x - s.a.x) * dx + (z - s.a.y) * dz) / l2));
+    return Math.hypot(x - s.a.x - dx * t, z - s.a.y - dz * t) < s.hw;
+  });
 }

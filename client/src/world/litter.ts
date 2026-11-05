@@ -3,6 +3,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import type { Lighting } from '../render/lighting';
 import type { StreetGraph } from './barrio';
 import { mulberry32 } from '../core/rng';
+import { surfaceTop } from './groundStrips';
 
 type Draw = (g: CanvasRenderingContext2D, r: () => number) => void;
 const C = 128;
@@ -46,7 +47,7 @@ export function litter(graph: StreetGraph, world: RAPIER.World, perTen: number, 
       if (!hit) continue;
       const top = p.y + 3 - hit.timeOfImpact;
       if (Math.abs(top - p.y) > 0.6) continue;
-      p.y = top + 0.015;
+      p.y = surfaceTop(p.x, top, p.z) + 0.015;
       const k = Math.floor(r() * ITEMS.length);
       spots.push({ p, k, s: ITEMS[k][1] + r() * (ITEMS[k][2] - ITEMS[k][1]), a: r() * 6.28 });
     }

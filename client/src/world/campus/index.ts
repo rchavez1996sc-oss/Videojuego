@@ -45,7 +45,7 @@ import { campusSigns } from './signs';
 
 /** Level 3: Ciudad Universitaria de San Marcos (UNMSM), southern sectors along Av. Venezuela, from the Huaca to Av. Universitaria. */
 export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting, world: RAPIER.World): Barrio {
-  const b = new Builder(world, world.createRigidBody(RAPIER.RigidBodyDesc.fixed()));
+  const b = Object.assign(new Builder(world, world.createRigidBody(RAPIER.RigidBodyDesc.fixed())), { ground: (x: number, z: number) => hf.heightAt(x, z) });
   const rand = mulberry32(def.seed);
   const atlas = new SignAtlas(), brands = atlas.brands;
   const mats = { ...barrioMaterials(lighting, atlas), ...campusMaterials(lighting) };

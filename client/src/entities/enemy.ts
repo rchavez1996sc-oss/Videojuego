@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { floorAt, stepAssist } from '../physics/floor';
+import { surfaceTop } from '../world/groundStrips';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { pickDeath } from './deathFall';
 import { CLIMBS, findLedge, mantlePath, type Ledge } from './mantle';
@@ -72,10 +74,11 @@ export class Enemy {
   constructor(readonly id: number, readonly def: EnemyDef, private world: RAPIER.World, lighting: Lighting, spawn: THREE.Vector3, readonly patrol: THREE.Vector3[], readonly isStatic: boolean, outfit?: Outfit) {
     this.hp = def.hp;
     this.model = new Rig(def.rig ?? 'pnp', lighting, true, false, outfit, def.gun);
-    this.body = world.createRigidBody(RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(spawn.x, spawn.y + HALF + RADIUS + 0.05, spawn.z));
+    const y0 = floorAt(world, spawn.x, spawn.y, spawn.z);
+    this.body = world.createRigidBody(RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(spawn.x, y0 + HALF + RADIUS + 0.05, spawn.z));
     this.collider = world.createCollider(RAPIER.ColliderDesc.capsule(HALF, RADIUS), this.body);
     this.ctrl = world.createCharacterController(0.05);
-    this.ctrl.enableAutostep(0.45, 0.25, true);
+    this.ctrl.enableAutostep(0.45, 0.1, true);
     this.ctrl.enableSnapToGround(0.5);
     this.ctrl.setMaxSlopeClimbAngle(THREE.MathUtils.degToRad(50));
     this.ctrl.setSlideEnabled(true);
@@ -114,21 +117,21 @@ export class Enemy {
     const wish = new THREE.Vector3();
     if (target && !this.isStatic) {
       wish.set(target.x - this.position.x, 0, target.z - this.position.z);
-      const d = wish.length();
-      if (d < 0.4) {
+      const d = wish.length(), last = !this.detour && !this.path.length;
+      if (d < (last ? 0.4 : this.running ? 1.3 : 0.7)) {
         if (this.detour) this.detour = null;
         else if (this.path.length) this.path.shift();
         else this.moveTarget = null;
         wish.set(0, 0, 0);
       } else {
-        wish.multiplyScalar((this.running ? this.def.run : this.def.walk) * (this.crouched ? 0.5 : 1) / d);
+        wish.multiplyScalar(((this.running ? this.def.run : this.def.walk) * (this.crouched ? 0.5 : 1) * (last ? Math.min(1, 0.3 + d / 2.5) : 1)) / d);
       }
     }
     this.vel.x = THREE.MathUtils.damp(this.vel.x, wish.x, 8, dt);
     this.vel.z = THREE.MathUtils.damp(this.vel.z, wish.z, 8, dt);
     this.vel.y -= GRAVITY * dt;
     this.ctrl.computeColliderMovement(this.collider, { x: this.vel.x * dt, y: this.vel.y * dt, z: this.vel.z * dt });
-    const m = this.ctrl.computedMovement();
+    const m = stepAssist(this.world, this.ctrl, { x: this.vel.x * dt, z: this.vel.z * dt }, this.ctrl.computedMovement(), this.position, RADIUS);
     if (this.ctrl.computedGrounded() && this.vel.y < 0) this.vel.y = -1;
     const p = this.body.translation();
     this.body.setNextKinematicTranslation({ x: p.x + m.x, y: p.y + m.y, z: p.z + m.z });
@@ -148,7 +151,8 @@ export class Enemy {
           this.body.setNextKinematicTranslation({ x: p.x + m.x, y: p.y + 0.6, z: p.z + m.z });
           this.frozen = 0;
         }
-        const side = new THREE.Vector3(-wish.z, 0, wish.x).normalize().multiplyScalar((Math.random() < 0.5 ? -1 : 1) * 4);
+        const side = new THREE.Vector3(-wish.z, 0, wish.x).normalize(), room = (k: number) => this.world.castRay(new RAPIER.Ray({ x: this.position.x, y: this.position.y + 0.9, z: this.position.z }, { x: side.x * k, y: 0, z: side.z * k }), 4, true, RAPIER.QueryFilterFlags.ONLY_FIXED)?.timeOfImpact ?? 4;
+        side.multiplyScalar(room(1) >= room(-1) ? Math.min(4, room(1) - 0.5) : -Math.min(4, room(-1) - 0.5));
         this.detour = this.position.clone().add(side).addScaledVector(wish.normalize(), -1);
       } else this.frozen = 0;
       this.lastPos.copy(this.position);
@@ -210,14 +214,15 @@ export class Enemy {
     const p = this.body.translation();
     this.position.set(p.x, p.y - HALF - RADIUS, p.z);
     this.model.root.position.copy(this.position);
-    this.model.root.position.y -= 0.03;
+    this.model.root.position.y = surfaceTop(p.x, this.position.y, p.z) - 0.03;
     this.model.root.rotation.set(0, this.yaw + Math.PI, 0);
   }
 
   teleport(p: THREE.Vector3): void {
-    this.body.setTranslation({ x: p.x, y: p.y + HALF + RADIUS + 0.05, z: p.z }, true);
-    this.body.setNextKinematicTranslation({ x: p.x, y: p.y + HALF + RADIUS + 0.05, z: p.z });
-    this.position.copy(p);
+    const y = floorAt(this.world, p.x, p.y, p.z);
+    this.body.setTranslation({ x: p.x, y: y + HALF + RADIUS + 0.05, z: p.z }, true);
+    this.body.setNextKinematicTranslation({ x: p.x, y: y + HALF + RADIUS + 0.05, z: p.z });
+    this.position.set(p.x, y, p.z);
     this.moveTarget = null;
     this.path = [];
     this.vel.set(0, 0, 0);

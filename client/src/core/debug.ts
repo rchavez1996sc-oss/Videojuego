@@ -1,7 +1,9 @@
 import * as THREE from 'three';
+import { physicsStep } from '../physics/fastStep';
 import { surfaceUnder } from '../systems/sensing';
 import type { Pickups } from '../systems/pickups';
 import RAPIER from '@dimforge/rapier3d-compat';
+import { surfaceOf } from '../world/surfaces';
 import type { ThirdPersonCamera } from './camera';
 import type { Heightfield } from '../world/heightfield';
 import type { Player } from '../entities/player';
@@ -163,6 +165,75 @@ export function installDebug(c: DebugContext): void {
         if (every && i % every === 0) c.combat.debugShoot();
         c.frame(1 / 60);
       }
+    },
+    probe(x: number, y: number, z: number, dx: number, dz: number, len = 8) {
+      const out: string[] = [];
+      for (const h of [0.05, 0.12, 0.2, 0.3, 0.5, 0.9]) {
+        const hit = c.world!.castRayAndGetNormal(new RAPIER.Ray({ x, y: y + h, z }, { x: dx, y: 0, z: dz }), len, true);
+        out.push(`${h}: ${hit ? `${hit.timeOfImpact.toFixed(2)} n=${hit.normal.x.toFixed(1)},${hit.normal.y.toFixed(1)},${hit.normal.z.toFixed(1)} ${surfaceOf(hit.collider.handle)}` : '-'}`);
+      }
+      return out.join(' | ');
+    },
+    profile(x: number, z0: number, z1: number, step = 0.1) {
+      const out: string[] = [];
+      for (let z = z0; z <= z1 + 1e-6; z += step) {
+        const hit = c.world!.castRay(new RAPIER.Ray({ x, y: 3, z }, { x: 0, y: -1, z: 0 }), 6, true, RAPIER.QueryFilterFlags.ONLY_FIXED);
+        out.push(`${z.toFixed(1)}:${hit ? (3 - hit.timeOfImpact).toFixed(2) + surfaceOf(hit.collider.handle)[0] : '-'}`);
+      }
+      return out.join(' ');
+    },
+    ctrlTrace(i: number, x: number, z: number, tx: number, tz: number, frames = 120) {
+      i = c.enemies.list.findIndex((u, k) => k >= i && !u.isStatic && u.alive && u.def.run > 0);
+      const e = c.enemies.list[i] as unknown as { teleport(p: THREE.Vector3): void; update(dt: number, p: number): void; sync(): void; moveTarget: THREE.Vector3 | null; position: THREE.Vector3; ctrl: RAPIER.KinematicCharacterController };
+      e.teleport(new THREE.Vector3(x, c.hf.heightAt(x, z), z));
+      physicsStep(c.world!);
+      const out: string[] = [];
+      for (let f = 0; f < frames; f++) {
+        e.moveTarget = new THREE.Vector3(tx, 0, tz);
+        e.update(1 / 60, 0);
+        physicsStep(c.world!);
+        e.sync();
+        if (f % 6) continue;
+        const cols: string[] = [];
+        for (let k = 0; k < e.ctrl.numComputedCollisions(); k++) {
+          const cc = e.ctrl.computedCollision(k);
+          if (cc) cols.push(`${surfaceOf(cc.collider?.handle ?? -1)}${cc.collider?.parent()?.isFixed() ? 'F' : 'K'}(${cc.normal1.x.toFixed(1)},${cc.normal1.y.toFixed(1)},${cc.normal1.z.toFixed(1)})`);
+        }
+        out.push(`${f}: ${e.position.z.toFixed(2)} y${e.position.y.toFixed(3)} g${+e.ctrl.computedGrounded()} ${cols.join(' ')}`);
+      }
+      return out.join('\n');
+    },
+    enemyInfo(i: number) {
+      const e = c.enemies.list[i] as unknown as Record<string, unknown>;
+      return JSON.stringify(Object.fromEntries(Object.entries(e).filter(([, v]) => typeof v !== 'object' || v === null || (v as THREE.Vector3).isVector3).map(([k, v]) => [k, (v as THREE.Vector3)?.isVector3 ? (v as THREE.Vector3).toArray().map((n) => +n.toFixed(2)) : v])));
+    },
+    /** Walks police officer `i` (no brain) from (x,z) to (tx,tz): counts hops, detours, stalls and the time taken. */
+    npcWalk(i: number, x: number, z: number, tx: number, tz: number, run = false, frames = 600) {
+      i = c.enemies.list.findIndex((u, k) => k >= i && !u.isStatic && u.alive && u.def.run > 0);
+      const e = c.enemies.list[i] as unknown as { teleport(p: THREE.Vector3): void; update(dt: number, p: number): void; sync(): void; moveTarget: THREE.Vector3 | null; running: boolean; position: THREE.Vector3; hop: unknown; detour: unknown };
+      e.teleport(new THREE.Vector3(x, c.hf.heightAt(x, z), z));
+      physicsStep(c.world!);
+      const goal = new THREE.Vector3(tx, 0, tz);
+      const trace: string[] = [];
+      let hops = 0, detours = 0, slow = 0, wasHop = false, wasDet = false, f = 0, path = 0;
+      const last = e.position.clone();
+      for (; f < frames; f++) {
+        e.moveTarget = goal; e.running = run;
+        e.update(1 / 60, 0);
+        physicsStep(c.world!);
+        e.sync();
+        if (e.hop && !wasHop) hops++;
+        if (e.detour && !wasDet) detours++;
+        [wasHop, wasDet] = [!!e.hop, !!e.detour];
+        const step = Math.hypot(e.position.x - last.x, e.position.z - last.z);
+        path += step;
+        if (step < 0.01) slow++;
+        if (f % 20 === 0) trace.push(`${e.position.x.toFixed(1)},${e.position.y.toFixed(2)},${e.position.z.toFixed(1)}${e.detour ? 'D' : ''}`);
+        last.copy(e.position);
+        if (Math.hypot(e.position.x - tx, e.position.z - tz) < 0.6) break;
+      }
+      const straight = Math.hypot(tx - x, tz - z);
+      return `${f}f hops ${hops} detours ${detours} stalls ${slow} path ${path.toFixed(1)}/${straight.toFixed(1)} end ${e.position.x.toFixed(1)},${e.position.y.toFixed(2)},${e.position.z.toFixed(1)}\n  ${trace.join(' ')}`;
     },
     /** Draws of one rendered frame (shadow passes included) by material name and pass, top 30. */
     drawTally(view: number) {

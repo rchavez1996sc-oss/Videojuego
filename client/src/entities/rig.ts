@@ -250,7 +250,7 @@ export class Rig {
 
   animate(dt: number, speed: number, crouch: number, aimPitch: number): void {
     this.acc += dt;
-    if (this.isFar && ++this.skip % 3 !== 0) return;
+    if (this.isFar && ++this.skip % 2 !== 0) return;
     const step = this.acc;
     this.acc = 0;
     this.lockT -= step;

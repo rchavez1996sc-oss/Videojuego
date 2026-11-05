@@ -133,7 +133,7 @@ function maleconMaterials(lighting: Lighting, { apt, co, pl, br, wd, fo }: Tex):
 export function buildMalecon(hf: Heightfield, def: MaleconDef, lighting: Lighting, world: RAPIER.World): Barrio {
   const c = hf.def.coast!;
   const body = world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
-  const b = new Builder(world, body), t = new Builder(world, body);
+  const ground = (x: number, z: number) => hf.heightAt(x, z), b = Object.assign(new Builder(world, body), { ground }), t = Object.assign(new Builder(world, body), { ground });
   const rand = mulberry32(def.seed);
   const tex: Tex = { apt: apartment(), co: concrete(), pl: plaster(), br: brick(), wd: wood(), fo: foliage() };
   const atlas = new SignAtlas(), brands = atlas.brands;

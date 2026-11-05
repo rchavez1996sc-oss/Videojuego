@@ -120,7 +120,7 @@ export function materials(lighting: Lighting, atlas: SignAtlas): Record<string, 
 }
 
 export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting, world: RAPIER.World): Barrio {
-  const b = new Builder(world, world.createRigidBody(RAPIER.RigidBodyDesc.fixed()));
+  const b = Object.assign(new Builder(world, world.createRigidBody(RAPIER.RigidBodyDesc.fixed())), { ground: (x: number, z: number) => hf.heightAt(x, z) });
   const rand = mulberry32(def.seed), deco = mulberry32(def.seed + 7), alley = mulberry32(def.seed + 13);
   const atlas = new SignAtlas();
   if (def.station) atlas.quietZone(def.station.x, def.station.z, 55);
