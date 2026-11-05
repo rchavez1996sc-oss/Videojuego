@@ -351,6 +351,13 @@ export function installDebug(c: DebugContext): void {
       c.frame(1 / 60);
       return `${kind}${i} @${p.x.toFixed(1)},${p.z.toFixed(1)}`;
     },
+    woundTest(i: number, side = Math.PI) {
+      const e = c.enemies.list[i], f = new THREE.Vector3(Math.sin(e.yaw + side), 0, Math.cos(e.yaw + side));
+      for (const [y, s] of [[1.35, 0], [1.1, 0.12], [1.62, 0.05], [1.3, -0.15]]) e.damage(5, e.position.clone().add(new THREE.Vector3(0, y, 0)).addScaledVector(f, 0.4).add(new THREE.Vector3(f.z, 0, -f.x).multiplyScalar(s)));
+      const out: number[][] = [];
+      c.scene!.traverse((o) => { if ((o as THREE.Mesh).material && ((o as THREE.Mesh).material as THREE.Material).name === 'wound') out.push(o.getWorldPosition(new THREE.Vector3()).toArray().map((v) => +v.toFixed(2))); });
+      return JSON.stringify({ f: f.toArray().map((v) => +v.toFixed(2)), p: e.position.toArray().map((v) => +v.toFixed(2)), out });
+    },
     civ: (i: number) => c.civilians!()[i],
     /** Pushes the player into house fronts (sprint, slide, jump, mantle) while whipping the camera; counts wall/camera penetrations. */
     wallTest(spots: number, seconds: number) {

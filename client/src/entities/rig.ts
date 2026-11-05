@@ -211,7 +211,7 @@ export class Rig {
 
   /** A wet blood blot where a round struck (at most seven per body). */
   wound(at: THREE.Vector3): void {
-    if (this.wounds++ < 7) addWound(this.inst.bones, at, this.lighting);
+    if (this.wounds++ < 7) addWound(this.inst.bones, [...this.inst.near, ...this.inst.far], at, this.lighting);
   }
 
   /** World position of the hips (where a fallen body's torso lies). */
