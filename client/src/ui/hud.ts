@@ -142,9 +142,11 @@ export class Hud {
     this.set('toastO', toastO, () => (this.toast.style.opacity = toastO));
   }
 
+  private maxLives = 0;
   set lives(n: number) {
     const el = this.root.querySelector('.lives') as HTMLElement;
-    el.innerHTML = '<i></i>'.repeat(Math.max(0, n)) + '<i class="off"></i>'.repeat(Math.max(0, 3 - n));
+    this.maxLives = Math.max(this.maxLives, n);
+    el.innerHTML = '<i></i>'.repeat(Math.max(0, n)) + '<i class="off"></i>'.repeat(Math.max(0, this.maxLives - n));
     el.title = `${n} vidas`;
   }
 

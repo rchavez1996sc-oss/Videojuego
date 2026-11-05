@@ -179,7 +179,7 @@ async function boot(): Promise<void> {
   scene.add(pickups.group, grenades.group, nadeMode.group);
   const corpses = new Loot(pickups, (at) => combat.bloodStain(at));
   const objective = ch.objective && barrio?.station ? new Objective(ch.objective, barrio.station, camera, { lighting, world, scene, mixer, cinematic: (eye, look) => (freeCam = true, tpc.place(eye, look)) }) : null;
-  let lives = (hud.lives = ch.lives ?? 3);
+  let lives = (hud.lives = ch.lives ?? 5);
   const defense = ch.defense && barrio?.refuge ? new Defense(ch.defense, { scene, world, lighting, enemies, sfx, camera, refuge: barrio.refuge, entry: barrio.entry, blast: (at) => blast(at) }) : null;
   const goal = objective ?? defense, lose = (why: string) => !failed && window.setTimeout(() => !failed && ((failed = true), showMissionFailed(why)), 4200);
   if (goal) (goal.onFail = lose), (goal.onComplete = () => {
