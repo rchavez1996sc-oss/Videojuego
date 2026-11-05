@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { combiLivery } from '../world/livery';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { Builder } from '../world/buildingKit';
 import { car, mototaxi, type CarKind } from '../world/urbanProps';
@@ -65,6 +66,7 @@ export class Traffic {
       else car(b, new THREE.Vector3(), 0, kind === 'combi' ? 'car5' : kind === 'tico' ? 'car3' : `car${i % 6}`, kind);
       const g = new THREE.Group();
       g.add(...b.build(mats, 0.5, bakeNoGlass));
+      if (kind === 'combi') g.add(combiLivery(lighting, i));
       const riders: THREE.BufferGeometry[] = [], seats: THREE.Group[] = [];
       let riderMat: THREE.Material | null = null;
       SEATS[kind].forEach(([x, y, z], k) => {

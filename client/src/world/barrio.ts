@@ -17,6 +17,7 @@ import { buildLadder } from './ladders';
 import { flsMarks, poleMarks } from './flsMarks';
 import { facadeMaterials } from './facadeMats';
 import { festiveStreets } from './bunting';
+import { parkedLiveries } from './livery';
 import { alleyLife } from './alleys';
 import { STREET_COLORS, stall, trashPile, roadMarkings } from './streetLife';
 import { brick, concrete, plaster, corrugated, estera } from '../render/urbanTextures';
@@ -236,7 +237,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
   const r2 = def.road2;
   if (r2) secondRoad(b, hf, def.x0 - 10, xEnd + 10, r2, crossX, deco);
   cornerAds(b, hf, atlas, crossX, [[10.6, -1], [-10.6, 1], ...(r2 ? ([[r2.z - r2.half - 0.6, 1], [r2.z + r2.half + 0.6, -1]] as [number, 1 | -1][]) : [])], deco, (x, z) => overStore(x, z) || (!!st && Math.hypot(x - st.x, z - st.z) < 30));
-  const kinds: CarKind[] = ['sedan', 'sedan', 'tico', 'tico', 'wagon', 'pickup', 'combi'], parked: THREE.Vector2[] = [];
+  const kinds: CarKind[] = ['sedan', 'sedan', 'tico', 'tico', 'wagon', 'pickup', 'combi'], parked: THREE.Vector2[] = [], combis: { pos: THREE.Vector3; yaw: number }[] = [];
   const midZ = def.gap + def.blockD + def.street / 2;
   for (let i = 0; i < def.cars; i++) {
     const kind = kinds[Math.floor(rand() * kinds.length)];
@@ -258,7 +259,9 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
     }
     if ((crossX.some((cx) => Math.abs(cx - x) < 6) && Math.abs(Math.abs(z) - 6.9) < 1) || (r2 && Math.abs(z - r2.z) < r2.half + 1)) continue;
     if (parked.some((p) => Math.hypot(p.x - x, p.y - z) < (kind === 'combi' ? 6.4 : 5.4)) || !parked.push(new THREE.Vector2(x, z))) continue;
-    car(b, new THREE.Vector3(x, hf.heightAt(x, z), z), yaw + (rand() - 0.5) * 0.06, paint, kind);
+    const at = new THREE.Vector3(x, hf.heightAt(x, z), z), turn = yaw + (rand() - 0.5) * 0.06;
+    car(b, at, turn, paint, kind);
+    if (kind === 'combi') combis.push({ pos: at, yaw: turn });
   }
   for (let x = def.x0 + 20, k = 0; x < xEnd - 10; x += def.billboardEvery, k++) {
     const side = k % 2 ? 1 : -1;
@@ -292,6 +295,8 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
   const bake = bakeGroups(lighting); bake.push(...autoBake(lighting, mats, bake));
   group.add(...b.build(mats, 0.5, bake, 128));
   if (station?.art) group.add(station.art(lighting));
+  const liveries = parkedLiveries(lighting, combis);
+  if (liveries) group.add(liveries);
   if (atlas.geometries.length) {
     const signs = new THREE.Mesh(mergeGeometries(atlas.geometries), mats.signs);
     signs.receiveShadow = true;
