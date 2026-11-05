@@ -16,6 +16,7 @@ import { buildStation, type StationDef, type StationInfo } from './station';
 import { buildLadder } from './ladders';
 import { flsMarks, poleMarks } from './flsMarks';
 import { facadeMaterials } from './facadeMats';
+import { festiveStreets } from './bunting';
 import { alleyLife } from './alleys';
 import { STREET_COLORS, stall, trashPile, roadMarkings } from './streetLife';
 import { brick, concrete, plaster, corrugated, estera } from '../render/urbanTextures';
@@ -204,6 +205,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
     }
   }
 
+  festiveStreets(b, hf, Array.from({ length: def.cols }, (_, c) => [def.x0 + c * pitch + 1, def.x0 + c * pitch + def.blockW - 1] as [number, number]), def.gap + def.blockD + def.street / 2, def.street / 2, 0.7, deco);
   const hillSpots: { x: number; z: number; r: number }[] = [];
   const nearStairs = (x: number) => def.stairs.some(([sx]) => Math.abs(sx - x) < 4);
   for (let i = 0, tries = 0; i < def.hills.count && tries < def.hills.count * 25; tries++) {
