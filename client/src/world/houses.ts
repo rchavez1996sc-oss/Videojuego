@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { Builder, Opening } from './buildingKit';
 import { CLOTHES, laundry, sidewalkChairs, tire } from './streetLife';
 import { shopFront, type Sign } from './shopFront';
+import { ZOCALOS } from './facadeMats';
 
 export interface Lot { x: number; z: number; y: number; facing: number; w: number; d: number; floors?: number }
 
@@ -35,7 +36,10 @@ export function cityHouse(b: Builder, lot: Lot, rand: () => number, sign: Sign, 
   const w = lot.w - 0.06, d = lot.d, H = floors * FLOOR, sink = 0.8;
   const painted = rand() < 0.55;
   const paint = PAINTS[Math.floor(rand() * PAINTS.length)];
-  const front = (f: number) => (painted && (f === 0 || rand() < 0.6) ? paint : 'brick');
+  const rendered = !painted && rand() < 0.45;
+  const front = (f: number) => (painted && (f === 0 || rand() < 0.6) ? paint : rendered && f === 0 ? 'tarrajeo' : 'brick');
+  const zocalo = (painted || rendered) && rand() < 0.7 ? ZOCALOS[Math.floor(rand() * ZOCALOS.length)] : '';
+  const glassy = rand() < 0.22;
 
   for (let f = 0; f < floors; f++) {
     const y0 = f * FLOOR - (f === 0 ? sink : 0), h = FLOOR + (f === 0 ? sink : 0);
@@ -68,8 +72,10 @@ export function cityHouse(b: Builder, lot: Lot, rand: () => number, sign: Sign, 
         else b.box(metal, [o.w, o.h, 0.06], at(o.x, y0 + o.y + o.h / 2, -0.12), q, false);
         if (o.w <= 2 && rand() < 0.3) sign(at(o.x + 1.3, y0 + o.y + 1.75, 0.03), q, 1.3, 'brand');
         if (o.w > 2 && rand() < 0.6) sidewalkChairs(b, at(o.x, 0, 1.4), q, rand);
-      } else windowBars(b, at, q, o.x, y0 + o.y, 0, o.w, o.h, rand() < 0.6 ? CLOTHES[Math.floor(rand() * CLOTHES.length)] : undefined);
+      } else if (f === 0 && glassy) b.box('glassBlock', [o.w, o.h, 0.1], at(o.x, y0 + o.y + o.h / 2, -0.1), q, false);
+      else windowBars(b, at, q, o.x, y0 + o.y, 0, o.w, o.h, rand() < 0.6 ? CLOTHES[Math.floor(rand() * CLOTHES.length)] : undefined);
     }
+    if (f === 0 && zocalo) plinth(b, at, q, w, openings.filter((o) => o.y <= base + 0.01), zocalo, 0.55 + rand() * 0.3);
     if (f > 0 && rand() < 0.3) b.box('concrete', [w * 0.6, 0.12, 0.7], at(0, f * FLOOR + 0.07, 0.36), q, false);
   }
   b.box('concrete', [w - 0.05, 0.45, 0.15], at(0, H + 0.22, -0.1), q);
@@ -92,16 +98,28 @@ export function cityHouse(b: Builder, lot: Lot, rand: () => number, sign: Sign, 
   return floors;
 }
 
+/** Painted band at the foot of the front wall (zócalo), broken at doors and shop openings. */
+function plinth(b: Builder, at: At, q: THREE.Quaternion, w: number, gaps: Opening[], mat: string, h: number): void {
+  let x = -w / 2;
+  for (const o of [...gaps.sort((a, c) => a.x - c.x), { x: w / 2 + 1, w: 0 } as Opening]) {
+    const end = Math.min(o.x - o.w / 2, w / 2);
+    if (end - x > 0.1) b.box(mat, [end - x, h + 0.4, 0.03], at((x + end) / 2, (h - 0.4) / 2, 0.015), q, false);
+    x = Math.max(x, o.x + o.w / 2);
+  }
+}
+
 /** Hillside shack: one storey of brick, reed mat or tin on a stone retaining base. */
 export function hillHouse(b: Builder, lot: Lot, rand: () => number, baseLow: number): void {
   const { q, at } = frame(lot);
   const w = lot.w, d = lot.d, h = 2.4;
-  const mat = rand() < 0.4 ? 'brick' : rand() < 0.6 ? 'estera' : 'calamina';
+  const r0 = rand(), mat = r0 < 0.3 ? 'brick' : r0 < 0.55 ? PAINTS[Math.floor(rand() * PAINTS.length)] : r0 < 0.75 ? 'estera' : 'calamina';
   const baseH = lot.y - baseLow + 0.3;
   b.box('stone', [w + 0.6, baseH, d + 0.6], at(0, -baseH / 2 + 0.14, -d / 2), q);
   b.wall(mat, w, h, 0.15, at(0, 0.15, -0.08), lot.facing, [{ x: -w / 4, w: 0.9, y: 0, h: 1.95 }, { x: w / 4, w: 0.9, y: 0.9, h: 0.7 }]);
   b.wall(mat, w, h, 0.15, at(0, 0.15, -d + 0.08), lot.facing + Math.PI);
   for (const s of [1, -1]) b.wall(mat, d - 0.3, h, 0.15, at(s * (w / 2 - 0.08), 0.15, -d / 2), lot.facing + s * Math.PI / 2);
+  if (mat.startsWith('paint') && rand() < 0.75) plinth(b, at, q, w, [{ x: -w / 4, w: 0.9, y: 0, h: 1.95 }], ZOCALOS[Math.floor(rand() * 2)], 0.5);
+  if (rand() < 0.5) b.geometry(rand() < 0.75 ? 'tankBlue' : 'tankBlack', new THREE.CylinderGeometry(0.29, 0.29, 0.9, 12), new THREE.Matrix4().compose(at(w / 2 + 0.45, 0.6, -0.5 - rand() * (d - 1)), q, new THREE.Vector3(1, 1, 1)));
   b.box('door', [0.9, 1.95, 0.04], at(-w / 4, 1.1, -0.1), q, false);
   b.box('none', [0.9, 1.95, 0.15], at(-w / 4, 1.1, -0.08), q, true);
   const roofQ = q.clone().multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -0.08));

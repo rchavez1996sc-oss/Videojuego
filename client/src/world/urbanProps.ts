@@ -12,6 +12,11 @@ export function powerLine(b: Builder, hf: Heightfield, points: THREE.Vector3[], 
     const h = 7.5 + rand() * 1.2;
     b.geometry('pole', new THREE.CylinderGeometry(0.11, 0.15, h, 8), new THREE.Matrix4().makeTranslation(p.x, y + h / 2 - 0.2, p.z),
       { size: [0.28, h, 0.28], pos: new THREE.Vector3(p.x, y + h / 2, p.z), quat: new THREE.Quaternion() });
+    if (rand() < 0.45) {
+      const m = new THREE.Matrix4().makeTranslation(p.x, y + 0.7, p.z);
+      b.geometry(rand() < 0.5 ? 'paintYellow' : 'zocalo-granate', new THREE.CylinderGeometry(0.155, 0.158, 1.8, 8), m);
+      b.geometry(rand() < 0.6 ? 'poleBlue' : 'plate', new THREE.CylinderGeometry(0.153, 0.155, 0.3, 8), new THREE.Matrix4().makeTranslation(p.x, y + 1.75, p.z));
+    }
     b.box('pole', [1.4, 0.1, 0.1], new THREE.Vector3(p.x, y + h - 0.6, p.z), new THREE.Quaternion().setFromAxisAngle(UP, rand() * 0.2 + Math.PI / 2), false);
     const arm = -Math.sign(p.z || 1);
     b.box('bars', [0.06, 0.06, 1.6], new THREE.Vector3(p.x, y + h - 1.6, p.z + arm * 0.8), new THREE.Quaternion(), false);

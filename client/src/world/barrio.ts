@@ -15,6 +15,7 @@ import { cornerAds } from './cornerAds';
 import { buildStation, type StationDef, type StationInfo } from './station';
 import { buildLadder } from './ladders';
 import { flsMarks, poleMarks } from './flsMarks';
+import { facadeMaterials } from './facadeMats';
 import { alleyLife } from './alleys';
 import { STREET_COLORS, stall, trashPile, roadMarkings } from './streetLife';
 import { brick, concrete, plaster, corrugated, estera } from '../render/urbanTextures';
@@ -112,6 +113,7 @@ export function materials(lighting: Lighting, atlas: SignAtlas): Record<string, 
     car3: std('car3', { color: '#e2c22e', roughness: 0.35, metalness: 0.3 }),
     car4: std('car4', { color: '#2b4c7a', roughness: 0.35, metalness: 0.4 }),
     car5: std('car5', { color: '#eeeeea', roughness: 0.35, metalness: 0.3 }),
+    ...facadeMaterials(std, pl),
     signs: std('signs', { map: atlas.texture, transparent: true, alphaTest: 0.1, roughness: 0.85, polygonOffset: true, polygonOffsetFactor: -2 }),
   };
   PAINTS.forEach((k, i) => (m[k] = std(k, { map: pl.map, normalMap: pl.normalMap, roughness: 0.9, color: PAINT_COLORS[i] })));
