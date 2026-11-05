@@ -123,7 +123,7 @@ export function rosaNautica(b: Builder, hf: Heightfield, def: MaleconDef, c: Coa
   for (let z = hz0 + 3; z < hz1 - 2; z += 4) b.box('lobby', [0.05, 1.6, 2.4], new THREE.Vector3(hx0 - 0.17, D + 4.4, z), Q, false);
   for (const x of [-5, 5]) b.box('lobby', [2.4, 1.6, 0.05], new THREE.Vector3(X + x, D + 4.4, hz0 - 0.17), Q, false);
   hip(b, 'roofSlate', hx1 - hx0 + 1.4, hz1 - hz0 + 1.4, 2.6, 0.7, X, D + H, (hz0 + hz1) / 2);
-  hallDecor(b, hx0, hx1, hz0, hz1, D, H, extras);
+  hallDecor(b, hx0, hx1, hz0, hz1, D, H, extras, diners);
   // Wing on stilts out over the sea to the east.
   const wx0 = hx1, wx1 = X + 44, wz0 = walkEnd + 6, wz1 = walkEnd + 24, wz = (wz0 + wz1) / 2;
   b.box('benchWood', [wx1 - wx0 + 6, 0.4, wz1 - wz0 + 4], new THREE.Vector3((wx0 + wx1) / 2 + 3, D - 0.2, wz), Q, true);

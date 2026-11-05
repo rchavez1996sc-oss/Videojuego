@@ -99,7 +99,7 @@ function shootable(world: RAPIER.World, rig: Rig, floor: number, seated: boolean
 }
 
 /** Seated and standing extras (benches, café tables, chats, railing); built a few per frame once characters load; animated only up close. */
-export function crowd(seats: { pos: THREE.Vector3; yaw: number }[], standing: Extra[], lighting: Lighting, world: RAPIER.World, hurt: Bystanders, kit?: GearDef): THREE.Group {
+export function crowd(seats: { pos: THREE.Vector3; yaw: number; stay?: boolean }[], standing: Extra[], lighting: Lighting, world: RAPIER.World, hurt: Bystanders, kit?: GearDef): THREE.Group {
   const g = new THREE.Group(), r = mulberry32(12);
   let rigs: Rig[] | null = null, last = 0, prev = performance.now();
   const near = new Set<Rig>(), slumps: Slump[] = [], limp = new Set<Rig>(), dying = new Map<Rig, number>();
@@ -129,7 +129,7 @@ export function crowd(seats: { pos: THREE.Vector3; yaw: number }[], standing: Ex
       if (kit && !seated) x.nearOnly(...gear(x.bones, kit, lighting, r));
       x.root.updateMatrixWorld(true);
       const col = shootable(world, x, spot.pos.y, seated, hurt, slumps, limp, dying, fleeing);
-      info.set(x, { col, floor: spot.pos.y, calm: seated || (spot as Extra).key !== 'terrified' });
+      info.set(x, { col, floor: spot.pos.y, calm: seated ? !(spot as { stay?: boolean }).stay : (spot as Extra).key !== 'terrified' });
       x.root.visible = false;
       rigs.push(x);
       g.add(x.root);

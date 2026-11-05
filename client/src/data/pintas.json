@@ -1,0 +1,8 @@
+[
+  { "party": "TIERRA Y TRABAJO", "call": "MARCA LA LAMPA", "name": "QUISPE", "num": "4", "symbol": "lampa", "ink": "#1f6a2c", "accent": "#d6302a" },
+  { "party": "PERÚ UNIDO", "call": "VOTA CHOCLO", "name": "HUAMÁN ALCALDE", "num": "11", "symbol": "choclo", "ink": "#c58a10", "accent": "#1f3f8a" },
+  { "party": "RESTAURACIÓN", "call": "MARCA LA ESTRELLA", "name": "SALAZAR", "num": "2", "symbol": "estrella", "ink": "#1f3f8a", "accent": "#d6302a" },
+  { "party": "PROGRESO YA", "call": "MARCA LA CASITA", "name": "FLORES CONGRESO", "num": "7", "symbol": "casa", "ink": "#d6302a", "accent": "#1a1a1a" },
+  { "party": "NUEVO SOL", "call": "VOTA SOL", "name": "MAMANI", "num": "15", "symbol": "sol", "ink": "#e0841a", "accent": "#7a1a1a" },
+  { "party": "FUERZA VECINAL", "call": "MARCA LA MANO", "name": "TORRES · LIMA ESTE", "num": "9", "symbol": "mano", "ink": "#6a2a8a", "accent": "#e0a41a" }
+]

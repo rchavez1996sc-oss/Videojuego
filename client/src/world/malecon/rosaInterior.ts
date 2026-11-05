@@ -1,25 +1,13 @@
 import * as THREE from 'three';
 import type { Builder } from '../buildingKit';
 import type { Extra } from './park';
+import { diningTable } from './tableware';
 
 const Q = new THREE.Quaternion();
 const at = (x: number, y: number, z: number) => new THREE.Matrix4().makeTranslation(x, y, z);
 const yaw = (a: number) => new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), a);
 
-type Seat = { pos: THREE.Vector3; yaw: number };
-/** Dark green chairs with orange cushions round a white-clothed table (as in the photos); ~30 % of the chairs go to `diners`. */
-export function diningTable(b: Builder, x: number, y: number, z: number, seats: number, turn: number, diners?: Seat[]): void {
-  b.geometry('linen', new THREE.CylinderGeometry(0.62, 0.66, 0.74, 14).translate(0, 0.37, 0), at(x, y, z), { size: [1.2, 0.8, 1.2], pos: new THREE.Vector3(x, y + 0.4, z), quat: Q });
-  b.geometry('lampGold', new THREE.CylinderGeometry(0.03, 0.03, 0.2, 6).translate(0, 0.84, 0), at(x, y, z));
-  for (let i = 0; i < seats; i++) {
-    const a = turn + (i / seats) * Math.PI * 2, cx = x + Math.sin(a) * 1.05, cz = z + Math.cos(a) * 1.05, q = yaw(a);
-    b.box('chairGreen', [0.48, 0.42, 0.46], new THREE.Vector3(cx, y + 0.21, cz), q, false);
-    b.box('cushionOrange', [0.5, 0.07, 0.48], new THREE.Vector3(cx, y + 0.45, cz), q, false);
-    b.box('chairGreen', [0.48, 0.55, 0.06], new THREE.Vector3(cx + Math.sin(a) * 0.22, y + 0.75, cz + Math.cos(a) * 0.22), q, false);
-    if (diners && Math.abs(Math.sin(cx * 12.9898 + cz * 78.233) * 43758.5) % 1 < 0.3) diners.push({ pos: new THREE.Vector3(cx - Math.sin(a) * 0.05, y, cz - Math.cos(a) * 0.05), yaw: a + Math.PI });
-  }
-}
-
+type Seat = { pos: THREE.Vector3; yaw: number; stay?: boolean };
 /** Reddish timber column on a dark green plinth with a green capital and two white lamp sconces; collides. */
 function column(b: Builder, x: number, y: number, z: number, h: number, turn: number): void {
   b.box('greenTrim', [0.5, 0.95, 0.5], new THREE.Vector3(x, y + 0.48, z), Q, true);
@@ -37,8 +25,8 @@ function chandelier(b: Builder, x: number, top: number, z: number, n: number, sp
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2, r = i === 0 ? 0 : spread * (0.6 + (i % 2) * 0.4), px = x + Math.sin(a) * r, pz = z + Math.cos(a) * r, drop = 1.1 + (i % 3) * 0.35;
     b.box('lampPole', [0.02, drop, 0.02], new THREE.Vector3(px, top - drop / 2, pz), Q, false);
-    b.geometry('ceilingWhite', new THREE.CylinderGeometry(0.28, 0.42, 0.4, 10, 1, true), at(px, top - drop - 0.15, pz));
-    b.geometry('lampGold', new THREE.CylinderGeometry(0.26, 0.4, 0.36, 10, 1, true).scale(-1, 1, -1), at(px, top - drop - 0.15, pz));
+    b.geometry('ceilingWhite', new THREE.CylinderGeometry(0.2, 0.34, 0.34, 20, 1, true), at(px, top - drop - 0.15, pz));
+    b.geometry('lampGold', new THREE.CylinderGeometry(0.19, 0.33, 0.32, 20, 1, true).scale(-1, 1, -1), at(px, top - drop - 0.15, pz));
   }
 }
 
@@ -123,7 +111,7 @@ export function diningPavilion(b: Builder, x: number, y: number, z: number, r: n
  * gold-lit chandeliers, potted palms, tables with white cloths; waiters standing by the bar and frightened diners
  * crouched against the walls (`extras`, animated by the crowd).
  */
-export function hallDecor(b: Builder, x0: number, x1: number, z0: number, z1: number, y: number, h: number, extras: Extra[]): void {
+export function hallDecor(b: Builder, x0: number, x1: number, z0: number, z1: number, y: number, h: number, extras: Extra[], diners?: Seat[]): void {
   const cx = (x0 + x1) / 2;
   for (const x of [x0 + 0.17, x1 - 0.17]) for (let z = z0 + 9; z < z1 - 2; z += 3) {
     b.box('glassClear', [0.05, 2.2, 2.4], new THREE.Vector3(x, y + 2.3, z), Q, false);
@@ -137,7 +125,7 @@ export function hallDecor(b: Builder, x0: number, x1: number, z0: number, z1: nu
   b.box('columnWood', [6, 2.2, 0.35], new THREE.Vector3(cx - 3.2, y + 1.1, z0 + 0.6), Q, false);
   for (let i = 0; i < 18; i++) b.geometry(i % 3 ? 'glassClear' : 'lampGold', new THREE.CylinderGeometry(0.04, 0.05, 0.3, 6), new THREE.Matrix4().makeTranslation(cx - 5.9 + i * 0.32, y + 1.5 + (i % 2) * 0.55, z0 + 0.8));
   for (let z = z0 + 9; z < z1 - 3; z += 6) {
-    for (const x of [-5, 0, 5]) diningTable(b, cx + x, y, z, 4, x * 0.2);
+    for (const x of [-5, 0, 5]) diningTable(b, cx + x, y, z, 4, x * 0.2, diners);
     chandelier(b, cx, y + h * 0.62 - 0.05, z, 7, 1.1);
   }
   for (const [x, z] of [[x0 + 0.9, z0 + 1], [x1 - 0.9, z0 + 1], [x0 + 0.9, z1 - 1], [x1 - 0.9, z1 - 1]]) {

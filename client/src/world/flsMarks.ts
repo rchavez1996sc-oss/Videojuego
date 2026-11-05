@@ -4,6 +4,7 @@ import type { Heightfield } from './heightfield';
 import type { SignAtlas } from './signs';
 import type { Lot } from './houses';
 import { buildLadder } from './ladders';
+import { pintaWall } from './pintas';
 
 const UP = new THREE.Vector3(0, 1, 0), FLOOR = 2.7;
 
@@ -22,6 +23,10 @@ export function flsMarks(b: Builder, hf: Heightfield, atlas: SignAtlas, lot: Lot
   if (rand() < 0.4) {
     const z = zMid + (rand() < 0.5 ? -2 : 2);
     atlas.add(new THREE.Vector3(wallX + worldSide * 0.04, hf.heightAt(wallX, z) + 1.7, z), sideQ, 6, rand() < 0.75 ? 'stencil' : 'flag', rand);
+  } else if (rand() < 0.6) {
+    const w = Math.min(lot.d - 1.2, floors > 1 ? 9 : 6.4), half = w / 2;
+    const ground = Math.max(hf.heightAt(wallX, zMid - half), hf.heightAt(wallX, zMid + half));
+    if (w > 3.5) pintaWall(new THREE.Vector3(wallX + worldSide * 0.05, ground + 0.35 + w * 0.1875, zMid), sideQ, w);
   }
   if (rand() < 0.35) {
     const x = wallX + worldSide * 0.3;

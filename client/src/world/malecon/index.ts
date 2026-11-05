@@ -92,6 +92,9 @@ function maleconMaterials(lighting: Lighting, { apt, co, pl, br, wd, fo }: Tex):
     lampShade: std('lampShade', { color: '#f4efe4', emissive: '#fff2d6', emissiveIntensity: 0.35, roughness: 0.6 }),
     ceilingWhite: std('ceilingWhite', { color: '#cfc9bc', roughness: 0.85 }),
     linen: std('linen', { color: '#dcd8ce', roughness: 0.9 }),
+    china: std('china', { color: '#f2efe8', roughness: 0.25 }),
+    silver: std('silver', { color: '#c8c8c4', roughness: 0.25, metalness: 0.9 }),
+    bottleGreen: std('bottleGreen', { color: '#1e3a22', roughness: 0.1, metalness: 0.3 }),
     lampGold: std('lampGold', { color: '#d9a640', emissive: '#ffb84a', emissiveIntensity: 0.55, roughness: 0.4 }),
     parquet: std('parquet', { map: parquet().map, normalMap: parquet().normalMap, color: '#b08a70', roughness: 0.45 }),
     lanternGlass: std('lanternGlass', { color: '#e8e2c8', roughness: 0.1, metalness: 0.4, emissive: '#fff4c0', emissiveIntensity: 0.5 }),
@@ -140,7 +143,7 @@ export function buildMalecon(hf: Heightfield, def: MaleconDef, lighting: Lightin
   const mats = { ...barrioMaterials(lighting, atlas), ...maleconMaterials(lighting, tex) };
   const textured = (key: string, set: PbrSet, keys: string[], roughness: number) => ({ material: lighting.setup(new THREE.MeshStandardMaterial({ map: set.map, normalMap: set.normalMap, roughnessMap: set.roughnessMap ?? null, roughness, vertexColors: true }), key), keys });
   const bake = [
-    ...bakeGroups(lighting, ['alu', 'railGreen', 'lampPole', 'chair', 'awningRed', 'lobby', 'steelDark', 'columnGreen', 'flagMast', 'fenceIron', 'benchGreen', 'bollardGreen', 'lhBlack', 'lhWhite', 'roofTile', 'poolWater', 'roofSlate', 'lampBlue', 'awningStripe', 'flatRoof', 'ceilingWhite', 'linen', 'chairGreen', 'cushionOrange', 'greenTrim', 'barrierRed', 'barrierWhite']),
+    ...bakeGroups(lighting, ['alu', 'railGreen', 'lampPole', 'chair', 'awningRed', 'lobby', 'steelDark', 'columnGreen', 'flagMast', 'fenceIron', 'benchGreen', 'bollardGreen', 'lhBlack', 'lhWhite', 'roofTile', 'poolWater', 'roofSlate', 'lampBlue', 'awningStripe', 'flatRoof', 'ceilingWhite', 'linen', 'china', 'silver', 'bottleGreen', 'chairGreen', 'cushionOrange', 'greenTrim', 'barrierRed', 'barrierWhite']),
     textured('apt-baked', tex.apt, [...new Set(FACADES)], 0.85),
     textured('plaster-baked', tex.pl, ['houseWhite', 'houseCream', 'houseGray', 'houseWarm', 'mallWhite', 'terracotta', 'creamWall'], 0.85),
     textured('slabs-baked', slabs(), ['pavement'], 0.9),
