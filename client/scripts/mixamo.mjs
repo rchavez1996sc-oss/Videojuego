@@ -60,12 +60,12 @@ try {
   const only = process.argv[2];
   for (const [key, file] of Object.entries(CHARACTERS)) {
     if (only && only !== key && only !== 'chars') continue;
-    const { data, info } = await page.evaluate(([u]) => window.character(u, 1024, 512), [`/src-assets/${file}`]);
+    const { data, info } = await page.evaluate(([u]) => window.character(u, 2048, 1024), [`/src-assets/${file}`]);
     const lod = await page.evaluate(([u]) => window.character(u, 0, 0), [`/src-assets/${file}`]);
     const raw = join(OUT, `${key}.raw.glb`), rawLod = join(OUT, `${key}.rawlod.glb`);
     writeFileSync(raw, Buffer.from(data, 'base64'));
     writeFileSync(rawLod, Buffer.from(lod.data, 'base64'));
-    pack(raw, join(OUT, `${key}.glb`), ['-si', '0.4', '-cc', '-kn', '-km', '-vtf']);
+    pack(raw, join(OUT, `${key}.glb`), ['-si', '0.75', '-cc', '-kn', '-km', '-vtf']);
     pack(rawLod, join(OUT, `${key}.lod.glb`), ['-si', '0.08', '-cc', '-kn', '-km', '-kv', '-vtf']);
     execFileSync('rm', [raw, rawLod]);
     console.log(key, info.replace(/\n/g, ' | '), `${(statSync(join(OUT, `${key}.glb`)).size / 1e6).toFixed(2)}MB / lod ${(statSync(join(OUT, `${key}.lod.glb`)).size / 1e6).toFixed(2)}MB`);

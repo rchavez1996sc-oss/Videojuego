@@ -97,6 +97,7 @@ class CharacterLibrary {
         if (!(m instanceof THREE.SkinnedMesh)) return;
         const mat = m.material as THREE.MeshStandardMaterial;
         mat.envMapIntensity = 0.6;
+        for (const t of [mat.map, mat.normalMap]) if (t) t.anisotropy = 8;
         if (kind.startsWith('civ')) {
           const looks = variants(mat, `char-${kind}-${mat.name}`, lighting, masks.get(kind));
           this.looks.set(looks[0], looks);
