@@ -40,6 +40,7 @@ import { economicas } from './economicas';
 import { derecho } from './derecho';
 import { quimicaFront } from './quimicaFront';
 import { campusMaterials, campusBake } from './materials';
+import { autoBake } from '../bake';
 import { campusSigns } from './signs';
 
 /** Level 3: Ciudad Universitaria de San Marcos (UNMSM), southern sectors along Av. Venezuela, from the Huaca to Av. Universitaria. */
@@ -143,7 +144,7 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
   const bystanders = { onHurt: (_p: THREE.Vector3) => {} };
   group.add(crowd(plants.seats, plants.standing, lighting, world, bystanders, def.studentGear));
   group.add(campusSigns(signs, seals, lighting));
-  group.add(...b.build(mats, 0.5, bake, 128));
+  group.add(...b.build(mats, 0.5, [...bake, ...autoBake(lighting, mats, bake)], 128));
   if (atlas.geometries.length) group.add(Object.assign(new THREE.Mesh(mergeGeometries(atlas.geometries), mats.signs), { receiveShadow: true }));
 
   const solid = (x: number, z: number) => def.buildings.some((r) => inRect(r, x, z, 1) && !(r.key === 'quimica' && quimicaOpen(r, x, z))) || def.parkings.some((r) => inRect(r, x, z, 0)) || inRect(def.field, x, z, 3.2);

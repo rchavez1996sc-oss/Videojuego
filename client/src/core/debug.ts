@@ -164,6 +164,42 @@ export function installDebug(c: DebugContext): void {
         c.frame(1 / 60);
       }
     },
+    /** Draws of one rendered frame (shadow passes included) by material name and pass, top 30. */
+    drawTally(view: number) {
+      const gl = c.renderer.gl, orig = gl.renderBufferDirect.bind(gl), t: Record<string, number> = {};
+      gl.renderBufferDirect = (cam, scn, geo, mat, obj, grp) => {
+        const k = `${gl.getRenderTarget() ? 'rt' : 'screen'}:${(cam as THREE.Camera).type === 'OrthographicCamera' ? 'shadow' : 'view'}:${mat.name || ((obj as THREE.Mesh).material as THREE.Material)?.name || mat.type}${(obj as THREE.InstancedMesh).isInstancedMesh ? '[I]' : ''}${(obj as THREE.SkinnedMesh).isSkinnedMesh ? '[S]' : ''}`;
+        t[k] = (t[k] ?? 0) + 1;
+        orig(cam, scn, geo, mat, obj, grp);
+      };
+      const [x, dy, z, lx, ldy, lz] = c.views[view] ?? [];
+      if (view >= 0) c.setFreeCam(true);
+      if (view >= 0) c.tpc.place(new THREE.Vector3(x, c.hf.heightAt(x, z) + dy, z), new THREE.Vector3(lx, c.hf.heightAt(lx, lz) + ldy, lz));
+      c.frame(1 / 60);
+      gl.renderBufferDirect = orig;
+      const total = Object.values(t).reduce((a, b) => a + b, 0), shadow = Object.entries(t).filter(([k]) => k.includes(':shadow:')).reduce((a, [, n]) => a + n, 0);
+      return `total ${total} shadow ${shadow}\n` + Object.entries(t).sort((a, b) => b[1] - a[1]).slice(0, 30).map(([k, n]) => `${n} ${k}`).join('\n');
+    },
+    /** Without rendering: meshes in view and shadow casters per top-level child (by name), skinned counted apart. */
+    drawStats() {
+      const cam = c.tpc.camera, fr = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
+      const sph = new THREE.Sphere(), rows: Record<string, [number, number, number, number]> = {};
+      for (const top of c.scene!.children) {
+        const k = `${top.name || top.type}#${top.children.length}`, r = (rows[k] = [0, 0, 0, 0]);
+        top.traverseVisible((o) => {
+          const m = o as THREE.Mesh;
+          if (!m.isMesh) return;
+          const mats = Array.isArray(m.material) ? m.material.length : 1;
+          if (!m.geometry.boundingSphere) m.geometry.computeBoundingSphere();
+          sph.copy((m as THREE.SkinnedMesh).boundingSphere ?? m.geometry.boundingSphere!).applyMatrix4(m.matrixWorld);
+          const inView = !m.frustumCulled || fr.intersectsSphere(sph);
+          if (inView) r[(m as THREE.SkinnedMesh).isSkinnedMesh ? 1 : 0] += mats;
+          if (m.castShadow) r[2] += mats;
+          if (inView) r[3] += ((m as THREE.InstancedMesh).count ?? 1) * (m.geometry.index ? m.geometry.index.count : m.geometry.attributes.position.count) / 3;
+        });
+      }
+      return Object.entries(rows).filter(([, r]) => r[0] + r[1] + r[2] > 5).sort((a, b) => b[1][0] + b[1][1] - a[1][0] - a[1][1]).map(([k, r]) => `${k}: view ${r[0]} skinned ${r[1]} casters ${r[2]} tris ${Math.round(r[3] / 1000)}k`).join('\n');
+    },
     /** Calls/triangles each top-level scene child costs in the current view (toggled off one at a time). */
     breakdown() {
       const gl = c.renderer.gl, info = gl.info, out: string[] = [];

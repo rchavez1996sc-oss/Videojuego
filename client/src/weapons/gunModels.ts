@@ -18,7 +18,8 @@ function kit(lighting: Lighting) {
     const m = new THREE.Mesh(geo, mat);
     m.position.set(x, y, z);
     m.rotation.x = rx;
-    m.castShadow = true;
+    m.castShadow = false;
+    m.userData.noShadow = true;
     g.add(m);
     return m;
   };

@@ -287,9 +287,9 @@ async function boot(): Promise<void> {
     lighting.update(camera);
     if (!skipRender) renderer.render(dt);
     input.endFrame();
-    fps.update(dt, (n) => `${n} fps · ${quality} · res ${Math.round(dynRes.scale * 100)}% · ${renderer.gl.info.render.calls} draws · ${(renderer.gl.info.render.triangles / 1e6).toFixed(2)}M tris · ${gpu}${stats.dataset.errors ? ` · err ${stats.dataset.errors}` : ''}`);
+    fps.update(dt, (n, cpu) => `${n} fps · cpu ${cpu} ms · ${quality} · res ${Math.round(dynRes.scale * 100)}% · ${renderer.gl.info.render.calls} draws · ${(renderer.gl.info.render.triangles / 1e6).toFixed(2)}M tris · ${gpu}${stats.dataset.errors ? ` · err ${stats.dataset.errors}` : ''}`);
   };
-  const safeFrame = guardFrame(() => (document.pointerLockElement === canvas && !counting ? frame(Math.min(clock.getDelta(), 1 / 20)) : (clock.getDelta(), renderer.render(0))), (n) => stats.dataset.errors = String(n));
+  const safeFrame = guardFrame(() => (document.pointerLockElement === canvas && !counting ? fps.time(() => frame(Math.min(clock.getDelta(), 1 / 20))) : (clock.getDelta(), renderer.render(0))), (n) => stats.dataset.errors = String(n));
   if (!shotMode) void prologue.then(() => renderer.gl.setAnimationLoop(() => !failed && safeFrame()));
 }
 

@@ -1,11 +1,12 @@
 import * as THREE from 'three';
 import type { Lighting } from '../../render/lighting';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { NameSign } from './pavilion';
 
 const PX = 96;
 
-/** Building lettering: one alpha-tested plane per sign, text (lines split on \n) drawn to fit its width. */
-function lettering(s: NameSign, lighting: Lighting): THREE.Mesh {
+/** One sign's lettering drawn on its own canvas (text lines split on \n, sized to the widest line). */
+function letters(s: NameSign): HTMLCanvasElement {
   const lines = s.text.split('\n'), c = document.createElement('canvas'), g = c.getContext('2d')!;
   const font = (px: number) => (s.font === 'sans' ? `800 ${px}px "Barlow Condensed", "Arial Narrow", sans-serif` : `700 ${px}px "Times New Roman", Georgia, serif`);
   g.font = font(PX);
@@ -23,15 +24,47 @@ function lettering(s: NameSign, lighting: Lighting): THREE.Mesh {
   g.shadowOffsetY = PX * 0.04;
   g.fillStyle = s.ink;
   lines.forEach((l, i) => g.fillText(l, c.width / 2, PX * 0.15 + PX * 1.25 * (i + 0.5)));
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = 8;
-  const h = (s.w * c.height) / c.width;
-  const mat = lighting.setup(new THREE.MeshStandardMaterial({ map: t, transparent: !s.plate, alphaTest: 0.25, roughness: 0.45, metalness: s.ink.startsWith('#e') ? 0.5 : 0, polygonOffset: true, polygonOffsetFactor: -2 }), 'campus-sign');
-  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(s.w, h), mat);
-  mesh.position.copy(s.pos);
-  mesh.quaternion.copy(s.q);
-  return mesh;
+  return c;
+}
+
+/**
+ * All building lettering packed into shelf atlases of 4096 px (8 px gutters against mipmap bleed) and merged into
+ * one plane mesh per finish (plate or cut-out letters, metallic ink or not): a handful of draws instead of one per sign.
+ */
+function lettering(signs: NameSign[], lighting: Lighting): THREE.Mesh[] {
+  const A = 4096, PAD = 8, cans = signs.map(letters), atlases: { c: HTMLCanvasElement; x: number; y: number; row: number }[] = [];
+  const spots = cans.map((c) => {
+    const k = Math.min(1, (A - 2 * PAD) / c.width), w = Math.ceil(c.width * k), h = Math.ceil(c.height * k);
+    let a = atlases[atlases.length - 1];
+    if (a && a.x + w + PAD > A) [a.x, a.y, a.row] = [PAD, a.y + a.row + PAD, 0];
+    if (!a || a.y + h + PAD > A) {
+      a = { c: Object.assign(document.createElement('canvas'), { width: A, height: A }), x: PAD, y: PAD, row: 0 };
+      atlases.push(a);
+    }
+    a.c.getContext('2d')!.drawImage(c, a.x, a.y, w, h);
+    const spot = { atlas: atlases.length - 1, x: a.x, y: a.y, w, h };
+    [a.x, a.row] = [a.x + w + PAD, Math.max(a.row, h)];
+    return spot;
+  });
+  const heights = atlases.map((a) => a.y + a.row + PAD);
+  const textures = atlases.map((a, i) => {
+    const c = Object.assign(document.createElement('canvas'), { width: A, height: heights[i] });
+    c.getContext('2d')!.drawImage(a.c, 0, 0);
+    return Object.assign(new THREE.CanvasTexture(c), { colorSpace: THREE.SRGBColorSpace, anisotropy: 8 });
+  });
+  const groups = new Map<string, THREE.BufferGeometry[]>();
+  signs.forEach((s, i) => {
+    const c = cans[i], p = spots[i], H = heights[p.atlas], sp = { u0: p.x / A, u1: (p.x + p.w) / A, v0: 1 - (p.y + p.h) / H, v1: 1 - p.y / H }, geo = new THREE.PlaneGeometry(s.w, (s.w * c.height) / c.width), uv = geo.attributes.uv;
+    for (let k = 0; k < uv.count; k++) uv.setXY(k, sp.u0 + uv.getX(k) * (sp.u1 - sp.u0), sp.v0 + uv.getY(k) * (sp.v1 - sp.v0));
+    geo.applyMatrix4(new THREE.Matrix4().compose(s.pos, s.q, new THREE.Vector3(1, 1, 1)));
+    const key = `${p.atlas}|${s.plate ? 1 : 0}|${s.ink.startsWith('#e') ? 1 : 0}`;
+    (groups.get(key) ?? groups.set(key, []).get(key)!).push(geo);
+  });
+  return [...groups].map(([key, geos]) => {
+    const [atlas, plate, metal] = key.split('|').map(Number);
+    const mat = lighting.setup(new THREE.MeshStandardMaterial({ map: textures[atlas], transparent: !plate, alphaTest: 0.25, roughness: 0.45, metalness: metal ? 0.5 : 0, polygonOffset: true, polygonOffsetFactor: -2 }), 'campus-sign');
+    return new THREE.Mesh(mergeGeometries(geos), mat);
+  });
 }
 
 /** San Marcos coat of arms: baroque gold frame round an oval; left the evangelist in red with his book and lion, right a tower over the sea. */
@@ -86,7 +119,7 @@ function crest(size: number, lighting: Lighting, silver = false): THREE.Mesh {
 type Seal = { pos: THREE.Vector3; q: THREE.Quaternion; size: number; silver?: boolean };
 export function campusSigns(signs: NameSign[], seals: Seal[], lighting: Lighting): THREE.Group {
   const g = new THREE.Group();
-  for (const s of signs) g.add(lettering(s, lighting));
+  if (signs.length) g.add(...lettering(signs, lighting));
   for (const seal of seals) {
     const m = crest(seal.size, lighting, seal.silver);
     m.position.copy(seal.pos);

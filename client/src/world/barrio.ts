@@ -19,7 +19,7 @@ import { alleyLife } from './alleys';
 import { STREET_COLORS, stall, trashPile, roadMarkings } from './streetLife';
 import { brick, concrete, plaster, corrugated, estera } from '../render/urbanTextures';
 import { asphalt, rock, wood } from '../render/textures';
-import { bakeGroups } from './bake';
+import { autoBake, bakeGroups } from './bake';
 
 export interface BarrioDef {
   seed: number;
@@ -285,7 +285,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
 
   const group = new THREE.Group();
   const mats = materials(lighting, atlas);
-  const bake = bakeGroups(lighting);
+  const bake = bakeGroups(lighting); bake.push(...autoBake(lighting, mats, bake));
   group.add(...b.build(mats, 0.5, bake, 128));
   if (station?.art) group.add(station.art(lighting));
   if (atlas.geometries.length) {

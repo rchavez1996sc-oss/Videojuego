@@ -296,5 +296,5 @@ export class Rig {
     this.extraNear.forEach((m) => (m.visible = !v));
   }
 
-  set castShadow(v: boolean) { this.root.traverse((o) => o instanceof THREE.Mesh && (o.castShadow = v)); }
+  set castShadow(v: boolean) { this.root.traverse((o) => o instanceof THREE.Mesh && (o.castShadow = v && !o.userData.noShadow)); }
 }

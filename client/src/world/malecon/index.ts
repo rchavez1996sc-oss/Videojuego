@@ -6,7 +6,7 @@ import type { Heightfield } from '../heightfield';
 import type { Lighting } from '../../render/lighting';
 import { Builder } from '../buildingKit';
 import { materials as barrioMaterials, type Barrio } from '../barrio';
-import { bakeGroups } from '../bake';
+import { autoBake, bakeGroups } from '../bake';
 import { SignAtlas } from '../signs';
 import { PAINTS } from '../houses';
 import { concrete, plaster, brick, slabs } from '../../render/urbanTextures';
@@ -150,6 +150,7 @@ export function buildMalecon(hf: Heightfield, def: MaleconDef, lighting: Lightin
     textured('wood-baked', tex.wd, ['woodGate', 'pole'], 0.8),
     textured('foliage-baked', tex.fo, ['hedge', 'flowers', 'lawnRoof'], 0.95),
   ];
+  bake.push(...autoBake(lighting, mats, bake));
   const gardens: THREE.Vector3[] = [];
   const guards: { pos: THREE.Vector3; yaw: number }[] = [];
   const fronts = buildTowers(t, b, def, PAINTS, rand, gardens, guards, (pos, q, w) => atlas.add(pos, q, w, 'shop', rand, rand() < 0.7 ? brands[Math.floor(rand() * brands.length)] : undefined));

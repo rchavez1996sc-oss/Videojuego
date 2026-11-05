@@ -108,7 +108,8 @@ export class Builder {
         const merged = mergeBoxes(list);
         boxProjectUV(merged, uvScale);
         const m = new THREE.Mesh(merged, material);
-        m.castShadow = m.receiveShadow = true;
+        m.receiveShadow = true;
+        m.castShadow = !material.transparent && !/glass|globe|tube|shade|lamp|lit$/i.test(material.name);
         out.push(m);
       }
     };

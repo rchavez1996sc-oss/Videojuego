@@ -25,7 +25,7 @@ export class Lighting {
   readonly csm: CSM;
   readonly sunDir = new THREE.Vector3();
 
-  constructor(private scene: THREE.Scene, camera: THREE.PerspectiveCamera, private gl: THREE.WebGLRenderer, biome: BiomeDef) {
+  constructor(readonly scene: THREE.Scene, camera: THREE.PerspectiveCamera, private gl: THREE.WebGLRenderer, biome: BiomeDef) {
     const phi = THREE.MathUtils.degToRad(90 - biome.sunElevation);
     const theta = THREE.MathUtils.degToRad(biome.sunAzimuth);
     this.sunDir.setFromSphericalCoords(1, phi, theta);
@@ -85,6 +85,7 @@ export class Lighting {
   setup<T extends THREE.Material>(mat: T, key: string, hook?: Hook): T {
     this.csm.setupMaterial(mat);
     if (mat instanceof THREE.MeshStandardMaterial && mat.map && !mat.roughnessMap) mat.roughnessMap = roughFor(mat.map) ?? null;
+    if (!mat.name) mat.name = key;
     const cacheKey = hook ? key : weatherClass(key);
     mat.customProgramCacheKey = () => cacheKey;
     const csmHook = mat.onBeforeCompile.bind(mat), wear = quality !== 'low';
