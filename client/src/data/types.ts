@@ -83,6 +83,8 @@ export interface ChapterDef {
   groundDetail?: number;
   /** Street-name plates on the corner sign posts (`world/streetSigns.ts`); also turns the posts on. */
   streetNames?: string[];
+  /** Loose physical props (cans, bottles, buckets, cones, boxes, crates) per 10 m of street (`fx/looseProps.ts`). */
+  looseProps?: number;
   /** Prologue paragraphs shown while the chapter loads. */
   intro?: string[];
   objective?: import('../systems/objective').ObjectiveDef;

@@ -161,6 +161,36 @@ export class Combat {
     const handler = hitHandler(handle);
     if (handler && handler(def.damage * falloff, end) !== false) return;
     this.impact(end, normal, surfaceOf(handle), toAim);
+    this.afterHit(end, normal, surfaceOf(handle), toAim, handle, def.damage * falloff, def.range - travelled);
+  }
+
+  /**
+   * What the round does next: off metal, stone or tile at a grazing angle (< 15°) it usually ricochets (spark,
+   * ping, a short tracer, and it can still hit something at 30 % damage); through thin wood or sheet metal
+   * (< 22 cm, measured by a ray back from the far side) it goes on at 55 % damage, leaving an exit hole.
+   */
+  private afterHit(at: THREE.Vector3, normal: THREE.Vector3, surf: Surface, dir: THREE.Vector3, handle: number, dmg: number, left: number): void {
+    if ((surf === 'metal' || surf === 'rock' || surf === 'tile') && -dir.dot(normal) < 0.26 && Math.random() < 0.7) {
+      const out = dir.clone().reflect(normal).add(new THREE.Vector3((Math.random() - 0.5) * 0.25, Math.random() * 0.12, (Math.random() - 0.5) * 0.25)).normalize();
+      const from = at.clone().addScaledVector(normal, 0.02), hit = this.ray(from, out, 30);
+      this.tracers.fire(from, hit ? from.clone().addScaledVector(out, hit.timeOfImpact) : from.clone().addScaledVector(out, 30));
+      this.graze(at, out);
+      return void (hit && this.landed(hit, from, out, dmg * 0.3));
+    }
+    if (surf !== 'wood' && surf !== 'metal') return;
+    const probe = 0.3, back = this.world.castRay(new RAPIER.Ray(at.clone().addScaledVector(dir, probe), dir.clone().negate()), probe, true, undefined, undefined, undefined, undefined, (c) => c.handle === handle);
+    const thick = back ? probe - back.timeOfImpact : probe;
+    if (thick >= 0.22 || left < 2) return;
+    const exit = at.clone().addScaledVector(dir, thick + 0.01);
+    this.impact(exit, dir, surf, dir);
+    const hit = this.ray(exit, dir, Math.min(left, 80), new Map());
+    if (hit) this.landed(hit, exit, dir, dmg * 0.55);
+  }
+
+  private landed(hit: RAPIER.RayColliderHit & { normal: RAPIER.Vector }, from: THREE.Vector3, dir: THREE.Vector3, dmg: number): void {
+    const end = from.clone().addScaledVector(dir, hit.timeOfImpact), h = hit.collider.handle, handler = hitHandler(h);
+    if (handler && handler(dmg, end) !== false) return;
+    this.impact(end, new THREE.Vector3(hit.normal.x, hit.normal.y, hit.normal.z), surfaceOf(h), dir);
   }
 
   impact(point: THREE.Vector3, normal: THREE.Vector3, surface: Surface, dir: THREE.Vector3): void {

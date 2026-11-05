@@ -5,6 +5,7 @@ import { cloudDeck } from './clouds';
 import { CSM } from 'three/examples/jsm/csm/CSM.js';
 import { onQuality, preset, quality } from '../core/settings';
 import { weatherClass, weathering } from './weathering';
+import { WIND } from './wind';
 import type { BiomeDef } from '../data/types';
 
 type Hook = (shader: THREE.WebGLProgramParametersWithUniforms, renderer: THREE.WebGLRenderer) => void;
@@ -130,6 +131,7 @@ export class Lighting {
   }
 
   update(camera: THREE.Camera): void {
+    WIND.value = performance.now() / 1000;
     this.csm.update();
     const e = camera.matrixWorld.elements, l = this.lastCam.elements;
     let moved = false;

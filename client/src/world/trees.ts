@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { windHook } from '../render/wind';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { mulberry32 } from '../core/rng';
 import type { Lighting } from '../render/lighting';
@@ -54,10 +55,10 @@ export interface TreePart { trunk: THREE.BufferGeometry; canopy: THREE.BufferGeo
 
 export function treeParts(lighting: Lighting): TreePart[] {
   const bark = barkTex();
-  const barkMat = lighting.setup(new THREE.MeshStandardMaterial({ map: bark.map, normalMap: bark.normalMap, color: '#8a7a6a', roughness: 0.95 }), 'bark');
+  const barkMat = lighting.setup(new THREE.MeshStandardMaterial({ map: bark.map, normalMap: bark.normalMap, color: '#8a7a6a', roughness: 0.95 }), 'bark', windHook(0.004));
   const leafMat = lighting.setup(new THREE.MeshStandardMaterial({
     map: leafTexture(), alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.8, color: '#a8b890',
-  }), 'leaf');
+  }), 'leaf', windHook(0.004, 0.012));
   return [3, 4, 5].map((seed) => {
     const r = mulberry32(seed * 31);
     const h = 4 + r() * 3;

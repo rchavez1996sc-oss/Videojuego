@@ -16,6 +16,7 @@ import { litter } from '../world/litter';
 import { groundDetail } from '../world/groundDetail';
 import { streetSigns } from '../world/streetSigns';
 import { roadAt } from '../world/groundStrips';
+import { LooseProps } from '../fx/looseProps';
 
 /** Pedestrians plus city life (traffic, strays, birds, ambience) and the shared "something scary happened" alarm. */
 export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world: RAPIER.World; hf: Heightfield; lighting: Lighting; mixer: Mixer; sfx: Sfx; combat: Combat; hud: Hud; camera: THREE.Camera; scene: THREE.Scene }) {
@@ -23,6 +24,8 @@ export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world
   const life = barrio && ch.life ? new CityLife(ch.life, d.world, d.hf, barrio, d.lighting, d.mixer, d.camera) : null;
   if (barrio && ch.litter) d.scene.add(litter(barrio.graph, d.world, ch.litter, d.lighting));
   if (barrio && ch.groundDetail) d.scene.add(groundDetail(barrio.graph, d.world, ch.groundDetail, d.lighting, (x, z) => d.hf.maskAt(x, z, 0) > 0.5 || d.hf.isPaved(z)));
+  const props = barrio && ch.looseProps ? new LooseProps(barrio.graph, d.world, d.lighting, ch.looseProps, d.sfx, d.camera) : null;
+  if (props) d.scene.add(props.group);
   if (barrio && ch.streetNames) d.scene.add(streetSigns(barrio.graph, d.world, d.lighting, ch.streetNames, (x, z) => d.hf.maskAt(x, z, 0) > 0.5 || d.hf.isPaved(z) || roadAt(x, z)));
   const state = { casualties: 0, onFail: () => {} };
   const casualty = (weight = 1) => {
@@ -65,5 +68,5 @@ export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world
       casualty(weight);
     };
   }
-  return { civilians, life, alarm, state };
+  return { civilians, life, alarm, state, props };
 }

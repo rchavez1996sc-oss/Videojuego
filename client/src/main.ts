@@ -147,7 +147,7 @@ async function boot(): Promise<void> {
   physicsStep(world);
   const enemies = new Enemies(Object.fromEntries(Object.entries(enemyDefs as unknown as Record<string, EnemyDef>).map(([k, d]) => [k, { ...d, hp: Math.round(d.hp * (ch.enemyHealth ?? 1)) }])), ch.enemies ?? [], world, hf, lighting, player, combat, sfx, camera, nav, ch.enemyNear);
   scene.add(enemies.group);
-  const { civilians, life, alarm, state: populace } = createPopulace(ch, barrio, { world, hf, lighting, mixer, sfx, combat, hud, camera, scene });
+  const { civilians, life, alarm, state: populace, props } = createPopulace(ch, barrio, { world, hf, lighting, mixer, sfx, combat, hud, camera, scene });
   let failed = false;
   populace.onFail = () => window.setTimeout(() => {
     if (!failed) showMissionFailed('El FLS no dispara contra su propio pueblo. Demasiadas bajas civiles: la gente del barrio ya no confía en ustedes.');
@@ -187,7 +187,7 @@ async function boot(): Promise<void> {
     const g = (objective?.def ?? defense!.def) as { complete: string; reward: string; loot?: string[]; unlock?: string };
     showMissionComplete(g.complete, g.reward, `ENEMIGOS ABATIDOS ${enemies.list.length - enemies.aliveCount}/${enemies.list.length} · ${defense ? `ESTUDIANTES CAÍDOS ${defense.students.lost}` : `BAJAS CIVILES ${populace.casualties}`} · VIDAS ${lives}`, g.loot, g.unlock, ch.next);
   });
-  const blast = (at: THREE.Vector3) => (alarm(at, 150), detonate(at, { combat, sfx, tpc, enemies, player, world, playerAlive: deadT <= 0, also: [civilians, squad, life, defense?.students] }));
+  const blast = (at: THREE.Vector3) => (alarm(at, 150), detonate(at, { combat, sfx, tpc, enemies, player, world, playerAlive: deadT <= 0, also: [civilians, squad, life, props, defense?.students] }));
   grenades.onExplode = blast;
   enemies.onEnemyHit = (kill, headshot) => {
     sfx.hitmarker(kill);
