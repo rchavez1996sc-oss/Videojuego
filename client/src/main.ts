@@ -257,7 +257,7 @@ async function boot(): Promise<void> {
       tpc.update(dt, input, player.position, player.crouchAmount, player.collisionHandle);
       camera.updateMatrixWorld();
       player.model.root.updateMatrixWorld(true);
-      if (!nadeMode.update(input, deadT <= 0) && deadT <= 0 && !melee.update(dt, input)) combat.update(dt, input, input.aiming, player.airborne); else combat.fx(dt);
+      if (!nadeMode.update(input, deadT <= 0, dt) && deadT <= 0 && !melee.update(dt, input)) combat.update(dt, input, input.aiming, player.airborne); else combat.fx(dt);
       grenades.update(dt);
     } else combat.fx(dt);
     enemies.sync();

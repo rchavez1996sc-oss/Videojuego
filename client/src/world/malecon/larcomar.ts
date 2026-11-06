@@ -149,7 +149,14 @@ function kiosk(b: Builder, at: THREE.Vector3): void {
   b.box('brick', [10, 4, 7], at.clone().setY(at.y + 2), Q, true);
   b.box('lawnRoof', [11, 0.4, 8.5], at.clone().setY(at.y + 4.6), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), 0.18), false);
   b.box('stripe', [6, 0.06, 1.6], new THREE.Vector3(at.x, at.y + 3.1, at.z + 4.2), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), 0.3), false);
-  b.box('shopGlass', [5, 2.4, 0.06], new THREE.Vector3(at.x, at.y + 1.4, at.z + 3.53), Q, false);
+  for (const side of [1, -1]) {
+    const z = at.z + side * 3.53, frame = (w: number, h: number, x: number, y: number) => b.box('alu', [w, h, 0.1], new THREE.Vector3(at.x + x, at.y + y, z), Q, false);
+    b.box('lobby', [5, 2.4, 0.02], new THREE.Vector3(at.x, at.y + 1.4, at.z + side * 3.505), Q, false);
+    b.box('shopGlass', [5, 2.4, 0.06], new THREE.Vector3(at.x, at.y + 1.4, z), Q, false);
+    frame(5.3, 0.15, 0, 2.66);
+    frame(5.3, 0.15, 0, 0.14);
+    for (const x of [-2.57, -0.85, 0.85, 2.57]) frame(0.12, 2.5, x, 1.4);
+  }
 }
 
 /** Triangular shade sail stretched between three masts. */

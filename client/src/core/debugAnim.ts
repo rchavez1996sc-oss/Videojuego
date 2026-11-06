@@ -21,6 +21,18 @@ export function animDebug(c: DebugContext) {
       frameOn(side, dist);
       return `total ${total.toFixed(2)} at ${(1 - g.reloading / total).toFixed(2)}`;
     },
+    /** Grenade drawn, then the real throw (as on a click) run for `t` seconds of game time, framed from `side`. */
+    throwAt(t: number, side = 0.9, dist = 2.6) {
+      c.setFreeCam(false);
+      const gm = c.grenadeMode!;
+      c.grenades.count = 3;
+      gm.equipped = true;
+      for (let i = 0; i < 12; i++) c.frame(1 / 30);
+      gm.startThrow();
+      for (let k = 0; k < Math.round(t * 30); k++) c.frame(1 / 30);
+      frameOn(side, dist);
+      return `thrown ${3 - c.grenades.count} live ${c.grenades.group.children.length}`;
+    },
     /** Throws along the view at `pitch` and samples the grenade every 0.1 s until it explodes. */
     nadeTrace(pitch = 0) {
       c.setFreeCam(false);

@@ -18,6 +18,8 @@ export class GrenadeMode {
   readonly group = new THREE.Group();
   equipped = false;
   private drawnAt = 0;
+  /** Game time (s): the throw is timed against the animation, which runs on game time, not the wall clock. */
+  private clock = 0;
   private throwing: { t0: number; released: boolean } | null = null;
   private arc: THREE.Line;
   private marker: THREE.Mesh;
@@ -91,8 +93,8 @@ export class GrenadeMode {
   }
 
   /** Returns true while the grenade is in hand (the rifle must not fire). */
-  update(input: Input, alive: boolean): boolean {
-    const now = performance.now() / 1000, m = this.player.model;
+  update(input: Input, alive: boolean, dt: number): boolean {
+    const now = (this.clock += dt), m = this.player.model;
     if (!alive || input.hit('Digit1')) this.stow();
     else if (input.hit('KeyG') && !this.throwing) {
       if (this.equipped) this.stow();
@@ -121,12 +123,15 @@ export class GrenadeMode {
     m.pose('throw', input.aiming ? COCKED : READY);
     if (input.aiming) this.preview();
     else this.show(false);
-    if (ready && input.hit('Mouse0')) {
-      this.throwing = { t0: now, released: false };
-      this.sfx.grenadePin();
-      m.gesture('throw', THROW_TIME, FROM);
-      this.show(false);
-    }
+    if (ready && input.hit('Mouse0')) this.startThrow();
     return true;
+  }
+
+  /** Starts the throw from the cocked arm; the grenade leaves the hand `RELEASE` s later. */
+  startThrow(): void {
+    this.throwing = { t0: this.clock, released: false };
+    this.sfx.grenadePin();
+    this.player.model.gesture('throw', THROW_TIME, FROM);
+    this.show(false);
   }
 }
