@@ -30,7 +30,7 @@ export class Students {
       rig.root.rotation.y = rand() * Math.PI * 2;
       rig.nearOnly(...gear(rig.bones, { backpack: 0.7, book: 0.2 }, lighting, rand));
       const collider = world.createCollider(RAPIER.ColliderDesc.capsule(0.35, 0.32).setTranslation(p.x, p.y + 0.7, p.z));
-      const s: Student = { rig, collider, position: p.clone(), alive: true, crouched: true, hp: 150, dyingT: 0 };
+      const s: Student = { rig, collider, position: p.clone(), alive: true, crouched: true, hp: 200, dyingT: 0 };
       onHit(collider.handle, (dmg) => void this.damage(s, dmg, true));
       this.byHandle.set(collider.handle, s);
       this.list.push(s);
@@ -46,7 +46,7 @@ export class Students {
   policeHit(handle: number, dmg: number): boolean {
     const s = this.byHandle.get(handle);
     if (!s?.alive) return false;
-    this.damage(s, dmg * 0.6, false);
+    this.damage(s, dmg * 0.4, false);
     return true;
   }
 
