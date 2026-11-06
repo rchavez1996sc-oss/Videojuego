@@ -7,6 +7,12 @@ import { innocents } from '../../systems/blame';
 const solid = (c: RAPIER.Collider) => !innocents.has(c.handle);
 
 const TURNS = [0, 0.8, -0.8, 1.6, -1.6, 2.4, -2.4];
+const BODY = new RAPIER.Ball(0.3), ROT = { x: 0, y: 0, z: 0, w: 1 };
+
+/** Sweeps a body-wide ball at chest height along `dir` (thin poles and wall edges a centre ray would slip past). */
+function blocked(world: RAPIER.World, p: THREE.Vector3, dir: THREE.Vector3, dist: number, self: RAPIER.Collider): boolean {
+  return !!world.castShape({ x: p.x, y: p.y + 0.95, z: p.z }, ROT, { x: dir.x, y: 0, z: dir.z }, BODY, 0, dist, true, RAPIER.QueryFilterFlags.EXCLUDE_SENSORS, undefined, self, undefined, solid);
+}
 
 /** An extra that heard gunfire: it runs away from the shot, steering round whatever is ahead, then slips away out of sight. */
 export interface Fleer { rig: Rig; col: RAPIER.Collider; dir: THREE.Vector3; speed: number; t: number }
@@ -35,10 +41,10 @@ export function stepFlee(f: Fleer, dt: number, world: RAPIER.World, camera: THRE
   let moved = false;
   for (const turn of TURNS) {
     const dir = f.dir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), turn);
-    const hit = world.castRay(new RAPIER.Ray({ x: p.x, y: p.y + 0.8, z: p.z }, dir), 1.6, true, undefined, undefined, f.col, undefined, solid);
-    if (hit) continue;
-    f.dir.lerp(dir, Math.min(1, dt * 6)).normalize();
-    p.addScaledVector(f.dir, f.speed * dt);
+    if (blocked(world, p, dir, 1.4, f.col)) continue;
+    const step = f.speed * dt, eased = f.dir.clone().lerp(dir, Math.min(1, dt * 6)).normalize();
+    f.dir.copy(blocked(world, p, eased, step + 0.1, f.col) ? dir : eased);
+    p.addScaledVector(f.dir, step);
     moved = true;
     break;
   }

@@ -7,7 +7,7 @@ export function multired(b: Builder, k: { x: number; z: number; yaw: number }): 
   const at = framer(k), q = yawQ(k.yaw), box = (mat: string, size: [number, number, number], x: number, y: number, z: number, collide = false) => b.box(mat, size, at(x, y, z), q, collide);
   const W = 1.1, D = 1.0, H = 2.55;
   box('concrete', [W * 2 + 0.2, 0.1, D * 2 + 0.2], 0, 0.05, 0, true);
-  for (const [x, z] of [[-W, -D], [W, -D], [-W, D], [W, D], [0.15, D]]) box('uniRed', [0.1, H, 0.1], x, H / 2, z);
+  for (const [x, z] of [[-W, -D], [W, -D], [-W, D], [W, D], [0.15, D]]) box('uniRed', [0.12, H, 0.12], x, H / 2, z, true);
   box('uniRed', [W * 2 + 0.5, 0.55, D * 2 + 0.5], 0, H + 0.27, 0.05);
   box('uniWhite', [W * 2 + 0.3, 0.06, D * 2 + 0.3], 0, H, 0.05);
   for (const s of [-1, 1]) {
@@ -17,9 +17,10 @@ export function multired(b: Builder, k: { x: number; z: number; yaw: number }): 
   }
   box('uniWhite', [W * 2, H, 0.08], 0, H / 2, -D + 0.05, true);
   box('glassClear', [1.15, H - 0.2, 0.03], 0.15 + 0.58, H / 2, D);
+  box('none', [1.15, H, 0.12], 0.15 + 0.58, H / 2, D, true);
   box('uniWhite', [1.15, 0.18, 0.035], 0.73, 1.45, D);
   box('alu', [0.62, 1.5, 0.55], -0.45, 0.75, -D + 0.4, true);
   box('darkGlass', [0.36, 0.28, 0.04], -0.45, 1.28, -D + 0.69);
-  box('uniRed', [0.08, 0.9, 0.08], W + 0.12, 0.45, D - 0.3);
+  box('uniRed', [0.08, 0.9, 0.08], W + 0.12, 0.45, D - 0.3, true);
   return { pos: at(0.05, H + 0.27, D + 0.31), q, w: 1.7, text: 'multiRed', ink: '#f2e2c8', font: 'sans' };
 }
