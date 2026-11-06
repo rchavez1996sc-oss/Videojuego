@@ -4,7 +4,8 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { buildAK } from './akModel';
 
 export type GunModel = 'ak' | 'pistol' | 'smg';
-type Built = { group: THREE.Group; muzzle: THREE.Object3D; ejector: THREE.Object3D };
+/** `support`: where the left hand closes on a long gun (handguard / foregrip), +z forward. */
+type Built = { group: THREE.Group; muzzle: THREE.Object3D; ejector: THREE.Object3D; support?: THREE.Object3D };
 
 /** Origin sits on top of the grip (where the right hand closes), +z forward, like the AK. */
 export function buildWeapon(kind: GunModel, lighting: Lighting): Built {
@@ -69,7 +70,7 @@ function smg(lighting: Lighting): Built {
   add(new THREE.TorusGeometry(0.02, 0.004, 6, 12, Math.PI).rotateY(Math.PI / 2), polymer, 0, -0.012, 0.035, Math.PI);
   for (const x of [-0.022, 0.022]) add(cyl(0.005, 0.24, 8), metal, x, 0.03, -0.2);
   add(new THREE.BoxGeometry(0.06, 0.1, 0.02), polymer, 0, 0.0, -0.32);
-  return { group: g, muzzle: point(0, 0.03, 0.405), ejector: point(0.03, 0.05, 0.1) };
+  return { group: g, muzzle: point(0, 0.03, 0.405), ejector: point(0.03, 0.05, 0.1), support: point(0, 0.0, 0.25) };
 }
 
 /** Frag grenade (metres × `scale`): egg body, fuse head and spoon; shared by the thrown grenade and the one in hand. */

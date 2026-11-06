@@ -10,6 +10,14 @@ export function animDebug(c: DebugContext) {
     c.frame(1 / 60);
   };
   return {
+    /** Left wrist to handguard distance (m) and IK weight for the player and each ally. */
+    gripGap() {
+      const rigs = [c.player.model, ...(c.squad?.list.map((a) => a.unit.model) ?? [])] as unknown as { inst: { bones: Map<string, THREE.Bone> }; grip?: { weapon: THREE.Object3D; pos: THREE.Vector3 }; ikW: number }[];
+      return rigs.map((r) => {
+        const h = r.inst.bones.get('mixamorigLeftHand')!.getWorldPosition(new THREE.Vector3());
+        return r.grip ? `${h.distanceTo(r.grip.weapon.localToWorld(r.grip.pos.clone())).toFixed(3)}m w${r.ikW.toFixed(2)} pos ${r.grip.pos.toArray().map((x) => x.toFixed(2))} ws ${r.grip.weapon.getWorldScale(new THREE.Vector3()).x.toFixed(2)}` : 'no grip';
+      }).join(' | ');
+    },
     /** Empties the magazine, plays the reload up to `progress` (0..1) and frames the player from `side`. */
     reloadAt(progress: number, side = 1.2, dist = 3) {
       c.setFreeCam(false);

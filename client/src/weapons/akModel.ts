@@ -17,7 +17,7 @@ function profile(points: [number, number][], width: number, curves: Record<numbe
   return g;
 }
 
-export function buildAK(lighting: Lighting): { group: THREE.Group; muzzle: THREE.Object3D; ejector: THREE.Object3D } {
+export function buildAK(lighting: Lighting): { group: THREE.Group; muzzle: THREE.Object3D; ejector: THREE.Object3D; support: THREE.Object3D } {
   const wd = wood();
   const metal = lighting.setup(new THREE.MeshStandardMaterial({ color: '#2a2b2e', roughness: 0.42, metalness: 0.85 }), 'ak-metal');
   const worn = lighting.setup(new THREE.MeshStandardMaterial({ color: '#3a3936', roughness: 0.55, metalness: 0.7 }), 'ak-worn');
@@ -57,5 +57,8 @@ export function buildAK(lighting: Lighting): { group: THREE.Group; muzzle: THREE
   const ejector = new THREE.Object3D();
   ejector.position.set(0.03, 0.03, 0.05);
   g.add(ejector);
-  return { group: g, muzzle, ejector };
+  const support = new THREE.Object3D();
+  support.position.set(0, -0.005, 0.27);
+  g.add(support);
+  return { group: g, muzzle, ejector, support };
 }

@@ -47,6 +47,20 @@ function extra(lighting: Lighting, rand: () => number, at: THREE.Vector3, yaw: n
   return rig;
 }
 
+/** A diner hearing gunfire drops off the chair beside the table and cowers on the floor (hit there, it dies like a standing extra). */
+function duck(x: Rig, s: { col: RAPIER.Collider; floor: number }): void {
+  if (!x.loop('terrified')) return;
+  const yaw = x.root.rotation.y, side = Math.random() < 0.5 ? 1 : -1;
+  x.root.position.x += Math.cos(yaw) * 0.55 * side - Math.sin(yaw) * 0.25;
+  x.root.position.z += -Math.sin(yaw) * 0.55 * side - Math.cos(yaw) * 0.25;
+  x.root.position.y = s.floor;
+  x.root.rotation.y = yaw + side * (0.6 + Math.random() * 0.8);
+  x.root.userData.ducked = true;
+  x.far = false;
+  const p = x.root.position;
+  s.col.setTranslation({ x: p.x, y: s.floor + 0.6, z: p.z });
+}
+
 /** Called when a bystander (extra, paraglider) is shot; set by the populace. */
 export interface Bystanders { onHurt: (p: THREE.Vector3) => void; alarm?: (at: THREE.Vector3, radius: number) => void }
 
@@ -78,7 +92,7 @@ function shootable(world: RAPIER.World, rig: Rig, floor: number, seated: boolean
     col.setEnabled(false);
     rig.far = false;
     const ran = fleeing.delete(rig);
-    if (seated && !ran) {
+    if (seated && !ran && !rig.root.userData.ducked) {
       rig.dead = true;
       limp.add(rig);
       const bones = SLUMP.flatMap(([n, fwd, lean]) => {
@@ -103,9 +117,11 @@ export function crowd(seats: { pos: THREE.Vector3; yaw: number; stay?: boolean }
   const g = new THREE.Group(), r = mulberry32(12);
   let rigs: Rig[] | null = null, last = 0, prev = performance.now();
   const near = new Set<Rig>(), slumps: Slump[] = [], limp = new Set<Rig>(), dying = new Map<Rig, number>();
-  const fleeing = new Map<Rig, Fleer>(), gone = new Set<Rig>(), info = new Map<Rig, { col: RAPIER.Collider; floor: number; calm: boolean }>();
+  const fleeing = new Map<Rig, Fleer>(), gone = new Set<Rig>(), info = new Map<Rig, { col: RAPIER.Collider; floor: number; calm: boolean; diner: boolean }>();
+  const ducking = new Map<Rig, number>();
   hurt.alarm = (at, radius) => {
     for (const [x, s] of info) {
+      if (s.diner && !x.dead && !x.root.userData.ducked && !ducking.has(x) && x.root.position.distanceTo(at) < radius * 1.5) ducking.set(x, 0.15 + Math.random() * 1.1);
       if (x.dead || !s.calm || fleeing.has(x) || gone.has(x) || x.root.position.distanceTo(at) > radius) continue;
       s.col.setEnabled(true);
       x.root.visible = true;
@@ -129,12 +145,17 @@ export function crowd(seats: { pos: THREE.Vector3; yaw: number; stay?: boolean }
       if (kit && !seated) x.nearOnly(...gear(x.bones, kit, lighting, r));
       x.root.updateMatrixWorld(true);
       const col = shootable(world, x, spot.pos.y, seated, hurt, slumps, limp, dying, fleeing);
-      info.set(x, { col, floor: spot.pos.y, calm: seated ? !(spot as { stay?: boolean }).stay : (spot as Extra).key !== 'terrified' });
+      const diner = seated && !!(spot as { stay?: boolean }).stay;
+      info.set(x, { col, floor: spot.pos.y, calm: seated ? !diner : (spot as Extra).key !== 'terrified', diner });
       x.root.visible = false;
       rigs.push(x);
       g.add(x.root);
     }
     for (let i = slumps.length - 1; i >= 0; i--) if (!slumpStep(slumps[i], dt)) slumps.splice(i, 1);
+    for (const [x, t] of ducking) {
+      if (t - dt > 0) ducking.set(x, t - dt);
+      else ducking.delete(x), x.dead || duck(x, info.get(x)!);
+    }
     for (const [x, f] of fleeing) if (!stepFlee(f, dt, world, camera)) (fleeing.delete(x), gone.add(x));
     for (const x of near) if (!limp.has(x) && !dying.has(x) && !fleeing.has(x)) x.tick(dt);
     for (const [x, t] of dying) {

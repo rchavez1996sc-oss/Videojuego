@@ -39,11 +39,45 @@ export function twoBoneIk(a: THREE.Object3D, b: THREE.Object3D, c: THREE.Object3
 
 const RH = v(), LEFT = v(), DOWN = new THREE.Vector3(0, -1, 0);
 
-/** Pistol support hand: the left wrist pulled beside and just under the right one so both hands close round the grip. */
-export function supportHand(bones: Map<string, THREE.Bone>, model: THREE.Object3D, weight: number): void {
+/** Fingers of the support hand in the weapon frame (+x = ejection side): across under the handguard and up its right flank. */
+const WRAP = new THREE.Vector3(0.75, 0.55, 0.35).normalize();
+
+/** Left hand on a long gun, in the weapon's frame: wrist position (moved onto this gun's handguard) and hand rotation. */
+export interface GripPose { weapon: THREE.Object3D; pos: THREE.Vector3; quat: THREE.Quaternion }
+
+/**
+ * Taken in the rifle aim pose: keeps the Mixamo left hand's orientation relative to the gun, with the wrist just
+ * under and behind this weapon's `support` point (the clip's hand sits where a longer rifle's handguard would be,
+ * which left it in the air beside a short subfusil). Weapon matrices must be current.
+ */
+export function calibrateGrip(weapon: THREE.Object3D, leftHand: THREE.Object3D, support: THREE.Object3D): GripPose {
+  weapon.updateMatrixWorld(true);
+  const local = weapon.matrixWorld.clone().invert().multiply(leftHand.matrixWorld), pos = v(), quat = new THREE.Quaternion();
+  local.decompose(pos, quat, v());
+  pos.set(support.position.x - 0.03, support.position.y - 0.035, support.position.z - 0.05);
+  const fingers = new THREE.Vector3(0, 1, 0).applyQuaternion(quat);
+  quat.premultiply(new THREE.Quaternion().setFromUnitVectors(fingers, WRAP));
+  return { weapon, pos, quat };
+}
+
+const GQ = new THREE.Quaternion(), PQ = new THREE.Quaternion(), GP = v();
+
+/**
+ * Support hand. Pistol: the left wrist beside and just under the right one so both hands close round the grip.
+ * Long gun: wrist and hand rotation from the calibrated grip, so the palm wraps the handguard.
+ */
+export function supportHand(bones: Map<string, THREE.Bone>, model: THREE.Object3D, weight: number, grip?: GripPose): void {
   const arm = bones.get('mixamorigLeftArm'), fore = bones.get('mixamorigLeftForeArm'), hand = bones.get('mixamorigLeftHand'), right = bones.get('mixamorigRightHand');
   if (!arm || !fore || !hand || !right || weight <= 0.001) return;
   model.updateMatrixWorld(true);
+  if (grip) {
+    twoBoneIk(arm, fore, hand, grip.weapon.localToWorld(GP.copy(grip.pos)), weight);
+    fore.updateWorldMatrix(true, false);
+    fore.getWorldQuaternion(PQ);
+    grip.weapon.getWorldQuaternion(GQ);
+    hand.quaternion.slerp(PQ.invert().multiply(GQ.multiply(grip.quat)), weight);
+    return;
+  }
   right.getWorldPosition(RH);
   LEFT.setFromMatrixColumn(model.matrixWorld, 0).normalize();
   twoBoneIk(arm, fore, hand, RH.addScaledVector(LEFT, 0.05).addScaledVector(DOWN, 0.035), weight);
