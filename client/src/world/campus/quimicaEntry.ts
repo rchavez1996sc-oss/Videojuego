@@ -49,7 +49,7 @@ export function quimicaEntry(b: Builder, box: Box, at: At, q: THREE.Quaternion, 
   const vault = new THREE.CylinderGeometry(w / 2 + 0.6, w / 2 + 0.6, L - 1.9, 20, 1, true, -Math.PI / 2, Math.PI).rotateZ(Math.PI / 2);
   for (const flip of [1, -1]) b.geometry('mullion', vault.clone(), new THREE.Matrix4().compose(at(x0 + 2.2 + (L - 2.5) / 2, 4.2, 0), q, new THREE.Vector3(flip, 0.45, 1)));
   box('socBeige', [0.5, 0.55, 18], x0 + 0.4, 3.35, 0);
-  box('uniWhite', [0.06, 0.28, 9], x0 + 0.02, 1.35, 0);
+  for (const s of [-1, 1]) box('uniWhite', [0.06, 0.28, 2.6], x0 + 0.02, 1.35, s * 3.2);
 
   box('uniYellow', [1.1, 7.2, 1.1], x0 + 0.55, 3.6, -w / 2 - 5.6, true);
   box('uniYellow', [1.1, 7.8, 1.1], x0 + 0.55, 3.9, -w / 2 - 9.4, true);
