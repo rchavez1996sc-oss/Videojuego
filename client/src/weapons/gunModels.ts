@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { Lighting } from '../render/lighting';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { buildAK } from './akModel';
 
 export type GunModel = 'ak' | 'pistol' | 'smg';
@@ -69,4 +70,14 @@ function smg(lighting: Lighting): Built {
   for (const x of [-0.022, 0.022]) add(cyl(0.005, 0.24, 8), metal, x, 0.03, -0.2);
   add(new THREE.BoxGeometry(0.06, 0.1, 0.02), polymer, 0, 0.0, -0.32);
   return { group: g, muzzle: point(0, 0.03, 0.405), ejector: point(0.03, 0.05, 0.1) };
+}
+
+/** Frag grenade (metres × `scale`): egg body, fuse head and spoon; shared by the thrown grenade and the one in hand. */
+export function grenadeGeometry(scale = 1): THREE.BufferGeometry {
+  return mergeGeometries([
+    new THREE.SphereGeometry(0.045, 14, 10).scale(1, 1.2, 1),
+    new THREE.CylinderGeometry(0.016, 0.016, 0.035, 10).translate(0, 0.06, 0),
+    new THREE.BoxGeometry(0.012, 0.05, 0.02).translate(0.022, 0.045, 0),
+    new THREE.TorusGeometry(0.012, 0.002, 4, 10).rotateY(Math.PI / 2).translate(-0.016, 0.07, 0),
+  ].map((g) => g.toNonIndexed().deleteAttribute('uv')))!.scale(scale, scale, scale);
 }

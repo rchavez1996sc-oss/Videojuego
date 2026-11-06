@@ -24,6 +24,6 @@ export class MoveFeel {
     if (player.landImpact > 0.6 && !this.landed) sfx.footstep(1.6, this.ground());
     this.landed = player.landImpact > 0.6;
     tpc.dip = player.landImpact * 0.3;
-    tpc.fovBoost = THREE.MathUtils.damp(tpc.fovBoost, player.sprinting ? 7 : 0, 6, dt);
+    tpc.fovBoost = THREE.MathUtils.damp(tpc.fovBoost, player.sprinting ? 4 : 0, 6, dt);
   }
 }

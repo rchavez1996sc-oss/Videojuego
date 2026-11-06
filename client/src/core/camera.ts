@@ -4,6 +4,8 @@ import type { Input } from './input';
 
 const SENS = 0.0022;
 const ZOOMS = [1, 2, 4];
+/** Vertical field of view (°): 68 stretched the screen edges (~105° across at 16:9); third-person action games sit near 55. */
+const BASE_FOV = 57;
 
 export class ThirdPersonCamera {
   yaw: number;
@@ -42,7 +44,7 @@ export class ThirdPersonCamera {
     this.aimT = THREE.MathUtils.damp(this.aimT, input.aiming ? 1 : 0, 14, dt);
     this.shoulderX = THREE.MathUtils.damp(this.shoulderX, this.shoulder * THREE.MathUtils.lerp(0.8, 0.62, this.aimT), 10, dt);
     const wantDist = THREE.MathUtils.lerp(this.baseDist, 1.6, this.aimT);
-    this.camera.fov = THREE.MathUtils.lerp(68, 50 / this.zoomT, this.aimT) + this.fovBoost;
+    this.camera.fov = THREE.MathUtils.lerp(BASE_FOV, 46 / this.zoomT, this.aimT) + this.fovBoost;
     this.camera.updateProjectionMatrix();
 
     this.pivot.copy(target).add(new THREE.Vector3(0, 1.78 - crouch * 0.5 + this.bob - this.dip, 0));

@@ -85,7 +85,7 @@ async function boot(): Promise<void> {
   const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
   const canvas = document.getElementById('game') as HTMLCanvasElement;
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(68, innerWidth / innerHeight, 0.1, 4000);
+  const camera = new THREE.PerspectiveCamera(57, innerWidth / innerHeight, 0.1, 4000);
   const renderer = new Renderer(canvas, scene, camera, ch.biome.exposure);
   const lighting = new Lighting(scene, camera, renderer.gl, ch.biome);
 

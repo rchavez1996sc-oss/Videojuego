@@ -15,6 +15,7 @@ import { campusGraph, framer, inRect, northAt, type CampusDef } from './layout';
 import { buildCampusRoads } from './roads';
 import { pavilion, type NameSign } from './pavilion';
 import { comedor } from './comedor';
+import { nameWall } from './nameWall';
 import { minasPortal, puerta1, puerta2 } from './gates';
 import { industrial } from './industrial';
 import { fisicasRotunda, mathEntrance } from './faculties';
@@ -66,6 +67,11 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
     const g2 = puerta2(b, def.gate2);
     signs.push(g2.name, g2.label);
     seals.push({ ...g2.crest, silver: true });
+  }
+  if (def.nameWall) {
+    const nw = nameWall(b, hf, def.nameWall);
+    signs.push(...nw.signs);
+    seals.push(nw.seal);
   }
   for (const bd of def.buildings) {
     if (bd.key === 'quimica') {

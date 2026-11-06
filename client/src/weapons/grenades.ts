@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { grenadeGeometry } from './gunModels';
 import type { Lighting } from '../render/lighting';
 import type { Heightfield } from '../world/heightfield';
 
@@ -31,11 +31,7 @@ export class Grenades {
   private cooldown = 0;
 
   constructor(private world: RAPIER.World, private hf: Heightfield, lighting: Lighting, private exclude: () => number) {
-    this.geo = mergeGeometries([
-      new THREE.SphereGeometry(0.045, 12, 10).scale(1, 1.2, 1),
-      new THREE.CylinderGeometry(0.016, 0.016, 0.035, 8).translate(0, 0.06, 0),
-      new THREE.BoxGeometry(0.012, 0.05, 0.02).translate(0.022, 0.045, 0),
-    ].map((g) => g.toNonIndexed().deleteAttribute('uv')));
+    this.geo = grenadeGeometry();
     this.mat = lighting.setup(new THREE.MeshStandardMaterial({ color: '#4a5232', roughness: 0.6, metalness: 0.3 }), 'grenade');
   }
 

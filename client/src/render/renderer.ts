@@ -52,7 +52,7 @@ export class Renderer {
     }
     this.composer.addPass(new EffectPass(
       camera,
-      new BloomEffect({ intensity: 0.55, luminanceThreshold: 0.85, luminanceSmoothing: 0.2, mipmapBlur: true }),
+      new BloomEffect({ intensity: 0.5, luminanceThreshold: 1.5, luminanceSmoothing: 0.35, mipmapBlur: true }),
       new ToneMappingEffect({ mode: ToneMappingMode.AGX }),
       new LUT3DEffect(cinematicLut()),
       new VignetteEffect({ offset: 0.28, darkness: 0.52 }),

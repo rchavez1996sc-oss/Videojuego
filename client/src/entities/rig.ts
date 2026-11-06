@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { characters, type CharKind } from '../render/characters';
-import { buildWeapon, type GunModel } from '../weapons/gunModels';
+import { buildWeapon, grenadeGeometry, type GunModel } from '../weapons/gunModels';
 import { bakeLod } from '../render/merge';
 import { dress, type Outfit } from './outfit';
 import { addWound } from './wounds';
@@ -160,7 +160,7 @@ export class Rig {
   /** A frag grenade in the right hand. */
   set grenadeInHand(v: boolean) {
     if (!this.nade && v) {
-      this.nade = new THREE.Mesh(new THREE.SphereGeometry(3.6, 12, 10).scale(1, 1.3, 1), this.lighting.setup(new THREE.MeshStandardMaterial({ color: '#46502c', roughness: 0.6, metalness: 0.3 }), 'nade-hand'));
+      this.nade = new THREE.Mesh(grenadeGeometry(80), this.lighting.setup(new THREE.MeshStandardMaterial({ color: '#4a5232', roughness: 0.6, metalness: 0.3 }), 'grenade'));
       this.nade.position.set(0, 9, 3);
       this.inst.bones.get('mixamorigRightHand')?.add(this.nade);
     }
