@@ -5,7 +5,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { Builder } from '../world/buildingKit';
 import { car, mototaxi, type CarKind } from '../world/urbanProps';
 import { deliveryBike } from '../world/deliveryBike';
-import { markGhost, onHit, setSurface } from '../world/surfaces';
+import { onHit, setSurface } from '../world/surfaces';
 import { seatedPerson, seatedRig, SEATS } from '../entities/occupants';
 import type { Heightfield } from '../world/heightfield';
 import type { Lighting } from '../render/lighting';
@@ -86,7 +86,6 @@ export class Traffic {
       const len = kind === 'delivery' ? 1.9 : kind === 'moto' ? 2.3 : kind === 'micro' ? 8.6 : kind === 'combi' ? 4.8 : 4.4;
       const body = this.world.createRigidBody(RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(0, -50, 0));
       const collider = this.world.createCollider(RAPIER.ColliderDesc.cuboid(kind === 'delivery' ? 0.4 : kind === 'micro' ? 1.15 : 0.9, kind === 'micro' ? 1.4 : 0.8, len / 2).setTranslation(0, kind === 'micro' ? 1.4 : 0.8, 0), body);
-      markGhost(collider.handle);
       setSurface(collider.handle, 'metal');
       const dir = i % 2 ? 1 : -1;
       const cruise = kind === 'delivery' ? 9 : kind === 'moto' ? 7 : kind === 'combi' || kind === 'micro' ? 11 : 10;

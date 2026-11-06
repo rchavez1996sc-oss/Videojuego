@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { UNMSM_BUS } from '../livery';
 import { addStrip } from '../groundStrips';
 import type { Builder } from '../buildingKit';
 import { car, type CarKind } from '../urbanProps';
@@ -55,7 +56,7 @@ export function venezuelaFence(b: Builder, def: CampusDef): void {
 }
 
 /** Parking lot: asphalt pad, stall stripes, cars; aisle along local x, stalls on both long sides (one row if shallow). */
-export function parkingLot(b: Builder, r: Rect, rand: () => number): void {
+export function parkingLot(b: Builder, r: Rect, rand: () => number): { pos: THREE.Vector3; yaw: number; company: number; micro: boolean }[] {
   const at = framer(r), q = yawQ(r.yaw), rows = r.d >= 14 ? [-(r.d / 2 - 2.6), r.d / 2 - 2.6] : [0];
   b.box('asphalt', [r.w, 0.25, r.d], at(0, -0.075, 0), q, false);
   const pitch = 2.7, n = Math.floor((r.w - 2) / pitch);
@@ -67,6 +68,13 @@ export function parkingLot(b: Builder, r: Rect, rand: () => number): void {
       car(b, at(u, 0.05, v), (-r.yaw * Math.PI) / 180 + (rand() < 0.5 ? 0 : Math.PI), kind === 'tico' ? 'car3' : PAINT[Math.floor(rand() * PAINT.length)], kind);
     }
   }
+  const buses: { pos: THREE.Vector3; yaw: number; company: number; micro: boolean }[] = [];
+  for (let k = 0; k < (r.buses ?? 0); k++) {
+    const pos = at(-r.w / 2 + 6 + k * 10, 0.05, 0), yaw = (-r.yaw * Math.PI) / 180 + Math.PI / 2;
+    car(b, pos, yaw, 'car5', 'micro');
+    buses.push({ pos, yaw, company: UNMSM_BUS, micro: true });
+  }
+  return buses;
 }
 
 /** Five-a-side pitch markings on artificial turf. */

@@ -6,7 +6,7 @@ import type { Lighting } from '../render/lighting';
 import { rock, soil } from '../render/textures';
 import { photo } from '../render/photoTextures';
 import * as S from './terrainShader';
-import { setSurface } from './surfaces';
+import { markSkin, setSurface } from './surfaces';
 import { setWeatherGround } from '../render/weathering';
 
 const CHUNK = 64;
@@ -72,6 +72,7 @@ export class Terrain {
       body,
     );
     setSurface(col.handle, 'dirt');
+    markSkin(col.handle);
     const edge = hf.def.playable / 2, sea = Math.max(edge, hf.def.seaReach ?? edge), mid = (sea - edge) / 2, half = (sea + edge) / 2;
     for (const [x, z, hx, hz] of [[edge, mid, 1, half], [-edge, mid, 1, half], [0, sea, edge, 1], [0, -edge, edge, 1]]) {
       world.createCollider(RAPIER.ColliderDesc.cuboid(hx, 300, hz).setTranslation(x, 0, z), body);

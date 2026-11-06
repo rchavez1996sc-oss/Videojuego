@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
-import { markGhost, setPorous, setSurface, type Surface } from './surfaces';
+import { markSkin, setPorous, setSurface, type Surface } from './surfaces';
 import { addStrip } from './groundStrips';
 import { cover } from '../ai/cover';
 
@@ -21,6 +21,11 @@ function guessSurface(mat: string): Surface {
 export interface Opening { x: number; w: number; y: number; h: number }
 
 /** Accumulates world-space boxes per material, then emits merged meshes and box colliders. */
+function skinSurface(handle: number, s: Surface): void {
+  setSurface(handle, s);
+  markSkin(handle);
+}
+
 export class Builder {
   private parts = new Map<string, THREE.BufferGeometry[]>();
   private tmp = new THREE.Object3D();
@@ -43,7 +48,7 @@ export class Builder {
     if (!collide && this.world && size[1] <= 0.45 && Math.min(size[0], size[2]) >= 0.8 && mat !== 'none' && Math.abs(this.up.set(0, 1, 0).applyQuaternion(quat).y) > 0.995) {
       const long = size[0] >= size[2], half = (long ? size[0] : size[2]) / 2, axis = this.up.set(long ? 1 : 0, 0, long ? 0 : 1).applyQuaternion(quat);
       addStrip([new THREE.Vector2(pos.x - axis.x * half, pos.z - axis.z * half), new THREE.Vector2(pos.x + axis.x * half, pos.z + axis.z * half)], long ? size[2] : size[0], mat, pos.y + size[1] / 2);
-      if (this.body && size[1] >= 0.05 && !/water/i.test(mat) && pos.y + size[1] / 2 - (this.ground?.(pos.x, pos.z) ?? -1) >= 0.09) setSurface(this.world.createCollider(RAPIER.ColliderDesc.cuboid(size[0] / 2, Math.min(size[1], 0.04) / 2, size[2] / 2).setTranslation(pos.x, pos.y + (size[1] - Math.min(size[1], 0.04)) / 2, pos.z).setRotation({ x: quat.x, y: quat.y, z: quat.z, w: quat.w }), this.body).handle, SURFACE[mat] ?? guessSurface(mat));
+      if (this.body && size[1] >= 0.05 && !/water/i.test(mat) && pos.y + size[1] / 2 - (this.ground?.(pos.x, pos.z) ?? -1) >= 0.09) skinSurface(this.world.createCollider(RAPIER.ColliderDesc.cuboid(size[0] / 2, Math.min(size[1], 0.04) / 2, size[2] / 2).setTranslation(pos.x, pos.y + (size[1] - Math.min(size[1], 0.04)) / 2, pos.z).setRotation({ x: quat.x, y: quat.y, z: quat.z, w: quat.w }), this.body).handle, SURFACE[mat] ?? guessSurface(mat));
     }
     if (collide && this.world && this.body) {
       const col = this.world.createCollider(
@@ -53,7 +58,7 @@ export class Builder {
         this.body,
       );
       setSurface(col.handle, mat === 'grate' ? 'metal' : SURFACE[mat] ?? guessSurface(mat));
-      if (mat === 'none' || mat === 'grate' || mat === 'glasswall') markGhost(col.handle);
+      if (mat !== 'none' && mat !== 'grate' && mat !== 'glasswall') markSkin(col.handle);
       if (mat === 'grate' || mat === 'glasswall') setPorous(col.handle, mat === 'grate' ? 0.45 : 1);
       else if (mat !== 'roof' && mat !== 'glasswall') cover.addBox(pos, size, quat);
     }

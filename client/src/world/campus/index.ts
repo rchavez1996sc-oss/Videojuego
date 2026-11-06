@@ -4,6 +4,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { mulberry32 } from '../../core/rng';
 import type { Heightfield } from '../heightfield';
 import type { Lighting } from '../../render/lighting';
+import { parkedLiveries } from '../livery';
 import { Builder } from '../buildingKit';
 import { materials as barrioMaterials, type Barrio } from '../barrio';
 import { SignAtlas } from '../signs';
@@ -112,7 +113,9 @@ export function buildCampus(hf: Heightfield, def: CampusDef, lighting: Lighting,
   }
   for (const k of def.atms ?? []) signs.push(multired(b, k));
   venezuelaFence(b, def);
-  for (const p of def.parkings) parkingLot(b, p, rand);
+  const buses = def.parkings.flatMap((p) => parkingLot(b, p, rand));
+  const busLivery = parkedLiveries(lighting, buses);
+  if (busLivery) group.add(busLivery);
   const turf = lighting.setup(new THREE.MeshStandardMaterial({ roughness: 0.95 }), 'turf');
   group.add(footballField(b, def.field, turf));
   perimeter(b, def, mulberry32(def.seed + 3), group, lighting);

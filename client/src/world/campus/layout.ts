@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { StreetGraph } from '../barrio';
 
 /** A footprint: centre, width along its own x, depth, rotation (degrees from +x towards +z). */
-export interface Rect { x: number; z: number; w: number; d: number; yaw: number }
+export interface Rect { x: number; z: number; w: number; d: number; yaw: number; /** University buses parked along the aisle (parkings only). */ buses?: number }
 export interface CampusRoad { name: string; w: number; pts: [number, number][] }
 export interface CampusBuilding extends Rect {
   floors: number;

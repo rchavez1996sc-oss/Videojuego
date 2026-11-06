@@ -9,15 +9,19 @@ export function setSurface(handle: number, s: Surface): void {
   byCollider.set(handle, s);
 }
 
-const ghosts = new Set<number>();
+const skins = new Set<number>();
 
-/** Invisible stand-in colliders (cover boxes, car bounds, ramps): bullets stop there but leave no hole in the air. */
-export function markGhost(handle: number): void {
-  ghosts.add(handle);
+/**
+ * Colliders that coincide with a visible surface (terrain, visible boxes, pavement plates). Bullet holes are only
+ * stuck on these: everything else (invisible cover boxes, car bounds, approximate pole/prop colliders, capsules)
+ * would leave a hole floating in the air.
+ */
+export function markSkin(handle: number): void {
+  skins.add(handle);
 }
 
 export function isGhost(handle: number): boolean {
-  return ghosts.has(handle);
+  return !skins.has(handle);
 }
 
 const porous = new Map<number, number>();

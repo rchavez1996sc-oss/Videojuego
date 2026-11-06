@@ -47,7 +47,7 @@ function atlas(names: string[]): THREE.CanvasTexture {
  * give-way or no-parking sign, often topped by the street-name plate. Placed only on open, level paving; each pole
  * collides (thin cylinder). Only corners with a road within 5 m, at most `max` posts. Plates and poles are instanced: a few draws for the whole level.
  */
-export function streetSigns(graph: StreetGraph, world: RAPIER.World, lighting: Lighting, names: string[], paved: (x: number, z: number) => boolean, share = 0.55, max = 45): THREE.Group {
+export function streetSigns(graph: StreetGraph, world: RAPIER.World, lighting: Lighting, names: string[], paved: (x: number, z: number) => boolean, area?: [number, number, number, number], share = 0.55, max = 45): THREE.Group {
   const g = new THREE.Group(), r = mulberry32(5150), tex = atlas(names), cells = 3 + names.length;
   const front = lighting.setup(new THREE.MeshStandardMaterial({ map: tex, alphaTest: 0.5, roughness: 0.5, metalness: 0.2 }), 'road-signs');
   const back = lighting.setup(new THREE.MeshStandardMaterial({ map: tex, color: '#5a5c5e', alphaTest: 0.5, roughness: 0.55, metalness: 0.5, side: THREE.BackSide }), 'road-signs-back');
@@ -56,6 +56,7 @@ export function streetSigns(graph: StreetGraph, world: RAPIER.World, lighting: L
   for (const [a, b] of graph.edges) (degree[a]++, degree[b]++);
   const poles: THREE.Matrix4[] = [], plates: THREE.Matrix4[][] = Array.from({ length: cells }, () => []);
   graph.nodes.forEach((n, i) => {
+    if (area && (n.x < area[0] || n.z < area[1] || n.x > area[2] || n.z > area[3])) return;
     if (degree[i] < 3 || r() > share || poles.length >= max || ![0, 1.57, 3.14, 4.71].some((a) => paved(n.x + Math.cos(a) * 5, n.z + Math.sin(a) * 5))) return;
     const a = r() * 6.28, p = n.clone().add(new THREE.Vector3(Math.cos(a) * 0.9, 0, Math.sin(a) * 0.9));
     const hit = world.castRay(new RAPIER.Ray({ x: p.x, y: p.y + 2, z: p.z }, { x: 0, y: -1, z: 0 }), 4, true);
