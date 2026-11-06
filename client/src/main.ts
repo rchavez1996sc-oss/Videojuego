@@ -34,6 +34,7 @@ import { DamageFx } from './ui/damage';
 import { Pickups, collectSupplies } from './systems/pickups';
 import { wireRoad } from './systems/roadHits';
 import { respawnPlayer, streetPoints } from './systems/respawn';
+import { Driving } from './systems/driving';
 import { startSpot } from './systems/startSpot';
 import { Melee } from './systems/melee';
 import { coverSeeker } from './systems/takeCover';
@@ -161,6 +162,7 @@ async function boot(): Promise<void> {
   const squad = createSquad(ch.squad ?? 0, { ...(allyDef as unknown as AllyDef), gun: wdef.model }, { world, hf, lighting, player, enemies, combat, sfx, hud, camera, nav, alarm }, spawn, startYaw);
   if (squad) scene.add(squad.group);
   if (life) wireRoad(life.trafficEvents, { player, enemies, squad, playerHit: (dmg, from) => enemies.onPlayerHit(dmg, from), alive: () => deadT <= 0 });
+  const driving = new Driving({ traffic: life?.trafficEvents ?? null, world, player, tpc, enemies, squad, sfx, lighting, mixer });
   const deathPos = new THREE.Vector3(); let deadT = 0, skipRender = false, shieldT = 0;
   enemies.onPlayerHit = (dmg, from) => {
     if (deadT > 0) return;
@@ -210,11 +212,9 @@ async function boot(): Promise<void> {
   setupStartMenu(overlay, status, canvas, () => !failed && (mixer.resume(), input.lock()), { chapters: cards, current: chId });
   setupWorldMap(minimap, overlay, canvas, () => ({ player: player.position, forward: camera.getWorldDirection(new THREE.Vector3()), goal: objective?.position ?? defense?.goal, allies: squad?.positions ?? [], supplies: pickups.markers }));
   const gpu = gpuName.replace(/^ANGLE \((.*)\)$/, '$1').slice(0, 60);
-  const melee = new Melee(player, enemies, sfx, tpc);
-  const seekCover = coverSeeker({ world, cover, hf, player, enemies, camera, hud });
+  const melee = new Melee(player, enemies, sfx, tpc), seekCover = coverSeeker({ world, cover, hf, player, enemies, camera, hud });
   const feel = new MoveFeel(player, tpc, sfx, () => surfaceUnder(world, hf, player));
-  const clock = new THREE.Clock();
-  const fps = new FpsMeter(stats);
+  const clock = new THREE.Clock(), fps = new FpsMeter(stats);
   renderer.gl.info.autoReset = false;
   const frame = (dt: number) => {
     const t = clock.elapsedTime;
@@ -231,7 +231,7 @@ async function boot(): Promise<void> {
         }
       } else {
         if (input.hit('KeyQ')) seekCover();
-        player.update(dt, input, tpc.yaw, input.aiming, tpc.pitch, input.firing);
+        if (!driving.update(dt, input, true)) player.update(dt, input, tpc.yaw, input.aiming, tpc.pitch, input.firing);
         player.regen(dt);
         shieldT = Math.max(0, shieldT - dt);
         if (player.hp <= 0) {
@@ -240,7 +240,7 @@ async function boot(): Promise<void> {
             window.setTimeout(() => (failed = true), 2600);
             window.setTimeout(() => showMissionFailed('', 'VIDAS AGOTADAS'), 2600);
           }
-          deadT = 4.5;
+          [deadT] = [4.5, driving.update(0, input, false)];
           deathPos.copy(player.position);
           damageFx.dead = true;
           player.die();
@@ -257,7 +257,7 @@ async function boot(): Promise<void> {
       tpc.update(dt, input, player.position, player.crouchAmount, player.collisionHandle);
       camera.updateMatrixWorld();
       player.model.root.updateMatrixWorld(true);
-      if (!nadeMode.update(input, deadT <= 0, dt) && deadT <= 0 && !melee.update(dt, input)) combat.update(dt, input, input.aiming, player.airborne); else combat.fx(dt);
+      if (!driving.active && !nadeMode.update(input, deadT <= 0, dt) && deadT <= 0 && !melee.update(dt, input)) combat.update(dt, input, input.aiming, player.airborne); else combat.fx(dt);
       grenades.update(dt);
     } else combat.fx(dt);
     enemies.sync();

@@ -9,7 +9,29 @@ export function animDebug(c: DebugContext) {
     c.tpc.place(p.clone().add(new THREE.Vector3(-Math.sin(yaw) * dist, h + 0.2, -Math.cos(yaw) * dist)), p.clone().setY(p.y + h));
     c.frame(1 / 60);
   };
+  const key = (code: string, down: boolean) => dispatchEvent(new KeyboardEvent(down ? 'keydown' : 'keyup', { code }));
   return {
+    /** Puts the player beside a traffic vehicle of `kind`, presses E, then plays `plan` ([keys, seconds][]) and logs the car. */
+    driveTest(kind: string, plan: [string[], number][]) {
+      c.setFreeCam(false);
+      const tr = c.traffic?.() as unknown as { list: { kind: string; x: number; z: number; yaw: number; speed: number; state: string; y?: number }[] } | undefined;
+      const v = tr?.list.find((o) => o.kind === kind && o.state === 'drive');
+      if (!v) return 'no vehicle';
+      c.setSkipRender(true);
+      c.player.respawn(new THREE.Vector3(v.x + Math.cos(v.yaw) * 1.8, c.hf.heightAt(v.x, v.z), v.z - Math.sin(v.yaw) * 1.8), 0);
+      c.frame(1 / 30);
+      key('KeyE', true); c.frame(1 / 30); key('KeyE', false);
+      const log = [`in: ${v.state}`];
+      for (const [keys, secs] of plan) {
+        keys.forEach((k) => key(k, true));
+        for (let i = 0; i < Math.round(secs * 30); i++) c.frame(1 / 30);
+        keys.forEach((k) => key(k, false));
+        log.push(`${keys.join('+') || '-'} ${secs}s → ${v.x.toFixed(1)},${(v.y ?? 0).toFixed(2)},${v.z.toFixed(1)} yaw ${v.yaw.toFixed(2)} v ${v.speed.toFixed(1)} hp ${c.player.hp.toFixed(0)}`);
+      }
+      c.setSkipRender(false);
+      c.frame(1 / 60);
+      return log.join('\n');
+    },
     /** Left wrist to handguard distance (m) and IK weight for the player and each ally. */
     gripGap() {
       const rigs = [c.player.model, ...(c.squad?.list.map((a) => a.unit.model) ?? [])] as unknown as { inst: { bones: Map<string, THREE.Bone> }; grip?: { weapon: THREE.Object3D; pos: THREE.Vector3 }; ikW: number }[];

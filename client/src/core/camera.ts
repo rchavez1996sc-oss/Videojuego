@@ -22,6 +22,9 @@ export class ThirdPersonCamera {
   sway = 0;
   dip = 0;
   fovBoost = 0;
+  /** Chase distance while driving (0 on foot): centred behind the vehicle, pivot raised by `lift`. */
+  vehicle = 0;
+  lift = 0;
   zoomIndex = 0;
   private zoomT = 1;
   private baseDist = 3.3;
@@ -42,12 +45,12 @@ export class ThirdPersonCamera {
     this.pitch = THREE.MathUtils.clamp(this.pitch - input.mouseDY * sens, -1.2, 0.9);
     if (input.hit('KeyX')) this.shoulder *= -1;
     this.aimT = THREE.MathUtils.damp(this.aimT, input.aiming ? 1 : 0, 14, dt);
-    this.shoulderX = THREE.MathUtils.damp(this.shoulderX, this.shoulder * THREE.MathUtils.lerp(0.8, 0.62, this.aimT), 10, dt);
-    const wantDist = THREE.MathUtils.lerp(this.baseDist, 1.6, this.aimT);
+    this.shoulderX = THREE.MathUtils.damp(this.shoulderX, this.vehicle ? 0 : this.shoulder * THREE.MathUtils.lerp(0.8, 0.62, this.aimT), 10, dt);
+    const wantDist = this.vehicle || THREE.MathUtils.lerp(this.baseDist, 1.6, this.aimT);
     this.camera.fov = THREE.MathUtils.lerp(BASE_FOV, 46 / this.zoomT, this.aimT) + this.fovBoost;
     this.camera.updateProjectionMatrix();
 
-    this.pivot.copy(target).add(new THREE.Vector3(0, 1.78 - crouch * 0.5 + this.bob - this.dip, 0));
+    this.pivot.copy(target).add(new THREE.Vector3(0, 1.78 - crouch * 0.5 + this.bob - this.dip + this.lift, 0));
     const rot = new THREE.Euler(this.pitch, this.yaw, 0, 'YXZ');
     const back = new THREE.Vector3(0, 0, 1).applyEuler(rot);
     const side = new THREE.Vector3(1, 0, 0).applyEuler(rot);

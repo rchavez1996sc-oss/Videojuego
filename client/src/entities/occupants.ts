@@ -25,9 +25,9 @@ const CAR_KNEE = -1.25, CAR_THIGH = -0.18;
  * A Mixamo civilian frozen in the sitting pose, facing +z with the hips at the returned group's origin (for open
  * vehicles: mototaxis and delivery bikes). Null until the characters and their `sit` clip are loaded.
  */
-export function seatedRig(lighting: Lighting, rand: () => number, inCar = false): THREE.Group | null {
+export function seatedRig(lighting: Lighting, rand: () => number, inCar = false, kind?: CharKind): THREE.Group | null {
   if (!characters.ready || !characters.clips.has('sit')) return null;
-  const rig = new Rig(RIDERS[Math.floor(rand() * RIDERS.length)], lighting, false);
+  const rig = new Rig(kind ?? RIDERS[Math.floor(rand() * RIDERS.length)], lighting, false);
   rig.loop('sit');
   rig.tick(0.5 + rand());
   if (inCar) for (const s of ['Left', 'Right']) {

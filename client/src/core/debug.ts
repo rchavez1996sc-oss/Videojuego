@@ -19,6 +19,7 @@ import type { StreetNav } from '../ai/nav';
 import { playBot } from './bot';
 import { carShowcase } from './carShowcase';
 import { animDebug } from './debugAnim';
+import { disableNearest, lastDisabled, spotAhead, states } from '../systems/trafficDebug';
 import type { Lighting } from '../render/lighting';
 
 export interface DebugContext {
@@ -425,12 +426,12 @@ export function installDebug(c: DebugContext): void {
     /** Steps in front of a moving vehicle (inside its braking distance) and reports the damage taken. */
     roadTest(gap: number) {
       const tr = c.traffic?.();
-      const spot = tr?.debugAhead(gap);
+      const spot = (tr ? spotAhead(tr, gap) : null);
       if (!spot) return 'no traffic';
       c.setFreeCam(false);
       c.setSkipRender(true);
       for (let i = 0; i < 40; i++) c.frame(1 / 20);
-      const s = tr!.debugAhead(gap)!;
+      const s = spotAhead(tr!, gap)!;
       c.player.respawn(new THREE.Vector3(s.x, c.hf.heightAt(s.x, s.z), s.z), 0);
       c.player.hp = 100;
       const before = c.player.position.clone();
@@ -484,13 +485,13 @@ export function installDebug(c: DebugContext): void {
       if (!tr) return 'no traffic';
       c.setFreeCam(false);
       c.setSkipRender(true);
-      const log = [`disabled ${tr.debugDisableNearest(c.player.position, kind)}`];
+      const log = [`disabled ${disableNearest(tr, c.player.position, kind)}`];
       for (let i = 0; i < 60; i++) {
         c.frame(1 / 20);
-        if (i % 20 === 19) log.push(tr.debugStates);
+        if (i % 20 === 19) log.push(states(tr));
       }
       c.setSkipRender(false);
-      log.push(`at ${tr.debugLastAt}`);
+      log.push(`at ${lastDisabled()}`);
       return log.join('\n');
     },
     ...animDebug(c),

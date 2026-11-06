@@ -12,13 +12,15 @@ import type { Lighting } from '../render/lighting';
 import type { Rig } from '../entities/rig';
 import { Riders } from './riders';
 
-type State = 'drive' | 'off' | 'crash' | 'wreck';
+/** `player`: driven by the player (moved by `Driving`); `parked`: left where the player got out. */
+type State = 'drive' | 'off' | 'crash' | 'wreck' | 'player' | 'parked';
 
-interface Vehicle {
+export interface Vehicle {
   kind: CarKind | 'moto' | 'delivery'; group: THREE.Group; body: RAPIER.RigidBody; collider: RAPIER.Collider; dir: 1 | -1;
   x: number; z: number; base: number; lane: number; half: number; yaw: number; speed: number; cruise: number; len: number;
   honkT: number; horn: number; panic: boolean; state: State; hp: number; spin: number; drift: number; smokeT: number;
   /** Seat holders (Mixamo sitters), the driver first. */ seats: THREE.Group[];
+  /** While player-driven: floor height and body tilt (pitch/roll on slopes and in turns). */ y?: number; tilt?: THREE.Quaternion;
 }
 
 export interface Victim { key: string; pos: THREE.Vector3; hurt(damage: number, from: THREE.Vector3, shove: THREE.Vector3): void }
@@ -33,7 +35,7 @@ export class Traffic {
   readonly group = new THREE.Group();
   private xMin: number;
   private xMax: number;
-  private list: Vehicle[] = [];
+  readonly list: Vehicle[] = [];
   private calmT = 99;
   private cam = new THREE.Vector3();
   onHonk: (at: THREE.Vector3, pitch: number) => void = () => {};
@@ -47,6 +49,8 @@ export class Traffic {
   private clock = 0;
   /** Other people on the road drivers brake for (the squad). */
   obstacles: () => THREE.Vector3[] = () => [];
+  /** Stop line ahead on red for a vehicle front at x (see `TrafficLights.stopLine`). */
+  stopLine: (x: number, dir: number, base: number, speed: number) => number | null = () => null;
 
   constructor(private world: RAPIER.World, private hf: Heightfield, lighting: Lighting, materials: Record<string, THREE.Material>, bake: { material: THREE.Material; keys: string[] }[], roads: Road[], span: [number, number] = [-245, 245]) {
     [this.xMin, this.xMax] = span;
@@ -101,7 +105,16 @@ export class Traffic {
     }
   }
 
-  private damage(v: Vehicle, dmg: number): void {
+  /** Bullets into the player's (or a parked) vehicle: the car soaks it; at 0 it is wrecked and smokes. */
+  onDrivenHit: (v: Vehicle, dmg: number) => void = () => {};
+
+  damage(v: Vehicle, dmg: number): void {
+    if (v.state === 'player' || v.state === 'parked') {
+      v.hp -= dmg;
+      this.onDrivenHit(v, dmg);
+      if (v.hp <= 0) [v.state, v.speed] = ['wreck', 0];
+      return;
+    }
     if (v.state !== 'drive') return;
     v.hp -= dmg;
     v.panic = true;
@@ -117,28 +130,31 @@ export class Traffic {
     }
   }
 
-  /** Test hook: disables the nearest driving vehicle and reports where it is. */
-  debugDisableNearest(p: THREE.Vector3, kind?: string): string {
-    const v = this.list.filter((o) => o.state === 'drive' && (!kind || o.kind === kind)).sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z))[0];
-    if (!v) return 'none';
-    this.debugLast = v;
-    this.damage(v, HP);
-    return `${v.x.toFixed(0)},${v.z.toFixed(1)} speed ${v.speed.toFixed(1)}`;
+  /** The closest vehicle the player can take (not wrecked) whose body is within `reach` of `p`. */
+  enterable(p: THREE.Vector3, reach: number): Vehicle | null {
+    let best: Vehicle | null = null, bd = reach;
+    for (const v of this.list) {
+      if (v.state === 'off' || v.state === 'crash' || v.state === 'wreck' || v.state === 'player' || !v.group.visible) continue;
+      const fwd = new THREE.Vector3(Math.sin(v.yaw), 0, Math.cos(v.yaw)), rel = new THREE.Vector3(p.x - v.x, 0, p.z - v.z);
+      const along = Math.max(0, Math.abs(rel.dot(fwd)) - v.len / 2), side = Math.max(0, Math.abs(rel.x * fwd.z - rel.z * fwd.x) - 1);
+      const d = Math.hypot(along, side);
+      if (d < bd) [best, bd] = [v, d];
+    }
+    return best;
   }
 
-  /** Test hook: a spot `gap` metres in front of the fastest driving vehicle, in its lane. */
-  debugAhead(gap: number): THREE.Vector3 | null {
-    const v = this.list.filter((o) => o.state === 'drive').sort((a, b) => b.speed - a.speed)[0];
-    return v ? new THREE.Vector3(v.x + v.dir * (v.len / 2 + gap), 0, v.z) : null;
+  /** The player takes the wheel: driver and passengers get out (hidden), the car stops obeying its lane. */
+  seize(v: Vehicle): void {
+    v.state = 'player';
+    v.panic = false;
+    for (const s of v.seats) s.visible = false;
+    v.y = this.hf.heightAt(v.x, v.z);
   }
 
-  private debugLast?: Vehicle;
-  get debugLastAt(): string {
-    return this.debugLast ? `${this.debugLast.x.toFixed(1)},${this.debugLast.z.toFixed(1)},${this.debugLast.yaw.toFixed(2)}` : '';
-  }
-
-  get debugStates(): string {
-    return this.list.map((v) => `${v.state[0]}@${v.x.toFixed(0)},${v.z.toFixed(1)}`).join(' ');
+  /** The player got out: the car stays where it stopped. */
+  park(v: Vehicle): void {
+    if (v.state === 'player') v.state = 'parked';
+    v.speed = 0;
   }
 
   /** Gunfire or a blast: only a scare near the camera clears the streets (fights far away leave traffic alone). */
@@ -149,7 +165,7 @@ export class Traffic {
   }
 
   explosion(at: THREE.Vector3, radius: number): void {
-    for (const v of this.list) if (v.state === 'drive' && Math.hypot(v.x - at.x, v.z - at.z) < radius) this.damage(v, HP);
+    for (const v of this.list) if ((v.state === 'drive' || v.state === 'player' || v.state === 'parked') && Math.hypot(v.x - at.x, v.z - at.z) < radius) this.damage(v, HP);
   }
 
   private crashStep(v: Vehicle, dt: number): void {
@@ -207,6 +223,10 @@ export class Traffic {
         } else continue;
       }
       if (v.state === 'drive' || v.state === 'crash') this.impacts(v, dt, this.clock);
+      if (v.state === 'player' || v.state === 'parked') {
+        this.place(v, camera);
+        continue;
+      }
       if (v.state === 'crash') this.crashStep(v, dt);
       else if (v.state === 'drive') {
         let target = v.panic ? 19 : v.cruise;
@@ -216,6 +236,8 @@ export class Traffic {
           v.honkT -= dt * 4;
         }
         for (const o of this.list) if (o !== v && o.state !== 'off' && (o.dir === v.dir || o.state !== 'drive') && ahead(o.x, o.z, v.len + 4 + v.speed * 0.6)) target = Math.min(target, o.state === 'drive' ? o.speed * 0.8 : 0);
+        const line = v.panic ? null : this.stopLine(v.x + v.dir * v.len / 2, v.dir, v.base, v.speed);
+        if (line !== null) target = Math.min(target, Math.sqrt(Math.max(0, 8 * ((line - v.x) * v.dir - v.len / 2 - 0.4))));
         v.speed = THREE.MathUtils.damp(v.speed, target, target < v.speed ? 4 : 1.2, dt);
         v.x += v.dir * v.speed * dt;
         v.honkT -= dt;
@@ -237,15 +259,20 @@ export class Traffic {
         v.smokeT = 0.12;
         this.onSmoke(new THREE.Vector3(v.x, this.hf.heightAt(v.x, v.z) + 1.2, v.z).add(new THREE.Vector3(Math.sin(v.yaw), 0, Math.cos(v.yaw)).multiplyScalar(v.len * 0.35)));
       }
-      const y = this.hf.heightAt(v.x, v.z);
-      const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), v.yaw);
-      const dist = Math.hypot(v.x - camera.x, v.z - camera.z);
-      v.group.visible = dist < 150;
-      for (const s of v.seats) (s.userData.rig as Rig).far = dist > 25;
-      v.group.position.set(v.x, y, v.z);
-      v.group.quaternion.copy(q);
-      v.body.setNextKinematicTranslation({ x: v.x, y, z: v.z });
-      v.body.setNextKinematicRotation(q);
+      this.place(v, camera);
     }
+  }
+
+  private place(v: Vehicle, camera: THREE.Vector3): void {
+    const y = v.y ?? this.hf.heightAt(v.x, v.z);
+    const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), v.yaw);
+    if (v.tilt) q.multiply(v.tilt);
+    const dist = Math.hypot(v.x - camera.x, v.z - camera.z);
+    v.group.visible = dist < 150;
+    for (const s of v.seats) (s.userData.rig as Rig).far = dist > 25;
+    v.group.position.set(v.x, y, v.z);
+    v.group.quaternion.copy(q);
+    v.body.setNextKinematicTranslation({ x: v.x, y, z: v.z });
+    v.body.setNextKinematicRotation(q);
   }
 }

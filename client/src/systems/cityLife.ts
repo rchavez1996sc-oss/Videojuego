@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { Traffic, type Road } from './traffic';
+import { TrafficLights, type LightRoad } from './trafficLights';
 import { Dogs } from './dogs';
 import { Birds } from '../fx/birds';
 import { Ambience } from '../audio/ambience';
@@ -10,7 +11,7 @@ import type { Heightfield } from '../world/heightfield';
 import type { Lighting } from '../render/lighting';
 
 /** `span`: x range the traffic drives over (default ±245). */
-export interface LifeDef { traffic: number; dogs: number; birds: number; roads?: Road[]; span?: [number, number] }
+export interface LifeDef { traffic: number; dogs: number; birds: number; roads?: Road[]; span?: [number, number]; lights?: LightRoad[] }
 
 /** Everything that makes the barrio feel inhabited besides the pedestrians: traffic, strays, vultures and sound. */
 export class CityLife {
@@ -19,6 +20,7 @@ export class CityLife {
   private dogs: Dogs;
   private birds: Birds;
   private ambience: Ambience;
+  private lights: TrafficLights | null = null;
 
   constructor(def: LifeDef, world: RAPIER.World, hf: Heightfield, barrio: Barrio, lighting: Lighting, mixer: Mixer, private camera: THREE.Camera) {
     this.traffic = new Traffic(world, hf, lighting, barrio.materials, barrio.bake, def.roads ?? [{ z: 0, lane: 3.2, half: 7.6, count: def.traffic }], def.span);
@@ -26,6 +28,11 @@ export class CityLife {
     this.birds = new Birds(def.birds, 250);
     this.ambience = new Ambience(mixer);
     this.group.add(this.traffic.group, this.dogs.group, this.birds.mesh);
+    if (def.lights?.length) {
+      const lights = (this.lights = new TrafficLights(def.lights, hf, lighting, world));
+      this.group.add(lights.group);
+      this.traffic.stopLine = (x, dir, base, speed) => lights.stopLine(x, dir, base, speed);
+    }
     this.traffic.onHonk = (at, pitch) => this.cue(at, (d, p) => this.ambience.horn(d, p, pitch));
     this.dogs.onBark = (at) => this.cue(at, (d, p) => this.ambience.bark(d, p));
   }
@@ -49,6 +56,7 @@ export class CityLife {
   }
 
   update(dt: number, player: THREE.Vector3, inCombat: boolean): void {
+    this.lights?.update(dt);
     this.traffic.update(dt, player, this.camera.position);
     this.dogs.update(dt, this.camera.position);
     this.birds.update(dt);

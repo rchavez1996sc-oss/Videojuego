@@ -19,6 +19,8 @@ import { facadeMaterials } from './facadeMats';
 import { festiveStreets } from './bunting';
 import { parkedLiveries } from './livery';
 import { avenueMedian } from './median';
+import { Doors, doorDefs } from './doors';
+import { addRoof, rooftopLinks } from './rooftops';
 import { alleyLife } from './alleys';
 import { STREET_COLORS, stall, trashPile, roadMarkings } from './streetLife';
 import { brick, concrete, plaster, corrugated, estera } from '../render/urbanTextures';
@@ -168,7 +170,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
           if (inLandmark(cx - w / 2, cx + w / 2, frontZ) || (st && x - w < st.x + st.w / 2 && x > st.x - st.w / 2 && Math.abs(frontZ - st.z) < 1)) continue;
           const lot: Lot = { x: cx, z: frontZ, y: hf.heightAt(cx, frontZ), facing, w, d: (z1 - z0 - backW) / 2 - 0.04 };
           const red = deco() < 0.12 && !(st && Math.hypot(cx - st.x, frontZ - st.z) < 55);
-          flsMarks(b, hf, atlas, lot, cityHouse(b, lot, rand, sign, facing === 0 ? worldSide : -worldSide, red), red, worldSide, deco);
+          flsMarks(b, hf, atlas, lot, addRoof(lot, cityHouse(b, lot, rand, sign, facing === 0 ? worldSide : -worldSide, red)), red, worldSide, deco);
           if (rand() < 0.18) {
             const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), facing);
             atlas.add(new THREE.Vector3(0, 1.4 + rand() * 0.6, 0.03).applyQuaternion(q).add(new THREE.Vector3(cx, lot.y, frontZ)), q, Math.min(w - 1, 3.6), 'graffiti', rand);
@@ -182,6 +184,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
       alleyLife(b, hf, bx0, bx1, z0, z1, pass, backW, alley);
     }
   }
+  rooftopLinks(b, mulberry32(def.seed + 29));
   cityHouse(b, { x: lm.x, z: lm.z, y: hf.heightAt(lm.x, lm.z), facing: lm.facing, w: lm.w, d: lm.d, floors: lm.floors }, rand, sign);
   const station = st ? buildStation(b, hf, atlas, st, rand) : null;
   const back = Math.sign(lm.z) || 1, lx = lm.x - lm.w / 2 - 0.3, lz = lm.z + back * 2.5;
@@ -304,7 +307,9 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
     signs.receiveShadow = true;
     group.add(signs);
   }
-  return { group, materials: mats, bake, station, graph: streetGraph(def, crossX, hf), blocked: (x, z) => Math.abs(z) < def.gap + 2 * def.blockD + def.street + 6 || hillSpots.some((h) => Math.hypot(h.x - x, h.z - z) < h.r + 1.5) };
+  const doors = new Doors(doorDefs.splice(0), lighting, world);
+  group.add(doors.group);
+  return { group, materials: mats, bake, station, tick: (dt, movers) => doors.tick(dt, movers[0]), graph: streetGraph(def, crossX, hf), blocked: (x, z) => Math.abs(z) < def.gap + 2 * def.blockD + def.street + 6 || hillSpots.some((h) => Math.hypot(h.x - x, h.z - z) < h.r + 1.5) };
 }
 
 function streetGraph(def: BarrioDef, crossX: number[], hf: Heightfield): StreetGraph {

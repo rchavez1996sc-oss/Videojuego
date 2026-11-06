@@ -3,6 +3,7 @@ import type { Builder, Opening } from './buildingKit';
 import { CLOTHES, laundry, sidewalkChairs, tire } from './streetLife';
 import { shopFront, type Sign } from './shopFront';
 import { ZOCALOS } from './facadeMats';
+import { doorDefs } from './doors';
 
 export interface Lot { x: number; z: number; y: number; facing: number; w: number; d: number; floors?: number }
 
@@ -67,9 +68,13 @@ export function cityHouse(b: Builder, lot: Lot, rand: () => number, sign: Sign, 
     for (const o of openings) {
       if (o.y <= base + 0.01) {
         const metal = o.w > 2 ? 'shutter' : red ? 'doorRed' : 'door';
-        b.box('none', [o.w, o.h, T], at(o.x, y0 + o.y + o.h / 2, -T / 2), q, true);
-        if (o.w > 2) shopFront(b, at, q, o, y0, -w / 2 + 2.15, rand, sign);
-        else b.box(metal, [o.w, o.h, 0.06], at(o.x, y0 + o.y + o.h / 2, -0.12), q, false);
+        if (o.w > 2) {
+          b.box('none', [o.w, o.h, T], at(o.x, y0 + o.y + o.h / 2, -T / 2), q, true);
+          shopFront(b, at, q, o, y0, -w / 2 + 2.15, rand, sign);
+        } else {
+          doorDefs.push({ hinge: at(o.x - o.w / 2 + 0.02, y0 + o.y, -0.12), yaw: lot.facing, w: o.w - 0.04, h: o.h - 0.02, look: metal === 'doorRed' ? 'red' : rand() < 0.5 ? 'metal' : 'wood' });
+          room(b, at, q, w, d, rand);
+        }
         if (o.w <= 2 && rand() < 0.3) sign(at(o.x + 1.3, y0 + o.y + 1.75, 0.03), q, 1.3, 'brand');
         if (o.w > 2 && rand() < 0.6) sidewalkChairs(b, at(o.x, 0, 1.4), q, rand);
       } else if (f === 0 && glassy) b.box('glassBlock', [o.w, o.h, 0.1], at(o.x, y0 + o.y + o.h / 2, -0.1), q, false);
@@ -96,6 +101,18 @@ export function cityHouse(b: Builder, lot: Lot, rand: () => number, sign: Sign, 
     b.geometry(rand() < 0.5 ? 'tankBlack' : 'tankBlue', tank, m);
   }
   return floors;
+}
+
+/** Ground-floor room seen through an open door: a level floor slab one step up (over any terrain inside) and a few plain furnishings. */
+function room(b: Builder, at: At, q: THREE.Quaternion, w: number, d: number, rand: () => number): void {
+  const F = 0.16;
+  b.box('concrete', [w - 2 * T - 0.02, 0.5, d - 2 * T - 0.02], at(0, F - 0.25, -d / 2), q, true);
+  const tx = (rand() - 0.5) * (w - 2.5), tz = -d * (0.45 + rand() * 0.2);
+  b.box('desk', [1.2, 0.05, 0.75], at(tx, F + 0.74, tz), q, true);
+  for (const [x, z] of [[-0.55, -0.32], [0.55, -0.32], [-0.55, 0.32], [0.55, 0.32]]) b.box('desk', [0.05, 0.72, 0.05], at(tx + x, F + 0.36, tz + z), q, false);
+  for (const s of [-1, 1]) b.box('seat', [0.42, 0.45, 0.42], at(tx + s * 0.85, F + 0.22, tz), q, false);
+  b.box('cardboard', [w * 0.35, 0.35, 0.9], at(w / 2 - T - w * 0.18, F + 0.18, -d + T + 0.5), q, false);
+  if (rand() < 0.6) b.box('tankBlue', [0.5, 0.8, 0.5], at(-w / 2 + T + 0.35, F + 0.4, -d + T + 0.35), q, false);
 }
 
 /** Painted band at the foot of the front wall (zócalo), broken at doors and shop openings. */
