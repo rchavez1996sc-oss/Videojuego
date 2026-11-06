@@ -4,7 +4,7 @@ import { buildWeapon, type GunModel } from '../weapons/gunModels';
 import { bakeLod } from '../render/merge';
 import { dress, type Outfit } from './outfit';
 import { addWound } from './wounds';
-import { parts, pistolUpper } from './clipParts';
+import { GESTURE_MAX_SPEED, GESTURE_SPAN, parts, pistolUpper } from './clipParts';
 import { chooseGait } from './gait';
 import { Lean } from './lean';
 import { supportHand } from './handIk';
@@ -128,9 +128,10 @@ export class Rig {
     if (this.dead || this.held) return;
     const key = this.clipFor(gesture), dur = characters.clips.get(key)!.duration;
     if (key === 'hit' && this.overlay && this.overlay.key !== 'hit') return;
-    this.overlay = { key, t: seconds ?? dur * (key === 'hit' ? 0.35 : 1), from };
+    const [a, e] = GESTURE_SPAN[key] ?? [from, dur], start = seconds ? Math.max(from, a, e - GESTURE_MAX_SPEED * seconds) : from;
+    this.overlay = { key, t: seconds ?? dur * (key === 'hit' ? 0.35 : 1), from: start };
     this.upKey = '';
-    this.mixer.clipAction(parts(key).upper).timeScale = seconds ? (dur - from) / seconds : 1;
+    this.mixer.clipAction(parts(key).upper).timeScale = seconds ? (e - start) / seconds : 1;
   }
 
   /** Ends a torso gesture early (a reload let go of). */

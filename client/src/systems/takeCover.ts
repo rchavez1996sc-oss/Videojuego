@@ -18,7 +18,7 @@ export function findCover(world: RAPIER.World, cover: CoverIndex, groundY: (x: n
   const chest = threat.clone().setY(threat.y + 1.3);
   const ray = (a: THREE.Vector3, b: THREE.Vector3) => {
     const dir = b.clone().sub(a), len = dir.length();
-    return { hit: world.castRay(new RAPIER.Ray(a, dir.divideScalar(len)), len, true, undefined, undefined, undefined, undefined, (c) => c.handle !== self && c.isEnabled()), len };
+    return { hit: world.castRay(new RAPIER.Ray(a, dir.divideScalar(len)), len, true, RAPIER.QueryFilterFlags.EXCLUDE_SENSORS, undefined, undefined, undefined, (c) => c.handle !== self && c.isEnabled()), len };
   };
   for (const c of cover.candidates(from, threat, 14, from.distanceTo(threat), -2)) {
     const spot = c.pos.clone();
@@ -50,7 +50,7 @@ export function coverSeeker(d: { world: RAPIER.World; cover: CoverIndex; hf: Hei
     const ahead = new THREE.Vector3(0, 0, -1).applyQuaternion(d.camera.quaternion);
     const p = d.player.position, down = { x: 0, y: -1, z: 0 };
     const floor = (x: number, z: number) => {
-      const hit = d.world.castRay(new RAPIER.Ray({ x, y: p.y + 1.2, z }, down), 3, true, undefined, undefined, undefined, undefined, (c) => c.handle !== d.player.collisionHandle);
+      const hit = d.world.castRay(new RAPIER.Ray({ x, y: p.y + 1.2, z }, down), 3, true, RAPIER.QueryFilterFlags.EXCLUDE_SENSORS, undefined, undefined, undefined, (c) => c.handle !== d.player.collisionHandle);
       return hit ? p.y + 1.2 - hit.timeOfImpact : d.hf.heightAt(x, z);
     };
     const spot = findCover(d.world, d.cover, floor, d.player.position, d.enemies.list, ahead, d.player.collisionHandle);

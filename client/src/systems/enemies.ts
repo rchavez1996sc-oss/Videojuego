@@ -77,7 +77,7 @@ export class Enemies {
       const dir = to.clone().sub(from);
       const len = dir.length();
       dir.divideScalar(len);
-      return { hit: world.castRay(new RAPIER.Ray(from, dir), len, true, undefined, undefined, undefined, undefined, (c) => c.handle !== self && c.isEnabled() && (!glass || pierceChance(c.handle) < 1)), len };
+      return { hit: world.castRay(new RAPIER.Ray(from, dir), len, true, RAPIER.QueryFilterFlags.EXCLUDE_SENSORS, undefined, undefined, undefined, (c) => c.handle !== self && c.isEnabled() && (!glass || pierceChance(c.handle) < 1)), len };
     };
     this.ctx = {
       time: 0,

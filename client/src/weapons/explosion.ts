@@ -23,6 +23,6 @@ export function detonate(at: THREE.Vector3, d: { combat: Combat; sfx: Sfx; tpc: 
   const r = chest.distanceTo(at);
   if (r >= BLAST_RADIUS || !d.playerAlive) return;
   const dir = chest.clone().sub(at), len = dir.length();
-  const block = d.world.castRay(new RAPIER.Ray(at.clone().setY(at.y + 0.3), dir.divideScalar(len)), len, true, undefined, undefined, undefined, undefined, (c) => c.handle !== d.player.collisionHandle && c.isEnabled());
+  const block = d.world.castRay(new RAPIER.Ray(at.clone().setY(at.y + 0.3), dir.divideScalar(len)), len, true, RAPIER.QueryFilterFlags.EXCLUDE_SENSORS, undefined, undefined, undefined, (c) => c.handle !== d.player.collisionHandle && c.isEnabled());
   if (!block || block.timeOfImpact > len - 0.5) d.enemies.onPlayerHit(130 * Math.pow(1 - r / BLAST_RADIUS, 1.2), at);
 }

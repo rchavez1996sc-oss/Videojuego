@@ -12,11 +12,15 @@ import { Tracers } from '../fx/tracers';
 import { MuzzleFlash } from '../fx/muzzleFlash';
 import { Shells } from '../fx/shells';
 import { Blast } from '../fx/blast';
+import { MagSwap } from './magSwap';
 import { SURFACE_FX, hitHandler, isGhost, pierceChance, surfaceOf, type Surface } from '../world/surfaces';
 
 
 import type { Lighting } from '../render/lighting';
 import type { Heightfield } from '../world/heightfield';
+
+/** A manual reload (R held with rounds left) is quicker than an empty one, but not so quick the animation blurs. */
+const MANUAL_RELOAD = 0.7;
 
 export interface HitEvent { kill: boolean; headshot: boolean }
 
@@ -32,6 +36,7 @@ export class Combat {
   private flash = new MuzzleFlash();
   private shells: Shells;
   private blast: Blast;
+  private mags: MagSwap;
   private shots = 0;
   private tmp = new THREE.Vector3();
 
@@ -41,9 +46,10 @@ export class Combat {
     this.shells = new Shells(lighting, hf, () => sfx.shellBounce());
     this.blast = new Blast(this.sparks, this.dust, this.decals, world, lighting);
     this.group.add(this.dust.points, this.sparks.points, this.decals.mesh, this.tracers.group, this.flash.group, this.shells.mesh, this.blast.group);
+    this.mags = new MagSwap(player.model.weapon, player.model.bones.get('mixamorigLeftHand'), world, this.group);
   }
 
-  /** Progress 0..1 of a manual reload (hold R, half the usual time, abandoned if R is let go). An empty magazine reloads by itself at full length. */
+  /** Progress 0..1 of a manual reload (hold R, `MANUAL_RELOAD` × the usual time, abandoned if R is let go). An empty magazine reloads by itself at full length. */
   reloadHold = 0;
   private manual = false;
 
@@ -53,7 +59,7 @@ export class Combat {
       this.manual = false;
       this.reloadFx();
     } else if (input.down('KeyR')) {
-      if (g.reloading <= 0 && g.startReload(0.5)) {
+      if (g.reloading <= 0 && g.startReload(MANUAL_RELOAD)) {
         this.manual = true;
         this.reloadFx();
       }
@@ -64,6 +70,7 @@ export class Combat {
     }
     if (g.reloading <= 0) this.manual = false;
     this.reloadHold = this.manual ? g.reloadProgress : 0;
+    this.mags.update(dt, g.reloading > 0, g.reloadProgress);
     if (input.hit('KeyB')) this.gun.toggleMode();
     const result = this.gun.update(dt, input.firing, input.hit('Mouse0'));
     if (result === 'dry') {

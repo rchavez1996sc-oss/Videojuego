@@ -49,7 +49,7 @@ export class ThirdPersonCamera {
     const rot = new THREE.Euler(this.pitch, this.yaw, 0, 'YXZ');
     const back = new THREE.Vector3(0, 0, 1).applyEuler(rot);
     const side = new THREE.Vector3(1, 0, 0).applyEuler(rot);
-    const cast = (o: THREE.Vector3, d: THREE.Vector3, len: number) => this.world.castRay(new RAPIER.Ray(o, d), len, true, undefined, undefined, undefined, undefined, (c) => c.handle !== excludeCollider && c.isEnabled());
+    const cast = (o: THREE.Vector3, d: THREE.Vector3, len: number) => this.world.castRay(new RAPIER.Ray(o, d), len, true, RAPIER.QueryFilterFlags.EXCLUDE_SENSORS, undefined, undefined, undefined, (c) => c.handle !== excludeCollider && c.isEnabled());
     const off = this.shoulderX + this.sway, dirSide = side.clone().multiplyScalar(Math.sign(off) || 1);
     const sideHit = cast(this.pivot, dirSide, Math.abs(off) + 0.3);
     const origin = this.pivot.clone().addScaledVector(dirSide, sideHit ? Math.max(0, sideHit.timeOfImpact - 0.3) : Math.abs(off));

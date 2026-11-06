@@ -21,7 +21,7 @@ export class Player {
   readonly model: Rig;
   readonly position = new THREE.Vector3();
   yaw = 0; speed = 0;
-  private vel = new THREE.Vector3();
+  readonly vel = new THREE.Vector3();
   private body: RAPIER.RigidBody;
   private collider: RAPIER.Collider;
   private ctrl: RAPIER.KinematicCharacterController;

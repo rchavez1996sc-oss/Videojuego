@@ -18,6 +18,7 @@ import type { Objective } from '../systems/objective';
 import type { StreetNav } from '../ai/nav';
 import { playBot } from './bot';
 import { carShowcase } from './carShowcase';
+import { animDebug } from './debugAnim';
 import type { Lighting } from '../render/lighting';
 
 export interface DebugContext {
@@ -492,6 +493,7 @@ export function installDebug(c: DebugContext): void {
       log.push(`at ${tr.debugLastAt}`);
       return log.join('\n');
     },
+    ...animDebug(c),
     ready: true,
   };
 }

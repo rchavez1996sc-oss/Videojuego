@@ -33,3 +33,7 @@ export function parts(key: string): Parts {
   }
   return p;
 }
+
+/** Where the hands actually move in each reload clip (s): a timed gesture plays only this span, at most `GESTURE_MAX_SPEED`× (it skips the start rather than blur the motion). */
+export const GESTURE_SPAN: Record<string, [number, number]> = { reload: [0, 2.75], p_reload: [0.28, 3.5] };
+export const GESTURE_MAX_SPEED = 1.7;

@@ -29,7 +29,7 @@ export function pickDeath(world: RAPIER.World, feet: THREE.Vector3, yaw: number,
     const off = hipsTravel(key).clone().applyAxisAngle(UP, yaw + Math.PI), len = off.length();
     if (len < 0.05) return { key, shift: new THREE.Vector3() };
     const dir = off.divideScalar(len), need = len + BODY;
-    const hit = world.castRay(new RAPIER.Ray(origin, dir), need, true, undefined, undefined, undefined, undefined, (c) => c.handle !== exclude && c.isEnabled());
+    const hit = world.castRay(new RAPIER.Ray(origin, dir), need, true, RAPIER.QueryFilterFlags.EXCLUDE_SENSORS, undefined, undefined, undefined, (c) => c.handle !== exclude && c.isEnabled());
     if (!hit) return { key, shift: new THREE.Vector3() };
     const short = need - hit.timeOfImpact;
     if (short < best.short) best = { key, shift: dir.multiplyScalar(-short), short };

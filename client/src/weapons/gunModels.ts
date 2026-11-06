@@ -44,7 +44,8 @@ function pistol(lighting: Lighting): Built {
   add(new THREE.BoxGeometry(0.028, 0.022, 0.15), polymer, 0, 0.008, 0.05);
   add(new THREE.BoxGeometry(0.028, 0.008, 0.05), polymer, 0, -0.005, 0.1);
   add(new THREE.BoxGeometry(0.029, 0.11, 0.045), polymer, 0, -0.045, -0.012, -0.28);
-  add(new THREE.BoxGeometry(0.024, 0.012, 0.042), metal, 0, -0.098, -0.026, -0.28);
+  add(new THREE.BoxGeometry(0.022, 0.1, 0.034), metal, 0, -0.06, -0.016, -0.28).userData.mag = true;
+  add(new THREE.BoxGeometry(0.024, 0.012, 0.042), metal, 0, -0.098, -0.026, -0.28).userData.mag = true;
   add(new THREE.TorusGeometry(0.018, 0.0035, 6, 12, Math.PI).rotateY(Math.PI / 2), polymer, 0, -0.003, 0.04, Math.PI);
   add(new THREE.BoxGeometry(0.004, 0.016, 0.004), metal, 0, -0.008, 0.04, 0.3);
   return { group: g, muzzle: point(0, 0.034, 0.16), ejector: point(0.018, 0.045, 0.06) };
@@ -61,7 +62,7 @@ function smg(lighting: Lighting): Built {
   add(cyl(0.012, 0.03), metal, 0, 0.08, 0.32);
   add(new THREE.BoxGeometry(0.03, 0.03, 0.02), metal, 0, 0.08, -0.06);
   add(new THREE.BoxGeometry(0.008, 0.02, 0.008), metal, 0.026, 0.05, 0.16);
-  add(new THREE.BoxGeometry(0.024, 0.17, 0.034), metal, 0, -0.08, 0.14, 0.32);
+  add(new THREE.BoxGeometry(0.024, 0.17, 0.034), metal, 0, -0.08, 0.14, 0.32).userData.mag = true;
   add(new THREE.BoxGeometry(0.034, 0.1, 0.045), polymer, 0, -0.045, -0.01, -0.3);
   add(new THREE.BoxGeometry(0.04, 0.035, 0.08), polymer, 0, -0.005, 0.04);
   add(new THREE.TorusGeometry(0.02, 0.004, 6, 12, Math.PI).rotateY(Math.PI / 2), polymer, 0, -0.012, 0.035, Math.PI);

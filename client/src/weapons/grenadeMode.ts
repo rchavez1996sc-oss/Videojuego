@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
-import type { Grenades } from './grenades';
+import { throwVelocity, type Grenades } from './grenades';
 import type { Input } from '../core/input';
 import type { Player } from '../entities/player';
 import type { Sfx } from '../audio/sfx';
 import type { Hud } from '../ui/hud';
 
-const STEPS = 90, DT = 0.03, GRAVITY = 9.81, THROW_SPEED = 20, THROW_LIFT = 3.5;
+const STEPS = 90, DT = 0.03, GRAVITY = 9.81;
 /** Grenade Throw clip: torso poses (held ready / arm cocked), the throwing stretch and when the hand lets go. */
 const READY = 1.0, COCKED = 1.84, FROM = 1.6, THROW_TIME = 0.75, RELEASE = 0.29, DRAW = 0.3;
 
@@ -33,17 +33,18 @@ export class GrenadeMode {
     this.show(false);
   }
 
-  private release(): { from: THREE.Vector3; dir: THREE.Vector3 } {
+  /** Where and how the grenade leaves: over the throwing shoulder (or the hand itself at the moment of release), along the view, carrying the player's run. */
+  private release(fromHand = false): { from: THREE.Vector3; dir: THREE.Vector3; inherit: THREE.Vector3 } {
     const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
-    const p = this.player.position;
-    const from = p.clone().setY(p.y + 1.55).addScaledVector(dir.clone().setY(0).normalize(), 0.55);
-    return { from, dir };
+    const p = this.player.position, hand = this.player.model.bones.get('mixamorigRightHand');
+    const from = fromHand && hand ? hand.localToWorld(new THREE.Vector3(0, 9, 3)) : p.clone().setY(p.y + 1.6).addScaledVector(dir.clone().setY(0).normalize(), 0.45);
+    return { from, dir, inherit: this.player.vel.clone().setY(0).multiplyScalar(0.8) };
   }
 
   /** Throws immediately from the current view (also used by the test hooks). */
   throwNow(): boolean {
-    const { from, dir } = this.release();
-    if (!this.grenades.throw(from, dir, new THREE.Vector3())) return false;
+    const { from, dir, inherit } = this.release();
+    if (!this.grenades.throw(from, dir, inherit)) return false;
     this.sfx.grenadePin();
     this.player.model.gesture('throw', 1.1);
     return true;
@@ -56,15 +57,15 @@ export class GrenadeMode {
   /** Shows the arc and landing ring for the current view. */
   preview(): void {
     this.arc.visible = true;
-    const { from, dir } = this.release();
-    const pos = from.clone(), vel = dir.multiplyScalar(THROW_SPEED).add(new THREE.Vector3(0, THROW_LIFT, 0));
+    const { from, dir, inherit } = this.release();
+    const pos = from.clone(), vel = throwVelocity(dir, inherit);
     const ex = this.player.collisionHandle;
     let n = 0, landed: { p: THREE.Vector3; normal: THREE.Vector3 } | null = null;
     for (; n < STEPS && !landed; n++) {
       this.pts.set([pos.x, pos.y, pos.z], n * 3);
       vel.y -= GRAVITY * DT;
       const move = vel.clone().multiplyScalar(DT), len = move.length();
-      const hit = this.world.castRayAndGetNormal(new RAPIER.Ray(pos, move.clone().divideScalar(len)), len, true, undefined, undefined, undefined, undefined, (c) => c.handle !== ex && c.isEnabled());
+      const hit = this.world.castRayAndGetNormal(new RAPIER.Ray(pos, move.clone().divideScalar(len)), len, true, RAPIER.QueryFilterFlags.EXCLUDE_SENSORS, undefined, undefined, undefined, (c) => c.handle !== ex && c.isEnabled());
       if (hit) landed = { p: pos.clone().addScaledVector(move, hit.timeOfImpact / len), normal: new THREE.Vector3(hit.normal.x, hit.normal.y, hit.normal.z) };
       else pos.add(move);
     }
@@ -104,8 +105,8 @@ export class GrenadeMode {
       const t = now - this.throwing.t0;
       if (!this.throwing.released && t >= RELEASE) {
         this.throwing.released = true;
-        const { from, dir } = this.release();
-        this.grenades.throw(from, dir, new THREE.Vector3());
+        const { from, dir, inherit } = this.release(true);
+        this.grenades.throw(from, dir, inherit);
       }
       m.grenadeInHand = !this.throwing.released;
       if (t >= THROW_TIME) {

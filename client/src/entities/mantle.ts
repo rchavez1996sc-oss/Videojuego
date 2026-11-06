@@ -10,7 +10,7 @@ export function findLedge(world: RAPIER.World, feet: THREE.Vector3, yaw: number,
   const fwd = { x: -Math.sin(yaw), y: 0, z: -Math.cos(yaw) };
   const skip = (c: RAPIER.Collider) => c.handle !== exclude;
   const cast = (o: THREE.Vector3, d: typeof UP, len: number) =>
-    world.castRayAndGetNormal(new RAPIER.Ray(o, d), len, true, undefined, undefined, undefined, undefined, skip);
+    world.castRayAndGetNormal(new RAPIER.Ray(o, d), len, true, RAPIER.QueryFilterFlags.EXCLUDE_SENSORS, undefined, undefined, undefined, skip);
 
   let wall = Infinity;
   for (const h of [0.35, 0.8, 1.3, 1.8, 2.3]) {
@@ -116,7 +116,7 @@ export function steepContact(ctrl: RAPIER.KinematicCharacterController, falling:
 export function ridgeUnderFeet(world: RAPIER.World, feet: THREE.Vector3, exclude: number, prefer: THREE.Vector3): THREE.Vector3 | null {
   const skip = (c: RAPIER.Collider) => c.handle !== exclude && !c.isSensor();
   const floor = (dx: number, dz: number) => {
-    const hit = world.castRay(new RAPIER.Ray({ x: feet.x + dx, y: feet.y + 0.4, z: feet.z + dz }, DOWN), 1.4, true, undefined, undefined, undefined, undefined, skip);
+    const hit = world.castRay(new RAPIER.Ray({ x: feet.x + dx, y: feet.y + 0.4, z: feet.z + dz }, DOWN), 1.4, true, RAPIER.QueryFilterFlags.EXCLUDE_SENSORS, undefined, undefined, undefined, skip);
     return hit ? feet.y + 0.4 - hit.timeOfImpact : -Infinity;
   };
   const mid = floor(0, 0), r = 0.34;

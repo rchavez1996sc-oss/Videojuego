@@ -37,7 +37,7 @@ export function gatherThreats(enemies: Enemies, civilians: Civilians | null, sup
 /** What the player's feet are on: terrain gives road (asphalt), grass or bare dirt from its mask; built floors by material. */
 export function surfaceUnder(world: RAPIER.World, hf: Heightfield, player: Player): Ground {
   const p = player.position;
-  const hit = world.castRay(new RAPIER.Ray({ x: p.x, y: p.y + 0.3, z: p.z }, { x: 0, y: -1, z: 0 }), 0.8, true, undefined, undefined, undefined, undefined, (c) => c.handle !== player.collisionHandle);
+  const hit = world.castRay(new RAPIER.Ray({ x: p.x, y: p.y + 0.3, z: p.z }, { x: 0, y: -1, z: 0 }), 0.8, true, RAPIER.QueryFilterFlags.EXCLUDE_SENSORS, undefined, undefined, undefined, (c) => c.handle !== player.collisionHandle);
   const surf = hit ? surfaceOf(hit.collider.handle) : 'dirt';
   const onTerrain = !hit || hf.heightAt(p.x, p.z) >= p.y - 0.25;
   if (surf === 'dirt' && onTerrain) {

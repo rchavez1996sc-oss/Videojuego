@@ -65,7 +65,7 @@ export function findRespawn(world: RAPIER.World, hf: Heightfield, enemies: Enemy
         if (d < (clear < 45 ? 100 : 130) && !seen) {
           const from = e.position.clone().setY(e.position.y + 1.6), to = pos.clone().setY(pos.y + 1.2);
           const dir = to.clone().sub(from), len = dir.length();
-          const hit = world.castRay(new RAPIER.Ray(from, dir.divideScalar(len)), len, true, undefined, undefined, undefined, undefined, (c) => c.handle !== e.handle && c.isEnabled());
+          const hit = world.castRay(new RAPIER.Ray(from, dir.divideScalar(len)), len, true, RAPIER.QueryFilterFlags.EXCLUDE_SENSORS, undefined, undefined, undefined, (c) => c.handle !== e.handle && c.isEnabled());
           seen = !hit || hit.timeOfImpact > len - 0.5;
         }
       }
