@@ -259,7 +259,7 @@ async function boot(): Promise<void> {
       player.model.root.updateMatrixWorld(true);
       if (!nadeMode.update(input, deadT <= 0) && deadT <= 0 && !melee.update(dt, input)) combat.update(dt, input, input.aiming, player.airborne); else combat.fx(dt);
       grenades.update(dt);
-    }
+    } else combat.fx(dt);
     enemies.sync();
     squad?.sync();
     barrio?.tick?.(dt, [player.position, ...enemies.list.filter((e) => e.alive).map((e) => e.position), ...(squad?.positions ?? []), ...(civilians?.present ?? [])]);

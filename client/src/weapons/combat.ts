@@ -39,7 +39,7 @@ export class Combat {
     this.gun = new Gun(def);
     this.decals = new Decals(lighting);
     this.shells = new Shells(lighting, hf, () => sfx.shellBounce());
-    this.blast = new Blast(this.sparks, this.dust, this.decals);
+    this.blast = new Blast(this.sparks, this.dust, this.decals, world, lighting);
     this.group.add(this.dust.points, this.sparks.points, this.decals.mesh, this.tracers.group, this.flash.group, this.shells.mesh, this.blast.group);
   }
 

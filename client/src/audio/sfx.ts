@@ -1,5 +1,6 @@
 import type { Mixer } from './mixer';
 import { buildGunshots } from './gunshot';
+import { buildExplosions } from './explosionSound';
 
 export type Ground = 'grass' | 'dirt' | 'hard' | 'metal' | 'wood';
 
@@ -12,6 +13,14 @@ export class Sfx {
     this.shots = buildGunshots(m.ctx, 4);
     this.heavy = buildGunshots(m.ctx, 2, true);
     this.own = light ? buildGunshots(m.ctx, 4, false, light) : this.shots;
+    for (let k = 0; k < 3; k++) setTimeout(() => this.booms.push(...buildExplosions(this.m.ctx, 1, k)), 1500 + k * 1400);
+  }
+
+  /** Explosion variants, one built at a time a while after start (each ~120 ms of work) so loading never stalls. */
+  private booms: AudioBuffer[] = [];
+  private blasts(): AudioBuffer[] {
+    if (!this.booms.length) this.booms.push(...buildExplosions(this.m.ctx, 1));
+    return this.booms;
   }
 
   /** One pre-rendered report into `dest`, with send amounts to the street slapback and the valley reverb. */
@@ -115,17 +124,13 @@ export class Sfx {
     const echo = ctx.createGain();
     echo.gain.value = 0.8 + (1 - near) * 0.6;
     panner.connect(echo).connect(this.m.street);
-    this.filtered(t, 'highpass', 2200, 0.7, 0.9 * near + 0.1, 0.001, 0.09, 0.3, panner);
-    this.filtered(t, 'lowpass', 220, 0.7, 2.6, 0.004, 1.6, 1.8, panner);
-    this.filtered(t, 'lowpass', 1800 * near + 500, 0.6, 1.6, 0.002, 0.6, 1.2, panner);
-    this.tone(t, 'sine', 62, 22, 3.2, 1.8, 0.8, panner);
-    this.filtered(t, 'lowpass', 90, 0.9, 2.2, 0.003, 2.2, 2.4, panner);
-    this.tone(t + 0.01, 'triangle', 110, 40, 0.8, 0.5, 0.3, panner);
-    this.filtered(t + 0.35, 'lowpass', 160, 0.5, 0.9, 0.15, 2.6, 1.6, panner);
-    for (let i = 0; i < 14; i++) {
-      const d = t + 0.45 + Math.random() * 1.6;
-      this.filtered(d, 'bandpass', 1800 + Math.random() * 3000, 3, (0.05 + Math.random() * 0.08) * near, 0.002, 0.05 + Math.random() * 0.08, 0.2, panner);
-    }
+    const src = ctx.createBufferSource(), dull = ctx.createBiquadFilter(), bank = this.blasts();
+    src.buffer = bank[Math.floor(Math.random() * bank.length)];
+    src.playbackRate.value = 0.94 + Math.random() * 0.1;
+    dull.type = 'lowpass';
+    dull.frequency.value = 350 + 17000 * Math.pow(near, 1.6);
+    src.connect(dull).connect(panner);
+    src.start(t);
     if (distance < 12) this.tone(t + 0.05, 'sine', 3900, 3700, 0.06 * (1 - distance / 12), 2.4);
     setTimeout(() => {
       bus.disconnect();
