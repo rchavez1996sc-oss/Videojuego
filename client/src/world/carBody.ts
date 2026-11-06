@@ -13,6 +13,24 @@ export function topAt(shape: Pt[], z: number): number {
   return top;
 }
 
+/**
+ * The side silhouette with its kinks eased (bonnet to windscreen, windscreen to roof, boot): the top outline is
+ * averaged over ±`r` metres and resampled, so the loft gets curved transitions instead of creases.
+ */
+function smoothed(shape: Pt[], zMin: number, zMax: number, r: number): Pt[] {
+  const n = 48, bottom = Math.min(...shape.map((p) => p[1])), top: Pt[] = [];
+  for (let i = 0; i <= n; i++) {
+    const z = zMin + (i / n) * (zMax - zMin);
+    let sum = 0, w = 0;
+    for (let k = -3; k <= 3; k++) {
+      const zz = THREE.MathUtils.clamp(z + (k / 3) * r, zMin + 1e-3, zMax - 1e-3), t = topAt(shape, zz);
+      if (Number.isFinite(t)) [sum, w] = [sum + t * (4 - Math.abs(k)), w + 4 - Math.abs(k)];
+    }
+    top.push([z, w ? sum / w : bottom]);
+  }
+  return [[zMax, bottom], [zMin, bottom], ...top];
+}
+
 /** Plan-view rounding: the half width shrinks along a quarter ellipse over the last `r` metres of each end. */
 function planHalf(z: number, half: number, zMin: number, zMax: number, r: number): number {
   const d = Math.min(z - zMin, zMax - z);
@@ -26,7 +44,7 @@ function planHalf(z: number, half: number, zMin: number, zMax: number, r: number
  * swept along z; ends closed. Smooth normals, a proper curved body instead of an extruded slab.
  */
 function loft(zs: number[], ring: (z: number) => { y0: number; y1: number; hb: number; ht: number; r: number; bulge: number } | null): THREE.BufferGeometry | null {
-  const SEG = 3, pos: number[] = [], idx: number[] = [], rings: number[][] = [];
+  const SEG = 5, pos: number[] = [], idx: number[] = [], rings: number[][] = [];
   for (const z of zs) {
     const s = ring(z);
     if (!s || s.y1 - s.y0 < 0.02) { rings.push([]); continue; }
@@ -77,8 +95,9 @@ export interface Body { lower: THREE.BufferGeometry; cabin: THREE.BufferGeometry
  * from the belt to the roofline that narrows towards the top (tumblehome), and a painted roof skin over its top.
  * Local frame as the old extrusion: x across, y up, z along (front +z).
  */
-export function carBody(shape: Pt[], width: number, belt: number, sill: number, boxy: boolean): Body {
-  const zMin = Math.min(...shape.map((p) => p[0])), zMax = Math.max(...shape.map((p) => p[0])), N = 20;
+export function carBody(raw: Pt[], width: number, belt: number, sill: number, boxy: boolean): Body {
+  const zMin = Math.min(...raw.map((p) => p[0])), zMax = Math.max(...raw.map((p) => p[0])), N = 36;
+  const shape = smoothed(raw, zMin, zMax, boxy ? 0.08 : 0.2);
   const zs = Array.from({ length: N + 1 }, (_, i) => zMin + 0.004 + (i / N) * (zMax - zMin - 0.008));
   const half = width / 2, endR = boxy ? 0.22 : 0.42, roofMax = Math.max(...shape.map((p) => p[1]));
   const lower = loft(zs, (z) => {
@@ -108,8 +127,8 @@ export function wheelParts(r: number, w: number): { tire: THREE.BufferGeometry; 
     const a = -Math.PI / 2 + (k / 6) * Math.PI, side = Math.cos(a);
     prof.push(new THREE.Vector2(r * 0.62 + (r * 0.38) * (0.8 + 0.2 * side), (w / 2) * Math.sin(a)));
   }
-  const tire = new THREE.LatheGeometry([new THREE.Vector2(r * 0.6, -w / 2), ...prof, new THREE.Vector2(r * 0.6, w / 2)], 14).rotateZ(Math.PI / 2);
-  const parts: THREE.BufferGeometry[] = [new THREE.CylinderGeometry(r * 0.6, r * 0.6, w * 0.5, 16).rotateZ(Math.PI / 2).translate(w * 0.2, 0, 0)];
+  const tire = new THREE.LatheGeometry([new THREE.Vector2(r * 0.6, -w / 2), ...prof, new THREE.Vector2(r * 0.6, w / 2)], 24).rotateZ(Math.PI / 2);
+  const parts: THREE.BufferGeometry[] = [new THREE.CylinderGeometry(r * 0.6, r * 0.6, w * 0.5, 24).rotateZ(Math.PI / 2).translate(w * 0.2, 0, 0)];
   parts.push(new THREE.CylinderGeometry(r * 0.15, r * 0.17, w * 0.1, 12).rotateZ(Math.PI / 2).translate(w * 0.48, 0, 0));
   for (let k = 0; k < 5; k++) {
     const a = (k / 5) * Math.PI * 2;
