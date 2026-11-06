@@ -55,15 +55,15 @@ export function wheel(b: Builder, at: (x: number, y: number, z: number) => THREE
 }
 
 /** Window band of a combi/micro: dark panes with black rubber frames between painted pillars, windscreen and rear glass. */
-function busWindows(b: Builder, at: (x: number, y: number, z: number) => THREE.Vector3, q: THREE.Quaternion, w: number, belt: number, top: number): void {
-  const h = top - belt - 0.28, y = belt + 0.1 + h / 2, x = w / 2 * 0.92 + 0.012;
-  for (const s of [1, -1]) for (let z = -1.95; z < 1.45; z += 0.84) {
+function busWindows(b: Builder, at: (x: number, y: number, z: number) => THREE.Vector3, q: THREE.Quaternion, w: number, l: number, belt: number, top: number): void {
+  const h = top - belt - 0.28, y = belt + 0.1 + h / 2, x = w / 2 * 0.92 + 0.012, f = l / 2;
+  for (const s of [1, -1]) for (let z = -f + 0.45; z < f - 0.95; z += 0.84) {
     b.box('glass', [0.02, h, 0.72], at(s * x, y, z + 0.36), q, false);
     b.box('plastic', [0.025, h + 0.06, 0.04], at(s * (x - 0.003), y, z), q, false);
   }
-  b.box('glass', [w * 0.8, h + 0.12, 0.02], at(0, y + 0.02, 2.27), q.clone().multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -0.12)), false);
-  b.box('plastic', [0.05, h + 0.12, 0.03], at(0, y + 0.02, 2.275), q, false);
-  b.box('glass', [w * 0.75, h * 0.8, 0.02], at(0, y + 0.05, -2.38), q, false);
+  b.box('glass', [w * 0.8, h + 0.12, 0.02], at(0, y + 0.02, f - 0.13), q.clone().multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -0.12)), false);
+  b.box('plastic', [0.05, h + 0.12, 0.03], at(0, y + 0.02, f - 0.125), q, false);
+  b.box('glass', [w * 0.75, h * 0.8, 0.02], at(0, y + 0.05, -f + 0.02), q, false);
 }
 
 /** Car wheel: tyre with rounded sidewall, five-spoke rim facing out on either side. */
@@ -139,7 +139,7 @@ export function stairway(b: Builder, hf: Heightfield, x: number, z0: number, z1:
   }
 }
 
-export type CarKind = 'sedan' | 'tico' | 'wagon' | 'pickup' | 'combi' | 'beetle';
+export type CarKind = 'sedan' | 'tico' | 'wagon' | 'pickup' | 'combi' | 'beetle' | 'micro';
 
 const CAR_DIMS: Record<CarKind, { l: number; w: number; body: number; cabin: number; cabinL: number; cabinZ: number }> = {
   sedan: { l: 4.3, w: 1.7, body: 0.65, cabin: 0.55, cabinL: 2.2, cabinZ: -0.15 },
@@ -147,6 +147,7 @@ const CAR_DIMS: Record<CarKind, { l: number; w: number; body: number; cabin: num
   wagon: { l: 4.5, w: 1.72, body: 0.68, cabin: 0.58, cabinL: 3.0, cabinZ: -0.55 },
   pickup: { l: 5.0, w: 1.78, body: 0.75, cabin: 0.65, cabinL: 1.6, cabinZ: 0.6 },
   combi: { l: 4.8, w: 1.8, body: 1.0, cabin: 0.85, cabinL: 4.4, cabinZ: -0.15 },
+  micro: { l: 8.6, w: 2.3, body: 1.25, cabin: 1.4, cabinL: 8.4, cabinZ: 0 },
   beetle: { l: 4.0, w: 1.55, body: 0.6, cabin: 0.6, cabinL: 2.0, cabinZ: -0.2 },
 };
 
@@ -157,6 +158,7 @@ const SHAPES: Record<CarKind, [number, number][]> = {
   wagon: [[-2.25, 0.38], [2.25, 0.38], [2.27, 0.74], [1.25, 0.9], [0.65, 1.42], [-2.15, 1.44], [-2.25, 0.92]],
   pickup: [[-2.5, 0.42], [2.5, 0.42], [2.52, 0.86], [1.55, 1.0], [1.05, 1.58], [-0.25, 1.6], [-0.3, 1.0], [-2.5, 1.0]],
   combi: [[-2.4, 0.4], [2.4, 0.4], [2.42, 1.0], [2.2, 1.95], [-2.35, 2.0], [-2.4, 1.2]],
+  micro: [[-4.3, 0.5], [4.3, 0.5], [4.34, 1.3], [4.22, 2.85], [-4.26, 2.9], [-4.3, 1.4]],
   beetle: [[-2.0, 0.36], [2.0, 0.36], [2.02, 0.62], [1.6, 0.8], [1.0, 0.92], [0.55, 1.36], [-0.35, 1.46], [-1.25, 1.24], [-1.85, 0.9], [-2.0, 0.62]],
 };
 
@@ -167,6 +169,7 @@ const GLASS: Record<CarKind, [number, number][]> = {
   wagon: [[-2.28, 0.93], [1.29, 0.93], [0.67, 1.45], [-2.18, 1.47]],
   pickup: [[-0.33, 1.03], [1.59, 1.03], [1.07, 1.61], [-0.28, 1.63]],
   combi: [[-2.35, 1.25], [2.24, 1.25], [2.22, 1.88], [-2.35, 1.9]],
+  micro: [[-4.25, 1.45], [4.2, 1.45], [4.16, 2.7], [-4.25, 2.72]],
   beetle: [[-1.2, 0.95], [0.9, 0.95], [0.52, 1.37], [-0.4, 1.44]],
 };
 
@@ -176,14 +179,14 @@ export function car(b: Builder, pos: THREE.Vector3, yaw: number, paint: string, 
   const q = new THREE.Quaternion().setFromAxisAngle(UP, yaw);
   const at = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z).applyQuaternion(q).add(pos);
   const g = (mat: string, geo: THREE.BufferGeometry) => b.geometry(mat, geo, new THREE.Matrix4().compose(pos, q, new THREE.Vector3(1, 1, 1)));
-  const belt = kind === 'combi' ? 1.2 : kind === 'pickup' ? 1.02 : 0.88, boxy = kind === 'combi';
+  const belt = kind === 'micro' ? 1.4 : kind === 'combi' ? 1.2 : kind === 'pickup' ? 1.02 : 0.88, boxy = kind === 'combi' || kind === 'micro';
   const body = carBody(shape, d.w, belt, Math.min(...shape.map(([, y]) => y)), boxy);
   g(paint, body.lower);
   if (body.cabin) g(boxy ? paint : 'glass', body.cabin);
-  if (boxy) busWindows(b, at, q, d.w, belt, Math.max(...shape.map(([, y]) => y)));
+  if (boxy) busWindows(b, at, q, d.w, d.l, belt, Math.max(...shape.map(([, y]) => y)));
   if (body.roof) g(paint, body.roof);
   const glass = GLASS[kind];
-  if (kind !== 'combi') b.box('plastic', [d.w * 0.82, 0.16, 0.42], at(0, belt + 0.02, glass[1][0] - 0.38), q, false);
+  if (!boxy) b.box('plastic', [d.w * 0.82, 0.16, 0.42], at(0, belt + 0.02, glass[1][0] - 0.38), q, false);
   const roofZ = [glass[2][0], glass[3][0]], midZ = (roofZ[0] + roofZ[1]) / 2, topY = Math.max(...shape.map(([, y]) => y));
   if (kind !== 'combi') {
     const lean = Math.atan2(d.w / 2 * (0.95 - 0.8), topY - belt);
@@ -197,7 +200,7 @@ export function car(b: Builder, pos: THREE.Vector3, yaw: number, paint: string, 
   if (kind === 'pickup') for (const s of [1, -1]) b.box(paint, [0.07, 0.35, 2.15], at(s * (d.w / 2 - 0.035), 1.17, -1.4), q, false);
   if (kind === 'combi') b.box('stripe', [d.w + 0.02, 0.16, d.l - 0.5], at(0, 0.8, 0), q, false);
   if (kind === 'tico') b.box('checker', [0.5, 0.15, 0.25], at(0, topY + 0.08, midZ), q, false);
-  const zf = d.l / 2, wheelZ = d.l / 2 - (kind === 'tico' ? 0.6 : 0.8);
+  const zf = d.l / 2, wheelZ = d.l / 2 - (kind === 'tico' ? 0.6 : kind === 'micro' ? 1.6 : 0.8), wr = kind === 'micro' ? 0.48 : 0.31;
   for (const s of [1, -1]) {
     b.geometry('plastic', new RoundedBoxGeometry(d.w * (boxy ? 0.98 : 0.86), 0.2, 0.2, 2, 0.07), new THREE.Matrix4().compose(at(0, 0.45, s * (zf - 0.02)), q, new THREE.Vector3(1, 1, 1)));
     b.box('plate', [0.42, 0.13, 0.02], at(0, 0.46, s * (zf + 0.085)), q, false);
@@ -207,8 +210,8 @@ export function car(b: Builder, pos: THREE.Vector3, yaw: number, paint: string, 
   b.box('plastic', [d.w * 0.5, 0.16, 0.03], at(0, 0.62, zf + 0.01), q, false);
   const door = glass[1][0] - 0.35, rear = (glass[0][0] + midZ) / 2;
   for (const s of [-1, 1]) {
-    for (const z of kind === 'combi' ? [door] : [door, midZ - 0.05]) b.box('plastic', [0.012, belt - 0.42, 0.02], at(s * (d.w / 2 + 0.002), (belt + 0.42) / 2, z), q, false);
-    for (const z of kind === 'combi' || kind === 'pickup' ? [door - 0.25] : [door - 0.25, rear]) b.box('rim', [0.02, 0.035, 0.14], at(s * (d.w / 2 + 0.01), belt - 0.1, z), q, false);
+    for (const z of boxy ? [door] : [door, midZ - 0.05]) b.box('plastic', [0.012, belt - 0.42, 0.02], at(s * (d.w / 2 + 0.002), (belt + 0.42) / 2, z), q, false);
+    for (const z of boxy || kind === 'pickup' ? [door - 0.25] : [door - 0.25, rear]) b.box('rim', [0.02, 0.035, 0.14], at(s * (d.w / 2 + 0.01), belt - 0.1, z), q, false);
     b.box('plastic', [0.04, 0.28, 0.02], at(s * (d.w / 2 - 0.12), 0.32, -wheelZ - 0.42), q, false);
   }
   b.box('bars', [0.012, 0.7, 0.012], at(d.w / 2 - 0.2, topY + 0.35, glass[3][0] + 0.15), q, false);
@@ -216,8 +219,8 @@ export function car(b: Builder, pos: THREE.Vector3, yaw: number, paint: string, 
   if (kind === 'combi') for (const z of [-1.6, -0.4, 0.8]) b.box('bars', [1.24, 0.04, 0.04], at(0, topY + 0.14, z), q, false);
   for (const [x, z] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) {
     b.box('plastic', [0.06, 0.12, 0.8], at(x * (d.w / 2 + 0.005), 0.66, z * wheelZ), q, false);
-    carWheel(b, at, q, x * (d.w / 2 - 0.13), z * wheelZ, 0.31, 0.21);
-    b.geometry('plastic', new THREE.TorusGeometry(0.4, 0.035, 3, 9, Math.PI).rotateY(Math.PI / 2), new THREE.Matrix4().compose(at(x * (d.w / 2 - 0.005), 0.33, z * wheelZ), q, new THREE.Vector3(1, 1, 1)));
+    carWheel(b, at, q, x * (d.w / 2 - 0.13), z * wheelZ, wr, kind === 'micro' ? 0.28 : 0.21);
+    b.geometry('plastic', new THREE.TorusGeometry(wr + 0.09, 0.035, 3, 9, Math.PI).rotateY(Math.PI / 2), new THREE.Matrix4().compose(at(x * (d.w / 2 - 0.005), wr + 0.02, z * wheelZ), q, new THREE.Vector3(1, 1, 1)));
   }
   b.box('none', [d.w, topY - 0.1, d.l], at(0, (topY + 0.1) / 2, 0), q, true);
 }

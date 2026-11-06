@@ -55,7 +55,7 @@ export class Traffic {
     const glass = lighting.setup(new THREE.MeshStandardMaterial({ color: '#1c2228', roughness: 0.05, metalness: 0.2, envMapIntensity: 1.6, transparent: true, opacity: 0.72 }), 'glass-see');
     const mats = { ...materials, glass };
     const bakeNoGlass = bake.map((g) => ({ ...g, keys: g.keys.filter((k) => k !== 'glass') }));
-    const kinds: (CarKind | 'moto' | 'delivery')[] = ['combi', 'moto', 'tico', 'sedan', 'delivery', 'moto', 'combi', 'wagon', 'pickup', 'moto', 'tico', 'delivery'];
+    const kinds: (CarKind | 'moto' | 'delivery')[] = ['combi', 'moto', 'tico', 'sedan', 'micro', 'delivery', 'moto', 'combi', 'wagon', 'pickup', 'moto', 'tico', 'micro', 'delivery'];
     let seed = 7;
     const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
     for (let i = 0; i < count; i++) {
@@ -63,10 +63,10 @@ export class Traffic {
       const b = new Builder(null, null);
       if (kind === 'moto') mototaxi(b, new THREE.Vector3(), 0, `moto${i % 3}`);
       else if (kind === 'delivery') deliveryBike(b, i % 3);
-      else car(b, new THREE.Vector3(), 0, kind === 'combi' ? 'car5' : kind === 'tico' ? 'car3' : `car${i % 6}`, kind);
+      else car(b, new THREE.Vector3(), 0, kind === 'combi' || kind === 'micro' ? 'car5' : kind === 'tico' ? 'car3' : `car${i % 6}`, kind);
       const g = new THREE.Group();
       g.add(...b.build(mats, 0.5, bakeNoGlass));
-      if (kind === 'combi') g.add(combiLivery(lighting, i));
+      if (kind === 'combi' || kind === 'micro') g.add(combiLivery(lighting, i, kind === 'micro'));
       const riders: THREE.BufferGeometry[] = [], seats: THREE.Group[] = [];
       let riderMat: THREE.Material | null = null;
       SEATS[kind].forEach(([x, y, z], k) => {
@@ -83,13 +83,13 @@ export class Traffic {
       });
       if (riders.length) g.add(new THREE.Mesh(mergeGeometries(riders), riderMat!));
       this.group.add(g);
-      const len = kind === 'delivery' ? 1.9 : kind === 'moto' ? 2.3 : kind === 'combi' ? 4.8 : 4.4;
+      const len = kind === 'delivery' ? 1.9 : kind === 'moto' ? 2.3 : kind === 'micro' ? 8.6 : kind === 'combi' ? 4.8 : 4.4;
       const body = this.world.createRigidBody(RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(0, -50, 0));
-      const collider = this.world.createCollider(RAPIER.ColliderDesc.cuboid(kind === 'delivery' ? 0.4 : 0.9, 0.8, len / 2).setTranslation(0, 0.8, 0), body);
+      const collider = this.world.createCollider(RAPIER.ColliderDesc.cuboid(kind === 'delivery' ? 0.4 : kind === 'micro' ? 1.15 : 0.9, kind === 'micro' ? 1.4 : 0.8, len / 2).setTranslation(0, kind === 'micro' ? 1.4 : 0.8, 0), body);
       markGhost(collider.handle);
       setSurface(collider.handle, 'metal');
       const dir = i % 2 ? 1 : -1;
-      const cruise = kind === 'delivery' ? 9 : kind === 'moto' ? 7 : kind === 'combi' ? 11 : 10;
+      const cruise = kind === 'delivery' ? 9 : kind === 'moto' ? 7 : kind === 'combi' || kind === 'micro' ? 11 : 10;
       const v: Vehicle = {
         kind, group: g, body, collider, dir, x: this.xMin + ((i * 77) % (this.xMax - this.xMin)), z: lanes[i].z + dir * lanes[i].lane, base: lanes[i].z, lane: lanes[i].lane, half: lanes[i].half, yaw: dir > 0 ? Math.PI / 2 : -Math.PI / 2,
         speed: cruise, cruise, len, honkT: 3 + rand() * 10, horn: 360 + rand() * 110, panic: false, state: 'drive', hp: HP, spin: 0, drift: 0, smokeT: 0, seats,
@@ -110,7 +110,7 @@ export class Traffic {
     v.state = 'crash';
     v.spin = (Math.random() < 0.5 ? -1 : 1) * (1.2 + Math.random() * 1.6);
     v.drift = v.dir * (1.5 + Math.random() * 2.5);
-    this.onDisabled(new THREE.Vector3(v.x, 1, v.z), v.kind === 'combi' ? 4 : v.kind === 'moto' || v.kind === 'delivery' ? 1 : 2);
+    this.onDisabled(new THREE.Vector3(v.x, 1, v.z), v.kind === 'micro' ? 6 : v.kind === 'combi' ? 4 : v.kind === 'moto' || v.kind === 'delivery' ? 1 : 2);
     const driver = v.seats[0];
     if ((v.kind === 'moto' || v.kind === 'delivery') && driver?.parent === v.group) {
       v.group.updateMatrixWorld(true);

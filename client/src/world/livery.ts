@@ -50,8 +50,8 @@ function quad(w: number, h: number, u0: number, v0: number, u1: number, v1: numb
  * Company livery on a combi's flanks (readable from both sides) and a cardboard route
  * placard behind the windscreen; one merged mesh per vehicle. Body is 1.8 × 4.8 m, front along +z.
  */
-export function combiLivery(lighting: Lighting, company: number): THREE.Mesh {
-  return new THREE.Mesh(liveryGeometry(company), liveryMaterial(lighting));
+export function combiLivery(lighting: Lighting, company: number, micro = false): THREE.Mesh {
+  return new THREE.Mesh(liveryGeometry(company, micro ? MICRO : COMBI), liveryMaterial(lighting));
 }
 
 /** All parked combis' liveries merged into one mesh (static: one draw for the whole level). */
@@ -65,12 +65,16 @@ function liveryMaterial(lighting: Lighting): THREE.Material {
   return (mat ??= lighting.setup(new THREE.MeshStandardMaterial({ map: atlas(), roughness: 0.35, metalness: 0.1, polygonOffset: true, polygonOffsetFactor: -2 }), 'livery'));
 }
 
-function liveryGeometry(company: number): THREE.BufferGeometry {
-  const k = company % COMPANIES.length, v1 = 1 - k / 5, v0 = v1 - 1 / 5, half = 0.912;
+interface Fit { len: number; half: number; y: number; h: number; card: [number, number, number] }
+const COMBI: Fit = { len: 4.2, half: 0.912, y: 0.93, h: 0.52, card: [0.35, 1.32, 2.12] };
+const MICRO: Fit = { len: 7.6, half: 1.162, y: 1.1, h: 0.6, card: [0.5, 1.55, 4.1] };
+
+function liveryGeometry(company: number, fit: Fit = COMBI): THREE.BufferGeometry {
+  const k = company % COMPANIES.length, v1 = 1 - k / 5, v0 = v1 - 1 / 5, half = fit.half;
   const rot = (a: number, x: number, y: number, z: number) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), a), new THREE.Vector3(1, 1, 1));
-  const right = quad(4.2, 0.52, 0, v0, 1, v1, rot(Math.PI / 2, half, 0.93, -0.1));
-  const left = quad(4.2, 0.52, 0, v0, 1, v1, rot(-Math.PI / 2, -half, 0.93, -0.1));
+  const right = quad(fit.len, fit.h, 0, v0, 1, v1, rot(Math.PI / 2, half, fit.y, -0.1));
+  const left = quad(fit.len, fit.h, 0, v0, 1, v1, rot(-Math.PI / 2, -half, fit.y, -0.1));
   const p = k % 4, pv1 = 1 / 5 * 0.85, pv0 = 1 / 5 * 0.2;
-  const card = quad(0.6, 0.27, p / 4, pv0, (p + 1) / 4, pv1, rot(0, 0.35, 1.32, 2.12));
+  const card = quad(0.6, 0.27, p / 4, pv0, (p + 1) / 4, pv1, rot(0, ...fit.card));
   return mergeGeometries([right, left, card])!;
 }

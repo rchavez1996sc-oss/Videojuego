@@ -13,9 +13,9 @@ const COLORS: Record<string, string> = {
 
 /** Debug: one of each vehicle in a row from (x, z) along +x, on the terrain, for close-up review. */
 export function carShowcase(scene: THREE.Scene, hf: Heightfield, x: number, z: number, lighting?: Lighting): number[][] {
-  const b = new Builder(null, null), kinds: (CarKind | 'moto')[] = ['sedan', 'tico', 'wagon', 'pickup', 'combi', 'beetle', 'moto'], at: number[][] = [];
+  const b = new Builder(null, null), kinds: (CarKind | 'moto')[] = ['sedan', 'tico', 'wagon', 'pickup', 'combi', 'micro', 'moto'], at: number[][] = [];
   kinds.forEach((k, i) => {
-    const p = new THREE.Vector3(x + i * 6, hf.heightAt(x + i * 6, z), z);
+    const p = new THREE.Vector3(x + i * 7, hf.heightAt(x + i * 7, z), z);
     if (k === 'moto') mototaxi(b, p, Math.PI / 2, 'moto0');
     else car(b, p, Math.PI / 2, `car${i % 6}`, k);
     at.push([p.x, p.y, p.z]);
