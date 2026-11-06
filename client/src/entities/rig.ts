@@ -26,7 +26,7 @@ export class Rig {
   /** Weapon put away (grenade in hand, climbing). */
   holster = false;
   private mixer: THREE.AnimationMixer;
-  private inst: ReturnType<typeof characters.create>;
+  readonly inst: ReturnType<typeof characters.create>;
   get bones(): Map<string, THREE.Bone> { return this.inst.bones; }
   private extraNear: THREE.Object3D[] = [];
   /** Props on the bones (backpack, book) shown only with the near LOD. */

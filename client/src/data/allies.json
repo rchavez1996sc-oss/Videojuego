@@ -131,6 +131,9 @@
     "helmet": "#3d100e"
   },
   "rig": "fls",
+  "female": { "chance": 0.2, "rig": "civ_b" },
+  "height": [0.95, 1.06],
+  "width": [0.92, 1.1],
   "outfits": [
     {
       "color": "#8e1b14",

@@ -26,8 +26,9 @@ export function tintHook(hair: boolean) {
     shader.uniforms.uOutfit = mat.userData.outfit;
     shader.uniforms.uTone = mat.userData.tone;
     shader.uniforms.uCloth = mat.userData.cloth;
+    shader.uniforms.uCover = mat.userData.cover;
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', `#include <common>\nuniform vec4 uOutfit;\nuniform vec3 uTone;\nuniform sampler2D uCloth;\n${HSV}`)
+      .replace('#include <common>', `#include <common>\nuniform vec4 uOutfit;\nuniform vec3 uTone;\nuniform sampler2D uCloth;\nuniform vec4 uCover[4];\n${HSV}`)
       .replace('#include <map_fragment>', hair ? `#include <map_fragment>
   diffuseColor.rgb = mix(diffuseColor.rgb, uTone * dot(diffuseColor.rgb, vec3(0.3, 0.59, 0.11)) * 2.2, 0.8);` : `#include <map_fragment>
   {
@@ -35,23 +36,33 @@ export function tintHook(hair: boolean) {
     float skin = 1.0 - texture2D(uCloth, vMapUv).r;
     vec3 cloth = vec3(fract(hsv.x + uOutfit.x), clamp(max(hsv.y * uOutfit.y, uOutfit.w * (1.0 - smoothstep(0.0, 0.2, hsv.y))), 0.0, 1.0), min(hsv.z * uOutfit.z, 0.92));
     diffuseColor.rgb = mix(pow(tq_hsv2rgb(cloth), vec3(2.2)), diffuseColor.rgb * uTone.x, skin);
+    for (int k = 0; k < 4; k++) {
+      vec2 cv = step(uCover[k].xy, vMapUv) * step(vMapUv, uCover[k].zw);
+      if (cv.x * cv.y > 0.5) diffuseColor.rgb = (k == 3 ? vec3(0.025, 0.022, 0.02) : vec3(0.05, 0.052, 0.036)) * (0.6 + 0.8 * hsv.z);
+    }
   }`);
   };
 }
 
 const HAIR = ['#1c1714', '#2b2019', '#3d2a1c', '#5a3b22', '#151515', '#6e4a2a', '#8a6a4a', '#7a2e22'];
 export const LOOKS = 8;
+/** Extra look past the random ones: muted, dark field clothes (female squad members dressed from a civilian model). */
+export const DRAB = LOOKS;
 
 /** `LOOKS` copies of a civilian material, each with its own clothing (or hair) colours; they share one shader program. */
 const NONE = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1);
 NONE.needsUpdate = true;
 
-export function variants(mat: THREE.MeshStandardMaterial, key: string, lighting: Lighting, cloth?: THREE.Texture, rand = Math.random): THREE.Material[] {
+/** UV rectangles (x0, y0, x1, y1) the drab look repaints: as field trousers (bare legs, shorts), the last as dark boots. */
+export type Cover = [number, number, number, number][];
+
+export function variants(mat: THREE.MeshStandardMaterial, key: string, lighting: Lighting, cloth?: THREE.Texture, rand = Math.random, cover?: Cover): THREE.Material[] {
   const hair = /hair/i.test(mat.name);
-  return Array.from({ length: LOOKS }, (_, i) => {
+  return Array.from({ length: LOOKS + 1 }, (_, i) => {
     const m = i ? mat.clone() : mat, c = new THREE.Color(HAIR[Math.floor(rand() * HAIR.length)]);
-    m.userData.outfit = { value: i ? new THREE.Vector4(rand(), 0.6 + rand() * 0.8, 0.55 + rand() * 0.45, rand() < 0.5 ? rand() * 0.45 : 0) : new THREE.Vector4(0, 1, 1, 0) };
+    m.userData.outfit = { value: i === DRAB ? new THREE.Vector4(0.02, 0.28, 0.42, 0.12) : i ? new THREE.Vector4(rand(), 0.6 + rand() * 0.8, 0.55 + rand() * 0.45, rand() < 0.5 ? rand() * 0.45 : 0) : new THREE.Vector4(0, 1, 1, 0) };
     m.userData.cloth = { value: cloth ?? NONE };
+    m.userData.cover = { value: [0, 1, 2, 3].map((k) => new THREE.Vector4(...(i === DRAB && cover?.[k] && !hair ? cover[k] : [2, 2, 2, 2]))) };
     m.userData.tone = { value: hair ? new THREE.Vector3(c.r, c.g, c.b) : new THREE.Vector3(0.65 + rand() * 0.33, 0, 0) };
     return lighting.setup(m, key, (sh) => tintHook(hair)(sh, m));
   });

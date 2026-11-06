@@ -4,7 +4,10 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { Lighting } from './lighting';
-import { LOOKS, variants } from './outfitTint';
+import { DRAB, LOOKS, variants, type Cover } from './outfitTint';
+
+/** Bare legs, shorts and trainers on civilian atlases, turned into field trousers and boots in the drab look. */
+const COVER: Partial<Record<string, Cover>> = { civ_b: [[0, 0.49, 0.435, 1], [0, 0.31, 0.7, 0.57], [0.43, 0.86, 0.468, 1], [0.65, 0, 1, 0.52]] };
 import { pets, type PetKind } from './pets';
 
 export type CharKind = 'pnp' | 'fls' | 'civ_a' | 'civ_b' | 'civ_c' | 'vip';
@@ -110,7 +113,7 @@ class CharacterLibrary {
         mat.envMapIntensity = 0.6;
         for (const t of [mat.map, mat.normalMap]) if (t) t.anisotropy = 8;
         if (kind.startsWith('civ')) {
-          const looks = variants(mat, `char-${kind}-${mat.name}`, lighting, masks.get(kind));
+          const looks = variants(mat, `char-${kind}-${mat.name}`, lighting, masks.get(kind), Math.random, COVER[kind]);
           this.looks.set(looks[0], looks);
           m.material = looks[0];
         } else m.material = lighting.setup(mat, `char-${kind}-${mat.name}`);
@@ -153,6 +156,14 @@ class CharacterLibrary {
     const look = Math.floor(Math.random() * LOOKS);
     for (const m of [...near, ...far]) m.material = this.looks.get(m.material as THREE.Material)?.[look] ?? m.material;
     return { model, near, far, bones };
+  }
+
+  /** Re-dresses an instance with one of its model's looks (`DRAB` = muted field clothes). */
+  restyle(inst: CharInstance, look = DRAB): void {
+    for (const m of [...inst.near, ...inst.far]) {
+      const set = [...this.looks.values()].find((l) => l.includes(m.material as THREE.Material));
+      if (set?.[look]) m.material = set[look];
+    }
   }
 }
 

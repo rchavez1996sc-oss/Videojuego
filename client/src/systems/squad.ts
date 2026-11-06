@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { Enemy, type EnemyDef } from '../entities/enemy';
 import type { Outfit } from '../entities/rig';
+import { characters, type CharKind } from '../render/characters';
 import { allyAct, allyThink, slotPosition, type Ally, type AllyContext } from '../ai/allyBrain';
 import { onHit, pierceChance, surfaceOf } from '../world/surfaces';
 import { HealthBars } from '../ui/healthbars';
@@ -19,7 +20,13 @@ import { strayHit } from './blame';
 
 const CATCH_UP = 35;
 
-export interface AllyDef extends EnemyDef { names: string[]; killShare: number; bleedOut: number; outfits: Outfit[] }
+export interface AllyDef extends EnemyDef {
+  names: string[]; killShare: number; bleedOut: number; outfits: Outfit[];
+  /** Each member independently: chance of being a woman, and the (civilian) model used, re-dressed in field colours. */
+  female?: { chance: number; rig: CharKind }; height?: [number, number]; width?: [number, number];
+}
+
+const span = (r: [number, number] | undefined) => (r ? r[0] + Math.random() * (r[1] - r[0]) : 1);
 
 interface Deps {
   world: RAPIER.World; hf: Heightfield; lighting: Lighting; player: Player; enemies: Enemies; combat: Combat;
@@ -44,7 +51,11 @@ export class Squad {
     const ground = (x: number, z: number) => d.hf.heightAt(x, z);
     const names = [...def.names].sort(() => Math.random() - 0.5);
     for (let i = 0; i < count; i++) {
-      const unit = new Enemy(100 + i, def, d.world, d.lighting, this.freeSlot(i, spawn, yaw), [], false, def.outfits[i % def.outfits.length]);
+      const woman = !!def.female && Math.random() < def.female.chance;
+      const unit = new Enemy(100 + i, woman ? { ...def, rig: def.female!.rig } : def, d.world, d.lighting, this.freeSlot(i, spawn, yaw), [], false, def.outfits[i % def.outfits.length]);
+      if (woman) characters.restyle(unit.model.inst);
+      const h = span(def.height) * (woman ? 0.97 : 1), w = span(def.width) * (woman ? 0.94 : 1);
+      unit.model.inst.model.scale.set(w, h, w);
       unit.yaw = yaw;
       const a: Ally = { unit, name: names[i % names.length], slot: i, target: null, downedT: 0, lost: false };
       this.list.push(a);
