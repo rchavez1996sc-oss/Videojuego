@@ -39,9 +39,9 @@ export function buildStation(b: Builder, hf: Heightfield, atlas: SignAtlas, def:
   box('concrete', [W, 0.2, depth], 0, 0.1, mid);
   const door = { x: 0, w: 2.8, y: 0, h: 2.8 }, wins = [-11, -6, 6, 11];
   const win = (x: number) => ({ x, w: 1.8, y: 1.1, h: 1.2 });
-  wall('policeGreen', W, H1, 0, 0, FRONT - T / 2, 0, [door, ...wins.map(win)]);
+  wall('policeTile', W, H1, 0, 0, FRONT - T / 2, 0, [door, ...wins.map(win)]);
   wall('policeGreen', W, H1, 0, 0, back + T / 2, Math.PI);
-  for (const s of [-1, 1]) wall('policeGreen', depth - 2 * T, H1, s * (W / 2 - T / 2), 0, mid, s * Math.PI / 2, [{ x: 0, w: 1.6, y: 1.8, h: 0.8 }]);
+  for (const s of [-1, 1]) wall('policeTile', depth - 2 * T, H1, s * (W / 2 - T / 2), 0, mid, s * Math.PI / 2, [{ x: 0, w: 1.6, y: 1.8, h: 0.8 }]);
   for (const x of wins) {
     box('glass', [1.8, 1.2, 0.05], x, 1.7, FRONT - T / 2, false);
     for (let i = 1; i < 12; i++) box('bars', [0.03, 1.2, 0.03], x - 0.9 + i * 0.15, 1.7, FRONT + 0.02, false);

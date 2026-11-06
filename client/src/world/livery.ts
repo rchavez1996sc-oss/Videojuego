@@ -8,12 +8,13 @@ const COMPANIES = [
   { base: '#efe9da', swoosh: ['#1c7a3a', '#e3b51c'], letter: 'R', route: 'COMAS · PANAMERICANA · NARANJAL', ink: '#1c3a20' },
   { base: '#e7b81e', swoosh: ['#1d1d1f', '#c62a20'], letter: 'E', route: 'PUENTE PIEDRA · ZAPALLAL · BELAÚNDE', ink: '#1d1d1f' },
   { base: '#2b5fa8', swoosh: ['#f2f2ee', '#d23a2a'], letter: 'S', route: 'SAN FELIPE · CARABAYLLO · UNI', ink: '#f2f2ee' },
+  { base: '#e9e2c8', swoosh: ['#2f6b34', '#4f9a3c'], letter: 'H', route: 'HUAYCÁN · VITARTE · CENTRO DE LIMA', ink: '#1f4a24' },
   { base: '#e8e0c4', swoosh: ['#8a1c1c', '#c9a227'], letter: '', route: 'UNIVERSIDAD NACIONAL MAYOR DE SAN MARCOS', ink: '#6a1a16' },
 ];
 /** Route companies (traffic, parked combis); the last livery is the university's own bus. */
-const ROUTES = 4;
-export const UNMSM_BUS = 4;
-const PLACARDS = ['SAN FELIPE', 'COLLIQUE', 'NARANJAL', 'UNI', 'UNMSM'];
+const ROUTES = 5;
+export const UNMSM_BUS = 5;
+const PLACARDS = ['SAN FELIPE', 'COLLIQUE', 'NARANJAL', 'UNI', 'HUAYCÁN', 'UNMSM'];
 const ROWS = COMPANIES.length + 1, N = PLACARDS.length;
 const W = 512, H = 128;
 let mat: THREE.Material | null = null;

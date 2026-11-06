@@ -18,6 +18,7 @@ import { flsMarks, poleMarks } from './flsMarks';
 import { facadeMaterials } from './facadeMats';
 import { festiveStreets } from './bunting';
 import { parkedLiveries } from './livery';
+import { avenueMedian } from './median';
 import { alleyLife } from './alleys';
 import { STREET_COLORS, stall, trashPile, roadMarkings } from './streetLife';
 import { brick, concrete, plaster, corrugated, estera } from '../render/urbanTextures';
@@ -279,6 +280,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
   }
 
   roadMarkings(b, hf, def.x0 - 10, xEnd + 10, crossX, 8);
+  const median = avenueMedian(b, hf, lighting, def.x0 - 10, xEnd + 10, crossX);
   for (let x = def.x0 + 8; x < xEnd - 8; x += 18 + rand() * 20) {
     if (crossX.some((cx) => Math.abs(cx - x) < 6) || rand() < 0.35) continue;
     const s = rand() < 0.5 ? 1 : -1;
@@ -293,7 +295,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
   const group = new THREE.Group();
   const mats = materials(lighting, atlas);
   const bake = bakeGroups(lighting); bake.push(...autoBake(lighting, mats, bake));
-  group.add(...b.build(mats, 0.5, bake, 128));
+  group.add(...b.build(mats, 0.5, bake, 128), median);
   if (station?.art) group.add(station.art(lighting));
   const liveries = parkedLiveries(lighting, combis);
   if (liveries) group.add(liveries);

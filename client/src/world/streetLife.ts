@@ -63,13 +63,9 @@ export function tire(b: Builder, pos: THREE.Vector3, rand: Rand): void {
   b.geometry('tire', new THREE.TorusGeometry(0.3, 0.11, 6, 14).rotateX(Math.PI / 2), new THREE.Matrix4().compose(pos, new THREE.Quaternion().setFromAxisAngle(UP, rand() * 3), new THREE.Vector3(1, 1, 1)));
 }
 
-/** Dashed centre line, zebra crossings at each cross street and yellow kerb paint on the avenue. */
+/** Zebra crossings at each cross street and yellow kerb paint on the avenue (the central berm is `median.ts`). */
 export function roadMarkings(b: Builder, hf: Heightfield, x0: number, x1: number, crossX: number[], halfWidth: number): void {
   const q = new THREE.Quaternion();
-  for (let x = x0; x < x1; x += 6) {
-    if (crossX.some((cx) => Math.abs(cx - x) < 10)) continue;
-    b.box('roadWhite', [3, 0.03, 0.15], new THREE.Vector3(x, hf.heightAt(x, 0) + 0.02, 0), q, false);
-  }
   for (const cx of crossX) for (const side of [-1, 1]) {
     const x = cx + side * 7;
     for (let z = -halfWidth + 0.8; z < halfWidth - 0.5; z += 1) b.box('roadWhite', [3, 0.03, 0.5], new THREE.Vector3(x, hf.heightAt(x, z) + 0.02, z), q, false);
