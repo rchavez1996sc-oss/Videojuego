@@ -227,7 +227,7 @@ async function boot(): Promise<void> {
         if (deadT <= 0) {
           damageFx.dead = damageFx.cut = false;
           shieldT = 3;
-          respawnPlayer({ world, hf, enemies, player, tpc, squad, death: deathPos, spawn: ch.spawn, streets: respawnPts });
+          respawnPlayer({ world, hf, enemies, player, tpc, squad, death: deathPos, spawn: defense && !defense.besieged ? spawn : ch.spawn, streets: respawnPts });
         }
       } else {
         if (input.hit('KeyQ')) seekCover();

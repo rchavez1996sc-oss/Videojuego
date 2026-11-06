@@ -31,7 +31,8 @@ export function roomy(world: RAPIER.World, pos: THREE.Vector3, ignore: number): 
 }
 
 /**
- * Picks a respawn spot near where the player fell (within 50 m when possible), clear of living enemies and out of their sight.
+ * Picks a respawn spot near where the player fell (within 50 m when possible), clear of living enemies and out of their sight;
+ * failing that, any spot within 160 m at least 30 m from the police, and only then the fallback.
  * Returns the feet position and a yaw facing back toward the fight.
  */
 export function findRespawn(world: RAPIER.World, hf: Heightfield, enemies: Enemy[], death: THREE.Vector3, fallback: THREE.Vector3, streets?: THREE.Vector3[], ignore = -1): { pos: THREE.Vector3; yaw: number } {
@@ -43,9 +44,9 @@ export function findRespawn(world: RAPIER.World, hf: Heightfield, enemies: Enemy
   const limit = hf.def.playable / 2 - 15;
   let best: { pos: THREE.Vector3; score: number } | null = null;
 
-  const rings = streets ? [[8, 50], [50, 90], [90, 160]] : [[40, 40], [55, 55], [70, 70], [90, 90]];
-  for (const [r0, r1] of rings) {
-    const clear = streets && r1 <= 50 ? 25 : 45;
+  const rings = streets ? [[8, 50], [50, 90], [90, 160], [8, 160]] : [[40, 40], [55, 55], [70, 70], [90, 90]];
+  for (const [ri, [r0, r1]] of rings.entries()) {
+    const relaxed = ri === 3, clear = relaxed ? 30 : streets && r1 <= 50 ? 25 : 45;
     const spots = streets
       ? streets.filter((p) => Math.hypot(p.x - death.x, p.z - death.z) >= r0 && Math.hypot(p.x - death.x, p.z - death.z) < r1).map((p) => [p.x, p.z])
       : Array.from({ length: 16 }, (_, i) => [death.x + Math.cos((i / 16) * Math.PI * 2) * r0, death.z + Math.sin((i / 16) * Math.PI * 2) * r0]);
@@ -62,7 +63,7 @@ export function findRespawn(world: RAPIER.World, hf: Heightfield, enemies: Enemy
       for (const e of alive) {
         const d = e.position.distanceTo(pos);
         nearest = Math.min(nearest, d);
-        if (d < (clear < 45 ? 100 : 130) && !seen) {
+        if (!relaxed && d < (clear < 45 ? 100 : 130) && !seen) {
           const from = e.position.clone().setY(e.position.y + 1.6), to = pos.clone().setY(pos.y + 1.2);
           const dir = to.clone().sub(from), len = dir.length();
           const hit = world.castRay(new RAPIER.Ray(from, dir.divideScalar(len)), len, true, RAPIER.QueryFilterFlags.EXCLUDE_SENSORS, undefined, undefined, undefined, (c) => c.handle !== e.handle && c.isEnabled());

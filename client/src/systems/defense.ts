@@ -89,8 +89,8 @@ export class Defense {
     return `t ${this.t.toFixed(0)} lost ${this.students.lost} police ${e.aliveCount}/${e.list.length} near40 ${ds.filter((d) => d < 40).length} closest ${ds[0]?.toFixed(0) ?? '-'} median ${ds[ds.length >> 1]?.toFixed(0) ?? '-'} phase ${this.phase} kills ${this.kills} prog ${this.progress.toFixed(0)} trucks ${this.trucks.length} tank ${this.tank ? (this.tank.destroyed ? 'dead' : this.tank.arrived ? 'here' : 'moving') : '-'} carry ${this.carrying} fuse ${this.fuse.toFixed(1)} done ${this.done}`;
   }
 
-  /** The siege has begun: police go for the students. */
-  private get besieged(): boolean {
+  /** The siege has begun (the player reached the faculty): police go for the students. */
+  get besieged(): boolean {
     return this.phase !== 'hunt' && this.phase !== 'go';
   }
 

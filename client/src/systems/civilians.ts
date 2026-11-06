@@ -7,6 +7,7 @@ import { mulberry32 } from '../core/rng';
 import { onHit } from '../world/surfaces';
 import { innocents } from './blame';
 import { surfaceTop } from '../world/groundStrips';
+import { errand } from './civRoute';
 import { hideSpot, HIDE_RANGE } from './civilianHide';
 import type { Heightfield } from '../world/heightfield';
 import type { Lighting } from '../render/lighting';
@@ -24,6 +25,8 @@ interface Civilian {
   stuckT: number; passT: number;
   /** Startle before reacting; where they crouch (`hide`) and for how long after the last shot; where the shooting came from. */
   reactT: number; hideAt: THREE.Vector3 | null; hideT: number; threat: THREE.Vector3;
+  /** Remaining nodes of the current errand (see `errand`). */
+  route: number[];
 }
 
 export const SHIRTS = ['#b8342b', '#2f5e9e', '#e0c24a', '#3f7a3c', '#d9d4c7', '#6b3c7a', '#1e1e22', '#c46a2c', '#7aa7c7'];
@@ -66,7 +69,7 @@ export class Civilians {
       const collider = world.createCollider(RAPIER.ColliderDesc.capsule(0.5, 0.3), body);
       const c: Civilian = {
         model, body, collider, pos, yaw: 0, mood: rand() < 0.35 ? 'idle' : 'walk', node, target, exit: -1,
-        speed: 1.1 + rand() * 0.5, timer: 2 + rand() * 6, panicT: 0, fallDir: new THREE.Vector3(), fallT: 0, shadowed: true, stuckT: 0, passT: 0, reactT: 0, hideAt: null, hideT: 0, threat: new THREE.Vector3(),
+        speed: 1.1 + rand() * 0.5, timer: 2 + rand() * 6, panicT: 0, fallDir: new THREE.Vector3(), fallT: 0, shadowed: true, stuckT: 0, passT: 0, reactT: 0, hideAt: null, hideT: 0, threat: new THREE.Vector3(), route: [],
       };
       this.list.push(c);
       this.group.add(model.root);
@@ -147,7 +150,7 @@ export class Civilians {
       p.x += (Math.random() - 0.5) * 3;
       p.z += (Math.random() - 0.5) * 3;
       p.y = this.groundAt(p.x, p.z);
-      Object.assign(c, { mood: 'walk', node: a, target: b, speed: 1.1 + Math.random() * 0.5, panicT: 0 });
+      Object.assign(c, { mood: 'walk', node: a, target: b, speed: 1.1 + Math.random() * 0.5, panicT: 0, route: [] });
       c.pos.copy(p);
       c.collider.setEnabled(true);
       return;
@@ -204,13 +207,16 @@ export class Civilians {
           if (c.mood === 'panic') {
             if (c.node === c.exit) c.mood = 'gone';
             else c.target = this.towardExit(c.node, c.exit);
-          } else if (Math.random() < 0.3) {
-            c.mood = 'idle';
-            c.timer = 3 + Math.random() * 7;
-            moving = false;
+          } else if (c.route.length) {
+            c.target = c.route.shift()!;
           } else {
-            const options = this.neighbors[c.node];
-            c.target = options[Math.floor(Math.random() * options.length)];
+            c.route = errand(this.neighbors, this.graph.nodes, c.node);
+            if (c.route.length) c.target = c.route.shift()!;
+            if (Math.random() < 0.45) {
+              c.mood = 'idle';
+              c.timer = 4 + Math.random() * 12;
+              moving = false;
+            }
           }
         } else {
           const dir = away ? to.divideScalar(d) : this.clearWay(c, to.divideScalar(d), (c.passT -= dt) > 0);
