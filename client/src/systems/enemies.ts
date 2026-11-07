@@ -235,7 +235,8 @@ export class Enemies {
       e.lastKnown.copy(this.player.position);
       e.shownT = 3;
       if (e.damage(dmg)) {
-        e.die(chest.clone().sub(at).setY(0.4).normalize().multiplyScalar(2.5));
+        const push = chest.clone().sub(at).setY(0).normalize();
+        e.die(push, d < radius * 0.6 ? push.multiplyScalar(2 + 5 * (1 - d / radius)) : undefined, 'blast');
         kills++;
         this.onEnemyHit(true, false, e.position.clone());
       } else this.onEnemyHit(false, false, e.position.clone());

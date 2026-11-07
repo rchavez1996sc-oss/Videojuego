@@ -73,7 +73,7 @@ export class Traffic {
       let riderMat: THREE.Material | null = null;
       SEATS[kind].forEach(([x, y, z], k) => {
         if (k > 0 && rand() < 0.45) return;
-        const rider = seatedRig(lighting, rand, kind !== 'moto' && kind !== 'delivery');
+        const rider = seatedRig(lighting, rand, kind !== 'moto' && kind !== 'delivery', undefined, k === 0);
         if (rider) {
           rider.position.set(x, y, z);
           seats.push(rider);

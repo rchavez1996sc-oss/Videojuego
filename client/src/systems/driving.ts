@@ -15,6 +15,8 @@ import { seatedRig, SEATS } from '../entities/occupants';
 import { innocents } from './blame';
 import { roomy } from './respawn';
 import { parkedCars } from '../world/parkedCars';
+import { SeatAnim } from './carEntry';
+import type { Rig } from '../entities/rig';
 
 interface Deps { traffic: Traffic | null; world: RAPIER.World; player: Player; tpc: ThirdPersonCamera; enemies: Enemies; squad: Squad | null; sfx: Sfx; lighting: Lighting; mixer: Mixer }
 
@@ -36,6 +38,8 @@ export class Driving {
   private idleMouse = 0;
   private hitT = new Map<string, number>();
   private clock = 0;
+  private anim: SeatAnim | null = null;
+  private after: (() => void) | null = null;
 
   constructor(private d: Deps) {
     this.engine = new EngineSound(d.mixer);
@@ -56,6 +60,14 @@ export class Driving {
     const { traffic, player } = this.d;
     this.clock += dt;
     if (!traffic) return false;
+    if (this.anim) {
+      player.puppet = true;
+      if (alive && this.anim.update(dt)) return true;
+      const then = this.after!;
+      [this.anim, this.after, player.puppet] = [null, null, false];
+      then();
+      return !!this.car;
+    }
     if (!this.car) {
       const ok = alive && !player.mantling, near = ok ? traffic.enterable(player.position, REACH) : null, spot = ok && !near ? parkedCars.nearest(player.position, REACH)?.spot : null;
       this.prompt.style.opacity = near || spot ? '1' : '0';
@@ -69,51 +81,71 @@ export class Driving {
     this.prompt.style.opacity = '0';
     if (!alive || this.car.state === 'wreck' || (input.hit('KeyE') && Math.abs(this.state!.speed) < 4)) {
       if (this.car.state === 'wreck' && alive) player.hurt(20);
-      this.exit();
-      return false;
+      this.exit(alive);
+      return !!this.anim;
     }
     this.drive(dt, input);
     return true;
   }
 
   private enter(v: Vehicle): void {
-    const { traffic, player, world, tpc, lighting } = this.d, sp = SPECS[v.kind] ?? SPECS.sedan;
+    const { traffic, player, world, tpc } = this.d, sp = SPECS[v.kind] ?? SPECS.sedan;
     traffic!.seize(v);
     this.car = v;
     this.state = { x: v.x, y: v.y ?? player.position.y, z: v.z, yaw: v.yaw, vel: new THREE.Vector3(), vy: 0, steer: 0, speed: 0, len: v.len, tilt: new THREE.Quaternion() };
     const col = world.getCollider(player.collisionHandle);
     this.bodyOff = col.parent()!.translation().y - player.position.y;
     col.setEnabled(false);
+    tpc.vehicle = 4.5 + v.len * 0.6;
+    tpc.lift = sp.height * 0.35;
+    const at = SEATS[v.kind]?.[0];
+    if (at && SeatAnim.possible() && v.kind !== 'moto' && v.kind !== 'delivery') {
+      v.group.updateMatrixWorld(true);
+      this.anim = new SeatAnim(player.model, false, v.group.localToWorld(new THREE.Vector3(...at)), v.yaw, player.position.y).begin();
+      this.after = () => this.seatIn(v);
+    } else this.seatIn(v);
+  }
+
+  /** The player's body hidden, the seated driver (playing the driving clip) shown in the seat. */
+  private seatIn(v: Vehicle): void {
+    const { lighting, player } = this.d;
     player.model.root.visible = false;
     const at = SEATS[v.kind]?.[0];
-    this.seat = at ? seatedRig(lighting, Math.random, v.kind !== 'moto' && v.kind !== 'delivery', 'fls') : null;
+    this.seat = at ? seatedRig(lighting, Math.random, v.kind !== 'moto' && v.kind !== 'delivery', 'fls', true) : null;
     if (this.seat && at) {
       this.seat.position.set(at[0], at[1], at[2]);
       v.group.add(this.seat);
     }
-    tpc.vehicle = 4.5 + v.len * 0.6;
-    tpc.lift = sp.height * 0.35;
     this.speedo.style.opacity = '1';
   }
 
-  private exit(): void {
+  private exit(alive = true): void {
     const { traffic, player, world, tpc } = this.d, v = this.car!, s = this.state!, sp = SPECS[v.kind] ?? SPECS.sedan;
     const fwd = new THREE.Vector3(Math.sin(s.yaw), 0, Math.cos(s.yaw)), left = new THREE.Vector3(fwd.z, 0, -fwd.x);
     const side = Math.sign(SEATS[v.kind]?.[0][0] || 1), base = new THREE.Vector3(s.x, s.y, s.z);
     const spots = [left.clone().multiplyScalar(side * (sp.half + 0.8)), left.clone().multiplyScalar(-side * (sp.half + 0.8)), fwd.clone().multiplyScalar(-(v.len / 2 + 1.1)), fwd.clone().multiplyScalar(v.len / 2 + 1.1)].map((o) => base.clone().add(o));
     const col = world.getCollider(player.collisionHandle);
     col.setEnabled(true);
-    const pos = spots.find((p) => roomy(world, p, player.collisionHandle)) ?? base.clone().setY(s.y + sp.height + 0.3);
+    const at = SEATS[v.kind]?.[0], calm = alive && v.state !== 'wreck' && at && SeatAnim.possible() && v.kind !== 'moto' && v.kind !== 'delivery';
+    v.group.updateMatrixWorld(true);
+    const anim = calm ? new SeatAnim(player.model, true, v.group.localToWorld(new THREE.Vector3(...at!)), s.yaw, s.y) : null;
+    const walk = anim && roomy(world, anim.end.pos, player.collisionHandle);
+    const pos = walk ? anim.end.pos : spots.find((p) => roomy(world, p, player.collisionHandle)) ?? base.clone().setY(s.y + sp.height + 0.3);
     const keep = { hp: player.hp, regenCap: player.regenCap, stamina: player.stamina };
-    player.respawn(pos, s.yaw + Math.PI);
+    player.respawn(pos, walk ? anim.end.yaw + Math.PI : s.yaw + Math.PI);
     Object.assign(player, keep);
     player.model.root.visible = true;
     if (this.seat) v.group.remove(this.seat);
     traffic!.park(v);
-    tpc.vehicle = tpc.lift = 0;
     this.engine.set(false, 0, 0, 0, false);
     this.speedo.style.opacity = '0';
-    [this.car, this.state, this.seat] = [null, null, null];
+    const done = () => {
+      tpc.vehicle = tpc.lift = 0;
+      [this.car, this.state, this.seat] = [null, null, null];
+    };
+    if (!walk) return done();
+    this.anim = anim.begin();
+    this.after = done;
   }
 
   private drive(dt: number, input: Input): void {
@@ -134,6 +166,7 @@ export class Driving {
     const gear = sp.top / 4, sp1 = Math.abs(s.speed), rev = sp1 < 0.5 ? 0.12 : 0.3 + ((sp1 % gear) / gear) * 0.7;
     this.engine.set(true, rev, Math.max(u.throttle, u.brake * (s.speed < 0.5 ? 1 : 0)), sp1, !!sp.small);
     this.speedo.textContent = `${Math.round(sp1 * 3.6)} km/h`;
+    (this.seat?.userData.rig as Rig | undefined)?.tick(dt);
     this.idleMouse = Math.abs(input.mouseDX) + Math.abs(input.mouseDY) > 0.5 ? 0 : this.idleMouse + dt;
     if (this.idleMouse > 1 && sp1 > 3) {
       const want = s.yaw + Math.PI + (s.speed < 0 ? Math.PI : 0), diff = Math.atan2(Math.sin(want - tpc.yaw), Math.cos(want - tpc.yaw));

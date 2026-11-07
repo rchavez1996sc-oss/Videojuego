@@ -24,8 +24,8 @@ export function carShowcase(scene: THREE.Scene, hf: Heightfield, x: number, z: n
     const g = vehicleLook(lighting, { materials: mats, bake: [] }, k, k === 'moto' ? 'moto0' : `car${i % 6}`, carModels.pick(k, n), n + 1);
     g.position.copy(p);
     g.rotation.y = Math.PI / 2;
-    for (const [sx, sy, sz] of SEATS[k] ?? []) {
-      const r = seatedRig(lighting, Math.random, k !== 'moto');
+    for (const [j, [sx, sy, sz]] of (SEATS[k] ?? []).entries()) {
+      const r = seatedRig(lighting, Math.random, k !== 'moto', undefined, j === 0);
       if (!r) continue;
       r.position.set(sx, sy, sz);
       g.add(r);

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { characters } from '../render/characters';
 
-export const DEATHS = ['death_front', 'death_back', 'fall_back', 'dying', 'death_right', 'death_head'];
+export const DEATHS = ['death_front', 'death_back', 'fall_back', 'dying', 'death_right', 'death_head', 'fall_back2', 'fall_back3', 'shoulder_fall'];
 const BODY = 0.9, UP = new THREE.Vector3(0, 1, 0);
 const travel = new Map<string, THREE.Vector3>();
 
@@ -25,7 +25,7 @@ function hipsTravel(key: string): THREE.Vector3 {
 export function pickDeath(world: RAPIER.World, feet: THREE.Vector3, yaw: number, preferred: string[], exclude: number): { key: string; shift: THREE.Vector3 } {
   const origin = { x: feet.x, y: feet.y + 0.45, z: feet.z };
   let best = { key: preferred[0], shift: new THREE.Vector3(), short: Infinity };
-  for (const key of [...preferred, ...DEATHS.filter((d) => !preferred.includes(d))]) {
+  for (const key of [...preferred, ...DEATHS.filter((d) => !preferred.includes(d))].filter((k) => characters.clips.has(k))) {
     const off = hipsTravel(key).clone().applyAxisAngle(UP, yaw + Math.PI), len = off.length();
     if (len < 0.05) return { key, shift: new THREE.Vector3() };
     const dir = off.divideScalar(len), need = len + BODY;

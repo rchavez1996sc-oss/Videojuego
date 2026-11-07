@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { parkedCars } from '../world/parkedCars';
+import { Rig } from '../entities/rig';
+import type { CharKind } from '../render/characters';
 import type { DebugContext } from './debug';
 
 /** Test hooks for weapon handling: reload frames and grenade flight traces. */
@@ -12,6 +14,35 @@ export function animDebug(c: DebugContext) {
   };
   const key = (code: string, down: boolean) => dispatchEvent(new KeyboardEvent(down ? 'keydown' : 'keyup', { code }));
   return {
+    /** The car the player drives or just left: x, y, yaw, z. */
+    carAt() {
+      const tr = c.traffic?.() as unknown as { list: { x: number; z: number; y?: number; yaw: number; state: string }[] } | undefined;
+      const v = tr?.list.find((o) => o.state === 'player') ?? tr?.list.find((o) => o.state === 'parked');
+      return v ? [v.x, v.y ?? 0, v.yaw, v.z] : [0, 0, 0, 0];
+    },
+    /** Simulates `seconds` without rendering (follow camera), then renders one frame. */
+    advance(seconds: number) {
+      c.setFreeCam(false);
+      c.setSkipRender(true);
+      for (let i = 0; i < Math.round(seconds * 30); i++) c.frame(1 / 30);
+      c.setSkipRender(false);
+      c.frame(1 / 60);
+    },
+    /** Debug: `key` frozen at each fraction of its length, in a row along +x from (x, z) facing +z (the camera looks from +z). */
+    poseSheet(key: string, fracs: number[], x: number, z: number, kind: CharKind = 'fls') {
+      const out: string[] = [];
+      fracs.forEach((f, i) => {
+        const r = new Rig(kind, c.lighting!, false);
+        r.hold(key, 0, true, f);
+        r.tick(0);
+        r.root.updateMatrixWorld(true);
+        const k = ['LeftLeg', 'RightLeg'].map((n) => r.root.getObjectByName(`mixamorig${n}`)!.getWorldPosition(new THREE.Vector3()));
+        out.push(`${f}: hips ${r.hips().toArray().map((v) => v.toFixed(2))} knees y ${k.map((v) => v.y.toFixed(2))} z ${k.map((v) => v.z.toFixed(2))}`);
+        r.root.position.set(x + i * 2.2, c.hf.heightAt(x + i * 2.2, z), z);
+        c.scene!.add(r.root);
+      });
+      return out.join('\n');
+    },
     /** Puts the player beside a traffic vehicle of `kind`, presses E, then plays `plan` ([keys, seconds][]) and logs the car. */
     driveTest(kind: string, plan: [string[], number][], victim: boolean | 'civ' = false) {
       let log0 = '';

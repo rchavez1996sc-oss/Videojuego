@@ -278,6 +278,8 @@ export class Player {
   }
 
   /** Freshly respawned: stands still on the spot, ignoring input, until the fade-in ends. */
+  /** Posed by someone else (getting into or out of a car): the model is not snapped to the capsule. */ puppet = false;
+
   private settle(dt: number): void {
     this.ctrl.computeColliderMovement(this.collider, { x: 0, y: -2 * dt, z: 0 });
     const m = this.ctrl.computedMovement(), p = this.body.translation();
@@ -285,12 +287,11 @@ export class Player {
     [this.grounded, this.speed, this.peakY] = [true, 0, this.position.y];
     this.model.animate(dt, 0, 0, 0);
   }
-
   syncPosition(): void {
     const p = this.body.translation();
     this.position.set(p.x, p.y - HALF - RADIUS, p.z);
-    this.model.root.position.copy(this.position);
-    this.model.root.position.y = surfaceTop(p.x, this.position.y, p.z) - 0.03 - Math.min(this.speed / 6, 1) * 0.03;
+    if (this.puppet) return;
+    this.model.root.position.copy(this.position).setY(surfaceTop(p.x, this.position.y, p.z) - 0.03 - Math.min(this.speed / 6, 1) * 0.03);
     this.model.root.rotation.y = this.yaw + Math.PI;
   }
 

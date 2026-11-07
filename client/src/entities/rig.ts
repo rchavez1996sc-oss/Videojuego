@@ -5,7 +5,7 @@ import { bakeLod } from '../render/merge';
 import { dress, type Outfit } from './outfit';
 import { addWound } from './wounds';
 import { GESTURE_MAX_SPEED, GESTURE_SPAN, parts, pistolUpper } from './clipParts';
-import { chooseGait } from './gait';
+import { civilianGait, chooseGait } from './gait';
 import { Lean } from './lean';
 import { calibrateGrip, supportHand, type GripPose } from './handIk';
 import type { Lighting } from '../render/lighting';
@@ -45,7 +45,7 @@ export class Rig {
   /** Spine before the aim bend: the mixer skips bones whose value did not change (still poses), so the bend must not pile up. */
   private bent: THREE.Quaternion[] = [];
   readonly lean = new Lean(); private wounds = 0;
-  private idleKey = ['civ_idle', 'civ_idle', 'texting', 'look_around'].filter((k) => characters.clips.has(k))[Math.floor(Math.random() * 4)] ?? 'civ_stand';
+  private idleKey: string; private steps: [string, string];
 
   constructor(kind: CharKind, private lighting: Lighting, private armed = true, detailedGun = false, outfit?: Outfit, private gunModel: GunModel = 'ak') {
     const update = this.root.updateMatrixWorld.bind(this.root);
@@ -67,7 +67,8 @@ export class Rig {
     if (armed) this.gripWeapon(b.get('mixamorigRightHand')!, b.get('mixamorigLeftHand')!, ak.support);
     else this.weapon.visible = false;
     if (outfit) dress(b, outfit, lighting);
-    this.play(armed ? 'idle' : 'civ_walk', armed ? 'aim' : 'civ_walk', 0);
+    ({ steps: this.steps, idle: this.idleKey } = civilianGait(kind === 'civ_b', (k) => characters.clips.has(k)));
+    this.play(armed ? 'idle' : this.steps[0], armed ? 'aim' : this.steps[0], 0);
     this.mixer.update(Math.random());
   }
 
@@ -116,8 +117,7 @@ export class Rig {
   /** Static extras (seated, chatting, at the railing): loops one full-body clip, advanced by `tick`. */
   loop(key: string): boolean {
     const clip = characters.clips.get(key);
-    if (!clip) return false;
-    this.mixer.stopAllAction().clipAction(clip).play();
+    if (clip) this.mixer.stopAllAction().clipAction(clip).play(); else return false;
     this.mixer.update(Math.random() * clip.duration);
     return true;
   }
@@ -212,16 +212,12 @@ export class Rig {
   }
 
   /** World position of the hips (where a fallen body's torso lies). */
-  hips(): THREE.Vector3 {
-    return this.inst.bones.get('mixamorigHips')!.getWorldPosition(new THREE.Vector3());
-  }
+  hips(): THREE.Vector3 { return this.inst.bones.get('mixamorigHips')!.getWorldPosition(new THREE.Vector3()); }
 
   durationOf(key: string): number { return characters.clips.get(key)?.duration ?? 1; }
   die(kind: string): void {
-    this.held = null;
-    this.overlay = null;
+    [this.held, this.overlay, this.dead] = [null, null, false];
     this.mixer.stopAllAction();
-    this.dead = false;
     this.hold(kind, 1, true);
     this.dead = true;
   }
@@ -258,7 +254,7 @@ export class Rig {
       const k = 1 - Math.exp(-step * 10);
       this.move.x += ((delta.x * Math.sin(yaw) + delta.z * Math.cos(yaw)) * inv - this.move.x) * k;
       this.move.y += ((delta.x * -Math.cos(yaw) + delta.z * Math.sin(yaw)) * inv - this.move.y) * k;
-      const [low, rate] = chooseGait({ armed: this.armed, airborne: this.airborne, aiming: this.aiming, idle: this.scared ? 'terrified' : this.idleKey, was: this.lowKey.replace('+', '') }, speed, crouch, this.move.x, this.move.y);
+      const [low, rate] = chooseGait({ armed: this.armed, airborne: this.airborne, aiming: this.aiming, idle: this.scared ? 'terrified' : this.idleKey, steps: this.steps, was: this.lowKey.replace('+', '') }, speed, crouch, this.move.x, this.move.y);
       if (this.overlay && (this.overlay.t -= step) <= 0) {
         this.overlay = null;
         this.upKey = '';

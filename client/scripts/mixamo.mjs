@@ -27,6 +27,14 @@ const ANIMS = [
   ['p_idle', 'pistolpack/pistol idle.fbx', 1], ['p_shoot', 'Shooting.fbx', 1], ['p_walk', 'pistolpack/pistol walk.fbx', 1], ['p_run', 'pistolpack/pistol run.fbx', 1], ['p_kneel', 'pistolpack/pistol kneeling idle.fbx', 1], ['p_reload', 'Reloading.1.fbx', 1],
   ['civ_walk', 'Walking.fbx', 1], ['civ_back', 'Walking.Backwards.fbx', 1], ['civ_run', 'Running.fbx', 1], ['terrified', 'Terrified.fbx', 1, 6],
   ['sit', 'Sitting.Idle.fbx', 1, 8], ['sit2', 'Sitting.Idle.1.fbx', 1, 8], ['sit_talk', 'Sitting.Talking.fbx', 1, 8],
+  ['drive', 'new/Driving.fbx', 1], ['seat_idle', 'new/Seated.Idle.fbx', 1, 8], ['car_in', 'new/Entering.Car.fbx', 0], ['car_out', 'new/Exiting.Car.fbx', 0],
+  ['hit_car', 'new/Hit.By.Car.fbx', 0], ['stumble', 'new/Stumble.Backwards.fbx', 0], ['fly_back', 'new/Flying.Back.Death.fbx', 0],
+  ['fall_back2', 'new/Falling.Back.Death.2.fbx', 0], ['fall_back3', 'new/Falling.Back.Death.3.fbx', 0], ['shoulder_fall', 'new/Shoulder.Hit.And.Fall.fbx', 0],
+  ['run_stop', 'new/Running.To.Stop.fbx', 0], ['turn180', 'new/Running.Turn.180.fbx', 1],
+  ['duck', 'new/Ducking.fbx', 1], ['cover_idle', 'new/Cover.Idle.fbx', 1], ['to_cover', 'new/Stand.To.Cover.fbx', 0], ['from_cover', 'new/Cover.To.Stand.fbx', 0],
+  ['crouch_walk', 'new/Crouched.Walking.fbx', 1], ['crawl', 'new/Crawling.fbx', 1],
+  ['m_walk', 'new/Male.Locomotion.Pack/walking.fbx', 1], ['m_run', 'new/Male.Locomotion.Pack/standard run.fbx', 1], ['m_idle', 'new/Male.Locomotion.Pack/idle.fbx', 1, 8],
+  ['f_walk', 'new/Female.Locomotion.Pack/walking.fbx', 1], ['f_run', 'new/Female.Locomotion.Pack/running.fbx', 1], ['f_idle', 'new/Female.Locomotion.Pack/idle.fbx', 1, 8],
   ['civ_idle', 'Breathing.Idle.fbx', 1, 8], ['talk', 'Talking.fbx', 1, 8], ['texting', 'Texting.While.Standing.fbx', 1, 8], ['lean', 'Leaning.fbx', 1, 8], ['look_around', 'Looking.Around.fbx', 1, 8],
 ].map(([key, file, inPlace, maxDur]) => ({ key, url: `/src-assets/${file}`, inPlace, maxDur }));
 

@@ -4,6 +4,7 @@ import { surfaceTop } from '../world/groundStrips';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { pickDeath } from './deathFall';
 import { Fling } from './fling';
+import { characters } from '../render/characters';
 import { CLIMBS, findLedge, mantlePath, type Ledge } from './mantle';
 import type { Palette } from './mannequin';
 import { Rig, type Outfit } from './rig';
@@ -11,6 +12,9 @@ import type { CharKind } from '../render/characters';
 import { MuzzleFlash } from '../fx/muzzleFlash';
 import type { Lighting } from '../render/lighting';
 import type { CoverPoint } from '../ai/cover';
+
+/** Deaths when shot from the front (the first that has room plays). */
+const FRONT = [['death_head', 'death_front', 'fall_back'], ['fall_back', 'fall_back2', 'death_front'], ['fall_back3', 'death_head', 'fall_back'], ['shoulder_fall', 'death_front', 'fall_back']];
 
 export interface EnemyDef {
   hp: number; damage: number; rpm: number; burst: [number, number]; burstPause: [number, number];
@@ -249,18 +253,21 @@ export class Enemy {
     return this.hp <= 0;
   }
 
-  /** `launch`: thrown by a vehicle (velocity, m/s): falls backwards or forwards and slides along the ground. */
-  die(dir: THREE.Vector3, launch?: THREE.Vector3): void {
+  /** `launch`: thrown by a vehicle or a blast (velocity, m/s): hit-by-car or flying-back clip, turned to the hit, and a slide. */
+  die(dir: THREE.Vector3, launch?: THREE.Vector3, by: 'car' | 'blast' = 'car'): void {
     this.state = 'dead';
     if (this.cover) this.cover.owner = -1;
     this.collider.setEnabled(false);
     const flat = dir.clone().setY(0);
     this.fallDir = flat.lengthSq() > 0.01 ? flat.normalize() : new THREE.Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
     const fromFront = this.fallDir.dot(new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw))) < 0;
-    const wish = this.crouched ? ['death_crouch'] : fromFront ? (Math.random() < 0.4 ? ['death_head', 'death_front', 'fall_back'] : ['fall_back', 'death_front', 'death_head']) : Math.random() < 0.5 ? ['death_back', 'dying'] : ['dying', 'death_back'];
+    const wish = this.crouched ? ['death_crouch'] : fromFront ? FRONT[Math.floor(Math.random() * FRONT.length)] : Math.random() < 0.5 ? ['death_back', 'dying'] : ['dying', 'shoulder_fall', 'death_back'];
     if (launch) {
-      this.fling = new Fling(launch.clone().setY(0), this.position.y);
-      return this.model.die(fromFront ? 'fall_back' : 'death_front');
+      const fd = launch.clone().setY(0).normalize(), car = by === 'car' && characters.clips.has('hit_car');
+      this.yaw = car ? Math.atan2(-fd.z, fd.x) : Math.atan2(fd.x, fd.z);
+      this.model.root.rotation.set(0, this.yaw + Math.PI, 0);
+      this.fling = new Fling(launch.clone().setY(0).multiplyScalar(0.55), this.position.y);
+      return this.model.die(car ? 'hit_car' : characters.clips.has('fly_back') ? 'fly_back' : 'fall_back');
     }
     const fall = pickDeath(this.world, this.position, this.yaw, wish, this.collider.handle);
     this.position.add(fall.shift);
