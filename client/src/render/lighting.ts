@@ -16,12 +16,15 @@ const SUN_CAP = 6;
 
 /**
  * Specular anti-aliasing (Toksvig-style): where the shading normal varies within a pixel (normal maps far away,
- * thin geometry) roughness goes up, so distant glossy detail averages out instead of sparkling.
+ * thin geometry) roughness goes up, so distant glossy detail averages out instead of sparkling. Roughness never
+ * goes below `floor`: a near-mirror (shop windows, chrome) reflects the sun as a tiny spot many times over the bloom
+ * threshold, which flares on and off as the camera moves — the glare on shop fronts. The sea keeps its glint.
  */
-const SPECULAR_AA = /* glsl */ `
+const specularAA = (floor: number) => /* glsl */ `
 vec3 tqNd = fwidth(normal);
-roughnessFactor = min(1.0, sqrt(roughnessFactor * roughnessFactor + min(0.25, 2.5 * dot(tqNd, tqNd))));
+roughnessFactor = max(${floor.toFixed(2)}, min(1.0, sqrt(roughnessFactor * roughnessFactor + min(0.25, 2.5 * dot(tqNd, tqNd)))));
 #include <lights_physical_fragment>`;
+const SPECULAR_AA = specularAA(0.2), GLINT_AA = specularAA(0);
 
 export class Lighting {
   readonly csm: CSM;
@@ -99,7 +102,7 @@ export class Lighting {
     mat.onBeforeCompile = (shader, r) => {
       csmHook(shader, r);
       hook?.(shader, r);
-      shader.fragmentShader = shader.fragmentShader.replace('#include <lights_physical_fragment>', SPECULAR_AA);
+      shader.fragmentShader = shader.fragmentShader.replace('#include <lights_physical_fragment>', key === 'ocean' ? GLINT_AA : SPECULAR_AA);
       if (wear) weathering(shader, key);
     };
     return mat;
