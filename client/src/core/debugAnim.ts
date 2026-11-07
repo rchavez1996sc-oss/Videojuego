@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { parkedCars } from '../world/parkedCars';
 import type { DebugContext } from './debug';
 
 /** Test hooks for weapon handling: reload frames and grenade flight traces. */
@@ -12,22 +13,30 @@ export function animDebug(c: DebugContext) {
   const key = (code: string, down: boolean) => dispatchEvent(new KeyboardEvent(down ? 'keydown' : 'keyup', { code }));
   return {
     /** Puts the player beside a traffic vehicle of `kind`, presses E, then plays `plan` ([keys, seconds][]) and logs the car. */
-    driveTest(kind: string, plan: [string[], number][]) {
+    driveTest(kind: string, plan: [string[], number][], victim = false) {
+      let log0 = '';
       c.setFreeCam(false);
       const tr = c.traffic?.() as unknown as { list: { kind: string; x: number; z: number; yaw: number; speed: number; state: string; y?: number }[] } | undefined;
-      const v = tr?.list.find((o) => o.kind === kind && o.state === 'drive');
-      if (!v) return 'no vehicle';
+      const spot = kind === 'parked' ? parkedCars.nearest(c.player.position, 999)?.spot : null;
+      let v = spot ? null : tr?.list.find((o) => o.kind === kind && o.state === 'drive');
+      if (!v && !spot) return 'no vehicle';
       c.setSkipRender(true);
-      c.player.respawn(new THREE.Vector3(v.x + Math.cos(v.yaw) * 1.8, c.hf.heightAt(v.x, v.z), v.z - Math.sin(v.yaw) * 1.8), 0);
+      const [px, pz, yaw] = spot ? [spot.pos.x, spot.pos.z, spot.yaw] : [v!.x, v!.z, v!.yaw];
+      c.player.respawn(new THREE.Vector3(px + Math.cos(yaw) * 1.8, c.hf.heightAt(px, pz), pz - Math.sin(yaw) * 1.8), 0);
       c.frame(1 / 30);
       key('KeyE', true); c.frame(1 / 30); key('KeyE', false);
-      const log = [`in: ${v.state}`];
+      v ??= tr!.list.find((o) => o.state === 'player') ?? tr!.list[tr!.list.length - 1];
+      if (spot) log0 = `parked ${spot.kind} ${spot.model} `;
+      const prey = victim ? c.enemies.list.find((e) => e.alive) : undefined;
+      if (prey) prey.teleport(new THREE.Vector3(v.x + Math.sin(v.yaw) * 9, c.hf.heightAt(v.x, v.z), v.z + Math.cos(v.yaw) * 9));
+      const log = [`${log0}in: ${v.state}`];
       for (const [keys, secs] of plan) {
         keys.forEach((k) => key(k, true));
         for (let i = 0; i < Math.round(secs * 30); i++) c.frame(1 / 30);
         keys.forEach((k) => key(k, false));
         log.push(`${keys.join('+') || '-'} ${secs}s → ${v.x.toFixed(1)},${(v.y ?? 0).toFixed(2)},${v.z.toFixed(1)} yaw ${v.yaw.toFixed(2)} v ${v.speed.toFixed(1)} hp ${c.player.hp.toFixed(0)}`);
       }
+      if (prey) log.push(`prey alive ${prey.alive} hp ${prey.hp.toFixed(0)}`);
       c.setSkipRender(false);
       c.frame(1 / 60);
       return log.join('\n');

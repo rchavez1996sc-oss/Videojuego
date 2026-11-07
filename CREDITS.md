@@ -8,3 +8,4 @@
   - Animaciones: Pro Rifle Pack, Firing Rifle, Reloading, Hit Reaction, Knocked Down, Getting Up, Dying, Falling Back Death, Grenade Throw, Walking, Walking Backwards, Running, Terrified.
   - Originales en el Release `assets-v1` del repositorio; convertidos con `client/scripts/mixamo.mjs` (gltfpack, meshoptimizer).
 - Perro callejero animado (`dog-animated`) y gato (`Cat`): modelos de Sketchfab aportados por el usuario (Release `assets-v1`); revisar la licencia y el autor en las páginas de Sketchfab de origen antes de publicar.
+- Autos (`client/public/assets/cars/cars.glb`): dos paquetes de modelos aportados por el usuario en el Release `assets-v1` (pack de autos de pasajeros con texturas y pack low poly de 4 autos), convertidos con `client/scripts/cars.mjs` + `client/tools/cars.ts`; revisar licencia y autor de origen antes de publicar.

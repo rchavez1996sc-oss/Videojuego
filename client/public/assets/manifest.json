@@ -1,5 +1,5 @@
 {
- "version": 20,
+ "version": 21,
  "characters": {
   "pnp": {
    "near": "characters/pnp.glb",
@@ -202,5 +202,6 @@
  "pets": {
   "dog": "pets/dog.glb",
   "cat": "pets/cat.glb"
- }
+ },
+ "cars": "cars/cars.glb"
 }

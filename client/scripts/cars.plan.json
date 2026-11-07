@@ -1,0 +1,66 @@
+[
+ {
+  "body": "Sedan_Body",
+  "key": "sedan",
+  "tex": "Sedan",
+  "colour": "SedanYellow.png"
+ },
+ {
+  "body": "Compact_Body",
+  "key": "compact",
+  "tex": "Compact",
+  "colour": "CompactBlue.png"
+ },
+ {
+  "body": "Hatchback_Body",
+  "key": "hatchback",
+  "tex": "Hatchback",
+  "colour": "HatchbackYellow.png"
+ },
+ {
+  "body": "Wagon_Body",
+  "key": "wagon",
+  "tex": "Wagon",
+  "colour": "WagonBlue.png",
+  "flip": true
+ },
+ {
+  "body": "Pickup_Body",
+  "key": "pickup",
+  "tex": "Pickup",
+  "colour": "PickupGreen.png"
+ },
+ {
+  "body": "SUV_Body",
+  "key": "suv",
+  "tex": "SUV",
+  "colour": "SUVBlack.png",
+  "flip": true
+ },
+ {
+  "body": "Coupe_Body",
+  "key": "coupe",
+  "tex": "Coupe",
+  "colour": "CoupeBlue.png"
+ },
+ {
+  "body": "minivan_body",
+  "key": "minivan",
+  "tex": "Minivan",
+  "colour": "MinivanRed.png"
+ },
+ {
+  "body": "Offroad_Body",
+  "key": "offroad",
+  "tex": "Offroad",
+  "colour": "OffroadGreen.png",
+  "flip": true
+ },
+ {
+  "body": "Sport_body",
+  "key": "sport",
+  "tex": "Sport",
+  "colour": "SportRed.png",
+  "flip": true
+ }
+]

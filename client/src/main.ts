@@ -43,6 +43,7 @@ import { detonate } from './weapons/explosion';
 import { Minimap } from './ui/minimap';
 import { setupWorldMap } from './ui/worldMap';
 import { loadPhotoTextures, photoEnvironment } from './render/photoTextures';
+import { carModels } from './render/carModels';
 import { installDebug } from './core/debug';
 import { physicsStep } from './physics/fastStep';
 import { ShadowCull } from './render/shadowCull';
@@ -85,12 +86,11 @@ async function boot(): Promise<void> {
   await prologueQuiet().then(() => RAPIER.init());
   const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
   const canvas = document.getElementById('game') as HTMLCanvasElement;
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(57, innerWidth / innerHeight, 0.1, 4000);
+  const [scene, camera] = [new THREE.Scene(), new THREE.PerspectiveCamera(57, innerWidth / innerHeight, 0.1, 4000)];
   const renderer = new Renderer(canvas, scene, camera, ch.biome.exposure);
   const lighting = new Lighting(scene, camera, renderer.gl, ch.biome);
 
-  await loadPhotoTextures();
+  await Promise.all([loadPhotoTextures(), carModels.load(lighting)]);
   for (const env of [photoEnvironment()]) if (env) lighting.useEnvironment(env.texture, env.gain);
   await step('Generando terreno…');
   const hf = new Heightfield(ch.terrain);

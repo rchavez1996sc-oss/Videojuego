@@ -1,3 +1,4 @@
+import { parkedCars, type ParkedSpot } from './parkedCars';
 import * as THREE from 'three';
 import { carBody, topAt, wheelParts } from './carBody';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
@@ -174,7 +175,14 @@ const GLASS: Record<CarKind, [number, number][]> = {
 };
 
 /** Parked car: extruded body silhouette with glass band, wheels with rims, bumpers, lamps and plates; box collider for cover. */
-export function car(b: Builder, pos: THREE.Vector3, yaw: number, paint: string, kind: CarKind): void {
+/** Footprint and roof height of a car kind (m). */
+export function carExtent(kind: CarKind): { l: number; w: number; h: number } {
+  return { l: CAR_DIMS[kind].l, w: CAR_DIMS[kind].w, h: Math.max(...SHAPES[kind].map(([, y]) => y)) };
+}
+
+/** A car; with a level builder it is only registered as parked (drawn instanced and drivable, see `parkedCars`). */
+export function car(b: Builder, pos: THREE.Vector3, yaw: number, paint: string, kind: CarKind): ParkedSpot | null {
+  if (b.fixed) return parkedCars.add(pos, yaw, kind, paint);
   const d = CAR_DIMS[kind], shape = SHAPES[kind];
   const q = new THREE.Quaternion().setFromAxisAngle(UP, yaw);
   const at = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z).applyQuaternion(q).add(pos);
@@ -223,6 +231,7 @@ export function car(b: Builder, pos: THREE.Vector3, yaw: number, paint: string, 
     b.geometry('plastic', new THREE.TorusGeometry(wr + 0.09, 0.035, 3, 9, Math.PI).rotateY(Math.PI / 2), new THREE.Matrix4().compose(at(x * (d.w / 2 - 0.005), wr + 0.02, z * wheelZ), q, new THREE.Vector3(1, 1, 1)));
   }
   b.box('none', [d.w, topY - 0.1, d.l], at(0, (topY + 0.1) / 2, 0), q, true);
+  return null;
 }
 
 /** Two-post billboard; returns the panel centre and orientation so the caller can paint a poster on it. */

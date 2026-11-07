@@ -37,6 +37,11 @@ export class Builder {
 
   constructor(private world: RAPIER.World | null, private body: RAPIER.RigidBody | null) {}
 
+  /** Builds level geometry (with colliders), not a loose prop like a traffic vehicle. */
+  get fixed(): boolean {
+    return !!this.world;
+  }
+
   box(mat: string, size: [number, number, number], pos: THREE.Vector3, quat: THREE.Quaternion, collide = true): void {
     if (!collide && size[1] >= 0.3 && Math.min(size[0], size[2]) >= 0.3 && /^hedge/.test(mat)) collide = true;
     const g = new THREE.BoxGeometry(...size);

@@ -15,6 +15,7 @@ import { seatedRig, SEATS } from '../entities/occupants';
 import { innocents } from './blame';
 import { hitHandler } from '../world/surfaces';
 import { roomy } from './respawn';
+import { parkedCars } from '../world/parkedCars';
 
 interface Deps { traffic: Traffic | null; world: RAPIER.World; player: Player; tpc: ThirdPersonCamera; enemies: Enemies; squad: Squad | null; sfx: Sfx; lighting: Lighting; mixer: Mixer }
 
@@ -57,10 +58,13 @@ export class Driving {
     this.clock += dt;
     if (!traffic) return false;
     if (!this.car) {
-      const near = alive && !player.mantling ? traffic.enterable(player.position, REACH) : null;
-      this.prompt.style.opacity = near ? '1' : '0';
-      if (near) this.prompt.innerHTML = `<kbd>E</kbd> ${near.state === 'parked' ? 'SUBIR' : 'TOMAR EL VEHÍCULO'}`;
-      if (near && input.hit('KeyE')) this.enter(near);
+      const ok = alive && !player.mantling, near = ok ? traffic.enterable(player.position, REACH) : null, spot = ok && !near ? parkedCars.nearest(player.position, REACH)?.spot : null;
+      this.prompt.style.opacity = near || spot ? '1' : '0';
+      if (near || spot) this.prompt.innerHTML = `<kbd>E</kbd> ${spot || near!.state === 'parked' ? 'SUBIR' : 'TOMAR EL VEHÍCULO'}`;
+      if ((near || spot) && input.hit('KeyE')) {
+        if (spot) parkedCars.take(spot, player.position);
+        this.enter(near ?? traffic.adopt(spot!));
+      }
       return !!this.car;
     }
     this.prompt.style.opacity = '0';
@@ -126,7 +130,7 @@ export class Driving {
       v.hp -= impact * 3;
       if (impact > 10) player.hurt((impact - 10) * 2.5);
     }
-    if (Math.abs(s.speed) > 2.5) this.runOver(s, sp.half, people);
+    if (Math.abs(s.speed) > 0.4) this.runOver(s, sp.half, people, dt);
     world.getCollider(player.collisionHandle).parent()!.setNextKinematicTranslation({ x: s.x, y: s.y + this.bodyOff, z: s.z });
     const gear = sp.top / 4, sp1 = Math.abs(s.speed), rev = sp1 < 0.5 ? 0.12 : 0.3 + ((sp1 % gear) / gear) * 0.7;
     this.engine.set(true, rev, Math.max(u.throttle, u.brake * (s.speed < 0.5 ? 1 : 0)), sp1, !!sp.small);
@@ -139,25 +143,33 @@ export class Driving {
     }
   }
 
-  /** People inside the box in front of the bumper get hit: damage from speed, the car slows a little. */
-  private runOver(s: CarState, half: number, people: Set<number>): void {
-    const { world, enemies, squad, player } = this.d, fwd = new THREE.Vector3(Math.sin(s.yaw), 0, Math.cos(s.yaw));
-    const ahead = Math.sign(s.speed) * (s.len / 2 + 0.2), at = { x: s.x + fwd.x * ahead, y: s.y + 0.9, z: s.z + fwd.z * ahead };
-    const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), s.yaw), dmg = Math.min(220, (Math.abs(s.speed) - 2) * 16);
-    world.intersectionsWithShape(at, q, new RAPIER.Cuboid(half + 0.2, 0.8, 0.6), (c) => {
+  /**
+   * People in the box swept by the bumper this frame (so nobody slips between frames at speed) are hit: slow pushes
+   * stop the car against them (the squad steps aside), from 4 m/s it is a real impact (damage from speed, thud, jolt, the car loses speed) and
+   * a policeman still standing afterwards stops the car instead of being driven through.
+   */
+  private runOver(s: CarState, half: number, people: Set<number>, dt: number): void {
+    const { world, enemies, squad, player, sfx, tpc } = this.d, fwd = new THREE.Vector3(Math.sin(s.yaw), 0, Math.cos(s.yaw)), sp = Math.abs(s.speed);
+    const travel = sp * dt + 0.5, ahead = Math.sign(s.speed) * (s.len / 2 + travel / 2), at = { x: s.x + fwd.x * ahead, y: s.y + 0.9, z: s.z + fwd.z * ahead };
+    const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), s.yaw), dmg = Math.min(260, (sp - 3) * 24);
+    const from = new THREE.Vector3(s.x, s.y + 0.8, s.z), stop = () => ((s.speed = 0), s.vel.set(0, 0, 0));
+    world.intersectionsWithShape(at, q, new RAPIER.Cuboid(half + 0.35, 0.8, travel / 2), (c) => {
       const h = c.handle;
-      if (h === player.collisionHandle || (this.hitT.get(h) ?? -9) > this.clock - 1) return true;
-      const from = new THREE.Vector3(s.x, s.y + 0.8, s.z);
-      if (innocents.has(h)) hitHandler(h)?.(dmg, at);
-      else if (people.has(h)) {
-        const e = enemies.list.find((x) => x.handle === h && x.alive), a = squad?.list.find((x) => x.unit.handle === h && x.unit.alive);
-        if (e) enemies.runOver(e, dmg, from);
-        else if (a) squad!.hurt(a, dmg * 0.4, from);
-        else return true;
-      } else return true;
+      if (h === player.collisionHandle || (!innocents.has(h) && !people.has(h))) return true;
+      const e = enemies.list.find((x) => x.handle === h && x.alive), a = squad?.list.find((x) => x.unit.handle === h && x.unit.alive);
+      if (people.has(h) && !e && !a) return true;
+      if (sp < 4) return a || stop(), true;
+      if ((this.hitT.get(h) ?? -9) > this.clock - 0.6) return true;
       this.hitT.set(h, this.clock);
-      s.vel.multiplyScalar(0.85);
-      s.speed *= 0.85;
+      if (innocents.has(h)) hitHandler(h)?.(dmg, at);
+      else if (e) enemies.runOver(e, dmg, from);
+      else squad!.hurt(a!, dmg * 0.4, from);
+      sfx.thud(Math.min(1, sp / 14));
+      sfx.crash(0);
+      tpc.kick(0.02, 0, Math.min(0.35, sp * 0.02));
+      s.vel.multiplyScalar(0.78);
+      s.speed *= 0.78;
+      if (e?.alive) stop();
       return true;
     });
   }

@@ -1,9 +1,11 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { combiLivery } from '../world/livery';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { Builder } from '../world/buildingKit';
-import { car, mototaxi, type CarKind } from '../world/urbanProps';
+import { mototaxi, type CarKind } from '../world/urbanProps';
+import { vehicleLook, buildLoose, type VehicleMats } from './vehicleLook';
+import { carModels } from '../render/carModels';
+import type { ParkedSpot } from '../world/parkedCars';
 import { deliveryBike } from '../world/deliveryBike';
 import { onHit, setSurface } from '../world/surfaces';
 import { seatedPerson, seatedRig, SEATS } from '../entities/occupants';
@@ -47,30 +49,24 @@ export class Traffic {
   private hitT = new Map<string, number>();
   private riders: Riders;
   private clock = 0;
+  private look: VehicleMats;
+  private spinQ = new THREE.Quaternion();
   /** Other people on the road drivers brake for (the squad). */
   obstacles: () => THREE.Vector3[] = () => [];
   /** Stop line ahead on red for a vehicle front at x (see `TrafficLights.stopLine`). */
   stopLine: (x: number, dir: number, base: number, speed: number) => number | null = () => null;
 
-  constructor(private world: RAPIER.World, private hf: Heightfield, lighting: Lighting, materials: Record<string, THREE.Material>, bake: { material: THREE.Material; keys: string[] }[], roads: Road[], span: [number, number] = [-245, 245]) {
+  constructor(private world: RAPIER.World, private hf: Heightfield, private lighting: Lighting, materials: Record<string, THREE.Material>, bake: { material: THREE.Material; keys: string[] }[], roads: Road[], span: [number, number] = [-245, 245]) {
     [this.xMin, this.xMax] = span;
     this.riders = new Riders(this.group, hf);
     const lanes = roads.flatMap((r) => Array<Road>(r.count).fill(r)), count = lanes.length;
-    const glass = lighting.setup(new THREE.MeshStandardMaterial({ color: '#1c2228', roughness: 0.05, metalness: 0.2, envMapIntensity: 1.6, transparent: true, opacity: 0.72 }), 'glass-see');
-    const mats = { ...materials, glass };
-    const bakeNoGlass = bake.map((g) => ({ ...g, keys: g.keys.filter((k) => k !== 'glass') }));
+    this.look = { materials, bake };
     const kinds: (CarKind | 'moto' | 'delivery')[] = ['combi', 'moto', 'tico', 'sedan', 'micro', 'delivery', 'moto', 'combi', 'wagon', 'pickup', 'moto', 'tico', 'micro', 'delivery'];
     let seed = 7;
     const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
     for (let i = 0; i < count; i++) {
       const kind = lanes[i].kinds?.[i % lanes[i].kinds!.length] ?? kinds[i % kinds.length];
-      const b = new Builder(null, null);
-      if (kind === 'moto') mototaxi(b, new THREE.Vector3(), 0, `moto${i % 3}`);
-      else if (kind === 'delivery') deliveryBike(b, i % 3);
-      else car(b, new THREE.Vector3(), 0, kind === 'combi' || kind === 'micro' ? 'car5' : kind === 'tico' ? 'car3' : `car${i % 6}`, kind);
-      const g = new THREE.Group();
-      g.add(...b.build(mats, 0.5, bakeNoGlass));
-      if (kind === 'combi' || kind === 'micro') g.add(combiLivery(lighting, i, kind === 'micro'));
+      const g = kind === 'moto' || kind === 'delivery' ? this.bike(kind, i) : vehicleLook(lighting, this.look, kind, kind === 'combi' || kind === 'micro' ? 'car5' : kind === 'tico' ? 'car3' : `car${i % 6}`, carModels.pick(kind, i), i);
       const riders: THREE.BufferGeometry[] = [], seats: THREE.Group[] = [];
       let riderMat: THREE.Material | null = null;
       SEATS[kind].forEach(([x, y, z], k) => {
@@ -86,23 +82,42 @@ export class Traffic {
         riders.push(p.geometry.clone().translate(x, y - 0.95, z));
       });
       if (riders.length) g.add(new THREE.Mesh(mergeGeometries(riders), riderMat!));
-      this.group.add(g);
-      const len = kind === 'delivery' ? 1.9 : kind === 'moto' ? 2.3 : kind === 'micro' ? 8.6 : kind === 'combi' ? 4.8 : 4.4;
-      const body = this.world.createRigidBody(RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(0, -50, 0));
-      const collider = this.world.createCollider(RAPIER.ColliderDesc.cuboid(kind === 'delivery' ? 0.4 : kind === 'micro' ? 1.15 : 0.9, kind === 'micro' ? 1.4 : 0.8, len / 2).setTranslation(0, kind === 'micro' ? 1.4 : 0.8, 0), body);
-      setSurface(collider.handle, 'metal');
       const dir = i % 2 ? 1 : -1;
       const cruise = kind === 'delivery' ? 9 : kind === 'moto' ? 7 : kind === 'combi' || kind === 'micro' ? 11 : 10;
-      const v: Vehicle = {
-        kind, group: g, body, collider, dir, x: this.xMin + ((i * 77) % (this.xMax - this.xMin)), z: lanes[i].z + dir * lanes[i].lane, base: lanes[i].z, lane: lanes[i].lane, half: lanes[i].half, yaw: dir > 0 ? Math.PI / 2 : -Math.PI / 2,
-        speed: cruise, cruise, len, honkT: 3 + rand() * 10, horn: 360 + rand() * 110, panic: false, state: 'drive', hp: HP, spin: 0, drift: 0, smokeT: 0, seats,
-      };
-      this.list.push(v);
-      onHit(collider.handle, (dmg, p) => {
-        this.damage(v, (kind === 'moto' || kind === 'delivery') && p.y - g.position.y > 1 ? HP : dmg);
-        return false;
-      });
+      this.register(kind, g, seats, this.xMin + ((i * 77) % (this.xMax - this.xMin)), lanes[i].z + dir * lanes[i].lane, dir, lanes[i], cruise, 360 + rand() * 110, 3 + rand() * 10);
     }
+  }
+
+  private bike(kind: 'moto' | 'delivery', i: number): THREE.Group {
+    const b = new Builder(null, null), g = new THREE.Group();
+    if (kind === 'moto') mototaxi(b, new THREE.Vector3(), 0, `moto${i % 3}`);
+    else deliveryBike(b, i % 3);
+    g.add(...buildLoose(b, this.lighting, this.look));
+    return g;
+  }
+
+  private register(kind: Vehicle['kind'], g: THREE.Group, seats: THREE.Group[], x: number, z: number, dir: 1 | -1, road: Road, cruise: number, horn: number, honkT: number, yaw = dir > 0 ? Math.PI / 2 : -Math.PI / 2): Vehicle {
+    this.group.add(g);
+    const len = kind === 'delivery' ? 1.9 : kind === 'moto' ? 2.3 : kind === 'micro' ? 8.6 : kind === 'combi' ? 4.8 : kind === 'tico' ? 3.4 : kind === 'pickup' ? 5 : 4.4;
+    const body = this.world.createRigidBody(RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(0, -50, 0));
+    const collider = this.world.createCollider(RAPIER.ColliderDesc.cuboid(kind === 'delivery' ? 0.4 : kind === 'micro' ? 1.15 : 0.9, kind === 'micro' ? 1.4 : 0.8, len / 2).setTranslation(0, kind === 'micro' ? 1.4 : 0.8, 0), body);
+    setSurface(collider.handle, 'metal');
+    const v: Vehicle = { kind, group: g, body, collider, dir, x, z, base: road.z, lane: road.lane, half: road.half, yaw, speed: cruise, cruise, len, honkT, horn, panic: false, state: 'drive', hp: HP, spin: 0, drift: 0, smokeT: 0, seats };
+    this.list.push(v);
+    onHit(collider.handle, (dmg, p) => {
+      this.damage(v, (kind === 'moto' || kind === 'delivery') && p.y - g.position.y > 1 ? HP : dmg);
+      return false;
+    });
+    return v;
+  }
+
+  /** A parked car of the level the player gets into: it becomes a vehicle of this list, left `parked`. */
+  adopt(s: ParkedSpot): Vehicle {
+    const g = vehicleLook(this.lighting, this.look, s.kind, s.paint, s.model, s.company);
+    const v = this.register(s.kind, g, [], s.pos.x, s.pos.z, 1, { z: s.pos.z, lane: 0, half: 4, count: 0 }, 0, 330 + Math.random() * 120, 99, s.yaw);
+    Object.assign(v, { state: 'parked', speed: 0, y: s.pos.y });
+    this.place(v, s.pos);
+    return v;
   }
 
   /** Bullets into the player's (or a parked) vehicle: the car soaks it; at 0 it is wrecked and smokes. */
@@ -270,6 +285,11 @@ export class Traffic {
     const dist = Math.hypot(v.x - camera.x, v.z - camera.z);
     v.group.visible = dist < 150;
     for (const s of v.seats) (s.userData.rig as Rig).far = dist > 25;
+    const wheels = v.group.userData.wheels as THREE.Object3D[] | undefined, roll = (v.x - v.group.position.x) * Math.sin(v.yaw) + (v.z - v.group.position.z) * Math.cos(v.yaw);
+    if (wheels?.length && v.group.visible && Math.abs(roll) < 3) {
+      this.spinQ.setFromAxisAngle(v.group.userData.spinAxis, roll / v.group.userData.wheelR);
+      for (const w of wheels) w.quaternion.premultiply(this.spinQ);
+    }
     v.group.position.set(v.x, y, v.z);
     v.group.quaternion.copy(q);
     v.body.setNextKinematicTranslation({ x: v.x, y, z: v.z });

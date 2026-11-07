@@ -71,8 +71,9 @@ export function parkingLot(b: Builder, r: Rect, rand: () => number): { pos: THRE
   const buses: { pos: THREE.Vector3; yaw: number; company: number; micro: boolean }[] = [];
   for (let k = 0; k < (r.buses ?? 0); k++) {
     const pos = at(-r.w / 2 + 6 + k * 10, 0.05, 0), yaw = (-r.yaw * Math.PI) / 180 + Math.PI / 2;
-    car(b, pos, yaw, 'car5', 'micro');
-    buses.push({ pos, yaw, company: UNMSM_BUS, micro: true });
+    const spot = car(b, pos, yaw, 'car5', 'micro');
+    if (spot) spot.company = UNMSM_BUS;
+    else buses.push({ pos, yaw, company: UNMSM_BUS, micro: true });
   }
   return buses;
 }
