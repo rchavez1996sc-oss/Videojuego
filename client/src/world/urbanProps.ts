@@ -78,6 +78,7 @@ const WHEELS = new Map<number, ReturnType<typeof wheelParts>>();
 
 /** Parked three-wheeled mototaxi: motorcycle front (fork, tank, bars, lamp) and a covered passenger cab. Acts as low cover. */
 export function mototaxi(b: Builder, pos: THREE.Vector3, yaw: number, paint: string): void {
+  if (b.fixed) return void parkedCars.add(pos, yaw, 'moto', paint);
   const q = new THREE.Quaternion().setFromAxisAngle(UP, yaw);
   const at = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z).applyQuaternion(q).add(pos);
   const g = (mat: string, geo: THREE.BufferGeometry, x = 0, y = 0, z = 0) => b.geometry(mat, geo, new THREE.Matrix4().compose(at(x, y, z), q, new THREE.Vector3(1, 1, 1)));
@@ -176,7 +177,8 @@ const GLASS: Record<CarKind, [number, number][]> = {
 
 /** Parked car: extruded body silhouette with glass band, wheels with rims, bumpers, lamps and plates; box collider for cover. */
 /** Footprint and roof height of a car kind (m). */
-export function carExtent(kind: CarKind): { l: number; w: number; h: number } {
+export function carExtent(kind: CarKind | 'moto'): { l: number; w: number; h: number } {
+  if (kind === 'moto') return { l: 2.5, w: 1.3, h: 1.9 };
   return { l: CAR_DIMS[kind].l, w: CAR_DIMS[kind].w, h: Math.max(...SHAPES[kind].map(([, y]) => y)) };
 }
 

@@ -161,7 +161,7 @@ async function boot(): Promise<void> {
   enemies.onEnemyShot = (p) => alarm(p, 60);
   const squad = createSquad(ch.squad ?? 0, { ...(allyDef as unknown as AllyDef), gun: wdef.model }, { world, hf, lighting, player, enemies, combat, sfx, hud, camera, nav, alarm }, spawn, startYaw);
   if (squad) scene.add(squad.group);
-  if (life) wireRoad(life.trafficEvents, { player, enemies, squad, playerHit: (dmg, from) => enemies.onPlayerHit(dmg, from), alive: () => deadT <= 0 });
+  if (life) wireRoad(life.trafficEvents, { world, player, enemies, squad, playerHit: (dmg, from) => enemies.onPlayerHit(dmg, from), alive: () => deadT <= 0 });
   const driving = new Driving({ traffic: life?.trafficEvents ?? null, world, player, tpc, enemies, squad, sfx, lighting, mixer });
   const deathPos = new THREE.Vector3(); let deadT = 0, skipRender = false, shieldT = 0;
   enemies.onPlayerHit = (dmg, from) => {

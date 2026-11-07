@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { UNMSM_BUS } from '../livery';
+import { UNMSM_BUS, companyColor } from '../livery';
 import { addStrip } from '../groundStrips';
 import type { Builder } from '../buildingKit';
 import { car, type CarKind } from '../urbanProps';
@@ -72,7 +72,7 @@ export function parkingLot(b: Builder, r: Rect, rand: () => number): { pos: THRE
   for (let k = 0; k < (r.buses ?? 0); k++) {
     const pos = at(-r.w / 2 + 6 + k * 10, 0.05, 0), yaw = (-r.yaw * Math.PI) / 180 + Math.PI / 2;
     const spot = car(b, pos, yaw, 'car5', 'micro');
-    if (spot) spot.company = UNMSM_BUS;
+    if (spot) [spot.company, spot.paint] = [UNMSM_BUS, companyColor(UNMSM_BUS)];
     else buses.push({ pos, yaw, company: UNMSM_BUS, micro: true });
   }
   return buses;

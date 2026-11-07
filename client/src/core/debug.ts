@@ -478,7 +478,7 @@ export function installDebug(c: DebugContext): void {
     carShowcase: (x: number, z: number) => carShowcase(c.scene!, c.hf, x, z, c.lighting),
     vehicles(kind?: string) {
       const list = (c.traffic?.() as unknown as { list: { kind: string; x: number; z: number; dir: number }[] } | undefined)?.list ?? [];
-      return list.filter((v) => !kind || v.kind === kind).map((v) => [v.x, c.hf.heightAt(v.x, v.z), v.z, v.dir > 0 ? Math.PI / 2 : -Math.PI / 2].map((n) => +n.toFixed(2)));
+      return list.filter((v) => (!kind || v.kind === kind) && (v as { state?: string }).state === 'drive').map((v) => [v.x, c.hf.heightAt(v.x, v.z), v.z, v.dir > 0 ? Math.PI / 2 : -Math.PI / 2].map((n) => +n.toFixed(2)));
     },
     vehicleTest(kind?: string) {
       const tr = c.traffic?.();

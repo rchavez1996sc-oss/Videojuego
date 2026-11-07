@@ -6,11 +6,16 @@ import type { Lighting } from './lighting';
 const BASE = `${import.meta.env.BASE_URL}assets/`;
 
 /** Which modelled cars stand in for each game kind (a seed picks one), and the game length each is fitted to (m). */
-const MODELS: Record<string, string[]> = { sedan: ['sedan', 'sedan', 'coupe', 'hatchback', 'lowA', 'lowC'], tico: ['compact'], wagon: ['wagon', 'suv', 'minivan', 'lowD'], pickup: ['pickup', 'pickup', 'offroad', 'lowB'] };
-const LENGTH: Record<string, number> = { sedan: 4.3, tico: 3.3, wagon: 4.6, pickup: 5.0 };
+const MODELS: Record<string, string[]> = {
+  sedan: ['sedan', 'sedan', 'coupe', 'hatchback', 'lowA', 'lowC'], tico: ['compact'], wagon: ['wagon', 'suv', 'minivan', 'lowD'], pickup: ['pickup', 'pickup', 'offroad', 'lowB'],
+  combi: ['van'], micro: ['ussr', 'nagoya'], beetle: ['beetle'], moto: ['tuktuk'],
+};
+const LENGTH: Record<string, number> = { sedan: 4.3, tico: 3.3, wagon: 4.6, pickup: 5.0, combi: 4.8, micro: 8.6, beetle: 4.0, moto: 2.6 };
+/** Kinds whose model is also fitted to a width (buses and mototaxis come in other proportions; height follows the mean). */
+const WIDTH: Record<string, number> = { combi: 1.85, micro: 2.35, moto: 1.4 };
 
 /** Paint of the old procedural keys, so parked and traffic cars keep their palette (dusty Lima colours). */
-export const PAINT: Record<string, string> = { car0: '#c9c6bf', car1: '#2a2c30', car2: '#7a1d1a', car3: '#e2c22e', car4: '#2b4c7a', car5: '#eeeeea' };
+export const PAINT: Record<string, string> = { car0: '#c9c6bf', car1: '#2a2c30', car2: '#7a1d1a', car3: '#e2c22e', car4: '#2b4c7a', car5: '#eeeeea', moto0: '#b8231d', moto1: '#1f4fa8', moto2: '#d9a21c' };
 
 /**
  * Bodywork repaint: the packed map's red channel marks paint (the body texture holds it in grey), which takes the
@@ -45,10 +50,12 @@ class CarModels {
   async load(lighting: Lighting): Promise<void> {
     this.lighting = lighting;
     const manifest = await fetch(`${BASE}manifest.json`, { cache: 'no-store' }).then((r) => r.json()).catch(() => null);
-    const url = manifest?.cars as string | undefined;
-    if (!url) return;
-    const g = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(`${BASE}${url}?v=${manifest.version ?? 0}`).catch(() => null);
-    if (!g) return;
+    const urls = [manifest?.cars, manifest?.vehicles].filter(Boolean) as string[];
+    const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    for (const g of await Promise.all(urls.map((u) => loader.loadAsync(`${BASE}${u}?v=${manifest.version ?? 0}`).catch(() => null)))) if (g) this.add(g.scene, lighting);
+  }
+
+  private add(scene: THREE.Object3D, lighting: Lighting): void {
     const shared = new Map<string, THREE.Material>();
     const setup = (m: THREE.MeshStandardMaterial) => {
       if (/-body$/.test(m.name)) return m;
@@ -58,7 +65,7 @@ class CarModels {
       }
       return shared.get(m.name)!;
     };
-    const top = g.scene.children.length === 1 && !g.scene.children[0].name ? g.scene.children[0] : g.scene;
+    const top = scene.children.length === 1 && !scene.children[0].name ? scene.children[0] : scene;
     for (const car of [...top.children]) {
       car.traverse((o) => {
         const m = o as THREE.Mesh;
@@ -80,10 +87,22 @@ class CarModels {
     return list.length ? list[Math.abs(Math.floor(seed)) % list.length] : null;
   }
 
-  /** Uniform scale that fits the model to the game's length for `kind`. */
-  scale(key: string, kind: string): number {
-    const box = new THREE.Box3().setFromObject(this.protos.get(key)!);
-    return (LENGTH[kind] ?? 4.4) / (box.max.z - box.min.z);
+  /** Scale that fits the model to the game's length (and width, for some kinds) of `kind`. */
+  scale(key: string, kind: string): THREE.Vector3 {
+    const s = new THREE.Box3().setFromObject(this.protos.get(key)!).getSize(new THREE.Vector3()), z = (LENGTH[kind] ?? 4.4) / s.z;
+    const x = WIDTH[kind] ? WIDTH[kind] / s.x : z;
+    return new THREE.Vector3(x, (x + z) / 2, z);
+  }
+
+  /** Size of the painted bodywork once fitted (mirrors and bumpers left out): where liveries go. */
+  bodySize(key: string, kind: string): THREE.Box3 {
+    const box = new THREE.Box3();
+    this.protos.get(key)!.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (m.isMesh && /-body$/.test((m.material as THREE.Material).name)) box.expandByObject(m);
+    });
+    const k = this.scale(key, kind);
+    return new THREE.Box3(box.min.multiply(k), box.max.multiply(k));
   }
 
   private bodyMaterial(key: string, paint: string | null): THREE.Material | null {
@@ -101,7 +120,7 @@ class CarModels {
 
   /** Model size (m) once fitted to `kind`. */
   size(key: string, kind: string): THREE.Vector3 {
-    return new THREE.Box3().setFromObject(this.protos.get(key)!).getSize(new THREE.Vector3()).multiplyScalar(this.scale(key, kind));
+    return new THREE.Box3().setFromObject(this.protos.get(key)!).getSize(new THREE.Vector3()).multiply(this.scale(key, kind));
   }
 
   private findBody(key: string): THREE.MeshStandardMaterial | null {
@@ -128,13 +147,13 @@ class CarModels {
     });
     const g = new THREE.Group();
     const k = this.scale(key, kind);
-    root.scale.multiplyScalar(k);
-    root.position.multiplyScalar(k);
+    root.scale.multiply(k);
+    root.position.multiply(k);
     g.add(root);
     g.userData.wheels = wheels;
     const wb = wheels[0] ? new THREE.Box3().setFromObject(wheels[0]) : null;
     g.userData.spinAxis = new THREE.Vector3(1, 0, 0).applyQuaternion(root.quaternion.clone().invert());
-    g.userData.wheelR = wb ? ((wb.max.y - wb.min.y) / 2) * k : 0.3;
+    g.userData.wheelR = wb ? ((wb.max.y - wb.min.y) / 2) * k.y : 0.3;
     return g;
   }
 
@@ -142,7 +161,7 @@ class CarModels {
   parts(key: string, kind: string): CarPart[] {
     const root = this.protos.get(key)!, s = this.scale(key, kind), out: CarPart[] = [], body = this.bodyMaterial(key, null);
     root.updateMatrixWorld(true);
-    const scale = new THREE.Matrix4().makeScale(s, s, s);
+    const scale = new THREE.Matrix4().makeScale(s.x, s.y, s.z);
     root.traverse((o) => {
       const m = o as THREE.Mesh;
       if (!m.isMesh) return;

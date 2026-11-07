@@ -3,6 +3,7 @@ import { floorAt, stepAssist } from '../physics/floor';
 import { surfaceTop } from '../world/groundStrips';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { pickDeath } from './deathFall';
+import { Fling } from './fling';
 import { CLIMBS, findLedge, mantlePath, type Ledge } from './mantle';
 import type { Palette } from './mannequin';
 import { Rig, type Outfit } from './rig';
@@ -69,6 +70,7 @@ export class Enemy {
   private progGoal: THREE.Vector3 | null = null;
   private lastPos = new THREE.Vector3();
   private fallDir = new THREE.Vector3();
+  private fling: Fling | null = null;
   private colliderCrouched = false;
 
   constructor(readonly id: number, readonly def: EnemyDef, private world: RAPIER.World, lighting: Lighting, spawn: THREE.Vector3, readonly patrol: THREE.Vector3[], readonly isStatic: boolean, outfit?: Outfit) {
@@ -247,7 +249,8 @@ export class Enemy {
     return this.hp <= 0;
   }
 
-  die(dir: THREE.Vector3): void {
+  /** `launch`: thrown by a vehicle (velocity, m/s): falls backwards or forwards and slides along the ground. */
+  die(dir: THREE.Vector3, launch?: THREE.Vector3): void {
     this.state = 'dead';
     if (this.cover) this.cover.owner = -1;
     this.collider.setEnabled(false);
@@ -255,6 +258,10 @@ export class Enemy {
     this.fallDir = flat.lengthSq() > 0.01 ? flat.normalize() : new THREE.Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
     const fromFront = this.fallDir.dot(new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw))) < 0;
     const wish = this.crouched ? ['death_crouch'] : fromFront ? (Math.random() < 0.4 ? ['death_head', 'death_front', 'fall_back'] : ['fall_back', 'death_front', 'death_head']) : Math.random() < 0.5 ? ['death_back', 'dying'] : ['dying', 'death_back'];
+    if (launch) {
+      this.fling = new Fling(launch.clone().setY(0), this.position.y);
+      return this.model.die(fromFront ? 'fall_back' : 'death_front');
+    }
     const fall = pickDeath(this.world, this.position, this.yaw, wish, this.collider.handle);
     this.position.add(fall.shift);
     this.model.die(fall.key);
@@ -262,6 +269,7 @@ export class Enemy {
 
   /** The death clip plays out where the body stood. */
   private syncCorpse(dt: number): void {
+    if (this.fling && !this.fling.step(this.world, this.position, dt, this.collider.handle)) this.fling = null;
     this.model.root.position.copy(this.position).setY(this.position.y - 0.03);
     this.model.animate(dt, 0, 0, 0);
   }

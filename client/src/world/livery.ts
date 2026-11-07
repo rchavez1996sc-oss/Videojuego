@@ -2,19 +2,23 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { Lighting } from '../render/lighting';
 
-/** Bus-company liveries seen on Lima Norte routes (fictional companies): base, swoosh, letter, route. */
+/** Bus-company liveries of the routes out of Huaycán (fictional companies): base, swoosh, letter, route. */
 const COMPANIES = [
-  { base: '#b8231d', swoosh: ['#1f4fa8', '#f2f2ee'], letter: 'T', route: 'COLLIQUE · TÚPAC AMARU · CENTRO', ink: '#f2f2ee' },
-  { base: '#efe9da', swoosh: ['#1c7a3a', '#e3b51c'], letter: 'R', route: 'COMAS · PANAMERICANA · NARANJAL', ink: '#1c3a20' },
-  { base: '#e7b81e', swoosh: ['#1d1d1f', '#c62a20'], letter: 'E', route: 'PUENTE PIEDRA · ZAPALLAL · BELAÚNDE', ink: '#1d1d1f' },
-  { base: '#2b5fa8', swoosh: ['#f2f2ee', '#d23a2a'], letter: 'S', route: 'SAN FELIPE · CARABAYLLO · UNI', ink: '#f2f2ee' },
-  { base: '#e9e2c8', swoosh: ['#2f6b34', '#4f9a3c'], letter: 'H', route: 'HUAYCÁN · VITARTE · CENTRO DE LIMA', ink: '#1f4a24' },
+  { base: '#b8231d', swoosh: ['#1f4fa8', '#f2f2ee'], letter: 'T', route: 'HUAYCÁN · CARRETERA CENTRAL · SANTA ANITA', ink: '#f2f2ee' },
+  { base: '#efe9da', swoosh: ['#1c7a3a', '#e3b51c'], letter: 'R', route: 'HUAYCÁN · ATE · LA MOLINA · ZONA R', ink: '#1c3a20' },
+  { base: '#e7b81e', swoosh: ['#1d1d1f', '#c62a20'], letter: 'E', route: 'HUAYCÁN · ÑAÑA · CHOSICA', ink: '#1d1d1f' },
+  { base: '#2b5fa8', swoosh: ['#f2f2ee', '#d23a2a'], letter: 'S', route: 'HUAYCÁN · AV. 15 DE JULIO · VITARTE · CENTRO', ink: '#f2f2ee' },
+  { base: '#e9e2c8', swoosh: ['#2f6b34', '#4f9a3c'], letter: 'H', route: 'HUAYCÁN · PUENTE NUEVO · ACHO · CENTRO DE LIMA', ink: '#1f4a24' },
   { base: '#e8e0c4', swoosh: ['#8a1c1c', '#c9a227'], letter: '', route: 'UNIVERSIDAD NACIONAL MAYOR DE SAN MARCOS', ink: '#6a1a16' },
 ];
+/** Body colour of a company's buses (the modelled combis and micros are painted with it). */
+export function companyColor(company: number): string {
+  return COMPANIES[company === UNMSM_BUS ? UNMSM_BUS : company % ROUTES].base;
+}
 /** Route companies (traffic, parked combis); the last livery is the university's own bus. */
 const ROUTES = 5;
 export const UNMSM_BUS = 5;
-const PLACARDS = ['SAN FELIPE', 'COLLIQUE', 'NARANJAL', 'UNI', 'HUAYCÁN', 'UNMSM'];
+const PLACARDS = ['STA. ANITA', 'LA MOLINA', 'CHOSICA', 'VITARTE', 'HUAYCÁN', 'UNMSM'];
 const ROWS = COMPANIES.length + 1, N = PLACARDS.length;
 const W = 512, H = 128;
 let mat: THREE.Material | null = null;
@@ -56,8 +60,8 @@ function quad(w: number, h: number, u0: number, v0: number, u1: number, v1: numb
  * Company livery on a combi's flanks (readable from both sides) and a cardboard route
  * placard behind the windscreen; one merged mesh per vehicle. Body is 1.8 × 4.8 m, front along +z.
  */
-export function combiLivery(lighting: Lighting, company: number, micro = false): THREE.Mesh {
-  return new THREE.Mesh(liveryGeometry(company, micro ? MICRO : COMBI), liveryMaterial(lighting));
+export function combiLivery(lighting: Lighting, company: number, micro = false, fit?: Fit): THREE.Mesh {
+  return new THREE.Mesh(liveryGeometry(company, fit ?? (micro ? MICRO : COMBI)), liveryMaterial(lighting));
 }
 
 /** All parked combis' liveries merged into one mesh (static: one draw for the whole level). */
@@ -71,7 +75,7 @@ function liveryMaterial(lighting: Lighting): THREE.Material {
   return (mat ??= lighting.setup(new THREE.MeshStandardMaterial({ map: atlas(), roughness: 0.35, metalness: 0.1, polygonOffset: true, polygonOffsetFactor: -2 }), 'livery'));
 }
 
-interface Fit { len: number; half: number; y: number; h: number; card: [number, number, number] }
+export interface Fit { len: number; half: number; y: number; h: number; card: [number, number, number] }
 const COMBI: Fit = { len: 4.2, half: 0.912, y: 0.93, h: 0.52, card: [0.35, 1.32, 2.12] };
 const MICRO: Fit = { len: 7.6, half: 1.162, y: 1.1, h: 0.6, card: [0.5, 1.55, 4.1] };
 

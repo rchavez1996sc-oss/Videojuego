@@ -7,6 +7,7 @@ import type { Lighting } from '../render/lighting';
 import { Builder } from './buildingKit';
 import { cityHouse, hillHouse, PAINTS, type Lot } from './houses';
 import { powerLine, cable, mototaxi, sandbags, stairway, car, billboard, type CarKind } from './urbanProps';
+import { companyColor } from './livery';
 import { SignAtlas, type SignKind } from './signs';
 import { brandQuota } from './brandQuota';
 import { bigStore, carve, type BigStoreDef } from './bigStore';
@@ -267,7 +268,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
     if (parked.some((p) => Math.hypot(p.x - x, p.y - z) < (kind === 'combi' ? 6.4 : 5.4)) || !parked.push(new THREE.Vector2(x, z))) continue;
     const at = new THREE.Vector3(x, hf.heightAt(x, z), z), turn = yaw + (rand() - 0.5) * 0.06;
     const spot = car(b, at, turn, paint, kind);
-    if (kind === 'combi' && spot) spot.company = ++combiN;
+    if (kind === 'combi' && spot) [spot.company, spot.paint] = [++combiN, companyColor(combiN)];
   }
   for (let x = def.x0 + 20, k = 0; x < xEnd - 10; x += def.billboardEvery, k++) {
     const side = k % 2 ? 1 : -1;

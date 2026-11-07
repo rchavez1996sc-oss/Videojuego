@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { Builder } from '../world/buildingKit';
-import { mototaxi, type CarKind } from '../world/urbanProps';
+import type { CarKind } from '../world/urbanProps';
 import { vehicleLook, buildLoose, type VehicleMats } from './vehicleLook';
 import { carModels } from '../render/carModels';
 import type { ParkedSpot } from '../world/parkedCars';
@@ -13,6 +13,7 @@ import type { Heightfield } from '../world/heightfield';
 import type { Lighting } from '../render/lighting';
 import type { Rig } from '../entities/rig';
 import { Riders } from './riders';
+import { unblamed } from './blame';
 
 /** `player`: driven by the player (moved by `Driving`); `parked`: left where the player got out. */
 type State = 'drive' | 'off' | 'crash' | 'wreck' | 'player' | 'parked';
@@ -25,7 +26,7 @@ export interface Vehicle {
   /** While player-driven: floor height and body tilt (pitch/roll on slopes and in turns). */ y?: number; tilt?: THREE.Quaternion;
 }
 
-export interface Victim { key: string; pos: THREE.Vector3; hurt(damage: number, from: THREE.Vector3, shove: THREE.Vector3): void }
+export interface Victim { key: string; kind: 'player' | 'police' | 'ally' | 'civilian'; pos: THREE.Vector3; alive(): boolean; hurt(damage: number, from: THREE.Vector3, shove: THREE.Vector3): void }
 
 /** A straight road along x: centre `z`, lane offset from the centre, half width, how many vehicles use it (and which kinds). */
 export interface Road { z: number; lane: number; half: number; count: number; kinds?: (CarKind | 'moto' | 'delivery')[] }
@@ -46,6 +47,7 @@ export class Traffic {
   onSmoke: (at: THREE.Vector3) => void = () => {};
   /** People a moving vehicle can run into (player, squad, soldiers); `hurt` receives damage, origin and a shove. */
   victims: () => Victim[] = () => [];
+  /** This frame's `victims()` (also used by `Driving`). */ near: Victim[] = [];
   private hitT = new Map<string, number>();
   private riders: Riders;
   private clock = 0;
@@ -66,7 +68,7 @@ export class Traffic {
     const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
     for (let i = 0; i < count; i++) {
       const kind = lanes[i].kinds?.[i % lanes[i].kinds!.length] ?? kinds[i % kinds.length];
-      const g = kind === 'moto' || kind === 'delivery' ? this.bike(kind, i) : vehicleLook(lighting, this.look, kind, kind === 'combi' || kind === 'micro' ? 'car5' : kind === 'tico' ? 'car3' : `car${i % 6}`, carModels.pick(kind, i), i);
+      const g = kind === 'delivery' ? this.bike(i) : kind === 'moto' ? vehicleLook(lighting, this.look, 'moto', `moto${i % 3}`, carModels.pick('moto', i)) : vehicleLook(lighting, this.look, kind, kind === 'combi' || kind === 'micro' ? 'car5' : kind === 'tico' ? 'car3' : `car${i % 6}`, carModels.pick(kind, i), i);
       const riders: THREE.BufferGeometry[] = [], seats: THREE.Group[] = [];
       let riderMat: THREE.Material | null = null;
       SEATS[kind].forEach(([x, y, z], k) => {
@@ -88,14 +90,11 @@ export class Traffic {
     }
   }
 
-  private bike(kind: 'moto' | 'delivery', i: number): THREE.Group {
-    const b = new Builder(null, null), g = new THREE.Group();
-    if (kind === 'moto') mototaxi(b, new THREE.Vector3(), 0, `moto${i % 3}`);
-    else deliveryBike(b, i % 3);
-    g.add(...buildLoose(b, this.lighting, this.look));
-    return g;
+  private bike(i: number): THREE.Group {
+    const b = new Builder(null, null);
+    deliveryBike(b, i % 3);
+    return new THREE.Group().add(...buildLoose(b, this.lighting, this.look));
   }
-
   private register(kind: Vehicle['kind'], g: THREE.Group, seats: THREE.Group[], x: number, z: number, dir: 1 | -1, road: Road, cruise: number, horn: number, honkT: number, yaw = dir > 0 ? Math.PI / 2 : -Math.PI / 2): Vehicle {
     this.group.add(g);
     const len = kind === 'delivery' ? 1.9 : kind === 'moto' ? 2.3 : kind === 'micro' ? 8.6 : kind === 'combi' ? 4.8 : kind === 'tico' ? 3.4 : kind === 'pickup' ? 5 : 4.4;
@@ -203,17 +202,17 @@ export class Traffic {
   private impacts(v: Vehicle, dt: number, now: number): void {
     if (v.speed < 2.5) return;
     const fwd = new THREE.Vector3(Math.sin(v.yaw), 0, Math.cos(v.yaw)), right = new THREE.Vector3(fwd.z, 0, -fwd.x);
-    for (const t of this.victims()) {
+    for (const t of this.near) {
+      if (!t.alive()) continue;
       const rel = new THREE.Vector3(t.pos.x - v.x, 0, t.pos.z - v.z);
       const along = rel.dot(fwd), lat = rel.dot(right);
       if (Math.abs(lat) > 1.3 || along < -v.len / 2 - 0.3 || along > v.len / 2 + 0.45 + v.speed * dt) continue;
-      const key = `${t.key}`;
-      if ((this.hitT.get(key) ?? -9) > now - 1.2) continue;
-      this.hitT.set(key, now);
+      if ((this.hitT.get(t.key) ?? -9) > now - 1.2) continue;
+      this.hitT.set(t.key, now);
       const square = along > v.len / 2 - 0.6 ? 1 - Math.min(1, Math.abs(lat) / 1.3) * 0.5 : 0.35;
       const damage = Math.min(75, (v.speed - 2) * 5.5) * square;
       const shove = fwd.clone().multiplyScalar(v.speed * 0.55 * square).addScaledVector(right, Math.sign(lat || 1) * (2 + v.speed * 0.25));
-      t.hurt(damage, new THREE.Vector3(v.x, t.pos.y + 0.8, v.z), shove);
+      unblamed(() => t.hurt(damage, new THREE.Vector3(v.x, t.pos.y + 0.8, v.z), shove));
       if (square > 0.6) v.speed *= 0.6;
     }
   }
@@ -229,6 +228,8 @@ export class Traffic {
     this.calmT += dt;
     this.cam.copy(camera);
     this.clock += dt;
+    this.near = this.victims();
+    const walkers = this.near.flatMap((t) => (t.kind === 'civilian' ? [t.pos] : []));
     this.riders.update(dt, camera);
     for (const v of this.list) {
       if (v.state === 'off') {
@@ -246,7 +247,7 @@ export class Traffic {
       else if (v.state === 'drive') {
         let target = v.panic ? 19 : v.cruise;
         const ahead = (px: number, pz: number, gap: number) => (px - v.x) * v.dir > 0 && (px - v.x) * v.dir < gap && Math.abs(pz - v.z) < 1.8;
-        if (ahead(player.x, player.z, 12 + v.speed) || this.obstacles().some((o) => ahead(o.x, o.z, 10 + v.speed))) {
+        if (ahead(player.x, player.z, 12 + v.speed) || [...this.obstacles(), ...walkers].some((o) => ahead(o.x, o.z, 10 + v.speed))) {
           target = 0;
           v.honkT -= dt * 4;
         }

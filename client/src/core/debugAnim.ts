@@ -13,7 +13,7 @@ export function animDebug(c: DebugContext) {
   const key = (code: string, down: boolean) => dispatchEvent(new KeyboardEvent(down ? 'keydown' : 'keyup', { code }));
   return {
     /** Puts the player beside a traffic vehicle of `kind`, presses E, then plays `plan` ([keys, seconds][]) and logs the car. */
-    driveTest(kind: string, plan: [string[], number][], victim = false) {
+    driveTest(kind: string, plan: [string[], number][], victim: boolean | 'civ' = false) {
       let log0 = '';
       c.setFreeCam(false);
       const tr = c.traffic?.() as unknown as { list: { kind: string; x: number; z: number; yaw: number; speed: number; state: string; y?: number }[] } | undefined;
@@ -27,16 +27,19 @@ export function animDebug(c: DebugContext) {
       key('KeyE', true); c.frame(1 / 30); key('KeyE', false);
       v ??= tr!.list.find((o) => o.state === 'player') ?? tr!.list[tr!.list.length - 1];
       if (spot) log0 = `parked ${spot.kind} ${spot.model} `;
-      const prey = victim ? c.enemies.list.find((e) => e.alive) : undefined;
-      if (prey) prey.teleport(new THREE.Vector3(v.x + Math.sin(v.yaw) * 9, c.hf.heightAt(v.x, v.z), v.z + Math.cos(v.yaw) * 9));
+      const prey = victim === true ? c.enemies.list.find((e) => e.alive) : undefined;
+      const civ = victim === 'civ' ? c.civilians?.()[0] : undefined, civN = c.civilians?.().length ?? 0;
       const log = [`${log0}in: ${v.state}`];
-      for (const [keys, secs] of plan) {
+      for (const [n, [keys, secs]] of plan.entries()) {
+        if (civ && n === 1) civ.set(v.x + Math.sin(v.yaw) * 6, c.hf.heightAt(v.x, v.z), v.z + Math.cos(v.yaw) * 6);
+        if (prey && n === 1) prey.teleport(new THREE.Vector3(v.x + Math.sin(v.yaw) * 6, c.hf.heightAt(v.x, v.z), v.z + Math.cos(v.yaw) * 6));
         keys.forEach((k) => key(k, true));
         for (let i = 0; i < Math.round(secs * 30); i++) c.frame(1 / 30);
         keys.forEach((k) => key(k, false));
         log.push(`${keys.join('+') || '-'} ${secs}s → ${v.x.toFixed(1)},${(v.y ?? 0).toFixed(2)},${v.z.toFixed(1)} yaw ${v.yaw.toFixed(2)} v ${v.speed.toFixed(1)} hp ${c.player.hp.toFixed(0)}`);
       }
-      if (prey) log.push(`prey alive ${prey.alive} hp ${prey.hp.toFixed(0)}`);
+      if (civ) log.push(`civilians ${civN} → ${c.civilians?.().length} (civ @${civ.x.toFixed(1)},${civ.z.toFixed(1)})`);
+      if (prey) log.push(`prey alive ${prey.alive} hp ${prey.hp.toFixed(0)} at ${prey.position.x.toFixed(2)} ${prey.position.y.toFixed(2)} ${prey.position.z.toFixed(2)}`);
       c.setSkipRender(false);
       c.frame(1 / 60);
       return log.join('\n');

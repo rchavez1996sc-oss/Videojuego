@@ -13,7 +13,6 @@ import { EngineSound } from '../audio/engine';
 import { SPECS, stepCar, type CarState } from './carPhysics';
 import { seatedRig, SEATS } from '../entities/occupants';
 import { innocents } from './blame';
-import { hitHandler } from '../world/surfaces';
 import { roomy } from './respawn';
 import { parkedCars } from '../world/parkedCars';
 
@@ -35,7 +34,7 @@ export class Driving {
   private speedo = document.createElement('div');
   private bodyOff = 0;
   private idleMouse = 0;
-  private hitT = new Map<number, number>();
+  private hitT = new Map<string, number>();
   private clock = 0;
 
   constructor(private d: Deps) {
@@ -130,7 +129,7 @@ export class Driving {
       v.hp -= impact * 3;
       if (impact > 10) player.hurt((impact - 10) * 2.5);
     }
-    if (Math.abs(s.speed) > 0.4) this.runOver(s, sp.half, people, dt);
+    if (Math.abs(s.speed) > 0.4) this.runOver(s, sp.half, dt);
     world.getCollider(player.collisionHandle).parent()!.setNextKinematicTranslation({ x: s.x, y: s.y + this.bodyOff, z: s.z });
     const gear = sp.top / 4, sp1 = Math.abs(s.speed), rev = sp1 < 0.5 ? 0.12 : 0.3 + ((sp1 % gear) / gear) * 0.7;
     this.engine.set(true, rev, Math.max(u.throttle, u.brake * (s.speed < 0.5 ? 1 : 0)), sp1, !!sp.small);
@@ -144,33 +143,32 @@ export class Driving {
   }
 
   /**
-   * People in the box swept by the bumper this frame (so nobody slips between frames at speed) are hit: slow pushes
-   * stop the car against them (the squad steps aside), from 4 m/s it is a real impact (damage from speed, thud, jolt, the car loses speed) and
-   * a policeman still standing afterwards stops the car instead of being driven through.
+   * People in the box swept by the bumper this frame (tested against each body's position, so nobody slips between
+   * frames or through a stale physics query): slow pushes stop the car against them (the squad steps aside), from 4 m/s
+   * it is a real impact (damage from speed, thud, jolt, the car loses speed); a policeman still standing stops the car.
    */
-  private runOver(s: CarState, half: number, people: Set<number>, dt: number): void {
-    const { world, enemies, squad, player, sfx, tpc } = this.d, fwd = new THREE.Vector3(Math.sin(s.yaw), 0, Math.cos(s.yaw)), sp = Math.abs(s.speed);
-    const travel = sp * dt + 0.5, ahead = Math.sign(s.speed) * (s.len / 2 + travel / 2), at = { x: s.x + fwd.x * ahead, y: s.y + 0.9, z: s.z + fwd.z * ahead };
-    const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), s.yaw), dmg = Math.min(260, (sp - 3) * 24);
-    const from = new THREE.Vector3(s.x, s.y + 0.8, s.z), stop = () => ((s.speed = 0), s.vel.set(0, 0, 0));
-    world.intersectionsWithShape(at, q, new RAPIER.Cuboid(half + 0.35, 0.8, travel / 2), (c) => {
-      const h = c.handle;
-      if (h === player.collisionHandle || (!innocents.has(h) && !people.has(h))) return true;
-      const e = enemies.list.find((x) => x.handle === h && x.alive), a = squad?.list.find((x) => x.unit.handle === h && x.unit.alive);
-      if (people.has(h) && !e && !a) return true;
-      if (sp < 4) return a || stop(), true;
-      if ((this.hitT.get(h) ?? -9) > this.clock - 0.6) return true;
-      this.hitT.set(h, this.clock);
-      if (innocents.has(h)) hitHandler(h)?.(dmg, at);
-      else if (e) enemies.runOver(e, dmg, from);
-      else squad!.hurt(a!, dmg * 0.4, from);
+  private runOver(s: CarState, half: number, dt: number): void {
+    const { traffic, sfx, tpc } = this.d, sp = Math.abs(s.speed), dir = Math.sign(s.speed);
+    const fwd = new THREE.Vector3(Math.sin(s.yaw), 0, Math.cos(s.yaw)), right = new THREE.Vector3(fwd.z, 0, -fwd.x);
+    const reach = s.len / 2 + sp * dt + 0.45, dmg = Math.min(260, (sp - 3) * 24), from = new THREE.Vector3(s.x, s.y + 0.8, s.z);
+    for (const t of traffic!.near) {
+      if (t.kind === 'player' || !t.alive() || Math.abs(t.pos.y - s.y) > 2.2) continue;
+      const rx = t.pos.x - s.x, rz = t.pos.z - s.z, along = (rx * fwd.x + rz * fwd.z) * dir, lat = rx * right.x + rz * right.z;
+      if (Math.abs(lat) > half + 0.4 || along < s.len / 2 - 0.9 || along > reach) continue;
+      if (sp < 4) {
+        if (t.kind !== 'ally') [s.speed, s.vel] = [0, s.vel.set(0, 0, 0)];
+        continue;
+      }
+      if ((this.hitT.get(t.key) ?? -9) > this.clock - 0.6) continue;
+      this.hitT.set(t.key, this.clock);
+      const shove = fwd.clone().multiplyScalar(dir * sp * 0.6).addScaledVector(right, Math.sign(lat || 1) * (2 + sp * 0.3));
+      t.hurt(t.kind === 'ally' ? dmg * 0.4 : dmg, from, shove);
       sfx.thud(Math.min(1, sp / 14));
       sfx.crash(0);
       tpc.kick(0.02, 0, Math.min(0.35, sp * 0.02));
       s.vel.multiplyScalar(0.78);
       s.speed *= 0.78;
-      if (e?.alive) stop();
-      return true;
-    });
+      if (t.kind === 'police' && t.alive()) [s.speed, s.vel] = [0, s.vel.set(0, 0, 0)];
+    }
   }
 }

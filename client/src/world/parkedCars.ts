@@ -8,7 +8,7 @@ import { setSurface } from './surfaces';
 import { vehicleLook, type VehicleMats } from '../systems/vehicleLook';
 
 /** A parked car of the level: drawn instanced until the player takes it (then it becomes a traffic `Vehicle`). */
-export interface ParkedSpot { pos: THREE.Vector3; yaw: number; kind: CarKind; paint: string; company?: number; model: string | null; collider?: RAPIER.Collider; taken?: boolean; look: string }
+export interface ParkedSpot { pos: THREE.Vector3; yaw: number; kind: CarKind | 'moto'; paint: string; company?: number; model: string | null; collider?: RAPIER.Collider; taken?: boolean; look: string }
 
 interface Batch { mesh: THREE.InstancedMesh; locals: THREE.Matrix4[]; tinted: boolean; spots: ParkedSpot[] }
 
@@ -41,7 +41,7 @@ class ParkedCars {
   private m = new THREE.Matrix4();
   private c = new THREE.Color();
 
-  add(pos: THREE.Vector3, yaw: number, kind: CarKind, paint: string): ParkedSpot {
+  add(pos: THREE.Vector3, yaw: number, kind: CarKind | 'moto', paint: string): ParkedSpot {
     const spot: ParkedSpot = { pos: pos.clone(), yaw, kind, paint, model: null, look: '' };
     this.spots.push(spot);
     return spot;

@@ -192,9 +192,9 @@ export class Enemies {
   }
 
   /** Struck by a vehicle: no credit to anyone, but they notice where it came from. */
-  runOver(e: Enemy, dmg: number, from: THREE.Vector3): void {
+  runOver(e: Enemy, dmg: number, from: THREE.Vector3, shove?: THREE.Vector3): void {
     e.awareness = Math.max(e.awareness, 0.6);
-    if (e.damage(dmg)) e.die(e.position.clone().sub(from).setY(0).normalize());
+    if (e.damage(dmg)) e.die(e.position.clone().sub(from).setY(0).normalize(), shove);
   }
 
   /** Every 1.5 s each enemy may switch to a squad member that is clearly closer and in sight than the player. */
