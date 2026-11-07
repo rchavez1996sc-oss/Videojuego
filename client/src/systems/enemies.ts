@@ -193,9 +193,8 @@ export class Enemies {
 
   /** Struck by a vehicle: no credit to anyone, but they notice where it came from. */
   runOver(e: Enemy, dmg: number, from: THREE.Vector3, shove?: THREE.Vector3): void {
-    e.awareness = Math.max(e.awareness, 0.6);
-    if (e.damage(dmg)) e.die(e.position.clone().sub(from).setY(0).normalize(), shove);
-    else if (shove) e.knockDown(shove);
+    e.awareness = Math.max(e.awareness, 0.6); // a vehicle hit: dies thrown (launch) or falls back and gets up
+    if (e.damage(dmg)) e.die(e.position.clone().sub(from).setY(0).normalize(), shove); else if (shove) e.knockDown(shove);
   }
 
   /** Every 1.5 s each enemy may switch to a squad member that is clearly closer and in sight than the player. */
@@ -285,7 +284,6 @@ export class Enemies {
       e.shownT = Math.max(0, e.shownT - dt);
     }
   }
-
   /** After the physics step: copy bodies to models and refresh the bars. */
   sync(): void {
     for (const e of this.list) {

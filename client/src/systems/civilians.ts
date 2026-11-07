@@ -5,7 +5,9 @@ import { gear, type GearDef } from '../entities/gear';
 import type { CharKind } from '../render/characters';
 import { mulberry32 } from '../core/rng';
 import { onHit } from '../world/surfaces';
-import { innocents } from './blame';
+import { innocents, flingers } from './blame';
+import { Fling } from '../entities/fling';
+import { characters } from '../render/characters';
 import { surfaceTop } from '../world/groundStrips';
 import { errand } from './civRoute';
 import { hideSpot, HIDE_RANGE } from './civilianHide';
@@ -27,6 +29,8 @@ interface Civilian {
   reactT: number; hideAt: THREE.Vector3 | null; hideT: number; threat: THREE.Vector3;
   /** Remaining nodes of the current errand (see `errand`). */
   route: number[];
+  /** Thrown by a vehicle: slides along the hit until it rests. */
+  fling?: Fling | null;
 }
 
 export const SHIRTS = ['#b8342b', '#2f5e9e', '#e0c24a', '#3f7a3c', '#d9d4c7', '#6b3c7a', '#1e1e22', '#c46a2c', '#7aa7c7'];
@@ -74,6 +78,7 @@ export class Civilians {
       this.list.push(c);
       this.group.add(model.root);
       innocents.add(collider.handle);
+      flingers.set(collider.handle, (push) => this.runOver(collider.handle, push));
       onHit(collider.handle, (_dmg, p) => this.kill(c, new THREE.Vector3(p.x, p.y, p.z)));
     }
   }
@@ -110,6 +115,19 @@ export class Civilians {
 
   get present(): THREE.Vector3[] {
     return this.list.filter((c) => c.mood !== 'gone' && c.mood !== 'dead').map((c) => c.pos);
+  }
+
+  /** Run over: thrown along `push` with the hit-by-car fall (turned to the hit) instead of dropping where it stood. */
+  runOver(handle: number, push: THREE.Vector3): boolean {
+    const c = this.list.find((x) => x.collider.handle === handle);
+    if (!c || c.mood === 'dead' || c.mood === 'gone' || !characters.clips.has('hit_car')) return false;
+    const d = push.clone().setY(0).normalize();
+    this.kill(c, c.pos.clone().sub(d));
+    c.yaw = Math.atan2(d.z, -d.x) - Math.PI;
+    c.model.root.rotation.set(0, c.yaw + Math.PI, 0);
+    c.model.die('hit_car');
+    c.fling = new Fling(push.clone().setY(0).multiplyScalar(0.55), c.pos.y);
+    return true;
   }
 
   private kill(c: Civilian, from: THREE.Vector3): void {
@@ -178,6 +196,8 @@ export class Civilians {
     for (const c of this.list) {
       if (c.mood === 'gone') continue;
       if (c.mood === 'dead') {
+        if (c.fling && !c.fling.step(this.world, c.pos, dt, c.collider.handle)) c.fling = null;
+        c.model.root.position.copy(c.pos).setY(c.pos.y - 0.03);
         c.model.animate(dt, 0, 0, 0);
         continue;
       }

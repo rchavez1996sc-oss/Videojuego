@@ -1,7 +1,10 @@
+import type * as THREE from 'three';
 import { hitHandler } from '../world/surfaces';
 
 /** Colliders of civilians and extras: anyone's bullets can hit them, but only the player's count as casualties. */
 export const innocents = new Set<number>();
+/** Bystanders a vehicle can throw (civilians): returns whether it did (else the plain hit handler applies). */
+export const flingers = new Map<number, (push: THREE.Vector3) => boolean>();
 export const blame = { player: true };
 
 export function unblamed<T>(fn: () => T): T {

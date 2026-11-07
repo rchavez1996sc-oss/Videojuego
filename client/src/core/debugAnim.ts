@@ -1,5 +1,8 @@
 import * as THREE from 'three';
+import RAPIER from '@dimforge/rapier3d-compat';
+import { isGhost } from '../world/surfaces';
 import { parkedCars } from '../world/parkedCars';
+import { dent } from '../fx/dents';
 import { Rig } from '../entities/rig';
 import type { CharKind } from '../render/characters';
 import type { DebugContext } from './debug';
@@ -16,9 +19,9 @@ export function animDebug(c: DebugContext) {
   return {
     /** The car the player drives or just left: x, y, yaw, z. */
     carAt() {
-      const tr = c.traffic?.() as unknown as { list: { x: number; z: number; y?: number; yaw: number; state: string }[] } | undefined;
-      const v = tr?.list.find((o) => o.state === 'player') ?? tr?.list.find((o) => o.state === 'parked');
-      return v ? [v.x, v.y ?? 0, v.yaw, v.z] : [0, 0, 0, 0];
+      const tr = c.traffic?.() as unknown as { list: { x: number; z: number; y?: number; yaw: number; state: string; hp: number; speed: number; tilt?: THREE.Quaternion }[] } | undefined;
+      const v = tr?.list.find((o) => o.state === 'player') ?? tr?.list.filter((o) => o.state !== 'drive' && o.state !== 'off').sort((a, b) => Math.hypot(a.x - c.player.position.x, a.z - c.player.position.z) - Math.hypot(b.x - c.player.position.x, b.z - c.player.position.z))[0];
+      return v ? [v.x, v.y ?? 0, v.yaw, v.z, v.hp, v.speed, v.tilt ? new THREE.Vector3(0, 1, 0).applyQuaternion(v.tilt).y : 1] : [0, 0, 0, 0];
     },
     /** Downs ally `i` (as if shot), then lets `seconds` pass; reports how far it crawled toward the player. */
     downAlly(i: number, seconds: number) {
@@ -35,6 +38,37 @@ export function animDebug(c: DebugContext) {
       e.knockDown(new THREE.Vector3(1, 0, 0.2));
       this.advance(seconds);
       return `stunned ${e.stunned}`;
+    },
+    /** Bodies more than 1.5 m above the terrain: what collider holds them (shape, size, visible skin or not). */
+    floaters() {
+      const out: string[] = [];
+      for (const e of c.enemies.list) {
+        const p = e.position, h = c.hf.heightAt(p.x, p.z);
+        if (p.y - h < 1.5) continue;
+        const hit = c.world!.castRay(new RAPIER.Ray({ x: p.x, y: p.y + 0.3, z: p.z }, { x: 0, y: -1, z: 0 }), 3, true, undefined, undefined, undefined, undefined, (col) => col.handle !== e.handle);
+        const col = hit?.collider, t = col?.translation();
+        out.push(`e${e.id} ${e.alive ? 'alive' : 'dead'} @${p.x.toFixed(1)},${p.y.toFixed(2)},${p.z.toFixed(1)} terrain ${h.toFixed(2)} below: ${col ? `${col.shapeType()} ${JSON.stringify((col.shape as unknown as { halfExtents?: unknown }).halfExtents)} @${t!.x.toFixed(1)},${t!.y.toFixed(2)},${t!.z.toFixed(1)} toi ${hit!.timeOfImpact.toFixed(2)} skin ${!isGhost(col.handle)} sensor ${col.isSensor()} kin ${!!col.parent()?.isKinematic()}` : 'nothing'}`);
+      }
+      return out.join('\n');
+    },
+    /** Debug: a traffic vehicle of `kind` stopped across the road `dist` m ahead of the driven car (for crash tests). */
+    placeAhead(kind: string, dist: number) {
+      const tr = c.traffic?.() as unknown as { list: { kind: string; x: number; z: number; yaw: number; state: string; speed: number }[] };
+      const me = tr.list.find((o) => o.state === 'player'), v = tr.list.find((o) => o.kind === kind && o.state === 'drive');
+      if (!me || !v) return 'none';
+      Object.assign(v, { state: 'parked', speed: 0, x: me.x + Math.sin(me.yaw) * dist, z: me.z + Math.cos(me.yaw) * dist, yaw: me.yaw + Math.PI / 2 });
+      return `${kind} placed`;
+    },
+    /** Debug: dents the nearest non-traffic vehicle at its front-left corner by `depth` m; reports moved meshes. */
+    dentTest(depth: number) {
+      const tr = c.traffic?.() as unknown as { list: { x: number; z: number; y?: number; yaw: number; state: string; group: THREE.Group }[] };
+      const v = tr.list.filter((o) => o.state !== 'drive' && o.state !== 'off').sort((a, b) => Math.hypot(a.x - c.player.position.x, a.z - c.player.position.z) - Math.hypot(b.x - c.player.position.x, b.z - c.player.position.z))[0];
+      if (!v) return 'none';
+      const at = new THREE.Vector3(v.x + Math.sin(v.yaw) * 2 + Math.cos(v.yaw) * 0.6, (v.y ?? 0) + 0.7, v.z + Math.cos(v.yaw) * 2 - Math.sin(v.yaw) * 0.6);
+      dent(v.group, at, depth);
+      let n = 0;
+      v.group.traverse((o) => { if (o.userData.dentable) n++; });
+      return `dented meshes ${n}`;
     },
     /** Simulates `seconds` without rendering (follow camera), then renders one frame. */
     advance(seconds: number) {
@@ -64,12 +98,14 @@ export function animDebug(c: DebugContext) {
       let log0 = '';
       c.setFreeCam(false);
       const tr = c.traffic?.() as unknown as { list: { kind: string; x: number; z: number; yaw: number; speed: number; state: string; y?: number }[] } | undefined;
-      const spot = kind === 'parked' ? parkedCars.nearest(c.player.position, 999)?.spot : null;
+      const want = kind.startsWith('parked:') ? kind.slice(7) : null, me = c.player.position;
+      const spot = want ? parkedCars.spots.filter((s) => s.kind === want && !s.taken).sort((a, b) => a.pos.distanceTo(me) - b.pos.distanceTo(me))[0] ?? null : kind === 'parked' ? parkedCars.nearest(me, 999)?.spot : null;
       let v = spot ? null : tr?.list.find((o) => o.kind === kind && o.state === 'drive');
       if (!v && !spot) return 'no vehicle';
       c.setSkipRender(true);
       const [px, pz, yaw] = spot ? [spot.pos.x, spot.pos.z, spot.yaw] : [v!.x, v!.z, v!.yaw];
       c.player.respawn(new THREE.Vector3(px + Math.cos(yaw) * 1.8, c.hf.heightAt(px, pz), pz - Math.sin(yaw) * 1.8), 0);
+      c.frame(1 / 30);
       c.frame(1 / 30);
       key('KeyE', true); c.frame(1 / 30); key('KeyE', false);
       for (let i = 0; i < 90; i++) c.frame(1 / 30);

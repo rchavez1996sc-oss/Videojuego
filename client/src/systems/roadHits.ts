@@ -4,7 +4,7 @@ import type { Traffic, Victim } from './traffic';
 import type { Player } from '../entities/player';
 import type { Enemies } from './enemies';
 import type { Squad } from './squad';
-import { innocents } from './blame';
+import { innocents, flingers } from './blame';
 import { hitHandler } from '../world/surfaces';
 
 /**
@@ -24,7 +24,7 @@ export function wireRoad(traffic: Traffic, d: { world: RAPIER.World; player: Pla
       if (!c || !c.isEnabled()) continue;
       const t = c.translation(), pos = new THREE.Vector3(t.x, t.y - 0.9, t.z);
       let dead = false;
-      out.push({ key: `c${h}`, kind: 'civilian', pos, alive: () => !dead && c.isEnabled(), hurt: (dmg) => ((dead = true), hitHandler(h)?.(dmg, pos.clone().setY(t.y))) });
+      out.push({ key: `c${h}`, kind: 'civilian', pos, alive: () => !dead && c.isEnabled(), hurt: (dmg, _from, shove) => ((dead = true), flingers.get(h)?.(shove) || hitHandler(h)?.(dmg, pos.clone().setY(t.y))) });
     }
     return out;
   };

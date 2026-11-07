@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { noVehicleLift } from '../physics/noLift';
 import { floorAt, stepAssist } from '../physics/floor';
 import { surfaceTop } from '../world/groundStrips';
 import RAPIER from '@dimforge/rapier3d-compat';
@@ -110,18 +111,14 @@ export class Enemy {
 
   get handle(): number { return this.collider.handle; }
 
-  get alive(): boolean {
-    return this.state !== 'dead';
-  }
+  get alive(): boolean { return this.state !== 'dead'; }
 
   /** Eye height above feet, lower when crouched. */
   get eyeY(): number {
     return 1.62 - this.crouchK * 0.55;
   }
 
-  get headY(): number {
-    return 1.5 - this.crouchK * 0.55;
-  }
+  get headY(): number { return 1.5 - this.crouchK * 0.55; }
 
   update(dt: number, aimPitch: number): void {
     if (this.state === 'dead') return this.syncCorpse(dt);
@@ -151,7 +148,7 @@ export class Enemy {
     this.vel.z = THREE.MathUtils.damp(this.vel.z, wish.z, 8, dt);
     this.vel.y -= GRAVITY * dt;
     this.ctrl.computeColliderMovement(this.collider, { x: this.vel.x * dt, y: this.vel.y * dt, z: this.vel.z * dt });
-    const m = stepAssist(this.world, this.ctrl, { x: this.vel.x * dt, z: this.vel.z * dt }, this.ctrl.computedMovement(), this.position, RADIUS);
+    const m = stepAssist(this.world, this.ctrl, { x: this.vel.x * dt, z: this.vel.z * dt }, noVehicleLift(this.ctrl, this.vel.y * dt, this.ctrl.computedMovement()), this.position, RADIUS);
     if (this.ctrl.computedGrounded() && this.vel.y < 0) this.vel.y = -1;
     const p = this.body.translation();
     this.body.setNextKinematicTranslation({ x: p.x + m.x, y: p.y + m.y, z: p.z + m.z });
@@ -284,6 +281,8 @@ export class Enemy {
       this.fling = new Fling(launch.clone().setY(0).multiplyScalar(0.55), this.position.y);
       return this.model.die(car ? 'hit_car' : characters.clips.has('fly_back') ? 'fly_back' : 'fall_back');
     }
+    const p = this.position, ground = this.world.castRay(new RAPIER.Ray({ x: p.x, y: p.y + 0.5, z: p.z }, { x: 0, y: -1, z: 0 }), 40, true, RAPIER.QueryFilterFlags.ONLY_FIXED | RAPIER.QueryFilterFlags.EXCLUDE_SENSORS);
+    if (ground) p.y = Math.min(p.y, p.y + 0.5 - ground.timeOfImpact);
     const fall = pickDeath(this.world, this.position, this.yaw, wish, this.collider.handle);
     this.position.add(fall.shift);
     this.model.die(fall.key);

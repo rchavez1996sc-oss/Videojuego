@@ -151,6 +151,7 @@ class CarModels {
     root.position.multiply(k);
     g.add(root);
     g.userData.wheels = wheels;
+    g.userData.modelled = true;
     const wb = wheels[0] ? new THREE.Box3().setFromObject(wheels[0]) : null;
     g.userData.spinAxis = new THREE.Vector3(1, 0, 0).applyQuaternion(root.quaternion.clone().invert());
     g.userData.wheelR = wb ? ((wb.max.y - wb.min.y) / 2) * k.y : 0.3;

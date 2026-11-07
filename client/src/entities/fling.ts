@@ -26,7 +26,7 @@ export class Fling {
       }
       pos.add(move);
     }
-    const down = world.castRay(new RAPIER.Ray({ x: pos.x, y: Math.max(pos.y, this.y) + 1, z: pos.z }, { x: 0, y: -1, z: 0 }), 5, true, RAPIER.QueryFilterFlags.ONLY_FIXED | RAPIER.QueryFilterFlags.EXCLUDE_SENSORS);
+    const down = world.castRay(new RAPIER.Ray({ x: pos.x, y: Math.max(pos.y, this.y) + 1, z: pos.z }, { x: 0, y: -1, z: 0 }), 40, true, RAPIER.QueryFilterFlags.ONLY_FIXED | RAPIER.QueryFilterFlags.EXCLUDE_SENSORS);
     const floor = down ? Math.max(pos.y, this.y) + 1 - down.timeOfImpact : this.y;
     if (this.air) {
       this.vy -= 9.8 * dt;

@@ -10,9 +10,11 @@ import type { Sfx } from '../audio/sfx';
 import type { Lighting } from '../render/lighting';
 import type { Mixer } from '../audio/mixer';
 import { EngineSound } from '../audio/engine';
-import { SPECS, stepCar, type CarState } from './carPhysics';
-import { seatedRig, SEATS } from '../entities/occupants';
-import { innocents } from './blame';
+import { SPECS, type CarState } from './carPhysics';
+import { CarRig } from './carRig';
+import { contactOf, exchange, jolt, overturned, readBody } from './vehicleBody';
+import { dent } from '../fx/dents';
+import { seatedRig, seatsOf } from '../entities/occupants';
 import { roomy } from './respawn';
 import { parkedCars } from '../world/parkedCars';
 import { SeatAnim } from './carEntry';
@@ -39,6 +41,7 @@ export class Driving {
   private hitT = new Map<string, number>();
   private clock = 0;
   private anim: SeatAnim | null = null;
+  private rig: CarRig | null = null;
   private after: (() => void) | null = null;
 
   constructor(private d: Deps) {
@@ -98,7 +101,7 @@ export class Driving {
     col.setEnabled(false);
     tpc.vehicle = 4.5 + v.len * 0.6;
     tpc.lift = sp.height * 0.35;
-    const at = SEATS[v.kind]?.[0];
+    const at = seatsOf(v.group, v.kind)[0];
     if (at && SeatAnim.possible() && v.kind !== 'moto' && v.kind !== 'delivery') {
       v.group.updateMatrixWorld(true);
       this.anim = new SeatAnim(player.model, false, v.group.localToWorld(new THREE.Vector3(...at)), v.yaw, player.position.y).begin();
@@ -110,7 +113,7 @@ export class Driving {
   private seatIn(v: Vehicle): void {
     const { lighting, player } = this.d;
     player.model.root.visible = false;
-    const at = SEATS[v.kind]?.[0];
+    const at = seatsOf(v.group, v.kind)[0];
     this.seat = at ? seatedRig(lighting, Math.random, v.kind !== 'moto' && v.kind !== 'delivery', 'fls', true) : null;
     if (this.seat && at) {
       this.seat.position.set(at[0], at[1], at[2]);
@@ -122,11 +125,11 @@ export class Driving {
   private exit(alive = true): void {
     const { traffic, player, world, tpc } = this.d, v = this.car!, s = this.state!, sp = SPECS[v.kind] ?? SPECS.sedan;
     const fwd = new THREE.Vector3(Math.sin(s.yaw), 0, Math.cos(s.yaw)), left = new THREE.Vector3(fwd.z, 0, -fwd.x);
-    const side = Math.sign(SEATS[v.kind]?.[0][0] || 1), base = new THREE.Vector3(s.x, s.y, s.z);
+    const side = Math.sign(seatsOf(v.group, v.kind)[0][0] || 1), base = new THREE.Vector3(s.x, s.y, s.z);
     const spots = [left.clone().multiplyScalar(side * (sp.half + 0.8)), left.clone().multiplyScalar(-side * (sp.half + 0.8)), fwd.clone().multiplyScalar(-(v.len / 2 + 1.1)), fwd.clone().multiplyScalar(v.len / 2 + 1.1)].map((o) => base.clone().add(o));
     const col = world.getCollider(player.collisionHandle);
     col.setEnabled(true);
-    const at = SEATS[v.kind]?.[0], calm = alive && v.state !== 'wreck' && at && SeatAnim.possible() && v.kind !== 'moto' && v.kind !== 'delivery';
+    const at = seatsOf(v.group, v.kind)[0], calm = alive && v.state !== 'wreck' && !overturned(v) && at && SeatAnim.possible() && v.kind !== 'moto' && v.kind !== 'delivery';
     v.group.updateMatrixWorld(true);
     const anim = calm ? new SeatAnim(player.model, true, v.group.localToWorld(new THREE.Vector3(...at!)), s.yaw, s.y) : null;
     const walk = anim && roomy(world, anim.end.pos, player.collisionHandle);
@@ -137,6 +140,8 @@ export class Driving {
     player.model.root.visible = true;
     if (this.seat) v.group.remove(this.seat);
     traffic!.park(v);
+    this.rig?.free(world);
+    this.rig = null;
     this.engine.set(false, 0, 0, 0, false);
     this.speedo.style.opacity = '0';
     const done = () => {
@@ -149,17 +154,22 @@ export class Driving {
   }
 
   private drive(dt: number, input: Input): void {
-    const { world, player, tpc, enemies, squad, sfx } = this.d, v = this.car!, s = this.state!, sp = SPECS[v.kind] ?? SPECS.sedan;
-    const people = new Set<number>([player.collisionHandle, ...enemies.list.map((e) => e.handle), ...(squad?.list.map((a) => a.unit.handle) ?? [])]);
-    const skip = (h: number) => people.has(h) || innocents.has(h);
+    const { world, player, tpc, sfx } = this.d, v = this.car!, s = this.state!, sp = SPECS[v.kind] ?? SPECS.sedan;
+    this.rig ??= new CarRig(world, v, sp, (c) => c.shapeType() === RAPIER.ShapeType.Capsule || c.isSensor());
     const u = { throttle: input.down('KeyW') ? 1 : 0, brake: input.down('KeyS') ? 1 : 0, steer: (input.down('KeyA') ? 1 : 0) - (input.down('KeyD') ? 1 : 0), handbrake: input.down('Space') };
-    const impact = stepCar(world, s, sp, u, dt, v.collider, skip);
-    Object.assign(v, { x: s.x, z: s.z, yaw: s.yaw, y: s.y, tilt: s.tilt, speed: Math.abs(s.speed) });
-    if (impact > 3) {
+    this.rig.update(u, dt);
+    readBody(v);
+    this.joinPhysics(v);
+    Object.assign(s, { x: v.x, y: v.y, z: v.z, yaw: v.yaw, tilt: v.tilt, speed: this.rig.speed });
+    const dv = jolt(v, dt);
+    if (dv > 3) {
+      const c = contactOf(world, v.collider);
       sfx.crash(0);
-      tpc.kick(0, 0, Math.min(0.5, impact * 0.03));
-      v.hp -= impact * 3;
-      if (impact > 10) player.hurt((impact - 10) * 2.5);
+      tpc.kick(0, 0, Math.min(0.6, dv * 0.04));
+      v.hp -= (dv - 4) * 9;
+      if (v.hp <= 0) v.state = 'wreck';
+      if (dv > 8) player.hurt((dv - 8) * 3.5);
+      if (c && dv > 3) dent(v.group, c.at, Math.min(0.38, (dv - 2.5) * 0.055));
     }
     if (Math.abs(s.speed) > 0.4) this.runOver(s, sp.half, dt);
     world.getCollider(player.collisionHandle).parent()!.setNextKinematicTranslation({ x: s.x, y: s.y + this.bodyOff, z: s.z });
@@ -177,7 +187,7 @@ export class Driving {
 
   /**
    * People in the box swept by the bumper this frame (tested against each body's position, so nobody slips between
-   * frames or through a stale physics query): slow pushes stop the car against them (the squad steps aside), from 4 m/s
+   * frames or through a stale physics query): slow pushes stop the car against them (nobody gets shoved into the bodywork), from 4 m/s
    * it is a real impact (damage from speed, thud, jolt, the car loses speed); a policeman still standing stops the car.
    */
   private runOver(s: CarState, half: number, dt: number): void {
@@ -189,7 +199,7 @@ export class Driving {
       const rx = t.pos.x - s.x, rz = t.pos.z - s.z, along = (rx * fwd.x + rz * fwd.z) * dir, lat = rx * right.x + rz * right.z;
       if (Math.abs(lat) > half + 0.4 || along < s.len / 2 - 0.9 || along > reach) continue;
       if (sp < 4) {
-        if (t.kind !== 'ally') [s.speed, s.vel] = [0, s.vel.set(0, 0, 0)];
+        this.halt(0.2);
         continue;
       }
       if ((this.hitT.get(t.key) ?? -9) > this.clock - 0.6) continue;
@@ -199,9 +209,28 @@ export class Driving {
       sfx.thud(Math.min(1, sp / 14));
       sfx.crash(0);
       tpc.kick(0.02, 0, Math.min(0.35, sp * 0.02));
-      s.vel.multiplyScalar(0.78);
-      s.speed *= 0.78;
-      if (t.kind === 'police' && t.alive()) [s.speed, s.vel] = [0, s.vel.set(0, 0, 0)];
+      this.halt(t.kind === 'police' && t.alive() ? 0.25 : 0.82);
     }
+  }
+
+  /** Scales the driven car's velocity (a body in the way soaks up speed). */
+  private halt(k: number): void {
+    const b = this.car!.body, l = b.linvel();
+    b.setLinvel({ x: l.x * k, y: l.y, z: l.z * k }, true);
+  }
+
+  /** Traffic and parked cars the driven car touches become rigid bodies too, so momentum is exchanged by mass. */
+  private joinPhysics(v: Vehicle): void {
+    const { world, traffic, player } = this.d;
+    const hits: Vehicle[] = [];
+    world.contactPairsWith(v.collider, (o) => {
+      const other = traffic!.vehicleOf(o.handle), spot = other ? null : parkedCars.byCollider(o.handle);
+      if (other && !other.body.isDynamic()) hits.push(other);
+      else if (spot) {
+        parkedCars.take(spot, player.position);
+        hits.push(traffic!.adopt(spot));
+      }
+    });
+    for (const other of hits) exchange(world, v, other, (o) => traffic!.knock(o));
   }
 }

@@ -4,7 +4,7 @@ import { vehicleLook } from '../systems/vehicleLook';
 import { carModels } from '../render/carModels';
 import type { Heightfield } from '../world/heightfield';
 import type { Lighting } from '../render/lighting';
-import { SEATS, seatedRig } from '../entities/occupants';
+import { seatsOf, seatedRig } from '../entities/occupants';
 
 const COLORS: Record<string, string> = {
   car0: '#c9c6bf', car1: '#2a2c30', car2: '#7a1d1a', car3: '#e2c22e', car4: '#2b4c7a', car5: '#eeeeea', moto0: '#b3221d',
@@ -24,7 +24,7 @@ export function carShowcase(scene: THREE.Scene, hf: Heightfield, x: number, z: n
     const g = vehicleLook(lighting, { materials: mats, bake: [] }, k, k === 'moto' ? 'moto0' : `car${i % 6}`, carModels.pick(k, n), n + 1);
     g.position.copy(p);
     g.rotation.y = Math.PI / 2;
-    for (const [j, [sx, sy, sz]] of (SEATS[k] ?? []).entries()) {
+    for (const [j, [sx, sy, sz]] of seatsOf(g, k).entries()) {
       const r = seatedRig(lighting, Math.random, k !== 'moto', undefined, j === 0);
       if (!r) continue;
       r.position.set(sx, sy, sz);

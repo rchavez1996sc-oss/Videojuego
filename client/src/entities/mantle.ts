@@ -8,7 +8,7 @@ const UP = { x: 0, y: 1, z: 0 }, DOWN = { x: 0, y: -1, z: 0 };
 /** Looks for a climbable edge (0.3 m to `maxHeight`) or a thin vaultable obstacle in front of the feet. */
 export function findLedge(world: RAPIER.World, feet: THREE.Vector3, yaw: number, exclude: number, maxHeight = 2.1): Ledge | null {
   const fwd = { x: -Math.sin(yaw), y: 0, z: -Math.cos(yaw) };
-  const skip = (c: RAPIER.Collider) => c.handle !== exclude;
+  const skip = (c: RAPIER.Collider) => c.handle !== exclude && !c.parent()?.isKinematic();
   const cast = (o: THREE.Vector3, d: typeof UP, len: number) =>
     world.castRayAndGetNormal(new RAPIER.Ray(o, d), len, true, RAPIER.QueryFilterFlags.EXCLUDE_SENSORS, undefined, undefined, undefined, skip);
 

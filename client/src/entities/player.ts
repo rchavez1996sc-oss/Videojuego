@@ -1,4 +1,5 @@
 import type { GunModel } from '../weapons/gunModels';
+import { noVehicleLift } from '../physics/noLift';
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import type { Input } from '../core/input';
@@ -113,9 +114,7 @@ export class Player {
     this.model.revive(true);
   }
 
-  get mantling(): boolean {
-    return this.mantle !== null;
-  }
+  get mantling(): boolean { return this.mantle !== null; }
 
   private updateMantle(dt: number): void {
     const m = this.mantle!;
@@ -245,7 +244,7 @@ export class Player {
     this.vel.y -= GRAVITY * dt;
 
     this.ctrl.computeColliderMovement(this.collider, { x: this.vel.x * dt, y: this.vel.y * dt, z: this.vel.z * dt });
-    const m = stepAssist(this.world, this.ctrl, { x: this.vel.x * dt, z: this.vel.z * dt }, this.ctrl.computedMovement(), this.position, RADIUS);
+    const m = stepAssist(this.world, this.ctrl, { x: this.vel.x * dt, z: this.vel.z * dt }, noVehicleLift(this.ctrl, this.vel.y * dt, this.ctrl.computedMovement()), this.position, RADIUS);
     const wasGrounded = this.grounded;
     const falling = this.peakY - this.position.y > 6, slide = steepContact(this.ctrl, falling);
     this.grounded = this.ctrl.computedGrounded() && !slide;

@@ -3,8 +3,10 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { Lighting } from '../render/lighting';
 import { carModels, PAINT } from '../render/carModels';
+import { toFloat } from '../render/floatGeometry';
 import { carExtent, type CarKind } from './urbanProps';
 import { setSurface } from './surfaces';
+import { vehicleColliders } from '../physics/noLift';
 import { vehicleLook, type VehicleMats } from '../systems/vehicleLook';
 
 /** A parked car of the level: drawn instanced until the player takes it (then it becomes a traffic `Vehicle`). */
@@ -14,18 +16,7 @@ interface Batch { mesh: THREE.InstancedMesh; locals: THREE.Matrix4[]; tinted: bo
 
 const RANGE = 140, REFRESH = 0.4;
 
-/** A copy with plain float attributes (the car models come quantized, which cannot be transformed or merged). */
-function toFloat(src: THREE.BufferGeometry): THREE.BufferGeometry {
-  const g = new THREE.BufferGeometry();
-  for (const name of Object.keys(src.attributes)) {
-    const a = src.getAttribute(name);
-    const out = new Float32Array(a.count * a.itemSize);
-    for (let i = 0; i < a.count; i++) for (let k = 0; k < a.itemSize; k++) out[i * a.itemSize + k] = a.getComponent(i, k);
-    g.setAttribute(name, new THREE.BufferAttribute(out, a.itemSize));
-  }
-  if (src.index) g.setIndex(Array.from(src.index.array));
-  return g;
-}
+
 
 /**
  * Every parked car of the level (`car()` with a level builder registers one here instead of baking it): one instanced
@@ -59,6 +50,7 @@ class ParkedCars {
       const mid = new THREE.Vector3(0, e.h / 2 + 0.05, 0).applyQuaternion(q).add(s.pos);
       s.collider = world.createCollider(RAPIER.ColliderDesc.cuboid(e.w / 2, e.h / 2 - 0.05, e.l / 2).setTranslation(mid.x, mid.y, mid.z).setRotation(q));
       setSurface(s.collider.handle, 'metal');
+      vehicleColliders.add(s.collider.handle);
       if (!byLook.has(s.look)) byLook.set(s.look, []);
       byLook.get(s.look)!.push(s);
     });
@@ -127,6 +119,10 @@ class ParkedCars {
       if (d < bd) [best, bd] = [s, d];
     }
     return best ? { spot: best, dist: bd } : null;
+  }
+
+  byCollider(handle: number): ParkedSpot | undefined {
+    return this.spots.find((s) => s.collider?.handle === handle);
   }
 
   /** Removes the car from the parked set (its instance and collider) so it can be driven. */

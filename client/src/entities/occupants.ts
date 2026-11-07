@@ -59,3 +59,23 @@ export const SEATS: Record<string, [number, number, number][]> = {
   combi: [[0.5, 0.95, 1.5], [-0.45, 0.95, 0.2], [0.45, 0.95, -0.6], [-0.45, 0.95, -1.4]],
   micro: [[0.6, 1.15, 3.4], [-0.6, 1.15, 2.2], [0.6, 1.15, 1.2], [-0.6, 1.15, 0.2], [0.6, 1.15, -0.8], [-0.6, 1.15, -1.8], [0.6, 1.15, -2.8]],
 };
+
+const seatRay = new THREE.Raycaster();
+
+/**
+ * Seats of one vehicle look. On a modelled body the height is measured on the model — a ray down from above each seat
+ * finds the cushion under the roof — so riders sit on it instead of poking through a lower canopy (mototaxi).
+ */
+export function seatsOf(group: THREE.Object3D, kind: string): [number, number, number][] {
+  if (group.userData.seats) return group.userData.seats;
+  const base = SEATS[kind] ?? [];
+  if (!group.userData.modelled) return (group.userData.seats = base);
+  group.updateMatrixWorld(true);
+  const down = new THREE.Vector3(0, -1, 0).applyQuaternion(group.getWorldQuaternion(new THREE.Quaternion()));
+  return (group.userData.seats = base.map(([x, y, z]) => {
+    seatRay.set(group.localToWorld(new THREE.Vector3(x, y + 0.5, z)), down);
+    seatRay.far = 2;
+    const ys = seatRay.intersectObject(group, true).map((h) => group.worldToLocal(h.point.clone()).y).filter((hy) => hy > 0.2 && hy < y + 0.15);
+    return [x, ys.length ? Math.max(...ys) + 0.1 : y, z] as [number, number, number];
+  }));
+}

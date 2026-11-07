@@ -112,18 +112,32 @@ export function mototaxi(b: Builder, pos: THREE.Vector3, yaw: number, paint: str
 }
 
 /** Sandbag wall section used for PNP checkpoints. */
+/** One filled sandbag: a flattened pillow (thin seams, bulging middle), slightly lopsided by `seed`. */
+function sandbagGeometry(seed: number): THREE.BufferGeometry {
+  const g = new THREE.BoxGeometry(0.6, 0.16, 0.36, 8, 2, 6), p = g.attributes.position as THREE.BufferAttribute, lean = Math.sin(seed * 12.9) * 0.025;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i) / 0.3, z = p.getZ(i) / 0.18, edge = Math.max(Math.abs(x) ** 4, Math.abs(z) ** 4);
+    p.setXYZ(i, p.getX(i) * (1 - 0.08 * Math.abs(p.getY(i)) / 0.08), p.getY(i) * (1 - 0.65 * edge) + lean * x + 0.008 * Math.sin(x * 7 + seed), p.getZ(i) * (1 - 0.1 * Math.abs(p.getY(i)) / 0.08));
+  }
+  g.computeVertexNormals();
+  return g;
+}
+
+/** Checkpoint barricade: filled sandbags laid in bond, two deep and four high, each a little turned and settled. */
 export function sandbags(b: Builder, hf: Heightfield, x: number, z: number, yaw: number, len: number): void {
   const q = new THREE.Quaternion().setFromAxisAngle(UP, yaw);
-  const y = hf.heightAt(x, z);
-  for (let row = 0; row < 3; row++) {
-    for (let i = 0; i < Math.round(len / 0.55); i++) {
-      const lx = -len / 2 + (i + 0.5 + (row % 2) * 0.5) * 0.55;
-      if (lx > len / 2) continue;
-      const p = new THREE.Vector3(lx, y + 0.13 + row * 0.24, 0).applyQuaternion(q).add(new THREE.Vector3(x, 0, z));
-      b.geometry('sandbag', new THREE.CapsuleGeometry(0.13, 0.32, 3, 8).rotateZ(Math.PI / 2).scale(1, 0.85, 1.3), new THREE.Matrix4().compose(p, q, new THREE.Vector3(1, 1, 1)));
+  const y = hf.heightAt(x, z), n = Math.max(1, Math.round(len / 0.58));
+  for (let row = 0; row < 4; row++) {
+    for (const depth of row < 3 ? [-0.19, 0.19] : [0]) {
+      for (let i = 0; i < n - (row % 2); i++) {
+        const k = row * 97 + i * 13 + depth * 31, lx = -len / 2 + (i + 0.5 + (row % 2) * 0.5) * (len / n);
+        const p = new THREE.Vector3(lx, y + 0.07 + row * 0.135, depth + Math.sin(k) * 0.02).applyQuaternion(q).add(new THREE.Vector3(x, 0, z));
+        const turn = q.clone().multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.sin(k * 1.7) * 0.04, Math.sin(k * 2.3) * 0.09, Math.sin(k * 3.1) * 0.05)));
+        b.geometry('sandbag', sandbagGeometry(k), new THREE.Matrix4().compose(p, turn, new THREE.Vector3(1, 0.9 + 0.15 * Math.abs(Math.sin(k)), 1)));
+      }
     }
   }
-  b.box('none', [len, 0.75, 0.45], new THREE.Vector3(x, y + 0.37, z), q, true);
+  b.box('none', [len, 0.6, 0.75], new THREE.Vector3(x, y + 0.3, z), q, true);
 }
 
 /** Concrete stairway climbing the hill with painted step edges and a pipe handrail. */
