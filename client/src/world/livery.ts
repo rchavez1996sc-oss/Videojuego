@@ -2,14 +2,18 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { Lighting } from '../render/lighting';
 
-/** Bus-company liveries of the routes out of Huaycán (fictional companies): base, swoosh, letter, route. */
+/**
+ * Route companies out of Huaycán (fictional), painted like Lima's combis in the photos: white or cream body,
+ * long stripes along the flank, the two termini in big italic letters, a yellow route-code plate. The last one is
+ * the university bus (swoosh, serif name).
+ */
 const COMPANIES = [
-  { base: '#b8231d', swoosh: ['#1f4fa8', '#f2f2ee'], letter: 'T', route: 'HUAYCÁN · CARRETERA CENTRAL · SANTA ANITA', ink: '#f2f2ee' },
-  { base: '#efe9da', swoosh: ['#1c7a3a', '#e3b51c'], letter: 'R', route: 'HUAYCÁN · ATE · LA MOLINA · ZONA R', ink: '#1c3a20' },
-  { base: '#e7b81e', swoosh: ['#1d1d1f', '#c62a20'], letter: 'E', route: 'HUAYCÁN · ÑAÑA · CHOSICA', ink: '#1d1d1f' },
-  { base: '#2b5fa8', swoosh: ['#f2f2ee', '#d23a2a'], letter: 'S', route: 'HUAYCÁN · AV. 15 DE JULIO · VITARTE · CENTRO', ink: '#f2f2ee' },
-  { base: '#e9e2c8', swoosh: ['#2f6b34', '#4f9a3c'], letter: 'H', route: 'HUAYCÁN · PUENTE NUEVO · ACHO · CENTRO DE LIMA', ink: '#1f4a24' },
-  { base: '#e8e0c4', swoosh: ['#8a1c1c', '#c9a227'], letter: '', route: 'UNIVERSIDAD NACIONAL MAYOR DE SAN MARCOS', ink: '#6a1a16' },
+  { base: '#ecebe6', bands: ['#c22a20', '#e8b51c', '#22489a'], ends: ['STA. ANITA', 'HUAYCÁN'], code: 'IO-47', name: 'E.T. SANTA ANITA S.A.', ink: '#b8231d' },
+  { base: '#e9e2cc', bands: ['#1d7a3a', '#e7bd22', '#c22a20'], ends: ['LA MOLINA', 'ZONA R'], code: 'EO-101', name: 'ETSACASA', ink: '#1a5e2c' },
+  { base: '#eeeeea', bands: ['#22489a', '#c22a20', '#22489a'], ends: ['ÑAÑA', 'CHOSICA'], code: 'CR-12', name: 'METRO', ink: '#22489a' },
+  { base: '#e6e5df', bands: ['#2c5d9e', '#2c5d9e', '#f0f0ea'], ends: ['VITARTE', '15 DE JULIO'], code: 'SA-23', name: 'LOS ÁNGELES', ink: '#1f3f78', low: true },
+  { base: '#a8231e', bands: ['#f0ece0', '#e8b51c', '#f0ece0'], ends: ['CENTRO', 'HUAYCÁN'], code: 'CL-54', name: 'NUEVA ESPERANZA', ink: '#f2efe4' },
+  { base: '#e8e0c4', swoosh: ['#8a1c1c', '#c9a227'], route: 'UNIVERSIDAD NACIONAL MAYOR DE SAN MARCOS', ink: '#6a1a16' },
 ];
 /** Body colour of a company's buses (the modelled combis and micros are painted with it). */
 export function companyColor(company: number): string {
@@ -18,7 +22,7 @@ export function companyColor(company: number): string {
 /** Route companies (traffic, parked combis); the last livery is the university's own bus. */
 const ROUTES = 5;
 export const UNMSM_BUS = 5;
-const PLACARDS = ['STA. ANITA', 'LA MOLINA', 'CHOSICA', 'VITARTE', 'HUAYCÁN', 'UNMSM'];
+const PLACARDS = [['STA. ANITA', 'HUAYCÁN'], ['LA MOLINA', 'ZONA R'], ['ÑAÑA', 'CHOSICA'], ['VITARTE', '15 JULIO'], ['CENTRO', 'HUAYCÁN'], ['CIUDAD', 'UNMSM']];
 const ROWS = COMPANIES.length + 1, N = PLACARDS.length;
 const W = 512, H = 128;
 let mat: THREE.Material | null = null;
@@ -28,24 +32,35 @@ function atlas(): THREE.CanvasTexture {
   COMPANIES.forEach((c, i) => {
     const y = i * H;
     g.fillStyle = c.base; g.fillRect(0, y, W, H);
-    for (const [k, col] of c.swoosh.entries()) {
-      g.fillStyle = col; g.beginPath();
-      g.moveTo(0, y + H * (0.95 - k * 0.12));
-      g.bezierCurveTo(W * 0.35, y + H * (0.95 - k * 0.12), W * 0.55, y + H * (0.35 - k * 0.12), W, y + H * (0.25 - k * 0.12));
-      g.lineTo(W, y + H * (0.45 - k * 0.12)); g.bezierCurveTo(W * 0.6, y + H * (0.55 - k * 0.12), W * 0.4, y + H, 0, y + H);
-      g.fill();
+    if (c.bands) {
+      if (c.low) g.fillStyle = c.bands[0], g.fillRect(0, y + H * 0.5, W, H * 0.5);
+      [[0.5, 0.16], [0.7, 0.07], [0.81, 0.05]].forEach(([t, h], k) => (g.fillStyle = c.bands![k], g.fillRect(0, y + H * t, W, H * h)));
+      g.fillStyle = c.ink; g.font = 'italic 900 34px "Barlow Condensed", Arial'; g.textBaseline = 'middle';
+      g.textAlign = 'left'; g.fillText(c.ends![0], 14, y + 30, W * 0.4);
+      g.textAlign = 'right'; g.fillText(c.ends![1], W - 14, y + 30, W * 0.4);
+      g.font = 'italic 700 15px "Barlow Condensed", Arial'; g.textAlign = 'center'; g.fillText(c.name!, W / 2, y + 30);
+      g.fillStyle = '#e9bd1f'; g.fillRect(W - 92, y + H - 30, 70, 22);
+      g.fillStyle = '#121212'; g.font = '800 17px "Barlow Condensed", Arial'; g.fillText(c.code!, W - 57, y + H - 18);
+    } else {
+      for (const [k, col] of c.swoosh!.entries()) {
+        g.fillStyle = col; g.beginPath();
+        g.moveTo(0, y + H * (0.95 - k * 0.12));
+        g.bezierCurveTo(W * 0.35, y + H * (0.95 - k * 0.12), W * 0.55, y + H * (0.35 - k * 0.12), W, y + H * (0.25 - k * 0.12));
+        g.lineTo(W, y + H * (0.45 - k * 0.12)); g.bezierCurveTo(W * 0.6, y + H * (0.55 - k * 0.12), W * 0.4, y + H, 0, y + H);
+        g.fill();
+      }
+      g.fillStyle = c.ink; g.font = '700 34px Georgia, serif'; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(c.route!, 18, y + 40, W - 36);
     }
-    if (c.letter) g.fillStyle = '#f2f2ee', g.beginPath(), g.arc(W - 62, y + 46, 34, 0, 6.28), g.fill();
-    g.fillStyle = c.base; g.font = '900 52px "Barlow Condensed", Arial'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(c.letter, W - 62, y + 48);
-    g.fillStyle = c.ink; g.font = c.letter ? '700 22px "Barlow Condensed", Arial' : '700 34px Georgia, serif'; g.textAlign = 'left'; g.fillText(c.route, 18, y + (c.letter ? 26 : 40), W - 36);
-    g.fillStyle = 'rgba(30,24,20,0.25)';
-    for (let k = 0; k < 40; k++) g.fillRect(Math.random() * W, y + H * 0.7 + Math.random() * H * 0.3, 2 + Math.random() * 18, 1 + Math.random() * 3);
+    g.fillStyle = 'rgba(30,24,20,0.22)';
+    for (let k = 0; k < 50; k++) g.fillRect(Math.random() * W, y + H * 0.72 + Math.random() * H * 0.28, 2 + Math.random() * 18, 1 + Math.random() * 3);
   });
-  PLACARDS.forEach((t, i) => {
-    const x = i * (W / N), y = H * (ROWS - 1);
-    g.fillStyle = '#ece6d4'; g.fillRect(x + 4, y + 30, W / N - 8, 68);
-    g.fillStyle = i % 2 ? '#1f3f8a' : '#b8231d'; g.font = '900 30px "Barlow Condensed", Arial'; g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillText(t, x + W / N / 2, y + 64, W / N - 16);
+  PLACARDS.forEach(([t0, t1], i) => {
+    const x = i * (W / N), y = H * (ROWS - 1), w = W / N - 8;
+    g.fillStyle = '#f1ede2'; g.fillRect(x + 4, y + 26, w, 76);
+    g.fillStyle = '#e9bd1f'; g.fillRect(x + 4, y + 26, w, 8);
+    g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = 'italic 900 27px "Barlow Condensed", Arial';
+    g.fillStyle = '#b8231d'; g.fillText(t0, x + 4 + w / 2, y + 52, w - 6);
+    g.fillStyle = '#1f3f8a'; g.fillText(t1, x + 4 + w / 2, y + 82, w - 6);
   });
   return Object.assign(new THREE.CanvasTexture(cv), { colorSpace: THREE.SRGBColorSpace, anisotropy: 8 });
 }
@@ -85,6 +100,6 @@ function liveryGeometry(company: number, fit: Fit = COMBI): THREE.BufferGeometry
   const right = quad(fit.len, fit.h, 0, v0, 1, v1, rot(Math.PI / 2, half, fit.y, -0.1));
   const left = quad(fit.len, fit.h, 0, v0, 1, v1, rot(-Math.PI / 2, -half, fit.y, -0.1));
   const p = k, pv1 = (1 / ROWS) * 0.85, pv0 = (1 / ROWS) * 0.2;
-  const card = quad(0.6, 0.27, p / N, pv0, (p + 1) / N, pv1, rot(0, ...fit.card));
+  const card = quad(0.62, 0.36, p / N, pv0, (p + 1) / N, pv1, rot(0, ...fit.card));
   return mergeGeometries([right, left, card])!;
 }

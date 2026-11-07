@@ -79,3 +79,28 @@ export function seatsOf(group: THREE.Object3D, kind: string): [number, number, n
     return [x, ys.length ? Math.max(...ys) + 0.1 : y, z] as [number, number, number];
   }));
 }
+
+/**
+ * The combi's cobrador (fare collector): standing on the step of the sliding door on the right (−x) side, half out
+ * of the van, one hand up on the door frame, calling out the route — as in every photo of a Lima combi.
+ */
+export function cobrador(lighting: Lighting, rand: () => number, group: THREE.Object3D): THREE.Group | null {
+  if (!characters.ready || !characters.clips.has('civ_idle')) return null;
+  const rig = new Rig('civ_a', lighting, false);
+  rig.loop('civ_idle');
+  rig.tick(rand() * 2);
+  const arm = rig.root.getObjectByName('mixamorigLeftArm'), fore = rig.root.getObjectByName('mixamorigLeftForeArm');
+  arm?.rotateZ(COBRADOR_ARM);
+  fore?.rotateZ(-0.5);
+  rig.root.rotation.set(0, -0.2, -0.12);
+  rig.castShadow = false;
+  const body: THREE.Box3 | undefined = group.userData.body, half = body ? -body.min.x : 0.9;
+  const holder = new THREE.Group();
+  holder.name = 'rider';
+  holder.userData.rig = rig;
+  holder.userData.standing = true;
+  holder.position.set(-(half - 0.05), 0.3, body ? (body.min.z + body.max.z) / 2 + 0.25 : 0.3);
+  holder.add(rig.root);
+  return holder;
+}
+const COBRADOR_ARM = -2.5;
