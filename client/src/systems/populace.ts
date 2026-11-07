@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { placeMenuBoards } from '../world/menuBoards';
+import { placeKiosks } from '../world/kiosks';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { Civilians } from './civilians';
 import { CityLife } from './cityLife';
@@ -40,6 +41,7 @@ export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world
   if (pintas) d.scene.add(pintas);
   if (barrio && ch.streetNames) d.scene.add(streetSigns(barrio.graph, d.world, d.lighting, ch.streetNames, (x, z) => d.hf.maskAt(x, z, 0) > 0.5 || d.hf.isPaved(z) || roadAt(x, z), ch.streetSignArea));
   placeMenuBoards(d.scene, d.lighting, d.hf).catch((e) => console.error('menu boards', e));
+  placeKiosks(d.scene, d.lighting).catch((e) => console.error('kiosks', e));
   const state = { casualties: 0, onFail: () => {} };
   const casualty = (weight = 1) => {
     if (!blame.player) return;

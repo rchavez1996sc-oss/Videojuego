@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { kioskAt } from './kiosks';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { mulberry32 } from '../core/rng';
@@ -290,7 +291,8 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
   for (let x = def.x0 + 8; x < xEnd - 8; x += 18 + rand() * 20) {
     if (crossX.some((cx) => Math.abs(cx - x) < 6) || rand() < 0.35) continue;
     const s = rand() < 0.5 ? 1 : -1;
-    stall(b, new THREE.Vector3(x, hf.heightAt(x, s * 9.3) + 0.15, s * 9.3), s > 0 ? Math.PI : 0, rand);
+    if (rand() < 0.45) kioskAt(b, hf, x, s * 9.9, s > 0 ? Math.PI : 0, Math.floor(rand() * 6));
+    else stall(b, new THREE.Vector3(x, hf.heightAt(x, s * 9.3) + 0.15, s * 9.3), s > 0 ? Math.PI : 0, rand);
   }
   for (let i = 0; i < 90; i++) {
     const x = crossX[Math.floor(rand() * crossX.length)] + (rand() < 0.5 ? -1 : 1) * (3.6 + rand() * 0.6);

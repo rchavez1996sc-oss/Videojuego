@@ -4,6 +4,7 @@ import type { Heightfield } from '../heightfield';
 import { cityHouse } from '../houses';
 import type { Sign } from '../shopFront';
 import { northAt, type CampusDef } from './layout';
+import { kioskAt } from '../kiosks';
 
 /** The far side of Av. Venezuela: a continuous row of 2–4 storey brick and painted houses with shops, facing the campus. */
 export function venezuelaSouth(b: Builder, hf: Heightfield, def: CampusDef, rand: () => number, sign: Sign): void {
@@ -13,6 +14,7 @@ export function venezuelaSouth(b: Builder, hf: Heightfield, def: CampusDef, rand
     cityHouse(b, { x: x + w / 2, z, y: hf.heightAt(x + w / 2, z), facing: Math.PI, w, d: 11, floors: 2 + Math.floor(rand() * 2.6) }, rand, sign);
     x += w;
   }
+  for (let x = -X + 25; x < X - 25; x += 45 + rand() * 40) if (rand() < 0.6) kioskAt(b, hf, x, v.z + v.half + 2.1, Math.PI, Math.floor(rand() * 6));
   b.box('none', [2 * X, 8, 0.5], new THREE.Vector3(0, 4, z + 0.6), new THREE.Quaternion(), true);
 }
 

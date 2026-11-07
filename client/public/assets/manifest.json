@@ -1,5 +1,5 @@
 {
-  "version": 26,
+  "version": 27,
   "characters": {
     "pnp": {
       "near": "characters/pnp.glb",
@@ -210,6 +210,7 @@
       "model": "props/menuBoard.glb",
       "color": "props/menuBoard_col.jpg",
       "normal": "props/menuBoard_nrm.jpg"
-    }
+    },
+    "stall": "props/stall.glb"
   }
 }
