@@ -27,6 +27,47 @@ const BASE_GRIME = /* glsl */ `
   }`;
 
 const SKIP = new Set(['grass', 'terrain', 'ocean', 'signs']);
+/** Masonry and painted walls (by material key) get the fine wall detail below. */
+const WALLISH = /plaster|brick|paint|concrete|facade|wall|tarrajeo|stucco|cream|apt|tile|zocalo|plinth|cement|block|policeGreen|sand|travert|ochre|terracotta|salmon|derB|derC|letBlue|uniBlue|adobe|house|shop/i;
+const NOT_WALL = /glass|car|metal|rim|tire|wheel|light|screen|road|asphalt|cobble|model-|kiosk|menu|mural|pinta|livery|water|bark|leaf|foliage/i;
+const isWall = (key: string) => WALLISH.test(key) && !NOT_WALL.test(key);
+
+/**
+ * Small imperfections on walls, in the wall's own plane (u along it, v up): repaint patches of a slightly other
+ * tone, flaked plaster showing the brick under it with a pale rim, hairline cracks, pits and specks, scuffs and
+ * grime where people pass (0.2–1.3 m), rust runs under fixings, salt bloom over the damp band and a fine grain.
+ */
+const WALL_DETAIL = /* glsl */ `
+  if (tq_wall > 0.5) {
+    vec2 tq_dir = normalize(vec2(-tq_n.z, tq_n.x) + 1e-5);
+    vec2 pw = vec2(dot(tq_wpos.xz, tq_dir), tq_wpos.y);
+    float lum = dot(diffuseColor.rgb, vec3(0.33));
+    vec2 cell = floor(pw / vec2(1.7, 1.1) + vec2(tq_noise(pw * 0.3) * 0.6, 0.0));
+    float rnd = fract(sin(dot(cell, vec2(41.3, 289.1))) * 43758.5453);
+    float patchT = step(0.82, rnd) * (rnd - 0.91) * 0.9;
+    diffuseColor.rgb *= 1.0 + patchT;
+    float flakeN = tq_noise(pw * 1.7 + 11.0) * 0.65 + tq_noise(pw * 6.5 + 3.0) * 0.35;
+    float flakeZone = smoothstep(0.25, 0.55, tq_noise(pw * 0.23 + 21.0));
+    float flake = smoothstep(0.42, 0.47, flakeN) * flakeZone;
+    float rim = (smoothstep(0.36, 0.42, flakeN) - flake) * flakeZone;
+    diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.5, 0.33, 0.25) * (0.7 + 0.3 * tq_noise(pw * 14.0)), flake * 0.85);
+    diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.86, 0.84, 0.8) * max(lum * 1.3, 0.55), rim * 0.45);
+    float crackField = abs(tq_noise(pw * vec2(0.9, 1.4) + tq_noise(pw * 3.0) * 0.35));
+    float crack = (1.0 - smoothstep(0.0, 0.018, crackField)) * smoothstep(0.35, 0.7, tq_noise(pw * 0.18 + 33.0));
+    diffuseColor.rgb *= 1.0 - crack * 0.45;
+    float pit = smoothstep(0.78, 0.86, tq_noise(pw * 23.0 + 5.0)) * 0.5 + smoothstep(0.83, 0.9, tq_noise(pw * 41.0 + 9.0)) * 0.5;
+    diffuseColor.rgb *= 1.0 - pit * 0.35;
+    float hgt = tq_wpos.y - (tq_ground_half > 0.0 ? texture2D(tq_ground, (tq_wpos.xz + tq_ground_half) / (2.0 * tq_ground_half)).r : 0.0);
+    float scuff = smoothstep(0.15, 0.35, hgt) * (1.0 - smoothstep(1.0, 1.4, hgt)) * smoothstep(0.1, 0.7, tq_noise(vec2(pw.x * 0.8, pw.y * 6.0) + 17.0));
+    diffuseColor.rgb *= 1.0 - scuff * 0.14;
+    float runX = fract(pw.x / 3.7 + 0.37), runOn = step(0.93, fract(sin(floor(pw.x / 3.7) * 91.7) * 4375.5));
+    float run = runOn * (1.0 - smoothstep(0.0, 0.035, abs(runX - 0.5) - 0.01 * tq_noise(vec2(pw.y * 3.0, 1.0)))) * smoothstep(0.2, 1.8, fract(pw.y / 2.7) * 2.7);
+    diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.42, 0.25, 0.14) * max(lum, 0.35), run * 0.4);
+    float salt = tq_damp > 0.0 ? smoothstep(0.1, 0.5, tq_damp) * (1.0 - smoothstep(0.6, 1.0, tq_damp)) * smoothstep(0.1, 0.6, tq_noise(pw * 4.0 + 2.0)) : 0.0;
+    diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.86, 0.85, 0.82), salt * 0.3);
+    diffuseColor.rgb *= 1.0 + tq_noise(pw * 9.0 + 1.0) * 0.035 + tq_noise(pw * 37.0) * 0.025;
+    tq_rough = flake * 0.12 + pit * 0.1 + salt * 0.1;
+  }`;
 const ROAD = new Set(['asphalt', 'asphaltWorn', 'cobble']);
 const PAINT = new Set(['road-paint']);
 
@@ -56,7 +97,7 @@ const PAINT_WEAR = /* glsl */ `
  * rain streaks down walls and a dusty tint on whatever faces up. A few noise lookups per pixel, no extra passes.
  */
 /** Program cache key: materials whose weathered shader comes out the same share one compiled program. */
-export const weatherClass = (key: string): string => (SKIP.has(key) ? `skip-${key}` : ROAD.has(key) ? 'wear-road' : PAINT.has(key) ? 'wear-paint' : 'wear');
+export const weatherClass = (key: string): string => (SKIP.has(key) ? `skip-${key}` : ROAD.has(key) ? 'wear-road' : PAINT.has(key) ? 'wear-paint' : isWall(key) ? 'wear-wall' : 'wear');
 
 export function weathering(shader: THREE.WebGLProgramParametersWithUniforms & { skinning?: boolean }, key: string): void {
   if (SKIP.has(key) || shader.skinning || !shader.fragmentShader.includes('#include <map_fragment>') || !shader.fragmentShader.includes('#include <roughnessmap_fragment>')) return;
@@ -72,7 +113,7 @@ export function weathering(shader: THREE.WebGLProgramParametersWithUniforms & { 
   tq_wpos = (tq_m * vec4(transformed, 1.0)).xyz;
   tq_wnrm = normalize(mat3(tq_m) * objectNormal);`);
   shader.fragmentShader = shader.fragmentShader
-    .replace('#include <common>', `#include <common>\nvarying vec3 tq_wpos;\nvarying vec3 tq_wnrm;\nuniform sampler2D tq_ground;\nuniform float tq_ground_half;\nfloat tq_damp = 0.0;\n${NOISE_GLSL}`)
+    .replace('#include <common>', `#include <common>\nvarying vec3 tq_wpos;\nvarying vec3 tq_wnrm;\nuniform sampler2D tq_ground;\nuniform float tq_ground_half;\nfloat tq_damp = 0.0;\nfloat tq_rough = 0.0;\n${NOISE_GLSL}`)
     .replace('#include <map_fragment>', `#include <map_fragment>
   vec3 tq_n = normalize(tq_wnrm);
   float tq_wall = 1.0 - smoothstep(0.25, 0.6, abs(tq_n.y));
@@ -82,8 +123,9 @@ export function weathering(shader: THREE.WebGLProgramParametersWithUniforms & { 
   float tq_up = smoothstep(0.75, 0.95, tq_n.y);
   diffuseColor.rgb *= 1.0 + tq_macro * 0.09 - tq_streak * 0.13;
   ${BASE_GRIME}
+  ${isWall(key) ? WALL_DETAIL : ''}
   ${ROAD.has(key) ? ROAD_WEAR : PAINT.has(key) ? PAINT_WEAR : ''}
   diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.62, 0.57, 0.5) * dot(diffuseColor.rgb, vec3(0.33)) * 1.6, tq_up * (0.08 + 0.08 * max(tq_macro, 0.0)));`)
     .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
-  roughnessFactor = clamp(roughnessFactor + tq_macro * 0.12 + tq_streak * 0.08 + tq_damp * 0.1, 0.04, 1.0);`);
+  roughnessFactor = clamp(roughnessFactor + tq_macro * 0.12 + tq_streak * 0.08 + tq_damp * 0.1 + tq_rough, 0.04, 1.0);`);
 }

@@ -18,7 +18,8 @@ export function bakeGroups(lighting: Lighting, extra: string[] = []): { material
     { material: carPaintMaterial(lighting), keys: CAR_PAINT },
     { material: lighting.setup(new THREE.MeshStandardMaterial({ roughness: 0.22, metalness: 0, envMapIntensity: 1.7, vertexColors: true }), 'carglass-baked'), keys: ['glass'] },
     { material: lighting.setup(new THREE.MeshStandardMaterial({ roughness: 0.45, metalness: 0.35, vertexColors: true }), 'plain-baked'),
-      keys: ['tankBlack', 'tankBlue', 'stripe', 'checker', 'canopy', 'seat', 'tire', 'bars', 'rebar', 'cable', 'light', 'rim', 'plate', 'tail', 'plastic', ...Object.keys(STREET_COLORS), ...extra].filter((k) => !ROAD_PAINT.includes(k) && !CAR_PAINT.includes(k) && k !== 'glass') },
+      keys: ['tankBlack', 'tankBlue', 'stripe', 'checker', 'canopy', 'seat', 'tire', 'bars', 'rebar', 'cable', 'light', 'rim', 'plate', 'tail', 'plastic', ...Object.keys(STREET_COLORS), ...extra].filter((k) => !ROAD_PAINT.includes(k) && !CAR_PAINT.includes(k) && k !== 'glass' && !k.startsWith('facade')) },
+    { material: lighting.setup(new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0, vertexColors: true }), 'facade-wall-baked'), keys: Object.keys(STREET_COLORS).filter((k) => k.startsWith('facade')) },
   ];
 }
 
@@ -30,9 +31,9 @@ export function bakeGroups(lighting: Lighting, extra: string[] = []): { material
 export function autoBake(lighting: Lighting, materials: Record<string, THREE.Material>, taken: { keys: string[] }[]): { material: THREE.Material; keys: string[] }[] {
   const used = new Set(taken.flatMap((g) => g.keys)), looks = new Map<string, string[]>();
   for (const [key, m] of Object.entries(materials)) {
-    if (used.has(key) || !(m instanceof THREE.MeshStandardMaterial) || m instanceof THREE.MeshPhysicalMaterial || m.customProgramCacheKey() !== 'wear') continue;
+    if (used.has(key) || !(m instanceof THREE.MeshStandardMaterial) || m instanceof THREE.MeshPhysicalMaterial || !['wear', 'wear-wall'].includes(m.customProgramCacheKey())) continue;
     if (m.vertexColors || m.transparent || m.alphaTest > 0 || m.alphaMap || m.emissiveMap || m.emissive.getHex() !== 0 || m.lightMap || m.aoMap || m.displacementMap || m.envMap) continue;
-    const look = [m.map?.uuid, m.normalMap?.uuid, m.roughnessMap?.uuid, m.metalnessMap?.uuid, m.bumpMap?.uuid, Math.round(m.roughness * 10), Math.round(m.metalness * 10), m.side, m.envMapIntensity, m.normalScale.x, m.normalScale.y, m.flatShading, m.depthWrite, m.polygonOffset, m.polygonOffsetFactor].join('|');
+    const look = [m.customProgramCacheKey(), m.map?.uuid, m.normalMap?.uuid, m.roughnessMap?.uuid, m.metalnessMap?.uuid, m.bumpMap?.uuid, Math.round(m.roughness * 10), Math.round(m.metalness * 10), m.side, m.envMapIntensity, m.normalScale.x, m.normalScale.y, m.flatShading, m.depthWrite, m.polygonOffset, m.polygonOffsetFactor].join('|');
     (looks.get(look) ?? looks.set(look, []).get(look)!).push(key);
   }
 
@@ -44,6 +45,6 @@ export function autoBake(lighting: Lighting, materials: Record<string, THREE.Mat
       roughness: avg(keys, 'roughness'), metalness: avg(keys, 'metalness'), side: m.side, envMapIntensity: m.envMapIntensity, flatShading: m.flatShading, depthWrite: m.depthWrite,
       polygonOffset: m.polygonOffset, polygonOffsetFactor: m.polygonOffsetFactor, vertexColors: true,
     });
-    return { material: lighting.setup(mat, `auto-${i}`), keys };
+    return { material: lighting.setup(mat, m.customProgramCacheKey() === 'wear-wall' ? `auto-wall-${i}` : `auto-${i}`), keys };
   });
 }
