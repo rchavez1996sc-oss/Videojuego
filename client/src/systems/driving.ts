@@ -18,6 +18,7 @@ import { seatedRig, seatsOf } from '../entities/occupants';
 import { roomy } from './respawn';
 import { parkedCars } from '../world/parkedCars';
 import { SeatAnim } from './carEntry';
+import { doorDuring, doorPulse, setDoor } from './carDoors';
 import type { Rig } from '../entities/rig';
 
 interface Deps { traffic: Traffic | null; world: RAPIER.World; player: Player; tpc: ThirdPersonCamera; enemies: Enemies; squad: Squad | null; sfx: Sfx; lighting: Lighting; mixer: Mixer }
@@ -38,6 +39,8 @@ export class Driving {
   private speedo = document.createElement('div');
   private bodyOff = 0;
   private idleMouse = 0;
+  /** A door opening and shutting by itself (getting in or out without the clip). */
+  private swing: { g: THREE.Object3D; side: number; t: number } | null = null;
   private hitT = new Map<string, number>();
   private clock = 0;
   private anim: SeatAnim | null = null;
@@ -67,9 +70,11 @@ export class Driving {
   update(dt: number, input: Input, alive: boolean): boolean {
     const { traffic, player } = this.d;
     this.clock += dt;
+    if (this.swing && !doorPulse(this.swing.g, this.swing.side, (this.swing.t += dt))) this.swing = null;
     if (!traffic) return false;
     if (this.anim) {
       player.puppet = true;
+      if (this.car) setDoor(this.car.group, this.doorSide(this.car), doorDuring(this.anim.out, this.anim.progress));
       if (alive && this.anim.update(dt)) return true;
       const then = this.after!;
       [this.anim, this.after, player.puppet] = [null, null, false];
@@ -112,7 +117,15 @@ export class Driving {
       v.group.updateMatrixWorld(true);
       this.anim = new SeatAnim(player.model, false, v.group.localToWorld(new THREE.Vector3(...at)), v.yaw, player.position.y).begin();
       this.after = () => this.seatIn(v);
-    } else this.seatIn(v);
+    } else {
+      this.seatIn(v);
+      this.swing = { g: v.group, side: this.doorSide(v), t: 0 };
+    }
+  }
+
+  /** Side (sign of x) of the driver's door: the side of the driver's seat. */
+  private doorSide(v: Vehicle): number {
+    return Math.sign(seatsOf(v.group, v.kind)[0]?.[0] || 1);
   }
 
   /** The player's body hidden, the seated driver (playing the driving clip) shown in the seat. */
@@ -154,7 +167,10 @@ export class Driving {
       tpc.vehicle = tpc.lift = 0;
       [this.car, this.state, this.seat] = [null, null, null];
     };
-    if (!walk) return done();
+    if (!walk) {
+      this.swing = { g: v.group, side: this.doorSide(v), t: 0 };
+      return done();
+    }
     this.anim = anim.begin();
     this.after = done;
   }

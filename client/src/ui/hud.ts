@@ -42,7 +42,7 @@ export class Hud {
         <div class="head"><span class="weapon"></span><span class="mode"></span></div>
         <div class="count"><span class="mag">30</span><span class="res">150</span></div>
         <div class="ticks"><div></div></div>
-        <div class="slots"><div class="slot rifle on"><kbd>1</kbd><span>FUSIL</span></div><div class="slot side" hidden><kbd>2</kbd><span>PISTOLA</span></div><div class="slot nade"><kbd>G</kbd>GRANADA<span class="nades"></span></div></div>
+        <div class="slots"><div class="slot rifle on"><kbd>1</kbd><span>FUSIL</span></div><div class="slot side" style="display:none"><kbd>2</kbd><span>PISTOLA</span></div><div class="slot nade"><kbd>G</kbd>GRANADA<span class="nades"></span></div></div>
       </div>`;
     document.body.appendChild(this.root);
     const q = <T extends HTMLElement>(s: string) => this.root.querySelector(s) as T;
@@ -96,7 +96,7 @@ export class Hud {
       this.slots[0].classList.toggle('on', s.slot === 'rifle');
       if (s.slotLabel) this.slots[0].lastElementChild!.textContent = s.slotLabel;
       this.slots[1].classList.toggle('on', s.slot === 'grenade');
-      this.slots[2].hidden = !s.sideLabel;
+      this.slots[2].style.display = s.sideLabel ? '' : 'none';
       this.slots[2].classList.toggle('on', s.slot === 'side');
       if (s.sideLabel) this.slots[2].lastElementChild!.textContent = s.sideLabel;
     });

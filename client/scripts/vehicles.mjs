@@ -11,11 +11,11 @@ import { chromium } from 'playwright';
 const SRC = resolve('../assets_src/veh'), OUT = resolve('public/assets/cars');
 const V = '/veh';
 const PLANS = [
-  { key: 'van', len: 4.8, url: `${V}/retro-van/source/Retro van SF.glb`, drop: '^Text|Smoke|^Number|Logo', paint: '^Paint_body$', mode: 'full' },
+  { key: 'van', doors: { z0: 0.8, z1: 1.72, y0: 0.45, y1: 1.56 }, len: 4.8, url: `${V}/retro-van/source/Retro van SF.glb`, drop: '^Text|Smoke|^Number|Logo', paint: '^Paint_body$', mode: 'full' },
   { key: 'ussr', len: 9, url: `${V}/bus/source/bus_low_end2.fbx`, drop: '^pPlane', paint: 'bus_ussr', mode: 'full', tex: { bus_ussr: `${V}/bus/textures/bus_ussr1_Base_Color.png` } },
   { key: 'nagoya', len: 9, url: `${V}/japanese-bus-nagoya-city-bus-aichi/source/nagoyacitybus.fbx`, paint: 'Nagoya', mode: 'full', rotY: Math.PI / 2, tex: { Nagoya: `${V}/japanese-bus-nagoya-city-bus-aichi/textures/nagoyacity.png` } },
   { key: 'tuktuk', len: 2.7, url: `${V}/low-poly-autorickshaw-aka-tuktuk/source/auto Rickshaw.obj`, paint: '^body$', mode: 'full', tex: { '^(body|tyre|cloth)$': `${V}/low-poly-autorickshaw-aka-tuktuk/textures/Material.001-Colour_copy_2.png` } },
-  { key: 'beetle', len: 4.05, url: `${V}/1968-volkswagen-beetle/source/FINAL_MODEL_68.fbx`, paint: 'Beetle_1968_Base$|Beetle_1968_Base1', mode: 'full', tex: { Details_EXT: `${V}/1968-volkswagen-beetle/textures/TEX_Details_EXT_D.png`, Details_MAT: `${V}/1968-volkswagen-beetle/textures/TEX_Details_MAT_D.png`, Tire_Disk: `${V}/1968-volkswagen-beetle/textures/TEX_Tire_Disk_D.png` } },
+  { key: 'beetle', doors: { z0: -0.36, z1: 0.7, y0: 0.32, y1: 1.12 }, len: 4.05, url: `${V}/1968-volkswagen-beetle/source/FINAL_MODEL_68.fbx`, paint: 'Beetle_1968_Base$|Beetle_1968_Base1', mode: 'full', tex: { Details_EXT: `${V}/1968-volkswagen-beetle/textures/TEX_Details_EXT_D.png`, Details_MAT: `${V}/1968-volkswagen-beetle/textures/TEX_Details_MAT_D.png`, Tire_Disk: `${V}/1968-volkswagen-beetle/textures/TEX_Tire_Disk_D.png` } },
 ];
 const only = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 mkdirSync(OUT, { recursive: true });

@@ -52,6 +52,29 @@ export function animDebug(c: DebugContext) {
       return out.join('\n');
     },
     /** Debug: a traffic vehicle of `kind` stopped across the road `dist` m ahead of the driven car (for crash tests). */
+    /** Puts the player by the nearest parked `kind` and presses E (getting in starts). */
+    doorStart(kind: string) {
+      c.setFreeCam(false);
+      const me = c.player.position, spot = parkedCars.spots.filter((s) => s.kind === kind && !s.taken).sort((a, b) => a.pos.distanceTo(me) - b.pos.distanceTo(me))[0];
+      if (!spot) return 'none';
+      c.player.respawn(new THREE.Vector3(spot.pos.x + Math.cos(spot.yaw) * 1.9, c.hf.heightAt(spot.pos.x, spot.pos.z), spot.pos.z - Math.sin(spot.yaw) * 1.9), spot.yaw - Math.PI / 2);
+      for (let i = 0; i < 3; i++) c.frame(1 / 30);
+      key('KeyE', true); c.frame(1 / 30); key('KeyE', false);
+      return `${spot.kind} ${spot.model}`;
+    },
+    /** Advances `frames` (E first if `press`), then frames the driven/last car from its driver's side. */
+    doorStep(frames: number, press = false) {
+      if (press) { key('KeyE', true); c.frame(1 / 30); key('KeyE', false); }
+      for (let i = 0; i < frames; i++) c.frame(1 / 30);
+      const tr = c.traffic?.() as unknown as { list: { state: string; kind: string; group: THREE.Group; x: number; z: number; yaw: number }[] };
+      const v = tr.list.find((o) => o.state === 'player') ?? tr.list.filter((o) => o.state === 'parked').sort((a, b) => Math.hypot(a.x - c.player.position.x, a.z - c.player.position.z) - Math.hypot(b.x - c.player.position.x, b.z - c.player.position.z))[0];
+      if (!v) return 'no car';
+      const seat = Math.sign(v.group.userData.doors?.[0]?.side ?? 1);
+      const f = new THREE.Vector3(Math.sin(v.yaw), 0, Math.cos(v.yaw)), r = new THREE.Vector3(Math.cos(v.yaw), 0, -Math.sin(v.yaw)).multiplyScalar(seat);
+      const at = new THREE.Vector3(v.x, c.hf.heightAt(v.x, v.z), v.z);
+      c.tpc.place(at.clone().addScaledVector(r, 4.2).addScaledVector(f, 2.6).setY(at.y + 1.7), at.clone().addScaledVector(f, 0.3).setY(at.y + 0.9));
+      return `${v.state} doors ${(v.group.userData.doors ?? []).map((d: { side: number; node: THREE.Object3D }) => `${d.side}:${d.node.quaternion.y.toFixed(2)}`).join(' ')}`;
+    },
     /** Drives `kind` a bit, stops, gets out with E, then walks with `keys`: logs body, model, flags and camera every 0.2 s. */
     exitTest(kind: string, keys: string[] = ['KeyW']) {
       const out = [this.driveTest(kind, [[['KeyW'], 1.2], [['Space'], 2.5], [[], 2]])];

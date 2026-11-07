@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { doorsOf } from '../systems/carDoors';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import type { Lighting } from './lighting';
@@ -151,6 +152,8 @@ class CarModels {
     root.position.multiply(k);
     g.add(root);
     g.userData.wheels = wheels;
+    g.userData.doors = doorsOf(g);
+    if (g.userData.doors.length) root.traverse((o) => (o as THREE.Mesh).isMesh && (((o as THREE.Mesh).material as THREE.Material).side = THREE.DoubleSide));
     g.userData.modelled = true;
     const wb = wheels[0] ? new THREE.Box3().setFromObject(wheels[0]) : null;
     g.userData.spinAxis = new THREE.Vector3(1, 0, 0).applyQuaternion(root.quaternion.clone().invert());

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
+import { cutDoors, type DoorSpec } from './doorCut';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
 
 /**
@@ -41,7 +42,7 @@ async function plain(url: string, n: number, srgb = true): Promise<THREE.Texture
   return tex(cv, 'image/jpeg', srgb);
 }
 
-interface Plan { body: string; key: string; tex: string; colour: string; flip?: boolean }
+interface Plan { body: string; key: string; tex: string; colour: string; flip?: boolean; doors?: DoorSpec }
 
 interface Simple { body: string; key: string; flip?: boolean }
 
@@ -79,7 +80,7 @@ async function convert(fbx: string, dir: string, plans: Plan[], fbx2?: string, d
   const lights = await plain(`${dir}/lights.jpg`, 512);
   const root = new THREE.Group(), info: string[] = [], previews: string[] = [];
   const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-  renderer.setSize(512, 256);
+  renderer.setSize(1024, 512);
   for (const p of plans) {
     const body = meshes.find((m) => m.name === p.body)!, c = centre(body);
     const mine = wheels.map((w) => ({ w, d: centre(w).distanceTo(c) })).sort((a, b) => a.d - b.d).slice(0, 4).map((x) => x.w);
@@ -117,18 +118,20 @@ async function convert(fbx: string, dir: string, plans: Plan[], fbx2?: string, d
       mesh.name = `${p.key}_wheel${k}`;
       car.add(mesh);
     });
+    info.push(cutDoors(car, p.key, p.doors));
     const box = new THREE.Box3().setFromObject(car);
     car.position.y = -box.min.y;
     const size = box.getSize(new THREE.Vector3());
     info.push(`${p.key}: ${size.toArray().map((v) => v.toFixed(2)).join(' × ')} m, glass z ${glassZ(bodyMesh).toFixed(2)}`);
-    const scene = new THREE.Scene(), cam = new THREE.OrthographicCamera(-3.2, 3.2, 1.6, -1.6, 0.1, 50);
+    const scene = new THREE.Scene(), cam = new THREE.OrthographicCamera(-2.2, 2.2, 1.1, -1.1, 0.1, 50);
     scene.background = new THREE.Color('#bbbbbb');
     const sun = new THREE.DirectionalLight('#ffffff', 2);
     sun.position.set(3, 5, 4);
     scene.add(new THREE.AmbientLight('#ffffff', 1.5), sun);
     const view = car.clone();
+    view.traverse((o) => /_door[LR]$/.test(o.name) && (o.rotation.y = o.name.endsWith('L') ? -1.1 : 1.1));
     scene.add(view);
-    cam.position.set(8, 0.9, 0);
+    cam.position.set(4.2, 1.5, 2.6);
     cam.lookAt(0, 0.9, 0);
     renderer.render(scene, cam);
     previews.push(renderer.domElement.toDataURL('image/jpeg', 0.8));

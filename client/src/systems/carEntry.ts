@@ -44,7 +44,7 @@ export class SeatAnim {
   }
 
   /** `seat`: world hips point on the seat; `heading`: car yaw; `ground`: feet height outside (enter) or at the end (exit). */
-  constructor(private rig: Rig, private out: boolean, seat: THREE.Vector3, heading: number, ground: number) {
+  constructor(private rig: Rig, readonly out: boolean, seat: THREE.Vector3, heading: number, ground: number) {
     const key = out ? 'car_out' : 'car_in', seated = poseOf(rig, key, out ? 0 : 1), standing = poseOf(rig, key, out ? 1 : 0);
     this.rootYaw = heading - seated.yaw;
     const off = seated.hips.clone().setY(0).applyAxisAngle(UP, this.rootYaw);
@@ -62,6 +62,11 @@ export class SeatAnim {
     this.rig.hold(this.out ? 'car_out' : 'car_in', RATE, true, 0);
     this.place();
     return this;
+  }
+
+  /** How far through the clip (0..1). */
+  get progress(): number {
+    return Math.min(1, this.t / this.dur);
   }
 
   /** Standing point of the exit (before it starts), to check there is room by the door. */
