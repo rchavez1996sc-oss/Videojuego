@@ -4,6 +4,8 @@ import type { Vehicle } from './traffic';
 import { MASS, makeDynamic } from './vehicleBody';
 import type { Spec, Controls } from './carPhysics';
 
+/** Spring rest length and travel (m). The mount sits higher by the static sag g / (wheels × stiffness) — Rapier scales the
+ * spring force by the chassis mass — so at rest the body's origin, and the model, stay on the ground instead of 6–11 cm into it. */
 const REST = 0.28, TRAVEL = 0.22;
 
 /**
@@ -17,6 +19,9 @@ export class CarRig {
   private front: number[] = [];
   private rear: number[] = [];
   readonly mass: number;
+  /** Wheel mount points in the body's frame (the vehicle group's frame), and the spring length at rest. */
+  readonly mounts: THREE.Vector3[] = [];
+  private sag = 0;
 
   constructor(world: RAPIER.World, private v: Vehicle, private sp: Spec, skip: (c: RAPIER.Collider) => boolean) {
     makeDynamic(v, new THREE.Vector3(Math.sin(v.yaw), 0, Math.cos(v.yaw)).multiplyScalar(v.speed));
@@ -26,9 +31,10 @@ export class CarRig {
     ctrl.indexUpAxis = 1;
     ctrl.setIndexForwardAxis = 2;
     const h = (v.collider.shape as RAPIER.Cuboid).halfExtents, r = v.kind === 'micro' ? 0.48 : sp.small ? 0.26 : 0.31;
-    const zf = h.z - (v.kind === 'micro' ? 1.6 : sp.small ? 0.35 : 0.8), zr = -h.z + (v.kind === 'micro' ? 1.9 : sp.small ? 0.45 : 0.8), x = h.x - 0.12, y = r + REST;
+    const zf = h.z - (v.kind === 'micro' ? 1.6 : sp.small ? 0.35 : 0.8), zr = -h.z + (v.kind === 'micro' ? 1.9 : sp.small ? 0.45 : 0.8), x = h.x - 0.12, n = v.kind === 'moto' ? 3 : v.kind === 'delivery' ? 2 : 4, y = r + REST - (this.sag = 9.81 / (n * sp.spring));
     const add = (wx: number, wz: number, front: boolean) => {
       ctrl.addWheel({ x: wx, y, z: wz }, { x: 0, y: -1, z: 0 }, { x: -1, y: 0, z: 0 }, REST, r);
+      this.mounts.push(new THREE.Vector3(wx, y, wz));
       const i = ctrl.numWheels() - 1;
       (front ? this.front : this.rear).push(i);
       ctrl.setWheelSuspensionStiffness(i, sp.spring);
@@ -87,6 +93,11 @@ export class CarRig {
     const drag = (mass * sp.acc * sp.top * 0.33) / sp.top ** 3, f = (drag * v * v + mass * 0.12) * dt / mass;
     const k = Math.max(0, 1 - f / v);
     b.setLinvel({ x: l.x * k, y: l.y, z: l.z * k }, true);
+  }
+
+  /** How far each wheel hangs below its resting place (m, + = lower; spring extended), mount by mount. */
+  drops(): number[] {
+    return this.mounts.map((_, i) => THREE.MathUtils.clamp((this.ctrl.wheelSuspensionLength(i) ?? REST) - (REST - this.sag), -0.18, 0.18));
   }
 
   /** Wheels touching the ground (0 = airborne or on its roof). */

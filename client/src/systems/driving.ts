@@ -19,6 +19,7 @@ import { roomy } from './respawn';
 import { parkedCars } from '../world/parkedCars';
 import { SeatAnim } from './carEntry';
 import { doorDuring, doorPulse, setDoor } from './carDoors';
+import { suspendWheels } from './wheelSpin';
 import type { Rig } from '../entities/rig';
 
 interface Deps { traffic: Traffic | null; world: RAPIER.World; player: Player; tpc: ThirdPersonCamera; enemies: Enemies; squad: Squad | null; sfx: Sfx; lighting: Lighting; mixer: Mixer }
@@ -159,6 +160,7 @@ export class Driving {
     player.model.root.visible = true;
     if (this.seat) v.group.remove(this.seat);
     traffic!.park(v);
+    if (this.rig) suspendWheels(v.group, this.rig.mounts, this.rig.mounts.map(() => 0));
     this.rig?.free(world);
     this.rig = null;
     this.engine.set(false, 0, 0, 0, false);
@@ -180,6 +182,7 @@ export class Driving {
     this.rig ??= new CarRig(world, v, sp, (c) => c.shapeType() === RAPIER.ShapeType.Capsule || c.isSensor());
     const u = { throttle: input.down('KeyW') ? 1 : 0, brake: input.down('KeyS') ? 1 : 0, steer: (input.down('KeyA') ? 1 : 0) - (input.down('KeyD') ? 1 : 0), handbrake: input.down('Space') };
     this.rig.update(u, dt);
+    suspendWheels(v.group, this.rig.mounts, this.rig.drops());
     readBody(v);
     this.joinPhysics(v);
     Object.assign(s, { x: v.x, y: v.y, z: v.z, yaw: v.yaw, tilt: v.tilt, speed: this.rig.speed });

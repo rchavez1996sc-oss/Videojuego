@@ -19,6 +19,7 @@ import type { StreetNav } from '../ai/nav';
 import { playBot } from './bot';
 import { carShowcase } from './carShowcase';
 import { animDebug } from './debugAnim';
+import { driveDebug } from './debugDrive';
 import { disableNearest, lastDisabled, spotAhead, states } from '../systems/trafficDebug';
 import type { Lighting } from '../render/lighting';
 
@@ -495,7 +496,7 @@ export function installDebug(c: DebugContext): void {
       log.push(`at ${lastDisabled()}`);
       return log.join('\n');
     },
-    ...animDebug(c),
+    ...((a) => ({ ...a, ...driveDebug(c, (k, p) => a.driveTest(k, p)) }))(animDebug(c)),
     ready: true,
   };
 }

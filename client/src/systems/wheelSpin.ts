@@ -35,3 +35,23 @@ export function rollAlong(group: THREE.Object3D, x: number, z: number, yaw: numb
   u.steer = THREE.MathUtils.lerp(u.steer ?? 0, want, 0.25);
   turnWheels(group, roll, u.steer);
 }
+
+/**
+ * Model wheels follow their own spring (the driven car): each takes the drop of the nearest mount, so on a tilted body
+ * or a kerb the wheel stays on the ground instead of sinking into it or floating.
+ */
+export function suspendWheels(group: THREE.Object3D, mounts: THREE.Vector3[], drops: number[]): void {
+  const wheels = group.userData.wheels as THREE.Object3D[] | undefined;
+  if (!wheels?.length || !mounts.length) return;
+  for (const w of wheels) {
+    const u = w.userData;
+    if (u.base === undefined) {
+      u.base = w.position.clone();
+      group.updateMatrixWorld(true);
+      const at = group.worldToLocal(w.getWorldPosition(new THREE.Vector3()));
+      u.mount = mounts.reduce((best, m, i) => (Math.hypot(m.x - at.x, m.z - at.z) < Math.hypot(mounts[best].x - at.x, mounts[best].z - at.z) ? i : best), 0);
+    }
+    w.position.copy(u.base);
+    w.position.y -= drops[u.mount] / (w.parent!.scale.y || 1);
+  }
+}

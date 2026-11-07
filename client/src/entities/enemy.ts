@@ -130,7 +130,7 @@ export class Enemy {
       this.collider.setTranslationWrtParent({ x: 0, y: this.crouched ? -0.28 : 0, z: 0 });
     }
     if (this.hop) return this.updateHop(dt, aimPitch);
-    if (this.knock) return void (this.knock.step(dt, this.position, this.body, HALF + RADIUS + 0.05) || (this.knock = null));
+    if (this.knock) return void (this.knock.step(dt, this.position, this.body, HALF + RADIUS) || (this.knock = null));
     const target = this.detour ?? this.path[0] ?? this.moveTarget;
     const wish = new THREE.Vector3();
     if (target && !this.isStatic) {

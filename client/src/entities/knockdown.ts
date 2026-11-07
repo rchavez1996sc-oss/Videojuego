@@ -25,21 +25,23 @@ export class Knockdown {
     dir.normalize();
     const slide = Math.min(5, push.length() * 0.5);
     const hit = world.castRay(new RAPIER.Ray({ x: feet.x, y: feet.y + 0.9, z: feet.z }, dir), TRAVEL + slide / SLIDE_DECAY + 0.3, true, RAPIER.QueryFilterFlags.EXCLUDE_SENSORS | RAPIER.QueryFilterFlags.EXCLUDE_KINEMATIC, undefined, undefined, undefined, (c) => c.handle !== self && c.isEnabled());
-    return hit ? null : new Knockdown(rig, dir, slide);
+    return hit ? null : new Knockdown(world, rig, dir, slide);
   }
 
-  private constructor(private rig: Rig, dir: THREE.Vector3, private slide: number) {
+  private constructor(private world: RAPIER.World, private rig: Rig, dir: THREE.Vector3, private slide: number) {
     this.dir = dir;
     this.yaw = Math.atan2(dir.x, dir.z);
     rig.release(0);
     rig.hold('stumble', 1.3, true, STUMBLE_FROM);
   }
 
-  /** Advances, keeps body and model in place (moving `feet` when the stumble lands). Returns false once standing again. */
+  /** Advances, keeps body and model on the floor under `feet` (`lift` = feet to body centre, as the owner reads it back). Returns false once standing again. */
   step(dt: number, feet: THREE.Vector3, body: RAPIER.RigidBody, lift: number): boolean {
     this.t += dt;
     feet.addScaledVector(this.dir, this.slide * dt);
     this.slide *= Math.exp(-SLIDE_DECAY * dt);
+    const down = this.world.castRay(new RAPIER.Ray({ x: feet.x, y: feet.y + 1, z: feet.z }, { x: 0, y: -1, z: 0 }), 3, true, RAPIER.QueryFilterFlags.ONLY_FIXED | RAPIER.QueryFilterFlags.EXCLUDE_SENSORS);
+    if (down) feet.y = feet.y + 1 - down.timeOfImpact;
     body.setNextKinematicTranslation({ x: feet.x, y: feet.y + lift, z: feet.z });
     this.rig.root.position.copy(feet).setY(feet.y - 0.03);
     this.rig.root.rotation.set(0, this.yaw + Math.PI, 0);
