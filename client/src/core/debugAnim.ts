@@ -4,7 +4,7 @@ import { isGhost } from '../world/surfaces';
 import { parkedCars } from '../world/parkedCars';
 import { dent } from '../fx/dents';
 import { Rig } from '../entities/rig';
-import type { CharKind } from '../render/characters';
+import { characters, type CharKind } from '../render/characters';
 import type { DebugContext } from './debug';
 
 /** Test hooks for weapon handling: reload frames and grenade flight traces. */
@@ -52,11 +52,38 @@ export function animDebug(c: DebugContext) {
       return out.join('\n');
     },
     /** Debug: a traffic vehicle of `kind` stopped across the road `dist` m ahead of the driven car (for crash tests). */
+    /** San Marcos: clears traffic off Av. Venezuela, puts the driven `kind` at its west end and floors it: 0–100 time and speeds. */
+    accelTest(kind: string, secs = 22) {
+      const how = this.driveTest(kind, []);
+      const tr = c.traffic?.() as unknown as { list: { state: string; body: RAPIER.RigidBody; kind: string }[] };
+      for (const o of tr.list) if (o.state === 'drive') o.state = 'off';
+      const v = tr.list.find((o) => o.state === 'player');
+      if (!v) return `not driving (${how})`;
+      v.body.setTranslation({ x: -440, y: c.hf.heightAt(-440, 14) + 0.4, z: 14 }, true);
+      v.body.setRotation(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2), true);
+      v.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      c.setSkipRender(true);
+      for (let i = 0; i < 20; i++) c.frame(1 / 30);
+      key('KeyW', true);
+      let t100 = -1, top = 0;
+      const marks: string[] = [];
+      for (let i = 1; i <= secs * 30; i++) {
+        c.frame(1 / 30);
+        const l = v.body.linvel(), kmh = Math.hypot(l.x, l.z) * 3.6;
+        top = Math.max(top, kmh);
+        if (t100 < 0 && kmh >= 100) t100 = i / 30;
+        if (i % 75 === 0) marks.push(`${i / 30}s ${kmh.toFixed(0)}`);
+      }
+      key('KeyW', false);
+      c.setSkipRender(false);
+      return `${v.kind}: 0-100 ${t100 < 0 ? '—' : t100.toFixed(1) + ' s'} · top ${top.toFixed(0)} km/h · ${marks.join(' · ')}`;
+    },
     placeAhead(kind: string, dist: number) {
       const tr = c.traffic?.() as unknown as { list: { kind: string; x: number; z: number; yaw: number; state: string; speed: number }[] };
       const me = tr.list.find((o) => o.state === 'player'), v = tr.list.find((o) => o.kind === kind && o.state === 'drive');
       if (!me || !v) return 'none';
       Object.assign(v, { state: 'parked', speed: 0, x: me.x + Math.sin(me.yaw) * dist, z: me.z + Math.cos(me.yaw) * dist, yaw: me.yaw + Math.PI / 2 });
+      (window as unknown as { __victimCar: unknown }).__victimCar = v;
       return `${kind} placed`;
     },
     /** Debug: dents the nearest non-traffic vehicle at its front-left corner by `depth` m; reports moved meshes. */
@@ -70,6 +97,13 @@ export function animDebug(c: DebugContext) {
       v.group.traverse((o) => { if (o.userData.dentable) n++; });
       return `dented meshes ${n}`;
     },
+    /** The vehicle `placeAhead` put in the way: state, position, terrain height under it, visibility. */
+    victimCar() {
+      const v = (window as unknown as { __victimCar?: { x: number; y?: number; z: number; state: string; group: THREE.Group; body: { isDynamic(): boolean; linvel(): { x: number; y: number; z: number } } } }).__victimCar;
+      if (!v) return 'none';
+      const l = v.body.linvel();
+      return `${v.state} dyn ${v.body.isDynamic()} @${v.x.toFixed(1)},${(v.y ?? 0).toFixed(2)},${v.z.toFixed(1)} ground ${c.hf.heightAt(v.x, v.z).toFixed(2)} vis ${v.group.visible} vel ${Math.hypot(l.x, l.y, l.z).toFixed(1)}`;
+    },
     /** Simulates `seconds` without rendering (follow camera), then renders one frame. */
     advance(seconds: number) {
       c.setFreeCam(false);
@@ -79,6 +113,53 @@ export function animDebug(c: DebugContext) {
       c.frame(1 / 60);
     },
     /** Debug: `key` frozen at each fraction of its length, in a row along +x from (x, z) facing +z (the camera looks from +z). */
+    /** Drives `kind` at ~`kmh` into a policeman or civilian placed ahead; per frame: distance bumper→victim, victim hips height and state. */
+    hitTimeline(kind: string, who: 'police' | 'civ', kmh = 40) {
+      const out: string[] = [];
+      this.driveTest(kind, [[['KeyW'], 0.1]]);
+      const tr = c.traffic?.() as unknown as { list: { x: number; z: number; yaw: number; speed: number; state: string; len: number; body: { setLinvel(v: object, w: boolean): void } }[] };
+      const v = tr.list.find((o) => o.state === 'player')!, f = new THREE.Vector3(Math.sin(v.yaw), 0, Math.cos(v.yaw));
+      v.body.setLinvel({ x: f.x * kmh / 3.6, y: 0, z: f.z * kmh / 3.6 }, true);
+      const at = new THREE.Vector3(v.x, 0, v.z).addScaledVector(f, 9);
+      at.y = c.hf.heightAt(at.x, at.z);
+      const civs = (window as unknown as { __civs?: { list: { pos: THREE.Vector3; mood: string; model: { hips(): THREE.Vector3 } }[] } }).__civs;
+      const e = who === 'police' ? c.enemies.list.find((x) => x.alive) : undefined, cv = who === 'civ' ? civs?.list.find((x) => x.mood === 'walk' || x.mood === 'idle') : undefined;
+      if (e) e.teleport(at); else if (cv) cv.pos.copy(at);
+      key('KeyW', true);
+      for (let i = 0; i < 75; i++) {
+        c.frame(1 / 30);
+        const p = e ? e.position : cv!.pos, hips = (e ? e.model : cv!.model).hips();
+        const gap = (p.x - v.x) * f.x + (p.z - v.z) * f.z - v.len / 2;
+        if (i % 2 === 0 || Math.abs(gap) < 1.5) out.push(`${i} gap ${gap.toFixed(2)} hipsY ${(hips.y - p.y).toFixed(2)} v ${v.speed.toFixed(1)} ${e ? `hp ${e.hp.toFixed(0)} alive ${e.alive} stun ${e.stunned}` : cv!.mood}`);
+      }
+      key('KeyW', false);
+      return out.join('\n');
+    },
+    /** Presses `keys` one frame each, then fires `shots` real shots (mouse); reports weapons, ammo, what the hands hold. */
+    weaponTest(keys: string[], shots = 0) {
+      for (const k of keys) { key(k, true); c.frame(1 / 30); key(k, false); c.frame(1 / 30); }
+      for (let i = 0; i < 20; i++) c.frame(1 / 30);
+      if (c.input) c.input.locked = true;
+      for (let i = 0; i < shots; i++) {
+        dispatchEvent(new MouseEvent('mousedown', { button: 0 })); c.frame(1 / 30);
+        dispatchEvent(new MouseEvent('mouseup', { button: 0 })); for (let j = 0; j < 8; j++) c.frame(1 / 30);
+      }
+      const cb = c.combat, w = c.player.model.weapon;
+      return `slot ${cb.slot} ${cb.gun.def.name} | ${cb.guns.map((g) => `${g.def.slot} ${g.ammo}+${g.reserve}`).join(' · ')} | weapon visible ${w.visible} from ${!!cb.from}`;
+    },
+    wheelInfo() {
+      const tr = c.traffic?.() as unknown as { list: { kind: string; group: THREE.Group }[] } | undefined, seen = new Set<string>(), out: string[] = [];
+      for (const v of tr?.list ?? []) {
+        if (seen.has(v.kind)) continue;
+        seen.add(v.kind);
+        const w = (v.group.userData.wheels ?? []) as THREE.Object3D[];
+        v.group.updateMatrixWorld(true);
+        const off = w.map((o) => new THREE.Box3().setFromObject(o).getCenter(new THREE.Vector3()).distanceTo(o.getWorldPosition(new THREE.Vector3())).toFixed(2));
+        out.push(`${v.kind}: ${w.length} wheels [${w.map((o) => o.name).join(',')}] pivot-off ${off.join(',')} R ${v.group.userData.wheelR?.toFixed?.(2)}`);
+      }
+      return out.join('\n');
+    },
+    clipLen(key: string) { return characters.clips.get(key)?.duration ?? -1; },
     poseSheet(key: string, fracs: number[], x: number, z: number, kind: CharKind = 'fls') {
       const out: string[] = [];
       fracs.forEach((f, i) => {

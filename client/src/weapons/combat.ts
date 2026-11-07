@@ -26,7 +26,16 @@ export interface HitEvent { kill: boolean; headshot: boolean }
 
 export class Combat {
   readonly group = new THREE.Group();
-  readonly gun: Gun;
+  /** Weapons carried (main, then the secondary pistol if the chapter gives one), each with its own ammo. */
+  readonly guns: Gun[];
+  private cur = 0;
+  get gun(): Gun { return this.guns[this.cur]; }
+  get slot(): number { return this.cur; }
+  /** Index of the pistol among `guns` (-1: none) — the only weapon usable from a vehicle. */
+  get pistol(): number { return this.guns.findIndex((g) => g.def.model === 'pistol'); }
+  /** Firing from a vehicle: where the round leaves (the driver's window) and the vehicle's collider, kept out of the rays. */
+  from: { muzzle: THREE.Object3D; skip: number } | null = null;
+  private drawT = 0;
   onHitConfirmed: (e: HitEvent) => void = () => {};
   onShot: (from: THREE.Vector3) => void = () => {};
   private dust = new Particles(1500, false);
@@ -36,17 +45,35 @@ export class Combat {
   private flash = new MuzzleFlash();
   private shells: Shells;
   private blast: Blast;
-  private mags: MagSwap;
+  private mags: MagSwap[];
   private shots = 0;
   private tmp = new THREE.Vector3();
 
-  constructor(def: WeaponDef, private world: RAPIER.World, private player: Player, private cam: ThirdPersonCamera, private sfx: Sfx, lighting: Lighting, hf: Heightfield) {
-    this.gun = new Gun(def);
+  constructor(def: WeaponDef, private world: RAPIER.World, private player: Player, private cam: ThirdPersonCamera, private sfx: Sfx, lighting: Lighting, hf: Heightfield, side?: WeaponDef) {
+    this.guns = [new Gun(def), ...(side ? [new Gun(side)] : [])];
+    if (side) player.model.addArm(side.model ?? 'pistol');
     this.decals = new Decals(lighting);
     this.shells = new Shells(lighting, hf, () => sfx.shellBounce());
     this.blast = new Blast(this.sparks, this.dust, this.decals, world, lighting);
     this.group.add(this.dust.points, this.sparks.points, this.decals.mesh, this.tracers.group, this.flash.group, this.shells.mesh, this.blast.group);
-    this.mags = new MagSwap(player.model.weapon, player.model.bones.get('mixamorigLeftHand'), world, this.group);
+    this.mags = this.guns.map((_, i) => (player.model.wield(i), new MagSwap(player.model.weapon, player.model.bones.get('mixamorigLeftHand'), world, this.group)));
+    player.model.wield(0);
+  }
+
+  /** Takes weapon `i` in hand: a reload under way is dropped, and the new one needs a moment to be drawn. */
+  select(i: number): boolean {
+    if (i === this.cur || !this.guns[i]) return false;
+    if (this.gun.reloading > 0) {
+      this.gun.cancelReload();
+      this.sfx.cancelReload();
+      this.player.model.stopGesture('reload');
+    }
+    this.mags[this.cur].update(0, false, 1);
+    [this.cur, this.manual, this.drawT] = [i, false, 0.45];
+    this.player.model.wield(i);
+    this.sfx.useOwn(this.gun.def.light ?? 0);
+    this.sfx.dryFire();
+    return true;
   }
 
   /** Progress 0..1 of a manual reload (hold R, `MANUAL_RELOAD` × the usual time, abandoned if R is let go). An empty magazine reloads by itself at full length. */
@@ -54,6 +81,9 @@ export class Combat {
   private manual = false;
 
   update(dt: number, input: Input, aiming: boolean, airborne: boolean): void {
+    if (!this.from && input.hit('Digit1')) this.select(0);
+    if (!this.from && input.hit('Digit2')) this.select(1);
+    this.drawT -= dt;
     const g = this.gun;
     if (g.ammo === 0 && g.reloading <= 0 && g.startReload()) {
       this.manual = false;
@@ -70,9 +100,9 @@ export class Combat {
     }
     if (g.reloading <= 0) this.manual = false;
     this.reloadHold = this.manual ? g.reloadProgress : 0;
-    this.mags.update(dt, g.reloading > 0, g.reloadProgress);
+    this.mags[this.cur].update(dt, g.reloading > 0 && !this.from, g.reloadProgress);
     if (input.hit('KeyB')) this.gun.toggleMode();
-    const result = this.gun.update(dt, input.firing, input.hit('Mouse0'));
+    const ready = this.drawT <= 0, result = this.gun.update(dt, input.firing && ready, input.hit('Mouse0') && ready);
     if (result === 'dry') {
       this.sfx.dryFire();
     } else if (result === 'fire') {
@@ -108,9 +138,9 @@ export class Combat {
   }
 
   private ray(origin: THREE.Vector3, dir: THREE.Vector3, max: number, through?: Map<number, boolean>) {
-    const exclude = this.player.collisionHandle;
+    const exclude = this.player.collisionHandle, skip = this.from?.skip ?? -1;
     for (let i = 0; i < 4; i++) {
-      const hit = this.world.castRayAndGetNormal(new RAPIER.Ray(origin, dir), max, true, undefined, undefined, undefined, undefined, (c) => c.handle !== exclude && !through?.get(c.handle));
+      const hit = this.world.castRayAndGetNormal(new RAPIER.Ray(origin, dir), max, true, undefined, undefined, undefined, undefined, (c) => c.handle !== exclude && c.handle !== skip && !through?.get(c.handle));
       if (!hit || !through || !pierceChance(hit.collider.handle)) return hit;
       const h = hit.collider.handle;
       if (!through.has(h)) {
@@ -143,17 +173,17 @@ export class Combat {
     const through = new Map<number, boolean>();
     const camHit = this.ray(camera.position, dir, def.range, through);
     const aimPoint = camera.position.clone().addScaledVector(dir, camHit ? camHit.timeOfImpact : def.range);
-    const muzzle = this.player.model.muzzle.getWorldPosition(new THREE.Vector3());
+    const mz = this.from?.muzzle ?? this.player.model.muzzle, muzzle = mz.getWorldPosition(new THREE.Vector3());
     const toAim = aimPoint.clone().sub(muzzle);
     const dist = toAim.length();
     toAim.normalize();
     const hit = this.ray(muzzle, toAim, dist + 0.5, through);
     const end = hit ? muzzle.clone().addScaledVector(toAim, hit.timeOfImpact) : aimPoint;
 
-    this.flash.fire(this.player.model.muzzle);
-    this.player.model.fire();
+    this.flash.fire(mz);
+    if (!this.from) this.player.model.fire();
     if (this.shots++ % def.tracerEvery === 0) this.tracers.fire(muzzle, end);
-    this.shells.eject(this.player.model.ejector, right);
+    this.shells.eject(this.from?.muzzle ?? this.player.model.ejector, right);
     this.sfx.rifleShot();
     this.onShot(muzzle);
     const [kUp, kSide] = this.gun.recoil(aiming);

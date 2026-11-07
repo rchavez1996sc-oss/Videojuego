@@ -4,6 +4,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { splitWheels } from './wheelSplit';
 
 /**
  * Offline vehicle models (Sketchfab, Release assets-v1) → one glTF with a node per vehicle (driven by
@@ -117,6 +118,7 @@ async function vehicle(p: Plan): Promise<THREE.Group> {
   }
   const box = new THREE.Box3().setFromObject(out), c = box.getCenter(new THREE.Vector3()), k = p.len / (box.max.z - box.min.z);
   for (const m of out.children) (m as THREE.Mesh).geometry.translate(-c.x, -box.min.y, -c.z).scale(k, k, k);
+  out.userData.wheels = splitWheels(out, p.key);
   return out;
 }
 
@@ -161,7 +163,8 @@ async function convert(plans: Plan[]): Promise<{ data: string; info: string[]; p
   for (const p of plans) {
     const v = await vehicle(p);
     const s = new THREE.Box3().setFromObject(v).getSize(new THREE.Vector3());
-    info.push(`${p.key}: ${s.toArray().map((x) => x.toFixed(2)).join(' × ')} meshes ${v.children.length} (${v.children.map((m) => m.name.replace(`${p.key}_`, '')).join(', ')})`);
+    info.push(`${p.key}: ${s.toArray().map((x) => x.toFixed(2)).join(' × ')} wheels ${v.userData.wheels} meshes ${v.children.length} (${v.children.map((m) => m.name.replace(`${p.key}_`, '')).join(', ')})`);
+    info.push('   ' + v.children.filter((o) => /_wheel\d$/.test(o.name)).map((o) => { const b = new THREE.Box3().setFromObject(o), z = b.getSize(new THREE.Vector3()); return `${o.position.toArray().map((x) => x.toFixed(2))} r${(z.y / 2).toFixed(2)} w${z.x.toFixed(2)}`; }).join(' | '));
     previews.push(preview(v));
     scene.add(v);
   }

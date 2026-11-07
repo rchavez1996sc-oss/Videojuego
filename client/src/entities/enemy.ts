@@ -15,6 +15,7 @@ import type { CharKind } from '../render/characters';
 import { MuzzleFlash } from '../fx/muzzleFlash';
 import type { Lighting } from '../render/lighting';
 import type { CoverPoint } from '../ai/cover';
+import { PERSON_SOLVER } from '../physics/groups';
 
 /** Deaths when shot from the front (the first that has room plays). */
 const FRONT = [['death_head', 'death_front', 'fall_back'], ['fall_back', 'fall_back2', 'death_front'], ['fall_back3', 'death_head', 'fall_back'], ['shoulder_fall', 'death_front', 'fall_back']];
@@ -98,7 +99,7 @@ export class Enemy {
     this.model = new Rig(def.rig ?? 'pnp', lighting, true, false, outfit, def.gun);
     const y0 = floorAt(world, spawn.x, spawn.y, spawn.z);
     this.body = world.createRigidBody(RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(spawn.x, y0 + HALF + RADIUS + 0.05, spawn.z));
-    this.collider = world.createCollider(RAPIER.ColliderDesc.capsule(HALF, RADIUS), this.body);
+    this.collider = world.createCollider(RAPIER.ColliderDesc.capsule(HALF, RADIUS).setSolverGroups(PERSON_SOLVER), this.body);
     this.ctrl = world.createCharacterController(0.05);
     this.ctrl.enableAutostep(0.45, 0.1, true);
     this.ctrl.enableSnapToGround(0.5);
@@ -278,7 +279,7 @@ export class Enemy {
       const fd = launch.clone().setY(0).normalize(), car = by === 'car' && characters.clips.has('hit_car');
       this.yaw = car ? Math.atan2(-fd.z, fd.x) : Math.atan2(fd.x, fd.z);
       this.model.root.rotation.set(0, this.yaw + Math.PI, 0);
-      this.fling = new Fling(launch.clone().setY(0).multiplyScalar(0.55), this.position.y);
+      this.fling = new Fling(launch.clone().setY(0).multiplyScalar(by === 'car' ? 1 : 0.55), this.position.y);
       return this.model.die(car ? 'hit_car' : characters.clips.has('fly_back') ? 'fly_back' : 'fall_back');
     }
     const p = this.position, ground = this.world.castRay(new RAPIER.Ray({ x: p.x, y: p.y + 0.5, z: p.z }, { x: 0, y: -1, z: 0 }), 40, true, RAPIER.QueryFilterFlags.ONLY_FIXED | RAPIER.QueryFilterFlags.EXCLUDE_SENSORS);

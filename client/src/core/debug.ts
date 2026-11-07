@@ -28,6 +28,7 @@ export interface DebugContext {
   hf: Heightfield;
   player: Player;
   combat: Combat;
+  input?: { locked: boolean };
   enemies: Enemies;
   grenades: Grenades;
   pickups: Pickups;

@@ -8,11 +8,15 @@ export class Sfx {
   private shots: AudioBuffer[];
   private heavy: AudioBuffer[];
   private own: AudioBuffer[];
+  /** The player's own report (switches with the weapon in hand); banks by `light`, built on first use. */
+  private mine: AudioBuffer[];
+  private banks = new Map<number, AudioBuffer[]>();
 
   constructor(private m: Mixer, light = 0) {
     this.shots = buildGunshots(m.ctx, 4);
     this.heavy = buildGunshots(m.ctx, 2, true);
-    this.own = light ? buildGunshots(m.ctx, 4, false, light) : this.shots;
+    this.own = this.mine = light ? buildGunshots(m.ctx, 4, false, light) : this.shots;
+    this.banks.set(light, this.own);
     for (let k = 0; k < 3; k++) setTimeout(() => this.booms.push(...buildExplosions(this.m.ctx, 1, k)), 1500 + k * 1400);
   }
 
@@ -76,8 +80,14 @@ export class Sfx {
     o.stop(t + decay + 0.05);
   }
 
+  /** The weapon in the player's hands changed: its report from now on. */
+  useOwn(light = 0): void {
+    if (!this.banks.has(light)) this.banks.set(light, light ? buildGunshots(this.m.ctx, 4, false, light) : this.shots);
+    this.mine = this.banks.get(light)!;
+  }
+
   rifleShot(): void {
-    this.report(this.m.ctx.currentTime + 0.001, this.own, 1.15, this.m.sfx, 0.55, 0.45);
+    this.report(this.m.ctx.currentTime + 0.001, this.mine, 1.15, this.m.sfx, 0.55, 0.45);
   }
 
   /** Other people's gunshots: delayed by distance, dulled, quieter and panned towards its side; `gain` tames the squad's fire. */

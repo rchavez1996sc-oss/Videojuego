@@ -95,7 +95,7 @@ export class GrenadeMode {
   /** Returns true while the grenade is in hand (the rifle must not fire). */
   update(input: Input, alive: boolean, dt: number): boolean {
     const now = (this.clock += dt), m = this.player.model;
-    if (!alive || input.hit('Digit1')) this.stow();
+    if (!alive || input.hit('Digit1') || input.hit('Digit2')) this.stow();
     else if (input.hit('KeyG') && !this.throwing) {
       if (this.equipped) this.stow();
       else if (this.grenades.count > 0) [this.equipped, this.drawnAt] = [true, now];

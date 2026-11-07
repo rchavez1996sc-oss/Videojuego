@@ -11,6 +11,7 @@ import { difficulty } from '../core/difficulty';
 import { ladderAt, type Ladder } from '../world/ladders';
 import { floorAt, stepAssist } from '../physics/floor';
 import { surfaceTop } from '../world/groundStrips';
+import { PERSON_SOLVER } from '../physics/groups';
 
 /** The player's FLS dress: red scarf and arm bands. */
 const OUTFIT: Outfit = { color: '#8e1b14', bands: ['Left', 'Right'], scarf: '#8e1b14' };
@@ -47,7 +48,7 @@ export class Player {
     this.model = new Rig('fls', lighting, true, true, OUTFIT, gun);
     this.yaw = yaw;
     this.body = world.createRigidBody(RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(spawn.x, spawn.y + HALF + RADIUS + 0.2, spawn.z));
-    this.collider = world.createCollider(RAPIER.ColliderDesc.capsule(HALF, RADIUS), this.body);
+    this.collider = world.createCollider(RAPIER.ColliderDesc.capsule(HALF, RADIUS).setSolverGroups(PERSON_SOLVER), this.body);
     this.ctrl = world.createCharacterController(0.05);
     this.ctrl.enableAutostep(0.45, 0.1, true);
     this.ctrl.enableSnapToGround(0.5);

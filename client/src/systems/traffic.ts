@@ -14,8 +14,10 @@ import type { Lighting } from '../render/lighting';
 import type { Rig } from '../entities/rig';
 import { Riders } from './riders';
 import { vehicleColliders } from '../physics/noLift';
-import { makeDynamic, MASS } from './vehicleBody';
+import { keepSane, makeDynamic, MASS, push } from './vehicleBody';
 import { tumbleStep } from './tumble';
+import { rollAlong } from './wheelSpin';
+import { SPECS } from './carPhysics';
 import { runInto } from './trafficImpacts';
 
 /** `player`: driven by the player (moved by `Driving`); `parked`: left where the player got out; `tumble`: a real rigid body after a crash until it settles. */
@@ -57,7 +59,6 @@ export class Traffic {
   private riders: Riders;
   private clock = 0;
   private look: VehicleMats;
-  private spinQ = new THREE.Quaternion();
   /** Other people on the road drivers brake for (the squad). */
   obstacles: () => THREE.Vector3[] = () => [];
   /** Stop line ahead on red for a vehicle front at x (see `TrafficLights.stopLine`). */
@@ -209,7 +210,7 @@ export class Traffic {
       this.damage(v, HP);
       this.knock(v);
       const k = (1 - d / radius) * (MASS[v.kind] ?? 1300), out = new THREE.Vector3(v.x - at.x, 0, v.z - at.z).normalize();
-      v.body.applyImpulseAtPoint({ x: out.x * k * 6, y: k * 5, z: out.z * k * 6 }, { x: at.x + (v.x - at.x) * 0.9, y: (v.y ?? at.y) + 0.4, z: at.z + (v.z - at.z) * 0.9 }, true);
+      push(v, new THREE.Vector3(out.x * k * 6, k * 5, out.z * k * 6), new THREE.Vector3(at.x + (v.x - at.x) * 0.9, (v.y ?? at.y) + 0.4, at.z + (v.z - at.z) * 0.9));
     }
   }
 
@@ -235,7 +236,10 @@ export class Traffic {
         } else continue;
       }
       if (v.state === 'drive' || v.state === 'tumble') runInto(v, dt, this.clock, this.near, this.hitT);
-      if (v.body.isDynamic() && v.state !== 'player') tumbleStep(this, this.world, v, dt);
+      if (v.body.isDynamic()) {
+        keepSane(v, this.hf.heightAt(v.body.translation().x, v.body.translation().z));
+        if (v.state !== 'player') tumbleStep(this, this.world, v, dt);
+      }
       if (v.state === 'player' || v.state === 'parked' || v.state === 'tumble') {
         this.place(v, camera);
         continue;
@@ -282,11 +286,7 @@ export class Traffic {
     const dist = Math.hypot(v.x - camera.x, v.z - camera.z);
     v.group.visible = dist < 150;
     for (const s of v.seats) (s.userData.rig as Rig).far = dist > 25;
-    const wheels = v.group.userData.wheels as THREE.Object3D[] | undefined, roll = (v.x - v.group.position.x) * Math.sin(v.yaw) + (v.z - v.group.position.z) * Math.cos(v.yaw);
-    if (wheels?.length && v.group.visible && Math.abs(roll) < 3) {
-      this.spinQ.setFromAxisAngle(v.group.userData.spinAxis, roll / v.group.userData.wheelR);
-      for (const w of wheels) w.quaternion.premultiply(this.spinQ);
-    }
+    if (v.group.visible) rollAlong(v.group, v.x, v.z, v.yaw, SPECS[v.kind]?.base ?? 2.6);
     v.group.position.set(v.x, y, v.z);
     v.group.quaternion.copy(q);
     if (v.body.isDynamic()) return;

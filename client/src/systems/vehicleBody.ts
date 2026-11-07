@@ -87,6 +87,37 @@ export function exchange(world: RAPIER.World, v: Vehicle, other: Vehicle, knock:
   if (vr <= 0) return point;
   const j = (1.15 * vr) / (1 / m1 + 1 / m2);
   v.body.setLinvel(u1.addScaledVector(dir, -j / m1), true);
-  other.body.applyImpulseAtPoint({ x: dir.x * j, y: dir.y * j + j * 0.08, z: dir.z * j }, point, true);
+  push(other, new THREE.Vector3(dir.x * j, dir.y * j + j * 0.08, dir.z * j), point);
   return point;
+}
+
+const MAX_V = 45, MAX_W = 5;
+
+/**
+ * Impulse `imp` (N·s) at `point` with the vehicle's real mass and box inertia, computed here: a body that just turned
+ * dynamic still has Rapier's default-density mass for this step, and `applyImpulseAtPoint` launched it at ~400 m/s.
+ */
+export function push(o: Vehicle, imp: THREE.Vector3, point: THREE.Vector3): void {
+  const b = o.body, m = MASS[o.kind] ?? 1300, h = (o.collider.shape as RAPIER.Cuboid).halfExtents, [w, y, l] = [h.x * 2, h.y * 2, h.z * 2];
+  const v = new THREE.Vector3().copy(b.linvel() as THREE.Vector3).addScaledVector(imp, 1 / m);
+  if (v.length() > MAX_V) v.setLength(MAX_V);
+  b.setLinvel(v, true);
+  const r = b.rotation(), q = new THREE.Quaternion(r.x, r.y, r.z, r.w), t = b.translation();
+  const arm = point.clone().sub(new THREE.Vector3(t.x, t.y + 0.6, t.z)), tq = arm.cross(imp).applyQuaternion(q.clone().invert());
+  tq.set(tq.x / ((m / 12) * (y * y + l * l)), tq.y / ((m / 12) * (w * w + l * l)), tq.z / ((m / 12) * (w * w + y * y))).applyQuaternion(q);
+  const av = new THREE.Vector3().copy(b.angvel() as THREE.Vector3).add(tq);
+  if (av.length() > MAX_W) av.setLength(MAX_W);
+  b.setAngvel(av, true);
+}
+
+/** Never lost: a physical vehicle that sank under the terrain (tunnelled) is put back on top; runaway speed is capped. */
+export function keepSane(v: Vehicle, ground: number): void {
+  const b = v.body, t = b.translation(), lv = b.linvel();
+  if (t.y < ground - 0.8) {
+    b.setTranslation({ x: t.x, y: ground + 0.3, z: t.z }, true);
+    b.setLinvel({ x: lv.x * 0.5, y: 0, z: lv.z * 0.5 }, true);
+  } else if (Math.hypot(lv.x, lv.y, lv.z) > MAX_V) {
+    const k = MAX_V / Math.hypot(lv.x, lv.y, lv.z);
+    b.setLinvel({ x: lv.x * k, y: lv.y * k, z: lv.z * k }, true);
+  }
 }

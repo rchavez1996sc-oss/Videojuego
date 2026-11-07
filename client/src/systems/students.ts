@@ -5,6 +5,7 @@ import { gear } from '../entities/gear';
 import { onHit } from '../world/surfaces';
 import type { Lighting } from '../render/lighting';
 import type { Target } from './enemies';
+import { PERSON_SOLVER } from '../physics/groups';
 
 const KINDS = ['civ_a', 'civ_b', 'civ_c'] as const;
 
@@ -29,7 +30,7 @@ export class Students {
       rig.root.position.copy(p);
       rig.root.rotation.y = rand() * Math.PI * 2;
       rig.nearOnly(...gear(rig.bones, { backpack: 0.7, book: 0.2 }, lighting, rand));
-      const collider = world.createCollider(RAPIER.ColliderDesc.capsule(0.35, 0.32).setTranslation(p.x, p.y + 0.7, p.z));
+      const collider = world.createCollider(RAPIER.ColliderDesc.capsule(0.35, 0.32).setTranslation(p.x, p.y + 0.7, p.z).setSolverGroups(PERSON_SOLVER));
       const s: Student = { rig, collider, position: p.clone(), alive: true, crouched: true, hp: 200, dyingT: 0 };
       onHit(collider.handle, (dmg) => void this.damage(s, dmg, true));
       this.byHandle.set(collider.handle, s);

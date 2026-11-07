@@ -58,6 +58,11 @@ export class Driving {
     return !!this.car;
   }
 
+  /** The vehicle while the player sits at its wheel (not getting in or out). */
+  get seated(): Vehicle | null {
+    return this.anim ? null : this.car;
+  }
+
   /** Runs instead of the on-foot update while driving; returns whether the player is driving. */
   update(dt: number, input: Input, alive: boolean): boolean {
     const { traffic, player } = this.d;
@@ -178,7 +183,7 @@ export class Driving {
     this.speedo.textContent = `${Math.round(sp1 * 3.6)} km/h`;
     (this.seat?.userData.rig as Rig | undefined)?.tick(dt);
     this.idleMouse = Math.abs(input.mouseDX) + Math.abs(input.mouseDY) > 0.5 ? 0 : this.idleMouse + dt;
-    if (this.idleMouse > 1 && sp1 > 3) {
+    if (this.idleMouse > 1 && sp1 > 3 && !input.aiming) {
       const want = s.yaw + Math.PI + (s.speed < 0 ? Math.PI : 0), diff = Math.atan2(Math.sin(want - tpc.yaw), Math.cos(want - tpc.yaw));
       tpc.yaw += diff * Math.min(1, dt * 2.5);
       tpc.pitch = THREE.MathUtils.damp(tpc.pitch, -0.18, 2, dt);
@@ -188,7 +193,8 @@ export class Driving {
   /**
    * People in the box swept by the bumper this frame (tested against each body's position, so nobody slips between
    * frames or through a stale physics query): slow pushes stop the car against them (nobody gets shoved into the bodywork), from 4 m/s
-   * it is a real impact (damage from speed, thud, jolt, the car loses speed); a policeman still standing stops the car.
+   * it is a real impact (damage from speed, thud, jolt): the body is thrown at about the bumper's speed (a plastic hit
+   * from a far heavier mass) and the car keeps its speed but for the mass it pushed.
    */
   private runOver(s: CarState, half: number, dt: number): void {
     const { traffic, sfx, tpc } = this.d, sp = Math.abs(s.speed), dir = Math.sign(s.speed);
@@ -204,12 +210,12 @@ export class Driving {
       }
       if ((this.hitT.get(t.key) ?? -9) > this.clock - 0.6) continue;
       this.hitT.set(t.key, this.clock);
-      const shove = fwd.clone().multiplyScalar(dir * sp * 0.6).addScaledVector(right, Math.sign(lat || 1) * (2 + sp * 0.3));
+      const shove = fwd.clone().multiplyScalar(dir * sp * 0.95).addScaledVector(right, Math.sign(lat || 1) * (0.8 + sp * 0.15));
       t.hurt(t.kind === 'ally' ? dmg * 0.4 : dmg, from, shove);
       sfx.thud(Math.min(1, sp / 14));
       sfx.crash(0);
       tpc.kick(0.02, 0, Math.min(0.35, sp * 0.02));
-      this.halt(t.kind === 'police' && t.alive() ? 0.25 : 0.82);
+      this.halt(this.rig!.mass / (this.rig!.mass + 90));
     }
   }
 

@@ -11,7 +11,7 @@ import type { Hud } from '../ui/hud';
 
 export type SupplyKind = 'medkit' | 'ammo';
 
-interface Pickup { kind: SupplyKind; mesh: THREE.Group; ttl: number; base: number; spins: boolean; rounds?: number }
+interface Pickup { kind: SupplyKind; mesh: THREE.Group; ttl: number; base: number; spins: boolean; rounds?: number; side?: boolean }
 
 /** Three plain rounds standing side by side. */
 const ROUNDS = [-0.065, 0, 0.065];
@@ -45,7 +45,7 @@ export class Pickups {
   }
 
   /** `ground` overrides the terrain height (bodies on roofs); `rounds` makes it a corpse drop with that many bullets. */
-  spawn(at: THREE.Vector3, kind: SupplyKind, ttl = 60, ground?: number, rounds?: number): void {
+  spawn(at: THREE.Vector3, kind: SupplyKind, ttl = 60, ground?: number, rounds?: number, side = false): void {
     const g = new THREE.Group();
     const add = (geo: string, mat: string, ry = 0) => {
       const m = new THREE.Mesh(this.geo[geo], this.mat[mat]);
@@ -60,12 +60,12 @@ export class Pickups {
     } else {
       add('cases', 'brass');
       add('tips', 'copper');
-      g.scale.setScalar(1.6);
+      g.scale.set(side ? 1.5 : 1.6, side ? 0.95 : 1.6, side ? 1.5 : 1.6);
     }
     const base = (ground ?? this.hf.heightAt(at.x, at.z)) + (kind === 'medkit' ? 0.55 : 0.6);
     g.position.set(at.x, base, at.z);
     this.group.add(g);
-    this.items.push({ kind, mesh: g, ttl, base, spins: true, rounds });
+    this.items.push({ kind, mesh: g, ttl, base, spins: true, rounds, side });
   }
 
   /** Supplies still on the map and what they are (for the radar icons). */
@@ -97,10 +97,17 @@ export class Pickups {
 /** Rounds a fallen policeman leaves (min, max); a chapter may raise it (`lootRounds`). */
 export const lootRounds: [number, number] = [15, 45];
 
-/** Every fallen policeman leaves his rounds on the body; sometimes (by difficulty) a medkit beside them, gone after 30 s. */
+/** Share of fallen policemen who leave pistol rounds instead (chapters with a secondary pistol, `secondaryDrop`). */
+export const sideLoot = { share: 0 };
+
+/**
+ * Every fallen policeman leaves his rounds on the body — for the main weapon, or (`sideLoot.share` of them) half as
+ * many pistol rounds; sometimes (by difficulty) a medkit beside them, gone after 30 s.
+ */
 export function dropLoot(pickups: Pickups, at: THREE.Vector3, ground: number): void {
-  const a = Math.random() * Math.PI * 2, side = new THREE.Vector3(Math.cos(a) * 0.45, 0, Math.sin(a) * 0.45);
-  pickups.spawn(at.clone().add(side), 'ammo', 90, ground, lootRounds[0] + Math.round(Math.random() * (lootRounds[1] - lootRounds[0])));
+  const a = Math.random() * Math.PI * 2, side = new THREE.Vector3(Math.cos(a) * 0.45, 0, Math.sin(a) * 0.45), pistol = Math.random() < sideLoot.share;
+  const n = lootRounds[0] + Math.round(Math.random() * (lootRounds[1] - lootRounds[0]));
+  pickups.spawn(at.clone().add(side), 'ammo', 90, ground, pistol ? Math.max(8, Math.round(n * 0.5)) : n, pistol);
   if (Math.random() < difficulty.value.medkitDrop) pickups.spawn(at.clone().sub(side), 'medkit', 30, ground);
 }
 
@@ -109,9 +116,9 @@ let fullT = 0;
 const CRATE_ROUNDS = 60;
 
 /** Picks up whatever the player needs (and says so when walking over one that is not needed): medkit heals fully, corpse rounds add to the reserve, crates refill it and add a grenade. */
-export function collectSupplies(dt: number, pickups: Pickups, d: { player: Player; gun: Gun; grenades: Grenades; sfx: Sfx; hud: Hud; alive: boolean }): void {
-  const roomy = d.gun.reserve < d.gun.reserveMax;
-  const got = pickups.update(dt, d.player.position, (p) => d.alive && (p.kind === 'medkit' ? d.player.hp < 99.5 : roomy || (!p.rounds && d.grenades.count < 5)));
+export function collectSupplies(dt: number, pickups: Pickups, d: { player: Player; guns: Gun[]; grenades: Grenades; sfx: Sfx; hud: Hud; alive: boolean }): void {
+  const main = d.guns[0], pistol = d.guns[1] ?? main, roomy = (g: Gun) => g.reserve < g.reserveMax;
+  const got = pickups.update(dt, d.player.position, (p) => d.alive && (p.kind === 'medkit' ? d.player.hp < 99.5 : roomy(p.side ? pistol : main) || (!p.rounds && d.grenades.count < 5)));
   fullT -= dt;
   if (!got) {
     const near = pickups.markers.find((m) => Math.hypot(m.pos.x - d.player.position.x, m.pos.z - d.player.position.z) < 1.4 && Math.abs(m.pos.y - d.player.position.y) < 2.3);
@@ -126,13 +133,13 @@ export function collectSupplies(dt: number, pickups: Pickups, d: { player: Playe
   if (got.kind === 'medkit') {
     d.hud.showToast(`BOTIQUÍN  +${Math.round(d.player.heal(50))} VIDA`);
   } else if (got.rounds) {
-    const before = d.gun.reserve;
-    d.gun.addAmmo(got.rounds);
-    d.hud.showToast(`${d.gun.reserve - before} BALAS`);
+    const g = got.side ? pistol : main, before = g.reserve;
+    g.addAmmo(got.rounds);
+    d.hud.showToast(`${g.reserve - before} BALAS${got.side ? ' DE PISTOLA' : ''}`);
   } else {
-    const before = d.gun.reserve;
-    d.gun.addAmmo(CRATE_ROUNDS);
+    const before = main.reserve;
+    main.addAmmo(CRATE_ROUNDS);
     d.grenades.count = Math.min(d.grenades.count + 1, 5);
-    d.hud.showToast(`${d.gun.reserve - before} BALAS Y GRANADA`);
+    d.hud.showToast(`${main.reserve - before} BALAS Y GRANADA`);
   }
 }

@@ -3,6 +3,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { Rig } from '../entities/rig';
 import { onHit } from '../world/surfaces';
 import type { Lighting } from '../render/lighting';
+import { PERSON_SOLVER } from '../physics/groups';
 
 const RADIUS = 0.38;
 
@@ -24,7 +25,7 @@ export class Vip {
     this.rig.root.position.copy(at);
     this.rig.root.rotation.y = yaw;
     this.rig.loop('civ_idle');
-    this.col = world.createCollider(RAPIER.ColliderDesc.capsule(0.55, RADIUS).setTranslation(at.x, at.y + 0.9, at.z));
+    this.col = world.createCollider(RAPIER.ColliderDesc.capsule(0.55, RADIUS).setTranslation(at.x, at.y + 0.9, at.z).setSolverGroups(PERSON_SOLVER));
     onHit(this.col.handle, () => {
       if (!this.alive || this.captured) return;
       this.alive = false;

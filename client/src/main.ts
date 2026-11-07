@@ -31,10 +31,11 @@ import enemyDefs from './data/enemies.json';
 import type { EnemyDef } from './entities/enemy';
 import { Enemies } from './systems/enemies';
 import { DamageFx } from './ui/damage';
-import { Pickups, collectSupplies } from './systems/pickups';
+import { Pickups, collectSupplies, sideLoot } from './systems/pickups';
 import { wireRoad } from './systems/roadHits';
 import { respawnPlayer, streetPoints } from './systems/respawn';
 import { Driving } from './systems/driving';
+import { CarGun } from './systems/carGun';
 import { startSpot } from './systems/startSpot';
 import { Melee } from './systems/melee';
 import { coverSeeker } from './systems/takeCover';
@@ -129,11 +130,10 @@ async function boot(): Promise<void> {
   const spawn = start?.pos ?? new THREE.Vector3(ch.spawn.x, hf.heightAt(ch.spawn.x, ch.spawn.z), ch.spawn.z), startYaw = start?.yaw ?? ch.spawn.yaw;
   const wdef = (weapons as unknown as Record<string, WeaponDef>)[ch.weapon ?? 'ak'], player = new Player(world, lighting, spawn, startYaw, wdef.model);
   scene.add(player.model.root);
-  const input = new Input(canvas);
-  const tpc = new ThirdPersonCamera(camera, world, startYaw);
+  const input = new Input(canvas), tpc = new ThirdPersonCamera(camera, world, startYaw);
   const mixer = new Mixer(), sfx = new Sfx(mixer, wdef.light), hud = new Hud();
-  const combat = new Combat(wdef, world, player, tpc, sfx, lighting, hf);
-  scene.add(combat.group);
+  const arms = weapons as unknown as Record<string, WeaponDef>, combat = new Combat(wdef, world, player, tpc, sfx, lighting, hf, ch.secondary ? arms[ch.secondary] : undefined);
+  sideLoot.share = ch.secondary ? ch.secondaryDrop ?? 0.2 : 0; scene.add(combat.group);
   const rangeOrigin = { ...ch.spawn, yaw: ch.rangeYaw ?? ch.spawn.yaw };
   const range = new ShootingRange(hf, lighting, world, rangeOrigin, ch.range ?? [], (h) => {
     combat.sparkBurst(h.point, h.normal);
@@ -162,7 +162,7 @@ async function boot(): Promise<void> {
   const squad = createSquad(ch.squad ?? 0, { ...(allyDef as unknown as AllyDef), gun: wdef.model }, { world, hf, lighting, player, enemies, combat, sfx, hud, camera, nav, alarm }, spawn, startYaw);
   if (squad) scene.add(squad.group);
   if (life) wireRoad(life.trafficEvents, { world, player, enemies, squad, playerHit: (dmg, from) => enemies.onPlayerHit(dmg, from), alive: () => deadT <= 0 });
-  const driving = new Driving({ traffic: life?.trafficEvents ?? null, world, player, tpc, enemies, squad, sfx, lighting, mixer });
+  const driving = new Driving({ traffic: life?.trafficEvents ?? null, world, player, tpc, enemies, squad, sfx, lighting, mixer }), carGun = new CarGun(combat, scene, camera);
   const deathPos = new THREE.Vector3(); let deadT = 0, skipRender = false, shieldT = 0;
   enemies.onPlayerHit = (dmg, from) => {
     if (deadT > 0) return;
@@ -202,7 +202,7 @@ async function boot(): Promise<void> {
   let freeCam = false;
   installDebug({
     extraLog: () => (civilians ? `civ:${civilians.list.map((c) => c.mood[0]).join('')}` : ''),
-    views: ch.views ?? [], lighting, tpc, hf, player, combat, enemies, grenades, pickups, renderer, shotMode, scene, squad, grenadeMode: nadeMode, objective, civilians: () => civilians?.present ?? [], world, nav, goal: () => objective?.position ?? defense?.goal, status: () => (defense ? defense.status() : objective ? `obj ${objective.position ? 'on' : '-'}` : '') + ` civ=${populace.casualties} lives=${lives}`,
+    views: ch.views ?? [], lighting, tpc, hf, player, combat, input, enemies, grenades, pickups, renderer, shotMode, scene, squad, grenadeMode: nadeMode, objective, civilians: () => civilians?.present ?? [], world, nav, goal: () => objective?.position ?? defense?.goal, status: () => (defense ? defense.status() : objective ? `obj ${objective.position ? 'on' : '-'}` : '') + ` civ=${populace.casualties} lives=${lives}`,
     frame: (dt) => frame(dt),
     setFreeCam: (v) => (freeCam = v),
     setSkipRender: (v) => (skipRender = v),
@@ -257,13 +257,13 @@ async function boot(): Promise<void> {
       tpc.update(dt, input, player.position, player.crouchAmount, player.collisionHandle);
       camera.updateMatrixWorld();
       player.model.root.updateMatrixWorld(true);
-      if (!driving.active && !nadeMode.update(input, deadT <= 0, dt) && deadT <= 0 && !melee.update(dt, input)) combat.update(dt, input, input.aiming, player.airborne); else combat.fx(dt);
+      if (carGun.update(dt, input, driving)) void 0; else if (!driving.active && !nadeMode.update(input, deadT <= 0, dt) && deadT <= 0 && !melee.update(dt, input)) combat.update(dt, input, input.aiming, player.airborne); else combat.fx(dt);
       grenades.update(dt);
     } else combat.fx(dt);
     enemies.sync();
     squad?.sync();
     barrio?.tick?.(dt, [player.position, ...enemies.list.filter((e) => e.alive).map((e) => e.position), ...(squad?.positions ?? []), ...(civilians?.present ?? [])]);
-    collectSupplies(dt, pickups, { player, gun: combat.gun, grenades, sfx, hud, alive: deadT <= 0 });
+    collectSupplies(dt, pickups, { player, guns: combat.guns, grenades, sfx, hud, alive: deadT <= 0 });
     objective?.update(dt, player.position, enemies.list, input, deadT <= 0);
     defense?.update(dt, player.position, input, deadT <= 0);
     corpses.update(dt, { dead: enemies.list.filter((e) => !e.alive), fallen: squad?.fallen ?? [] });
@@ -276,8 +276,8 @@ async function boot(): Promise<void> {
     const cone = THREE.MathUtils.degToRad(g.coneDeg(input.aiming, player.speed, player.airborne) * tpc.steady);
     hud.update(dt, {
       spreadPx: (Math.tan(cone) / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) * innerHeight * 0.5,
-      ammo: g.ammo, mag: g.def.magazine, reserve: g.reserve, carry: g.carry, mode: g.mode, weapon: g.def.name, slotLabel: g.def.slot,
-      hp: player.hp, cap: player.regenCap, grenades: grenades.count, zoom: tpc.zoom, stamina: player.stamina, reload: g.reloadProgress, reloadHold: combat.reloadHold, aiming: input.aiming, slot: nadeMode.equipped ? 'grenade' : 'rifle',
+      ammo: g.ammo, mag: g.def.magazine, reserve: g.reserve, carry: g.carry, mode: g.mode, weapon: g.def.name, slotLabel: combat.guns[0].def.slot, sideLabel: combat.guns[1]?.def.slot,
+      hp: player.hp, cap: player.regenCap, grenades: grenades.count, zoom: tpc.zoom, stamina: player.stamina, reload: g.reloadProgress, reloadHold: combat.reloadHold, aiming: input.aiming, slot: nadeMode.equipped ? 'grenade' : combat.slot ? 'side' : 'rifle',
     });
     if (!shotMode) dynRes.update(dt);
     camera.updateMatrixWorld();

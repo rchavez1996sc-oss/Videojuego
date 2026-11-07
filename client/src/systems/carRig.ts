@@ -21,6 +21,7 @@ export class CarRig {
   constructor(world: RAPIER.World, private v: Vehicle, private sp: Spec, skip: (c: RAPIER.Collider) => boolean) {
     makeDynamic(v, new THREE.Vector3(Math.sin(v.yaw), 0, Math.cos(v.yaw)).multiplyScalar(v.speed));
     this.mass = MASS[v.kind] ?? 1300;
+    v.body.setLinearDamping(0); // drag is `coast`'s while driven
     const ctrl = (this.ctrl = world.createVehicleController(v.body));
     ctrl.indexUpAxis = 1;
     ctrl.setIndexForwardAxis = 2;
@@ -30,12 +31,12 @@ export class CarRig {
       ctrl.addWheel({ x: wx, y, z: wz }, { x: 0, y: -1, z: 0 }, { x: -1, y: 0, z: 0 }, REST, r);
       const i = ctrl.numWheels() - 1;
       (front ? this.front : this.rear).push(i);
-      ctrl.setWheelSuspensionStiffness(i, 36);
+      ctrl.setWheelSuspensionStiffness(i, sp.spring);
       ctrl.setWheelSuspensionCompression(i, 3.2);
       ctrl.setWheelSuspensionRelaxation(i, 4.0);
       ctrl.setWheelMaxSuspensionTravel(i, TRAVEL);
       ctrl.setWheelMaxSuspensionForce(i, this.mass * 9.81 * 3);
-      ctrl.setWheelFrictionSlip(i, sp.small ? 1.6 : 2.2);
+      ctrl.setWheelFrictionSlip(i, sp.grip);
       ctrl.setWheelSideFrictionStiffness(i, 1.0);
     };
     if (v.kind === 'moto') add(0, zf, true);
@@ -53,21 +54,39 @@ export class CarRig {
   }
 
   update(u: Controls, dt: number): void {
-    const { ctrl, sp, mass } = this, speed = this.speed, forward = speed > -0.5;
-    this.steer = THREE.MathUtils.damp(this.steer, u.steer * 0.6 / (1 + Math.abs(speed) / 9), 6, dt);
+    const { ctrl, sp, mass } = this, speed = this.speed;
+    this.steer = THREE.MathUtils.damp(this.steer, u.steer * sp.lock / (1 + Math.abs(speed) / 9), sp.steerRate, dt);
     for (const i of this.front) ctrl.setWheelSteering(i, this.steer);
-    const drive = this.rear.length ? this.rear : this.front, force = mass * sp.acc * 1.25 / drive.length;
+    const drive = this.rear.length ? this.rear : this.front, force = this.tractive(Math.abs(speed)) / drive.length;
     let engine = 0, brake = 0;
-    if (u.throttle && speed < sp.top) engine = force * (speed < -0.5 ? 2 : 1);
-    if (u.brake) speed > 0.5 ? (brake = mass * 9 * dt) : speed > -sp.top * 0.3 && (engine = -force * 0.6);
-    if (!u.throttle && !u.brake) brake = mass * 0.6 * dt;
-    void forward;
+    if (u.throttle) engine = speed < -0.5 ? mass * sp.acc * 2 / drive.length : force;
+    if (u.brake) speed > 0.5 ? (brake = mass * 9 * dt) : speed > -sp.top * 0.3 && (engine = -mass * sp.acc * 0.7 / drive.length);
     for (const i of [...this.front, ...this.rear]) {
       ctrl.setWheelEngineForce(i, drive.includes(i) ? engine : 0);
       ctrl.setWheelBrake(i, (brake + (u.handbrake && this.rear.includes(i) ? mass * 6 * dt : 0)) / (this.front.length + this.rear.length) * 4);
-      ctrl.setWheelFrictionSlip(i, u.handbrake && this.rear.includes(i) ? 0.9 : sp.small ? 1.6 : 2.2);
+      ctrl.setWheelFrictionSlip(i, u.handbrake && this.rear.includes(i) ? sp.grip * 0.4 : sp.grip);
     }
+    this.coast(dt);
     ctrl.updateVehicle(dt, RAPIER.QueryFilterFlags.EXCLUDE_SENSORS, undefined, (c) => c.handle !== this.v.collider.handle && !this.skip(c));
+  }
+
+  /**
+   * Net push of the engine at `v` m/s: full launch force up to the point where the engine's power runs out (a third of
+   * top speed), then power / speed, against the drag of `coast`, sized so they meet near top speed — a car keeps
+   * gaining ever more slowly instead of hitting a wall.
+   */
+  private tractive(v: number): number {
+    const { sp, mass } = this, power = mass * sp.acc * sp.top * 0.33;
+    return Math.min(mass * sp.acc, power / Math.max(v, 0.1)) * 1.12;
+  }
+
+  /** Air and rolling drag (N) at `v`, applied when coasting too. */
+  coast(dt: number): void {
+    const { sp, mass } = this, b = this.v.body, l = b.linvel(), v = Math.hypot(l.x, l.z);
+    if (v < 0.3) return;
+    const drag = (mass * sp.acc * sp.top * 0.33) / sp.top ** 3, f = (drag * v * v + mass * 0.12) * dt / mass;
+    const k = Math.max(0, 1 - f / v);
+    b.setLinvel({ x: l.x * k, y: l.y, z: l.z * k }, true);
   }
 
   /** Wheels touching the ground (0 = airborne or on its roof). */
@@ -79,5 +98,6 @@ export class CarRig {
 
   free(world: RAPIER.World): void {
     world.removeVehicleController(this.ctrl);
+    this.v.body.setLinearDamping(0.05);
   }
 }

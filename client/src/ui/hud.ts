@@ -42,7 +42,7 @@ export class Hud {
         <div class="head"><span class="weapon"></span><span class="mode"></span></div>
         <div class="count"><span class="mag">30</span><span class="res">150</span></div>
         <div class="ticks"><div></div></div>
-        <div class="slots"><div class="slot rifle on"><kbd>1</kbd><span>FUSIL</span></div><div class="slot nade"><kbd>G</kbd>GRANADA<span class="nades"></span></div></div>
+        <div class="slots"><div class="slot rifle on"><kbd>1</kbd><span>FUSIL</span></div><div class="slot side" hidden><kbd>2</kbd><span>PISTOLA</span></div><div class="slot nade"><kbd>G</kbd>GRANADA<span class="nades"></span></div></div>
       </div>`;
     document.body.appendChild(this.root);
     const q = <T extends HTMLElement>(s: string) => this.root.querySelector(s) as T;
@@ -55,7 +55,7 @@ export class Hud {
     this.hp = q('.hp div');
     this.hpNum = q('.hpnum b');
     this.ticks = q('.ticks div');
-    this.slots = [q('.slot.rifle'), q('.slot.nade')];
+    this.slots = [q('.slot.rifle'), q('.slot.nade'), q('.slot.side')];
     this.stamina = q('.stamina div');
     this.reload = q('.reload');
     this.toast = q('.toast');
@@ -75,7 +75,7 @@ export class Hud {
     this.root.style.display = v ? '' : 'none';
   }
 
-  update(dt: number, s: { spreadPx: number; ammo: number; mag: number; reserve: number; carry: number; mode: string; weapon: string; hp: number; cap: number; stamina: number; grenades: number; zoom: number; reload: number; reloadHold?: number; aiming: boolean; slot: 'rifle' | 'grenade'; slotLabel?: string }): void {
+  update(dt: number, s: { spreadPx: number; ammo: number; mag: number; reserve: number; carry: number; mode: string; weapon: string; hp: number; cap: number; stamina: number; grenades: number; zoom: number; reload: number; reloadHold?: number; aiming: boolean; slot: 'rifle' | 'side' | 'grenade'; slotLabel?: string; sideLabel?: string }): void {
     const gap = Math.round(5 + s.spreadPx);
     this.set('gap', String(gap), () => {
       this.cross[0].style.transform = `translate(-50%, ${-gap - 10}px)`;
@@ -92,10 +92,13 @@ export class Hud {
       this.ticks.style.width = `${(s.ammo / s.mag) * 100}%`;
       this.ticks.parentElement!.style.setProperty('--n', String(s.mag));
     });
-    this.set('slot', s.slot, () => {
+    this.set('slot', s.slot + (s.sideLabel ?? ''), () => {
       this.slots[0].classList.toggle('on', s.slot === 'rifle');
       if (s.slotLabel) this.slots[0].lastElementChild!.textContent = s.slotLabel;
       this.slots[1].classList.toggle('on', s.slot === 'grenade');
+      this.slots[2].hidden = !s.sideLabel;
+      this.slots[2].classList.toggle('on', s.slot === 'side');
+      if (s.sideLabel) this.slots[2].lastElementChild!.textContent = s.sideLabel;
     });
     this.set('mode', s.mode + s.weapon, () => {
       this.mode.textContent = s.mode === 'auto' ? 'AUTO' : 'SEMI';
@@ -127,7 +130,7 @@ export class Hud {
       this.reload.classList.toggle('on', s.reload > 0);
       (this.reload.querySelector('.fg') as SVGCircleElement).style.strokeDashoffset = String(125.7 * (1 - s.reload));
     });
-    const held = s.reloadHold ?? 0, hint = s.slot === 'rifle' && s.reserve > 0 && (s.ammo <= s.mag * 0.25 || held > 0) && !(s.reload > 0 && held === 0);
+    const held = s.reloadHold ?? 0, hint = s.slot !== 'grenade' && s.reserve > 0 && (s.ammo <= s.mag * 0.25 || held > 0) && !(s.reload > 0 && held === 0);
     this.set('rh', `${hint}${held.toFixed(2)}${s.ammo === 0}`, () => {
       const el = this.root.querySelector('.reload-hint')!;
       el.classList.toggle('on', hint);

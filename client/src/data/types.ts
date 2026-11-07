@@ -69,6 +69,9 @@ export interface ChapterDef {
   lives?: number;
   /** Key in weapons.json the player carries. */
   weapon?: string;
+  /** Secondary weapon (key 2) and the share of fallen police who leave its rounds instead of main ones. */
+  secondary?: string;
+  secondaryDrop?: number;
   /** Scales every enemy's health (weaker guns early on). */
   enemyHealth?: number;
   /** The first `count` roaming police are placed `min`–`max` m from the player's start; the rest spread out. */

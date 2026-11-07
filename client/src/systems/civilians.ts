@@ -14,6 +14,7 @@ import { hideSpot, HIDE_RANGE } from './civilianHide';
 import type { Heightfield } from '../world/heightfield';
 import type { Lighting } from '../render/lighting';
 import type { StreetGraph } from '../world/barrio';
+import { PERSON_SOLVER } from '../physics/groups';
 
 const UP_AXIS = new THREE.Vector3(0, 1, 0), IDENTITY = { x: 0, y: 0, z: 0, w: 1 }, PROBE = new RAPIER.Capsule(0.45, 0.28);
 
@@ -70,7 +71,7 @@ export class Civilians {
       const pos = graph.nodes[node].clone().lerp(graph.nodes[target], t).add(new THREE.Vector3((rand() - 0.5) * 3, 0, (rand() - 0.5) * 3));
       pos.y = graph.ground?.(pos.x, pos.z) ?? hf.heightAt(pos.x, pos.z);
       const body = world.createRigidBody(RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(pos.x, pos.y + 0.9, pos.z));
-      const collider = world.createCollider(RAPIER.ColliderDesc.capsule(0.5, 0.3), body);
+      const collider = world.createCollider(RAPIER.ColliderDesc.capsule(0.5, 0.3).setSolverGroups(PERSON_SOLVER), body);
       const c: Civilian = {
         model, body, collider, pos, yaw: 0, mood: rand() < 0.35 ? 'idle' : 'walk', node, target, exit: -1,
         speed: 1.1 + rand() * 0.5, timer: 2 + rand() * 6, panicT: 0, fallDir: new THREE.Vector3(), fallT: 0, shadowed: true, stuckT: 0, passT: 0, reactT: 0, hideAt: null, hideT: 0, threat: new THREE.Vector3(), route: [],
@@ -81,6 +82,7 @@ export class Civilians {
       flingers.set(collider.handle, (push) => this.runOver(collider.handle, push));
       onHit(collider.handle, (_dmg, p) => this.kill(c, new THREE.Vector3(p.x, p.y, p.z)));
     }
+    if (location.search.includes('shot')) Object.assign(window, { __civs: this });
   }
 
   /** Gunfire or an explosion at `at`: everyone within `radius` panics and runs for the farthest exit. */
@@ -126,7 +128,7 @@ export class Civilians {
     c.yaw = Math.atan2(d.z, -d.x) - Math.PI;
     c.model.root.rotation.set(0, c.yaw + Math.PI, 0);
     c.model.die('hit_car');
-    c.fling = new Fling(push.clone().setY(0).multiplyScalar(0.55), c.pos.y);
+    c.fling = new Fling(push.clone().setY(0), c.pos.y);
     return true;
   }
 

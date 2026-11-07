@@ -1,25 +1,53 @@
 import * as THREE from 'three';
 import { characters, type CharKind } from '../render/characters';
-import { buildWeapon, grenadeGeometry, type GunModel } from '../weapons/gunModels';
-import { bakeLod } from '../render/merge';
+import { grenadeGeometry, type GunModel } from '../weapons/gunModels';
+import { mountGun, type Arm } from './mountGun';
 import { dress, type Outfit } from './outfit';
 import { addWound } from './wounds';
 import { GESTURE_MAX_SPEED, GESTURE_SPAN, parts, pistolUpper } from './clipParts';
 import { civilianGait, chooseGait } from './gait';
 import { Lean } from './lean';
-import { calibrateGrip, supportHand, type GripPose } from './handIk';
+import { supportHand, type GripPose } from './handIk';
 import type { Lighting } from '../render/lighting';
 
 export type { Outfit } from './outfit';
 
 const FADE = 0.2;
+/** Mixamo clips that stand still before the action: Hit By Car only takes the blow at 56 % (2.7 s in). */
+const CLIP_START: Record<string, number> = { hit_car: 0.555, stumble: 0.14 };
 /** Clips authored facing away from the viewer and starting mid-ladder: turn the body round and drop it to the rungs. */
 const HOLD_FIX: Record<string, { yaw: number; y: number }> = { ladder: { yaw: Math.PI, y: -0.75 } };
 
 /** Skinned Mixamo character with layered animation: legs from speed/direction, torso from stance and gestures. */
 export class Rig {
   readonly root = new THREE.Group();
-  readonly muzzle: THREE.Object3D; readonly ejector: THREE.Object3D; readonly weapon: THREE.Object3D; private grip?: GripPose;
+  private arms: Arm[]; private cur = 0; private detailed: boolean;
+  private get arm(): Arm { return this.arms[this.cur]; }
+  get weapon(): THREE.Object3D { return this.arm.weapon; }
+  get muzzle(): THREE.Object3D { return this.arm.muzzle; }
+  get ejector(): THREE.Object3D { return this.arm.ejector; }
+  private get grip(): GripPose | undefined { return this.arm.grip; }
+  private get gunModel(): GunModel { return this.arm.model; }
+  /** Adds another weapon (kept out of sight until `wield`): its index. */
+  addArm(model: GunModel): number {
+    const r = this.root, at = r.position.clone(), rot = r.rotation.clone();
+    r.position.set(0, 0, 0);
+    r.rotation.set(0, 0, 0);
+    this.mixer.stopAllAction();
+    [this.lower, this.upper, this.lowKey, this.upKey] = [null, null, '', ''];
+    this.arms.push(mountGun(this.mixer, this.inst.model, this.inst.bones, this.lighting, model, this.detailed, true));
+    r.position.copy(at);
+    r.rotation.copy(rot);
+    this.arms[this.arms.length - 1].weapon.visible = false;
+    return this.arms.length - 1;
+  }
+  /** Takes weapon `i` in hand (the others hidden); the stance follows its kind on the next frame. */
+  wield(i: number): void {
+    if (i === this.cur || !this.arms[i]) return;
+    this.arm.weapon.visible = false;
+    this.cur = i;
+    this.overlay = null;
+  }
   scared = false;
   /** Shouldered rifle (aiming, firing or in a firefight). */
   aiming = false; airborne = false;
@@ -47,7 +75,7 @@ export class Rig {
   readonly lean = new Lean(); private wounds = 0;
   private idleKey: string; private steps: [string, string];
 
-  constructor(kind: CharKind, private lighting: Lighting, private armed = true, detailedGun = false, outfit?: Outfit, private gunModel: GunModel = 'ak') {
+  constructor(kind: CharKind, private lighting: Lighting, private armed = true, detailedGun = false, outfit?: Outfit, gunModel: GunModel = 'ak') {
     const update = this.root.updateMatrixWorld.bind(this.root);
     this.root.updateMatrixWorld = (force) => void (this.root.visible && update(force));
     this.inst = characters.create(kind);
@@ -55,39 +83,13 @@ export class Rig {
     this.mixer = new THREE.AnimationMixer(this.inst.model);
     const b = this.inst.bones;
     this.spine = ['mixamorigSpine', 'mixamorigSpine1', 'mixamorigSpine2'].map((n) => b.get(n)!);
-    const ak = buildWeapon(gunModel, lighting);
-    let gun: THREE.Object3D = ak.group;
-    if (!detailedGun) {
-      const merged = bakeLod(ak.group, lighting.setup(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, metalness: 0.4 }), `${gunModel}-baked`));
-      merged.add(ak.muzzle, ak.ejector, ...(ak.support ? [ak.support] : []));
-      gun = merged;
-    }
-    [this.weapon, this.muzzle] = [gun, ak.muzzle];
-    this.ejector = ak.ejector;
-    if (armed) this.gripWeapon(b.get('mixamorigRightHand')!, b.get('mixamorigLeftHand')!, ak.support);
-    else this.weapon.visible = false;
+    this.detailed = detailedGun;
+    this.arms = [mountGun(this.mixer, this.inst.model, b, lighting, gunModel, detailedGun, armed)];
+    if (!armed) this.weapon.visible = false;
     if (outfit) dress(b, outfit, lighting);
     ({ steps: this.steps, idle: this.idleKey } = civilianGait(kind === 'civ_b', (k) => characters.clips.has(k)));
     this.play(armed ? 'idle' : this.steps[0], armed ? 'aim' : this.steps[0], 0);
     this.mixer.update(Math.random());
-  }
-
-  /** Parents the rifle to the right hand, calibrated so that in the aiming pose it points straight ahead, slightly towards the left hand. */
-  private gripWeapon(rightHand: THREE.Bone, leftHand: THREE.Bone, support?: THREE.Object3D): void {
-    const a = this.mixer.clipAction(parts(this.gunModel === 'pistol' ? 'p_aim' : 'aim').full).play();
-    this.mixer.update(0);
-    this.inst.model.updateMatrixWorld(true);
-    const rh = rightHand.getWorldPosition(new THREE.Vector3()), lh = leftHand.getWorldPosition(new THREE.Vector3());
-    const ahead = new THREE.Vector3(0, 0, 1).add(lh.clone().sub(rh).setY(0).normalize().multiplyScalar(0.15)).normalize();
-    const look = new THREE.Matrix4().lookAt(rh.clone().add(ahead), rh, new THREE.Vector3(0, 1, 0));
-    const q = new THREE.Quaternion().setFromRotationMatrix(look);
-    const pos = rh.clone().add(new THREE.Vector3(0.0, 0.04, 0.06).applyQuaternion(q));
-    const world = new THREE.Matrix4().compose(pos, q, new THREE.Vector3(1, 1, 1));
-    const local = rightHand.matrixWorld.clone().invert().multiply(world);
-    local.decompose(this.weapon.position, this.weapon.quaternion, this.weapon.scale);
-    rightHand.add(this.weapon);
-    this.grip = support && calibrateGrip(this.weapon, leftHand, support);
-    a.stop();
   }
 
   /** `lowKey`/`upKey` may end in '+' (moving while aiming): legs and lower back from the stride, chest and arms from the aim. */
@@ -218,7 +220,7 @@ export class Rig {
   die(kind: string): void {
     [this.held, this.overlay, this.dead] = [null, null, false];
     this.mixer.stopAllAction();
-    this.hold(kind, 1, true);
+    this.hold(kind, 1, true, CLIP_START[kind] ?? 0);
     this.dead = true;
   }
 
