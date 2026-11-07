@@ -13,6 +13,7 @@ import type { Heightfield } from '../world/heightfield';
 import type { Lighting } from '../render/lighting';
 import type { Rig } from '../entities/rig';
 import { Riders } from './riders';
+import { shadowedCars } from '../fx/contactShadows';
 import { vehicleColliders } from '../physics/noLift';
 import { keepSane, makeDynamic, MASS, push } from './vehicleBody';
 import { tumbleStep } from './tumble';
@@ -107,7 +108,7 @@ export class Traffic {
     const body = this.world.createRigidBody(RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(0, -50, 0));
     const collider = this.world.createCollider(RAPIER.ColliderDesc.cuboid(kind === 'delivery' ? 0.4 : kind === 'micro' ? 1.15 : 0.9, kind === 'micro' ? 1.4 : 0.8, len / 2).setTranslation(0, kind === 'micro' ? 1.4 : 0.8, 0), body);
     setSurface(collider.handle, 'metal');
-    vehicleColliders.add(collider.handle);
+    vehicleColliders.add(collider.handle), shadowedCars.set(g, [kind === 'delivery' ? 0.8 : kind === 'micro' ? 2.3 : kind === 'moto' ? 1.4 : 1.8, len]);
     const v: Vehicle = { kind, group: g, body, collider, dir, x, z, base: road.z, lane: road.lane, half: road.half, yaw, speed: cruise, cruise, len, honkT, horn, panic: false, state: 'drive', hp: HP, spin: 0, drift: 0, smokeT: 0, seats };
     this.byHandle.set(collider.handle, v);
     this.list.push(v);

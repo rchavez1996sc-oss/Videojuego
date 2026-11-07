@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { shadowedChars } from '../fx/contactShadows';
 import { smoothClip } from './smoothClips';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
@@ -155,7 +156,9 @@ class CharacterLibrary {
     bodyBounds([...near, ...far]);
     const look = Math.floor(Math.random() * LOOKS);
     for (const m of [...near, ...far]) m.material = this.looks.get(m.material as THREE.Material)?.[look] ?? m.material;
-    return { model, near, far, bones };
+    const inst = { model, near, far, bones };
+    shadowedChars.add(inst);
+    return inst;
   }
 
   /** Re-dresses an instance with one of its model's looks (`DRAB` = muted field clothes). */

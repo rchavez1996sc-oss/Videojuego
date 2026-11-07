@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { ContactShadows } from '../fx/contactShadows';
 import { roughFor } from './photoTextures';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { cloudDeck } from './clouds';
@@ -26,7 +27,12 @@ export class Lighting {
   readonly csm: CSM;
   readonly sunDir = new THREE.Vector3();
 
+  /** Soft shadows where people and vehicles meet the ground. */
+  readonly contact: ContactShadows;
+
   constructor(readonly scene: THREE.Scene, camera: THREE.PerspectiveCamera, private gl: THREE.WebGLRenderer, biome: BiomeDef) {
+    this.contact = new ContactShadows(scene);
+    scene.add(this.contact.mesh);
     const phi = THREE.MathUtils.degToRad(90 - biome.sunElevation);
     const theta = THREE.MathUtils.degToRad(biome.sunAzimuth);
     this.sunDir.setFromSphericalCoords(1, phi, theta);
@@ -132,6 +138,7 @@ export class Lighting {
 
   update(camera: THREE.Camera): void {
     WIND.value = performance.now() / 1000;
+    this.contact.update(camera.position);
     this.csm.update();
     const e = camera.matrixWorld.elements, l = this.lastCam.elements;
     let moved = false;
