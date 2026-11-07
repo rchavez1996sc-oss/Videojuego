@@ -108,9 +108,7 @@ export class Enemy {
     this.lastPos.copy(this.position);
   }
 
-  get handle(): number {
-    return this.collider.handle;
-  }
+  get handle(): number { return this.collider.handle; }
 
   get alive(): boolean {
     return this.state !== 'dead';
