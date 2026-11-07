@@ -14,7 +14,7 @@ import { cutDoors, type DoorSpec } from './doorCut';
  * become `<key>-body` with a greyed colour map and a packed map (R paint mask, G roughness, B metalness) so the game
  * repaints them like the car pack; atlas bodies (buses) mask only saturated texels.
  */
-interface Plan { doors?: DoorSpec; key: string; len: number; url: string; rotY?: number; drop?: string; paint: string; mode: 'full' | 'sat'; glass?: string; tex?: Record<string, string>; minWheels?: number }
+interface Plan { doors?: DoorSpec; key: string; len: number; url: string; rotY?: number; rotX?: number; drop?: string; paint: string; mode: 'full' | 'sat'; glass?: string; tex?: Record<string, string>; minWheels?: number; wheelColor?: string }
 
 async function loadAny(url: string): Promise<THREE.Object3D> {
   if (/\.fbx$/i.test(url)) return new FBXLoader().loadAsync(url);
@@ -82,7 +82,7 @@ async function vehicle(p: Plan): Promise<THREE.Group> {
     cache.set(src, m);
     return m;
   };
-  const fix = new THREE.Matrix4().makeRotationY(p.rotY ?? 0);
+  const fix = new THREE.Matrix4().makeRotationY(p.rotY ?? 0).multiply(new THREE.Matrix4().makeRotationX(p.rotX ?? 0));
   root.traverse((o) => {
     const mesh = o as THREE.Mesh;
     if (!mesh.isMesh || (drop && drop.test(mesh.name))) return;
@@ -122,6 +122,10 @@ async function vehicle(p: Plan): Promise<THREE.Group> {
   const box = new THREE.Box3().setFromObject(out), c = box.getCenter(new THREE.Vector3()), k = p.len / (box.max.z - box.min.z);
   for (const m of out.children) (m as THREE.Mesh).geometry.translate(-c.x, -box.min.y, -c.z).scale(k, k, k);
   out.userData.wheels = splitWheels(out, p.key, p.minWheels);
+  if (p.wheelColor) {
+    const rubber = new THREE.MeshStandardMaterial({ name: `${p.key}-wheel`, color: p.wheelColor, roughness: 0.6, metalness: 0.4 });
+    out.traverse((o) => /_wheel\d$/.test(o.parent?.name ?? '') && (o as THREE.Mesh).isMesh && ((o as THREE.Mesh).material = rubber));
+  }
   if (p.doors) out.userData.doors = cutDoors(out, p.key, p.doors);
   return out;
 }
