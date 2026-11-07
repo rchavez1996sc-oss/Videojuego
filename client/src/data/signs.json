@@ -281,7 +281,7 @@
   "fg": "#c22f22"
  },
  {
-  "text": "UNIDOS POR EL CONO",
+  "text": "UNIDOS POR HUAYCÁN",
   "kind": "graffiti",
   "bg": "#f4f1ea",
   "fg": "#1f6b3a"
@@ -348,7 +348,7 @@
   "fg": "#f4f2ec"
  },
  {
-  "text": "LOS GENIALES DEL CONO",
+  "text": "LOS GENIALES DE HUAYCÁN",
   "kind": "concert",
   "bg": "#ff2d8a",
   "fg": "#111111",
@@ -409,7 +409,7 @@
   "kind": "red",
   "bg": "#b3121b",
   "fg": "#ffffff",
-  "sub": "SINDICATO UNIFICADO DE TRABAJADORES DEL CONO",
+  "sub": "SINDICATO UNIFICADO DE TRABAJADORES DE HUAYCÁN",
   "accent": "#f2c230"
  },
  {
@@ -437,7 +437,7 @@
   "accent": "#111111"
  },
  {
-  "text": "EL CONO SE ORGANIZA",
+  "text": "HUAYCÁN SE ORGANIZA",
   "kind": "poster",
   "bg": "#b3121b",
   "fg": "#ffffff",

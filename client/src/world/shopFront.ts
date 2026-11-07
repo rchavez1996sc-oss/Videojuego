@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { Builder, Opening } from './buildingKit';
 import type { SignDef, SignKind } from './signs';
+import { addMenuBoard } from './menuBoards';
 
 export type Sign = (at: THREE.Vector3, q: THREE.Quaternion, w: number, kind?: SignKind) => SignDef | void;
 type At = (x: number, y: number, z: number) => THREE.Vector3;
@@ -31,5 +32,6 @@ export function shopFront(b: Builder, at: At, q: THREE.Quaternion, o: Opening, y
     const l = doorEdge, r = o.x - o.w / 2 - 0.15, gw = Math.min(r - l, 1.9);
     if (gw >= 0.9) sign(at((l + r) / 2, floor + 1.45, 0.03), q, gw, 'menu');
     else sign(at(o.x, floor + 1.55, 0.25), q, Math.min(o.w - 0.4, 1.6), 'menu');
+    if (open) addMenuBoard(at(o.x + (rand() < 0.5 ? -1 : 1) * (o.w / 2 + 0.05), floor, 0.75 + rand() * 0.3), new THREE.Euler().setFromQuaternion(q, 'YXZ').y + (rand() - 0.5) * 0.7, Math.floor(rand() * 5));
   }
 }

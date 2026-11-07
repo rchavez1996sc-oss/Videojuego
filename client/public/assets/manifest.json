@@ -1,5 +1,5 @@
 {
-  "version": 25,
+  "version": 26,
   "characters": {
     "pnp": {
       "near": "characters/pnp.glb",
@@ -204,5 +204,12 @@
     "cat": "pets/cat.glb"
   },
   "cars": "cars/cars.glb",
-  "vehicles": "cars/vehicles.glb"
+  "vehicles": "cars/vehicles.glb",
+  "props": {
+    "menuBoard": {
+      "model": "props/menuBoard.glb",
+      "color": "props/menuBoard_col.jpg",
+      "normal": "props/menuBoard_nrm.jpg"
+    }
+  }
 }
