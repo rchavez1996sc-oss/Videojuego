@@ -69,7 +69,7 @@ export function animDebug(c: DebugContext) {
       dent(v.group, at, depth);
       let n = 0;
       v.group.traverse((o) => { if (o.userData.dentable) n++; });
-      return `dented meshes ${n}`;
+      return `dented meshes ${n} ${v.state} @${[v.x, v.y ?? 0, v.z, v.yaw].map((k) => k.toFixed(3)).join(',')}`;
     },
     /** The vehicle `placeAhead` put in the way: state, position, terrain height under it, visibility. */
     victimCar() {
@@ -132,6 +132,13 @@ export function animDebug(c: DebugContext) {
         out.push(`${v.kind}: ${w.length} wheels [${w.map((o) => o.name).join(',')}] pivot-off ${off.join(',')} R ${v.group.userData.wheelR?.toFixed?.(2)}`);
       }
       return out.join('\n');
+    },
+    /** Wheels of the driven car: name, local position vs. rest, offset from the body (car space). */
+    wheelPos() {
+      const tr = c.traffic?.() as unknown as { list: { state: string; group: THREE.Group }[] } | undefined, v = tr?.list.find((o) => o.state === 'player');
+      if (!v) return 'none';
+      v.group.updateMatrixWorld(true);
+      return ((v.group.userData.wheels ?? []) as THREE.Object3D[]).map((w) => `${w.name} at ${v.group.worldToLocal(new THREE.Box3().setFromObject(w).getCenter(new THREE.Vector3())).toArray().map((k) => k.toFixed(2))} pos ${w.position.toArray().map((k) => k.toFixed(2))} base ${w.userData.base?.toArray().map((k: number) => k.toFixed(2))} parentScale ${w.parent!.scale.y.toFixed(3)}`).join('\n');
     },
     clipLen(key: string) { return characters.clips.get(key)?.duration ?? -1; },
     poseSheet(key: string, fracs: number[], x: number, z: number, kind: CharKind = 'fls') {

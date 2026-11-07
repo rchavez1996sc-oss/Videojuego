@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { toFloat } from '../render/floatGeometry';
+import { damageMesh, crackGlass } from './carDamage';
 
 /**
  * Crumples a vehicle's bodywork where it was hit: vertices near the impact point move into the body (deepest at the
@@ -22,6 +23,7 @@ export function dent(group: THREE.Object3D, at: THREE.Vector3, depth: number, ra
     const inv = new THREE.Matrix4().copy(m.matrixWorld).invert(), p = at.clone().applyMatrix4(inv);
     const s = new THREE.Vector3().setFromMatrixScale(m.matrixWorld), k = 3 / (s.x + s.y + s.z), r = radius * k;
     const dir = into.clone().transformDirection(inv).multiplyScalar(depth * k), pos = m.geometry.attributes.position as THREE.BufferAttribute, v = new THREE.Vector3();
+    damageMesh(m, p, r * 1.15, Math.min(0.9, Math.max(0.3, depth * 3)));
     let moved = false;
     for (let i = 0; i < pos.count; i++) {
       v.fromBufferAttribute(pos, i);
@@ -36,4 +38,5 @@ export function dent(group: THREE.Object3D, at: THREE.Vector3, depth: number, ra
     m.geometry.computeVertexNormals();
     m.geometry.boundingSphere = null;
   }
+  if (depth > 0.12) crackGlass(group, at, 0.6 + depth * 3);
 }

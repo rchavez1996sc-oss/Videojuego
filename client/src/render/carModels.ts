@@ -3,6 +3,7 @@ import { doorsOf } from '../systems/carDoors';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import type { Lighting } from './lighting';
+import { useGlassLighting } from '../fx/carDamage';
 
 const BASE = `${import.meta.env.BASE_URL}assets/`;
 
@@ -24,7 +25,7 @@ export const PAINT: Record<string, string> = { car0: '#c9c6bf', car1: '#2a2c30',
  * shared program keeps working for every paint); trims, tyres and lights keep their texture. Roughness and metalness
  * come from the same map's green and blue.
  */
-function paintHook(shader: THREE.WebGLProgramParametersWithUniforms): void {
+export function paintHook(shader: THREE.WebGLProgramParametersWithUniforms): void {
   shader.fragmentShader = shader.fragmentShader
     .replace('#include <color_fragment>', '')
     .replace('#include <map_fragment>', `diffuseColor.rgb = vec3(1.0);
@@ -50,6 +51,7 @@ class CarModels {
 
   async load(lighting: Lighting): Promise<void> {
     this.lighting = lighting;
+    useGlassLighting(lighting);
     const manifest = await fetch(`${BASE}manifest.json`, { cache: 'no-store' }).then((r) => r.json()).catch(() => null);
     const urls = [manifest?.cars, manifest?.vehicles].filter(Boolean) as string[];
     const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
@@ -74,6 +76,7 @@ class CarModels {
         m.material = Array.isArray(m.material) ? m.material.map((x) => setup(x as THREE.MeshStandardMaterial)) : setup(m.material as THREE.MeshStandardMaterial);
         m.castShadow = m.receiveShadow = true;
       });
+      pivotWheels(car);
       this.protos.set(car.name, car);
     }
   }
@@ -177,3 +180,24 @@ class CarModels {
 }
 
 export const carModels = new CarModels();
+
+/**
+ * gltfpack moves a wheel's centring into its mesh, leaving the named node at the car origin: spun or steered about
+ * that, the wheel swings round the car (onto the roof). Each such wheel gets a pivot node at its hub, under the name.
+ */
+function pivotWheels(car: THREE.Object3D): void {
+  car.updateMatrixWorld(true);
+  const wheels: THREE.Object3D[] = [];
+  car.traverse((o) => /_wheel\d$/.test(o.name) && wheels.push(o));
+  for (const w of wheels) {
+    const parent = w.parent!, hub = parent.worldToLocal(new THREE.Box3().setFromObject(w).getCenter(new THREE.Vector3()));
+    if (hub.distanceTo(w.position) < 0.02 / (parent.getWorldScale(new THREE.Vector3()).y || 1)) continue;
+    const pivot = new THREE.Group();
+    pivot.name = w.name;
+    w.name += '_mesh';
+    pivot.position.copy(hub);
+    parent.add(pivot);
+    pivot.updateMatrixWorld(true);
+    pivot.attach(w);
+  }
+}
