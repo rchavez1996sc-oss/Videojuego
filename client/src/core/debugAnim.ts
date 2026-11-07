@@ -52,6 +52,23 @@ export function animDebug(c: DebugContext) {
       return out.join('\n');
     },
     /** Debug: a traffic vehicle of `kind` stopped across the road `dist` m ahead of the driven car (for crash tests). */
+    /** Drives `kind` a bit, stops, gets out with E, then walks with `keys`: logs body, model, flags and camera every 0.2 s. */
+    exitTest(kind: string, keys: string[] = ['KeyW']) {
+      const out = [this.driveTest(kind, [[['KeyW'], 1.2], [['Space'], 2.5], [[], 2]])];
+      c.setSkipRender(true);
+      key('KeyE', true); c.frame(1 / 30); key('KeyE', false);
+      const p = c.player as unknown as { position: THREE.Vector3; puppet: boolean; mantling: boolean; speed: number; model: { root: THREE.Object3D }; collisionHandle: number };
+      const log = (tag: string) => {
+        const col = c.world!.getCollider(p.collisionHandle), b = col.parent()!.translation(), m = p.model.root.position;
+        out.push(`${tag} feet ${p.position.toArray().map((v) => v.toFixed(2))} body ${[b.x, b.y, b.z].map((v) => v.toFixed(2))} model ${m.toArray().map((v) => v.toFixed(2))} sp ${p.speed.toFixed(2)} pup ${p.puppet} mant ${p.mantling} col ${col.isEnabled()} cam ${c.tpc.camera.position.distanceTo(p.position).toFixed(1)} veh ${c.tpc.vehicle} held ${(p.model as unknown as { held?: { key: string } }).held?.key ?? '-'} low ${(p.model as unknown as { lowKey: string }).lowKey} t ${((p.model as unknown as { lower?: { time: number } }).lower?.time ?? -1).toFixed(2)} far ${(p.model as unknown as { far: boolean }).far} vis ${p.model.root.visible} gun ${(p.model as unknown as { weapon: THREE.Object3D }).weapon.visible}`);
+      };
+      for (let i = 0; i < 90; i++) { c.frame(1 / 30); if (i % 10 === 0) log(`out${i}`); }
+      keys.forEach((k) => key(k, true));
+      for (let i = 0; i < 60; i++) { c.frame(1 / 30); if (i % 10 === 0) log(`walk${i}`); }
+      keys.forEach((k) => key(k, false));
+      c.setSkipRender(false);
+      return out.join('\n');
+    },
     /** San Marcos: clears traffic off Av. Venezuela, puts the driven `kind` at its west end and floors it: 0–100 time and speeds. */
     accelTest(kind: string, secs = 22) {
       const how = this.driveTest(kind, []);

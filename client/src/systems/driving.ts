@@ -73,6 +73,7 @@ export class Driving {
       if (alive && this.anim.update(dt)) return true;
       const then = this.after!;
       [this.anim, this.after, player.puppet] = [null, null, false];
+      player.model.release(0.25);
       then();
       return !!this.car;
     }
