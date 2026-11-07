@@ -9,7 +9,7 @@ export interface LightRoad { z: number; half: number; x: number[]; cross?: numbe
 
 const GREEN = 15, AMBER = 3, RED = 12, CYCLE = GREEN + AMBER + RED, WAVE = 3.5;
 type Phase = 'g' | 'y' | 'r';
-const ON: Record<Phase, THREE.Color> = { r: new THREE.Color(4, 0.25, 0.12), y: new THREE.Color(4, 2.2, 0.15), g: new THREE.Color(0.15, 3.4, 1.4) };
+const ON: Record<Phase, THREE.Color> = { r: new THREE.Color(14, 0.8, 0.4), y: new THREE.Color(9, 5, 0.3), g: new THREE.Color(0.3, 7, 2.8) };
 const OFF: Record<Phase, THREE.Color> = { r: new THREE.Color(0.09, 0.02, 0.02), y: new THREE.Color(0.09, 0.07, 0.02), g: new THREE.Color(0.02, 0.08, 0.05) };
 const ORDER: Phase[] = ['r', 'y', 'g'];
 
