@@ -4,6 +4,7 @@ import { Builder } from '../world/buildingKit';
 import { car, mototaxi, type CarKind } from '../world/urbanProps';
 import { combiLivery, companyColor, type Fit } from '../world/livery';
 import { carModels } from '../render/carModels';
+import { deliveryBike, thermalBox } from '../world/deliveryBike';
 
 export interface VehicleMats { materials: Record<string, THREE.Material>; bake: { material: THREE.Material; keys: string[] }[] }
 
@@ -40,3 +41,13 @@ export function buildLoose(b: Builder, lighting: Lighting, mats: VehicleMats): T
   glass ??= lighting.setup(new THREE.MeshStandardMaterial({ color: '#1c2228', roughness: 0.05, metalness: 0.2, envMapIntensity: 1.6, transparent: true, opacity: 0.72 }), 'glass-see');
   return b.build({ ...mats.materials, glass }, 0.5, mats.bake.map((x) => ({ ...x, keys: x.keys.filter((k) => k !== 'glass') })));
 }
+
+/** A motorcycle in traffic: the modelled bike (repainted) when loaded — every other one a courier with the thermal box — else the procedural delivery bike. */
+export function bikeLook(lighting: Lighting, mats: VehicleMats, i: number): THREE.Group {
+  const model = carModels.pick('delivery', i), b = new Builder(null, null);
+  if (!model) return deliveryBike(b, i % 3), new THREE.Group().add(...buildLoose(b, lighting, mats));
+  const g = carModels.make(model, 'delivery', ['moto0', 'moto1', 'car1', 'car2', 'car4', 'car0'][i % 6]);
+  if (i % 2 === 0) (thermalBox(b, i % 3, BOX_LIFT, BOX_BACK), g.add(...buildLoose(b, lighting, mats)));
+  return g;
+}
+const BOX_LIFT = 0.02, BOX_BACK = 0.12;

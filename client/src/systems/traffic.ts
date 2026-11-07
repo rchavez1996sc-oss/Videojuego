@@ -1,12 +1,10 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import RAPIER from '@dimforge/rapier3d-compat';
-import { Builder } from '../world/buildingKit';
 import type { CarKind } from '../world/urbanProps';
-import { vehicleLook, buildLoose, type VehicleMats } from './vehicleLook';
+import { vehicleLook, bikeLook, type VehicleMats } from './vehicleLook';
 import { carModels } from '../render/carModels';
 import type { ParkedSpot } from '../world/parkedCars';
-import { deliveryBike } from '../world/deliveryBike';
 import { onHit, setSurface } from '../world/surfaces';
 import { seatedPerson, seatedRig, seatsOf } from '../entities/occupants';
 import type { Heightfield } from '../world/heightfield';
@@ -98,9 +96,7 @@ export class Traffic {
   }
 
   private bike(i: number): THREE.Group {
-    const b = new Builder(null, null);
-    deliveryBike(b, i % 3);
-    return new THREE.Group().add(...buildLoose(b, this.lighting, this.look));
+    return bikeLook(this.lighting, this.look, i);
   }
   private register(kind: Vehicle['kind'], g: THREE.Group, seats: THREE.Group[], x: number, z: number, dir: 1 | -1, road: Road, cruise: number, horn: number, honkT: number, yaw = dir > 0 ? Math.PI / 2 : -Math.PI / 2): Vehicle {
     this.group.add(g);

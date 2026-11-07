@@ -17,7 +17,13 @@ export function deliveryBike(b: Builder, brand: number): void {
   box('light', [0.16, 0.12, 0.08], 0, 0.92, 0.66);
   box('tail', [0.12, 0.05, 0.04], 0, 0.78, -0.72);
   box('rim', [0.07, 0.07, 0.5], 0.17, 0.42, -0.35);
-  box(`deliv${brand}`, [0.5, 0.42, 0.46], 0, 1.18, -0.58);
-  box('plastic', [0.52, 0.06, 0.48], 0, 1.41, -0.58);
-  box('plastic', [0.06, 0.3, 0.06], 0, 0.95, -0.4);
+  thermalBox(b, brand);
+}
+
+/** The courier's thermal box on its rack behind the seat (`lift`: seat height above 0.84). */
+export function thermalBox(b: Builder, brand: number, lift = 0, back = 0): void {
+  const at = (x: number, y: number, z: number) => new THREE.Vector3(x, y + lift, z - back), q = new THREE.Quaternion();
+  b.box(`deliv${brand}`, [0.5, 0.42, 0.46], at(0, 1.18, -0.58), q, false);
+  b.box('plastic', [0.52, 0.06, 0.48], at(0, 1.41, -0.58), q, false);
+  b.box('plastic', [0.06, 0.3, 0.06], at(0, 0.95, -0.4), q, false);
 }

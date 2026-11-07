@@ -46,7 +46,7 @@ function take(g: THREE.BufferGeometry, tris: number[], at: THREE.Vector3): THREE
  * like the car pack, so the game can spin and steer them: round pieces at the bottom are grouped per wheel (twin
  * rear tyres together) and every smaller piece inside a wheel (hub, nuts) goes with it.
  */
-export function splitWheels(out: THREE.Group, key: string): number {
+export function splitWheels(out: THREE.Group, key: string, min = 3): number {
   const meshes = out.children.filter((o): o is THREE.Mesh => (o as THREE.Mesh).isMesh && !(o as THREE.Mesh).geometry.index);
   const all = meshes.flatMap(islands), wheels: { box: THREE.Box3; parts: Island[] }[] = [];
   for (const isl of all.filter((i) => wheelish(i.box))) {
@@ -55,7 +55,7 @@ export function splitWheels(out: THREE.Group, key: string): number {
     if (w) [w.parts.push(isl), w.box.union(isl.box)];
     else wheels.push({ box: isl.box.clone(), parts: [isl] });
   }
-  if (wheels.length < 3) return 0;
+  if (wheels.length < min) return 0;
   for (const isl of all) {
     if (wheels.some((w) => w.parts.includes(isl))) continue;
     const w = wheels.find((w) => w.box.clone().expandByScalar(0.03).containsBox(isl.box));

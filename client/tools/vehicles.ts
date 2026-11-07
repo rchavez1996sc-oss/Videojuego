@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import { ColladaLoader } from 'three/examples/jsm/loaders/ColladaLoader.js';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { splitWheels } from './wheelSplit';
@@ -13,11 +14,12 @@ import { cutDoors, type DoorSpec } from './doorCut';
  * become `<key>-body` with a greyed colour map and a packed map (R paint mask, G roughness, B metalness) so the game
  * repaints them like the car pack; atlas bodies (buses) mask only saturated texels.
  */
-interface Plan { doors?: DoorSpec; key: string; len: number; url: string; rotY?: number; drop?: string; paint: string; mode: 'full' | 'sat'; glass?: string; tex?: Record<string, string> }
+interface Plan { doors?: DoorSpec; key: string; len: number; url: string; rotY?: number; drop?: string; paint: string; mode: 'full' | 'sat'; glass?: string; tex?: Record<string, string>; minWheels?: number }
 
 async function loadAny(url: string): Promise<THREE.Object3D> {
   if (/\.fbx$/i.test(url)) return new FBXLoader().loadAsync(url);
   if (/\.obj$/i.test(url)) return new OBJLoader().loadAsync(url);
+  if (/\.dae$/i.test(url)) return (await new ColladaLoader().loadAsync(url)).scene;
   return (await new GLTFLoader().loadAsync(url)).scene;
 }
 
@@ -119,7 +121,7 @@ async function vehicle(p: Plan): Promise<THREE.Group> {
   }
   const box = new THREE.Box3().setFromObject(out), c = box.getCenter(new THREE.Vector3()), k = p.len / (box.max.z - box.min.z);
   for (const m of out.children) (m as THREE.Mesh).geometry.translate(-c.x, -box.min.y, -c.z).scale(k, k, k);
-  out.userData.wheels = splitWheels(out, p.key);
+  out.userData.wheels = splitWheels(out, p.key, p.minWheels);
   if (p.doors) out.userData.doors = cutDoors(out, p.key, p.doors);
   return out;
 }

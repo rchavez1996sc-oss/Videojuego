@@ -10,9 +10,9 @@ const BASE = `${import.meta.env.BASE_URL}assets/`;
 /** Which modelled cars stand in for each game kind (a seed picks one), and the game length each is fitted to (m). */
 const MODELS: Record<string, string[]> = {
   sedan: ['sedan', 'sedan', 'coupe', 'hatchback', 'lowA', 'lowC'], tico: ['compact'], wagon: ['wagon', 'suv', 'minivan', 'lowD'], pickup: ['pickup', 'pickup', 'offroad', 'lowB'],
-  combi: ['van'], micro: ['ussr', 'nagoya'], beetle: ['beetle'], moto: ['tuktuk'],
+  combi: ['van'], micro: ['ussr', 'nagoya'], beetle: ['beetle'], moto: ['tuktuk'], delivery: ['motorbike'],
 };
-const LENGTH: Record<string, number> = { sedan: 4.3, tico: 3.3, wagon: 4.6, pickup: 5.0, combi: 4.8, micro: 8.6, beetle: 4.0, moto: 2.6 };
+const LENGTH: Record<string, number> = { sedan: 4.3, tico: 3.3, wagon: 4.6, pickup: 5.0, combi: 4.8, micro: 8.6, beetle: 4.0, moto: 2.6, delivery: 2.05 };
 /** Kinds whose model is also fitted to a width (buses and mototaxis come in other proportions; height follows the mean). */
 const WIDTH: Record<string, number> = { combi: 1.85, micro: 2.35, moto: 1.4 };
 
