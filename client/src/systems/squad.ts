@@ -153,6 +153,7 @@ export class Squad {
         u.update(dt, aim ? Math.atan2(aim.y, Math.hypot(aim.x, aim.z)) : 0);
       } else {
         u.update(dt, 0);
+        if (!a.lost && a.downedT < this.def.bleedOut - 2.6 && leaderAlive && u.position.distanceTo(this.d.player.position) < 40) u.crawlTo(this.d.player.position, dt);
         if (!a.lost && (a.downedT -= dt) <= 0) {
           a.lost = true;
           this.d.hud.showToast(`${a.name} HA CAÍDO`);
@@ -195,7 +196,7 @@ export class Squad {
   }
 
   private fire(a: Ally): void {
-    if (holdingFire()) return;
+    if (holdingFire() || a.unit.stunned) return;
     const { world, enemies, combat, camera, sfx, player } = this.d;
     const u = a.unit, t = a.target!;
     const muzzle = u.model.muzzle.getWorldPosition(new THREE.Vector3());

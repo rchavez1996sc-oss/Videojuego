@@ -20,6 +20,22 @@ export function animDebug(c: DebugContext) {
       const v = tr?.list.find((o) => o.state === 'player') ?? tr?.list.find((o) => o.state === 'parked');
       return v ? [v.x, v.y ?? 0, v.yaw, v.z] : [0, 0, 0, 0];
     },
+    /** Downs ally `i` (as if shot), then lets `seconds` pass; reports how far it crawled toward the player. */
+    downAlly(i: number, seconds: number) {
+      const a = c.squad!.list[i];
+      a.unit.teleport(c.player.position.clone().add(new THREE.Vector3(9, 0, 0)));
+      const p0 = a.unit.position.clone();
+      c.squad!.hurt(a, 1e6, a.unit.position.clone().add(new THREE.Vector3(1, 0, 0)));
+      this.advance(seconds);
+      return `ally ${i} moved ${a.unit.position.distanceTo(p0).toFixed(2)} m, to player ${a.unit.position.distanceTo(c.player.position).toFixed(2)} m (was ${p0.distanceTo(c.player.position).toFixed(2)})`;
+    },
+    /** Knocks enemy `i` down (pushed along +x) and frames it after `seconds`. */
+    knockTest(i: number, seconds: number) {
+      const e = c.enemies.list[i];
+      e.knockDown(new THREE.Vector3(1, 0, 0.2));
+      this.advance(seconds);
+      return `stunned ${e.stunned}`;
+    },
     /** Simulates `seconds` without rendering (follow camera), then renders one frame. */
     advance(seconds: number) {
       c.setFreeCam(false);
@@ -56,6 +72,7 @@ export function animDebug(c: DebugContext) {
       c.player.respawn(new THREE.Vector3(px + Math.cos(yaw) * 1.8, c.hf.heightAt(px, pz), pz - Math.sin(yaw) * 1.8), 0);
       c.frame(1 / 30);
       key('KeyE', true); c.frame(1 / 30); key('KeyE', false);
+      for (let i = 0; i < 90; i++) c.frame(1 / 30);
       v ??= tr!.list.find((o) => o.state === 'player') ?? tr!.list[tr!.list.length - 1];
       if (spot) log0 = `parked ${spot.kind} ${spot.model} `;
       const prey = victim === true ? c.enemies.list.find((e) => e.alive) : undefined;
@@ -63,13 +80,15 @@ export function animDebug(c: DebugContext) {
       const log = [`${log0}in: ${v.state}`];
       for (const [n, [keys, secs]] of plan.entries()) {
         if (civ && n === 1) civ.set(v.x + Math.sin(v.yaw) * 6, c.hf.heightAt(v.x, v.z), v.z + Math.cos(v.yaw) * 6);
-        if (prey && n === 1) prey.teleport(new THREE.Vector3(v.x + Math.sin(v.yaw) * 6, c.hf.heightAt(v.x, v.z), v.z + Math.cos(v.yaw) * 6));
+        if (prey && n === 1) prey.teleport(new THREE.Vector3(v.x + Math.sin(v.yaw) * 5, c.hf.heightAt(v.x, v.z), v.z + Math.cos(v.yaw) * 6));
         keys.forEach((k) => key(k, true));
         for (let i = 0; i < Math.round(secs * 30); i++) c.frame(1 / 30);
         keys.forEach((k) => key(k, false));
+        if (prey) log.push(`  prey hp ${prey.hp.toFixed(0)} stunned ${prey.stunned} @${prey.position.x.toFixed(1)},${prey.position.z.toFixed(1)}`);
         log.push(`${keys.join('+') || '-'} ${secs}s → ${v.x.toFixed(1)},${(v.y ?? 0).toFixed(2)},${v.z.toFixed(1)} yaw ${v.yaw.toFixed(2)} v ${v.speed.toFixed(1)} hp ${c.player.hp.toFixed(0)}`);
       }
       if (civ) log.push(`civilians ${civN} → ${c.civilians?.().length} (civ @${civ.x.toFixed(1)},${civ.z.toFixed(1)})`);
+      if (prey) log.push(`prey stunned ${prey.stunned}`);
       if (prey) log.push(`prey alive ${prey.alive} hp ${prey.hp.toFixed(0)} at ${prey.position.x.toFixed(2)} ${prey.position.y.toFixed(2)} ${prey.position.z.toFixed(2)}`);
       c.setSkipRender(false);
       c.frame(1 / 60);

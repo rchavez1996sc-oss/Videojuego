@@ -4,6 +4,8 @@ import { surfaceTop } from '../world/groundStrips';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { pickDeath } from './deathFall';
 import { Fling } from './fling';
+import { Knockdown } from './knockdown';
+import { crawlToward } from './crawl';
 import { characters } from '../render/characters';
 import { CLIMBS, findLedge, mantlePath, type Ledge } from './mantle';
 import type { Palette } from './mannequin';
@@ -75,6 +77,19 @@ export class Enemy {
   private lastPos = new THREE.Vector3();
   private fallDir = new THREE.Vector3();
   private fling: Fling | null = null;
+  private knock: Knockdown | null = null;
+  /** Downed ally: crawls towards `target` (the player), see `crawlToward`. */
+  crawlTo(target: THREE.Vector3, dt: number): void { this.crawlYaw = crawlToward(this.model, this.world, this.position, this.crawlYaw ?? this.yaw + Math.PI, target, dt, this.collider.handle); }
+  private crawlYaw: number | null = null;
+  /** Down after a vehicle hit (stumbling or getting up): no moving or shooting. */ get stunned(): boolean { return !!this.knock; }
+
+  /** A vehicle hit it and it survived: falls back along `push` and gets up, if there is room. */
+  knockDown(push: THREE.Vector3): void {
+    if (!this.alive || this.knock || this.hop) return;
+    this.knock = Knockdown.start(this.world, this.model, this.position, push, this.collider.handle);
+    if (this.knock) [this.yaw, this.moveTarget, this.path] = [this.knock.yaw, null, []];
+  }
+
   private colliderCrouched = false;
 
   constructor(readonly id: number, readonly def: EnemyDef, private world: RAPIER.World, lighting: Lighting, spawn: THREE.Vector3, readonly patrol: THREE.Vector3[], readonly isStatic: boolean, outfit?: Outfit) {
@@ -119,6 +134,7 @@ export class Enemy {
       this.collider.setTranslationWrtParent({ x: 0, y: this.crouched ? -0.28 : 0, z: 0 });
     }
     if (this.hop) return this.updateHop(dt, aimPitch);
+    if (this.knock) return void (this.knock.step(dt, this.position, this.body, HALF + RADIUS + 0.05) || (this.knock = null));
     const target = this.detour ?? this.path[0] ?? this.moveTarget;
     const wish = new THREE.Vector3();
     if (target && !this.isStatic) {
@@ -236,6 +252,7 @@ export class Enemy {
 
   /** Back on their feet after being downed (allies only). */
   revive(hp: number): void {
+    this.crawlYaw = null;
     this.state = 'patrol';
     this.hp = hp;
     this.collider.setEnabled(true);
@@ -255,7 +272,7 @@ export class Enemy {
 
   /** `launch`: thrown by a vehicle or a blast (velocity, m/s): hit-by-car or flying-back clip, turned to the hit, and a slide. */
   die(dir: THREE.Vector3, launch?: THREE.Vector3, by: 'car' | 'blast' = 'car'): void {
-    this.state = 'dead';
+    [this.state, this.knock] = ['dead', null];
     if (this.cover) this.cover.owner = -1;
     this.collider.setEnabled(false);
     const flat = dir.clone().setY(0);

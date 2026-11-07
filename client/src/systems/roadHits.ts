@@ -18,7 +18,7 @@ export function wireRoad(traffic: Traffic, d: { world: RAPIER.World; player: Pla
     const out: Victim[] = [];
     if (d.alive()) out.push({ key: 'p', kind: 'player', pos: player.position, alive: () => true, hurt: (dmg, from, shove) => { d.playerHit(dmg, from); player.shove(shove); } });
     for (const e of enemies.list) if (e.alive) out.push({ key: `e${e.id}`, kind: 'police', pos: e.position, alive: () => e.alive, hurt: (dmg, from, shove) => enemies.runOver(e, dmg, from, shove) });
-    for (const a of squad?.list ?? []) if (a.unit.alive) out.push({ key: `a${a.unit.id}`, kind: 'ally', pos: a.unit.position, alive: () => a.unit.alive, hurt: (dmg, from) => squad!.hurt(a, dmg, from) });
+    for (const a of squad?.list ?? []) if (a.unit.alive) out.push({ key: `a${a.unit.id}`, kind: 'ally', pos: a.unit.position, alive: () => a.unit.alive, hurt: (dmg, from, shove) => (squad!.hurt(a, dmg, from), a.unit.knockDown(shove)) });
     for (const h of innocents) {
       const c = world.getCollider(h);
       if (!c || !c.isEnabled()) continue;

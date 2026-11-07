@@ -16,7 +16,7 @@ const PLAYER_ARMOUR = 0.85;
 
 /** One enemy round: accurate attackers aim at the target's chest, the rest suppress around it (at an ally, `allyAim` of them aim). */
 export function enemyFire(e: Enemy, en: Enemies, ctx: AIContext, attacker: boolean, world: RAPIER.World, camera: THREE.PerspectiveCamera, combat: Combat, sfx: Sfx, player: Player, atAlly = false): void {
-  if (holdingFire()) return;
+  if (holdingFire() || e.stunned) return;
   const muzzle = e.model.muzzle.getWorldPosition(new THREE.Vector3());
   e.flash.fire(e.model.muzzle);
   e.model.fire();
