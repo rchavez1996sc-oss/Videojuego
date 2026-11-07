@@ -18,6 +18,8 @@ import { seatedRig, seatsOf } from '../entities/occupants';
 import { roomy } from './respawn';
 import { parkedCars } from '../world/parkedCars';
 import { SeatAnim } from './carEntry';
+import { Fling } from '../entities/fling';
+import { busCabin } from './busCabin';
 import { doorDuring, doorPulse, setDoor } from './carDoors';
 import { suspendWheels } from './wheelSpin';
 import type { Rig } from '../entities/rig';
@@ -40,6 +42,8 @@ export class Driving {
   private speedo = document.createElement('div');
   private bodyOff = 0;
   private idleMouse = 0;
+  /** Inside of a bus around the camera while driving it. */
+  private cabin: THREE.Group | null = null;
   /** A door opening and shutting by itself (getting in or out without the clip). */
   private swing: { g: THREE.Object3D; side: number; t: number } | null = null;
   private hitT = new Map<string, number>();
@@ -50,6 +54,11 @@ export class Driving {
 
   constructor(private d: Deps) {
     this.engine = new EngineSound(d.mixer);
+    Fling.onSlam = (at, speed) => {
+      const near = at.distanceTo(d.tpc.camera.position);
+      d.sfx.thud(Math.min(1, speed / 10) / (1 + near / 15));
+      if (near < 25) d.tpc.kick(0, 0, Math.min(0.25, speed * 0.015) / (1 + near / 8));
+    };
     this.prompt.className = 'prompt';
     this.prompt.style.opacity = '0';
     this.speedo.className = 'speedo';
@@ -113,6 +122,11 @@ export class Driving {
     col.setEnabled(false);
     tpc.vehicle = 4.5 + v.len * 0.6;
     tpc.lift = sp.height * 0.35;
+    if (v.kind === 'micro') {
+      this.cabin = busCabin(v.group, this.d.lighting);
+      v.group.add(this.cabin);
+      [tpc.vehicle, tpc.lift] = [0.15, this.cabin.userData.eye - 1.78];
+    }
     const at = seatsOf(v.group, v.kind)[0];
     if (at && SeatAnim.possible() && v.kind !== 'moto' && v.kind !== 'delivery') {
       v.group.updateMatrixWorld(true);
@@ -167,6 +181,8 @@ export class Driving {
     this.speedo.style.opacity = '0';
     const done = () => {
       tpc.vehicle = tpc.lift = 0;
+      if (this.cabin) this.cabin.removeFromParent();
+      this.cabin = null;
       [this.car, this.state, this.seat] = [null, null, null];
     };
     if (!walk) {

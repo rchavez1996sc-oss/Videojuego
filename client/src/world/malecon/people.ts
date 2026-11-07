@@ -120,6 +120,7 @@ function shootable(world: RAPIER.World, rig: Rig, floor: number, seated: boolean
     rig.root.rotation.set(0, Math.atan2(d.z, -d.x), 0);
     rig.die('hit_car');
     dying.set(rig, 6);
+    Fling.backOff(world, rig.root.position, d, col.handle);
     flings.set(rig, new Fling(push.clone().setY(0), rig.root.position.y));
     hurt.onHurt(new THREE.Vector3(p.x, p.y + 0.9, p.z));
     return true;

@@ -279,6 +279,7 @@ export class Enemy {
       const fd = launch.clone().setY(0).normalize(), car = by === 'car' && characters.clips.has('hit_car');
       this.yaw = car ? Math.atan2(-fd.z, fd.x) : Math.atan2(fd.x, fd.z);
       this.model.root.rotation.set(0, this.yaw + Math.PI, 0);
+      Fling.backOff(this.world, this.position, fd, this.collider.handle);
       this.fling = new Fling(launch.clone().setY(0).multiplyScalar(by === 'car' ? 1 : 0.55), this.position.y);
       return this.model.die(car ? 'hit_car' : characters.clips.has('fly_back') ? 'fly_back' : 'fall_back');
     }

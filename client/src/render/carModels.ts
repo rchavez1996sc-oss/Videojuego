@@ -153,6 +153,7 @@ class CarModels {
     g.add(root);
     g.userData.wheels = wheels;
     g.userData.doors = doorsOf(g);
+    g.userData.body = this.bodySize(key, kind);
     if (g.userData.doors.length) root.traverse((o) => (o as THREE.Mesh).isMesh && (((o as THREE.Mesh).material as THREE.Material).side = THREE.DoubleSide));
     g.userData.modelled = true;
     const wb = wheels[0] ? new THREE.Box3().setFromObject(wheels[0]) : null;

@@ -128,6 +128,7 @@ export class Civilians {
     c.yaw = Math.atan2(d.z, -d.x) - Math.PI;
     c.model.root.rotation.set(0, c.yaw + Math.PI, 0);
     c.model.die('hit_car');
+    Fling.backOff(this.world, c.pos, d, c.collider.handle);
     c.fling = new Fling(push.clone().setY(0), c.pos.y);
     return true;
   }
