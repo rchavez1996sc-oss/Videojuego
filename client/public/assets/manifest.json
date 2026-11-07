@@ -1,5 +1,5 @@
 {
-  "version": 27,
+  "version": 29,
   "characters": {
     "pnp": {
       "near": "characters/pnp.glb",
@@ -212,5 +212,27 @@
       "normal": "props/menuBoard_nrm.jpg"
     },
     "stall": "props/stall.glb"
+  },
+  "models": {
+    "reiche": "models/reiche.glb",
+    "phonebooth": "models/phonebooth.glb",
+    "paulet": "models/paulet.glb",
+    "oxxo": "models/oxxo.glb",
+    "trashbags": "models/trashbags.glb",
+    "vigilante": "models/vigilante.glb"
+  },
+  "murals": {
+    "twofaces": {
+      "img": "murals/twofaces.png",
+      "aspect": 0.81
+    },
+    "zambo": {
+      "img": "murals/zambo.png",
+      "aspect": 1.47
+    },
+    "lostwall": {
+      "img": "murals/lostwall.png",
+      "aspect": 2.64
+    }
   }
 }

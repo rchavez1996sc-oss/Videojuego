@@ -1,0 +1,91 @@
+[
+ {
+  "key": "reiche",
+  "url": "reiche/source/scaniverse-20210314-172135/scaniverse-20210314-172135.obj",
+  "tex": "reiche/textures/texture.jpeg",
+  "si": 0.08,
+  "cut": 0.14
+ },
+ {
+  "key": "phonebooth",
+  "url": "phonebooth/source/scaniverse-model/scaniverse-model.obj",
+  "tex": "phonebooth/textures/texture.jpeg",
+  "si": 0.5,
+  "cut": 0.22
+ },
+ {
+  "key": "twofaces",
+  "url": "twofaces/source/cropped_textured_mesh.obj",
+  "si": 0.12,
+  "flat": "-z"
+ },
+ {
+  "key": "lostwall",
+  "url": "lostwall/source/textured_output.obj",
+  "tex": "lostwall/textures/textured_output.jpeg",
+  "si": 0.1,
+  "flat": "z"
+ },
+ {
+  "key": "paulet",
+  "url": "paulet/source/scaniverse-20210724-161955/scaniverse-20210724-161955.obj",
+  "tex": "paulet/textures/texture.jpeg",
+  "si": 0.3,
+  "cut": 0.04
+ },
+ {
+  "key": "trafficlight",
+  "url": "trafficlight/source/trafik lambas\u0131 2.obj",
+  "tex": "trafficlight/textures/trafik_lambas\u0131_2_DefaultMaterial_BaseColor.png",
+  "height": 4.6
+ },
+ {
+  "key": "oxxo",
+  "url": "oxxo/source/Oxxo.fbx",
+  "height": 4.2,
+  "texDir": "oxxo/textures/"
+ },
+ {
+  "key": "trashbags",
+  "url": "trashbags/source/small_bundleoftrash.fbx",
+  "si": 0.02,
+  "height": 1.1,
+  "tint": {
+   "big": "#2a2b2c",
+   "small": "#3a3c3a"
+  }
+ },
+ {
+  "key": "graffitifence",
+  "url": "graffitifence/source/Wall_Example_Layout.fbx",
+  "scale": 0.01,
+  "maps": {
+   "side1": "graffitifence/source/Grafitti10_basecolor.jpg",
+   "side2": "graffitifence/source/Grafitti14_basecolor.jpg",
+   "square_post": "graffitifence/source/Post_concrete.jpg",
+   "round_post": "graffitifence/source/Post_concrete_dark.jpg",
+   "lambert71": "graffitifence/source/Grafitti18_basecolor.jpg",
+   "lambert57": "graffitifence/source/Grafitti9_basecolor.jpg",
+   "lambert58": "graffitifence/source/Grafitti3_basecolor.jpg",
+   "Edge": "graffitifence/source/Concrete1_basecolor.jpg"
+  }
+ },
+ {
+  "key": "barrio",
+  "url": "barrio/source/poly.glb",
+  "si": 0.25,
+  "flat": "x"
+ },
+ {
+  "key": "vigilante",
+  "url": "vigilante/source/textured.obj",
+  "si": 0.08,
+  "cut": 0.2
+ },
+ {
+  "key": "zambo",
+  "url": "zambo/source/poly.glb",
+  "si": 0.15,
+  "flat": "-x"
+ }
+]

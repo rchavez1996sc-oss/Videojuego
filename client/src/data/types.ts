@@ -82,6 +82,9 @@ export interface ChapterDef {
   civilianLimit?: number;
   /** Litter items per 10 m of pedestrian graph edge. */
   litter?: number;
+  /** Static models (manifest `models`) placed by hand, and scattered beside the walk graph. */
+  models?: import('../world/staticModels').ModelSpot[];
+  modelScatter?: import('../world/staticModels').ModelScatter[];
   /** Street fittings and wear (manholes, meter lids, drains, oil stains, cracks, patches) per 10 m of street. */
   groundDetail?: number;
   /** Street-name plates on the corner sign posts (`world/streetSigns.ts`); also turns the posts on. */

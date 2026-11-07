@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import { placeMenuBoards } from '../world/menuBoards';
 import { placeKiosks } from '../world/kiosks';
+import { mulberry32 } from '../core/rng';
+import { placeMurals } from '../world/wallMurals';
+import { addModel, placeModels, scatterModels } from '../world/staticModels';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { Civilians } from './civilians';
 import { CityLife } from './cityLife';
@@ -42,6 +45,10 @@ export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world
   if (barrio && ch.streetNames) d.scene.add(streetSigns(barrio.graph, d.world, d.lighting, ch.streetNames, (x, z) => d.hf.maskAt(x, z, 0) > 0.5 || d.hf.isPaved(z) || roadAt(x, z), ch.streetSignArea));
   placeMenuBoards(d.scene, d.lighting, d.hf).catch((e) => console.error('menu boards', e));
   placeKiosks(d.scene, d.lighting).catch((e) => console.error('kiosks', e));
+  for (const m of ch.models ?? []) addModel(m);
+  if (barrio && ch.modelScatter) scatterModels(barrio.graph, d.world, ch.modelScatter, mulberry32(77), (x, z) => barrio.graph.ground?.(x, z) ?? d.hf.heightAt(x, z));
+  placeModels(d.scene, d.lighting, d.world, d.hf).catch((e) => console.error('models', e));
+  placeMurals(d.scene, d.lighting).catch((e) => console.error('murals', e));
   const state = { casualties: 0, onFail: () => {} };
   const casualty = (weight = 1) => {
     if (!blame.player) return;
