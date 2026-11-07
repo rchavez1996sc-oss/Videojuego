@@ -146,49 +146,49 @@
   "sub": "MOTOS · MOTOTAXIS · SOLDADURA"
  },
  {
-  "text": "BCB",
+  "text": "BCP",
   "kind": "shop",
   "bg": "#0b2f8f",
   "fg": "#ff8200",
   "style": "bcb"
  },
  {
-  "text": "AGENTE BCB",
+  "text": "AGENTE BCP",
   "kind": "shop",
   "bg": "#ff8200",
   "fg": "#0b2f8f",
   "style": "agente"
  },
  {
-  "text": "tumbo",
+  "text": "tambo",
   "kind": "shop",
   "bg": "#5a1d7d",
   "fg": "#ffd400",
   "style": "tumbo"
  },
  {
-  "text": "Mostro",
+  "text": "Metro",
   "kind": "shop",
   "bg": "#e2001a",
   "fg": "#ffdd00",
   "style": "mostro"
  },
  {
-  "text": "plaza vía",
+  "text": "Plaza Vea",
   "kind": "shop",
   "bg": "#e30613",
   "fg": "#ffffff",
   "style": "plazavia"
  },
  {
-  "text": "INKAFORMA",
+  "text": "INKAFARMA",
   "kind": "shop",
   "bg": "#00843d",
   "fg": "#ffe600",
   "style": "inkaforma"
  },
  {
-  "text": "cloro",
+  "text": "claro",
   "kind": "shop",
   "bg": "#da291c",
   "fg": "#ffffff",
@@ -455,28 +455,28 @@
   "left": true
  },
  {
-  "text": "movistor",
+  "text": "movistar",
   "kind": "shop",
   "bg": null,
   "fg": "#fff",
   "style": "movistor"
  },
  {
-  "text": "bitol",
+  "text": "bitel",
   "kind": "shop",
   "bg": null,
   "fg": "#fff",
   "style": "bitol"
  },
  {
-  "text": "Interbunk",
+  "text": "Interbank",
   "kind": "shop",
   "bg": null,
   "fg": "#fff",
   "style": "interbunk"
  },
  {
-  "text": "KFF",
+  "text": "KFC",
   "kind": "shop",
   "bg": null,
   "fg": "#fff",
@@ -484,7 +484,7 @@
   "food": true
  },
  {
-  "text": "Pardas Chicken",
+  "text": "Pardos Chicken",
   "kind": "shop",
   "bg": "#6b2a12",
   "fg": "#ffffff",
@@ -494,7 +494,7 @@
   "food": true
  },
  {
-  "text": "Norkis",
+  "text": "Norky's",
   "kind": "shop",
   "bg": "#f5c400",
   "fg": "#c8102e",
@@ -504,7 +504,7 @@
   "food": true
  },
  {
-  "text": "yapo",
+  "text": "yape",
   "kind": "shop",
   "bg": null,
   "fg": "#fff",
@@ -565,7 +565,7 @@
   "fg": "#7a1f4f"
  },
  {
-  "text": "Tottos",
+  "text": "Tottus",
   "kind": "shop",
   "bg": "#007a3d",
   "fg": "#ffffff",
@@ -576,7 +576,7 @@
   "style": "logo"
  },
  {
-  "text": "Wang",
+  "text": "Wong",
   "kind": "shop",
   "bg": "#c8102e",
   "fg": "#ffffff",
@@ -587,7 +587,7 @@
   "style": "logo"
  },
  {
-  "text": "Real Plazo",
+  "text": "Real Plaza",
   "kind": "shop",
   "bg": "#ffffff",
   "fg": "#e2231a",
@@ -597,18 +597,18 @@
   "style": "logo"
  },
  {
-  "text": "sago",
+  "text": "saga",
   "kind": "shop",
   "bg": "#ffffff",
   "fg": "#003b7a",
   "accent": "#e2231a",
   "shape": "bar",
   "font": "sans",
-  "sub": "FALABELO",
+  "sub": "FALABELLA",
   "style": "logo"
  },
  {
-  "text": "Ripli",
+  "text": "Ripley",
   "kind": "shop",
   "bg": "#4b1e6e",
   "fg": "#ffffff",
@@ -618,7 +618,7 @@
   "style": "logo"
  },
  {
-  "text": "Promarte",
+  "text": "Promart",
   "kind": "shop",
   "bg": "#ff6b00",
   "fg": "#ffffff",
@@ -628,7 +628,7 @@
   "style": "logo"
  },
  {
-  "text": "Sodimuc",
+  "text": "Sodimac",
   "kind": "shop",
   "bg": "#0055a5",
   "fg": "#ffffff",
@@ -639,7 +639,7 @@
   "style": "logo"
  },
  {
-  "text": "Bombos",
+  "text": "Bembos",
   "kind": "shop",
   "bg": "#0b3a8a",
   "fg": "#ffd200",
@@ -651,7 +651,7 @@
   "food": true
  },
  {
-  "text": "Dominus",
+  "text": "Domino's",
   "kind": "shop",
   "bg": "#0a6eb4",
   "fg": "#ffffff",
@@ -663,7 +663,7 @@
   "food": true
  },
  {
-  "text": "Inka Kolo",
+  "text": "Inca Kola",
   "kind": "shop",
   "bg": "#ffd100",
   "fg": "#1b3f94",
@@ -674,7 +674,7 @@
   "style": "logo"
  },
  {
-  "text": "Pilsun",
+  "text": "Pilsen",
   "kind": "shop",
   "bg": "#00563f",
   "fg": "#ffffff",
@@ -685,7 +685,7 @@
   "style": "logo"
  },
  {
-  "text": "Cristel",
+  "text": "Cristal",
   "kind": "shop",
   "bg": "#d71920",
   "fg": "#ffffff",
@@ -696,7 +696,7 @@
   "style": "logo"
  },
  {
-  "text": "Glorio",
+  "text": "Gloria",
   "kind": "shop",
   "bg": "#e2231a",
   "fg": "#ffffff",
@@ -706,7 +706,7 @@
   "style": "logo"
  },
  {
-  "text": "D'Onofrito",
+  "text": "D'Onofrio",
   "kind": "shop",
   "bg": "#ffd400",
   "fg": "#c8102e",
@@ -717,7 +717,7 @@
   "style": "logo"
  },
  {
-  "text": "Scotiabunk",
+  "text": "Scotiabank",
   "kind": "shop",
   "bg": "#ec111a",
   "fg": "#ffffff",
@@ -727,7 +727,7 @@
   "style": "logo"
  },
  {
-  "text": "BVBA",
+  "text": "BBVA",
   "kind": "shop",
   "bg": "#004481",
   "fg": "#ffffff",
@@ -738,7 +738,7 @@
   "style": "logo"
  },
  {
-  "text": "MiBunco",
+  "text": "Mibanco",
   "kind": "shop",
   "bg": "#00843d",
   "fg": "#ffffff",
@@ -749,7 +749,7 @@
   "style": "logo"
  },
  {
-  "text": "Caja Huancaya",
+  "text": "Caja Huancayo",
   "kind": "shop",
   "bg": "#c8102e",
   "fg": "#ffffff",
@@ -760,7 +760,7 @@
   "style": "logo"
  },
  {
-  "text": "Entol",
+  "text": "entel",
   "kind": "shop",
   "bg": "#002eff",
   "fg": "#ffffff",
@@ -771,7 +771,7 @@
   "style": "logo"
  },
  {
-  "text": "Hiraoko",
+  "text": "Hiraoka",
   "kind": "shop",
   "bg": "#ffffff",
   "fg": "#e2231a",
@@ -782,7 +782,7 @@
   "style": "logo"
  },
  {
-  "text": "Arcángol",
+  "text": "Arcángel",
   "kind": "shop",
   "bg": "#ffffff",
   "fg": "#00843d",
@@ -793,7 +793,7 @@
   "style": "logo"
  },
  {
-  "text": "Miforma",
+  "text": "Mifarma",
   "kind": "shop",
   "bg": "#ffffff",
   "fg": "#e2231a",
@@ -804,7 +804,7 @@
   "style": "logo"
  },
  {
-  "text": "Topitup",
+  "text": "Topitop",
   "kind": "shop",
   "bg": "#e2231a",
   "fg": "#ffffff",
@@ -814,7 +814,7 @@
   "style": "logo"
  },
  {
-  "text": "Rímoc",
+  "text": "Rímac",
   "kind": "shop",
   "bg": "#e2231a",
   "fg": "#ffffff",
@@ -825,7 +825,7 @@
   "style": "logo"
  },
  {
-  "text": "Pacífica",
+  "text": "Pacífico",
   "kind": "shop",
   "bg": "#0055a5",
   "fg": "#ffffff",
@@ -836,19 +836,19 @@
   "style": "logo"
  },
  {
-  "text": "Chinas Chicken",
+  "text": "Chinawok",
   "kind": "shop",
   "bg": "#1d1d1b",
   "fg": "#f2c230",
   "accent": "#e2231a",
   "shape": "star",
   "font": "serif",
-  "sub": "POLLOS A LA BRASA",
+  "sub": "COMIDA CHINA",
   "style": "logo",
   "food": true
  },
  {
-  "text": "Rokys",
+  "text": "Roky's",
   "kind": "shop",
   "bg": "#e2231a",
   "fg": "#ffd200",
