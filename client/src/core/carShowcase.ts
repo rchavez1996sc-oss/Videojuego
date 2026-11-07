@@ -4,7 +4,7 @@ import { vehicleLook } from '../systems/vehicleLook';
 import { carModels } from '../render/carModels';
 import type { Heightfield } from '../world/heightfield';
 import type { Lighting } from '../render/lighting';
-import { seatsOf, seatedRig, cobrador } from '../entities/occupants';
+import { seatsOf, seatedRig } from '../entities/occupants';
 
 const COLORS: Record<string, string> = {
   car0: '#c9c6bf', car1: '#2a2c30', car2: '#7a1d1a', car3: '#e2c22e', car4: '#2b4c7a', car5: '#eeeeea', moto0: '#b3221d',
@@ -30,8 +30,6 @@ export function carShowcase(scene: THREE.Scene, hf: Heightfield, x: number, z: n
       r.position.set(sx, sy, sz);
       g.add(r);
     }
-    const cob = k === 'combi' ? cobrador(lighting, Math.random, g) : null;
-    if (cob) g.add(cob);
     g.traverse((o) => ((o as THREE.Mesh).isMesh && ((o as THREE.Mesh).castShadow = true)));
     scene.add(g);
     at.push([p.x, p.y, p.z]);

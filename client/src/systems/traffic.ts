@@ -8,7 +8,7 @@ import { carModels } from '../render/carModels';
 import type { ParkedSpot } from '../world/parkedCars';
 import { deliveryBike } from '../world/deliveryBike';
 import { onHit, setSurface } from '../world/surfaces';
-import { seatedPerson, seatedRig, seatsOf, cobrador } from '../entities/occupants';
+import { seatedPerson, seatedRig, seatsOf } from '../entities/occupants';
 import type { Heightfield } from '../world/heightfield';
 import type { Lighting } from '../render/lighting';
 import type { Rig } from '../entities/rig';
@@ -91,8 +91,6 @@ export class Traffic {
         riders.push(p.geometry.clone().translate(x, y - 0.95, z));
       });
       if (riders.length) g.add(new THREE.Mesh(mergeGeometries(riders), riderMat!));
-      const cob = kind === 'combi' && rand() < 0.6 ? cobrador(lighting, rand, g) : null;
-      if (cob) (seats.push(cob), g.add(cob));
       const dir = i % 2 ? 1 : -1;
       const cruise = kind === 'delivery' ? 9 : kind === 'moto' ? 7 : kind === 'combi' || kind === 'micro' ? 11 : 10;
       this.register(kind, g, seats, this.xMin + ((i * 77) % (this.xMax - this.xMin)), lanes[i].z + dir * lanes[i].lane, dir, lanes[i], cruise, 360 + rand() * 110, 3 + rand() * 10);
