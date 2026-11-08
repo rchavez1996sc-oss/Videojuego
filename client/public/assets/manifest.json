@@ -219,7 +219,8 @@
     "paulet": "models/paulet.glb",
     "oxxo": "models/oxxo.glb",
     "trashbags": "models/trashbags.glb",
-    "vigilante": "models/vigilante.glb"
+    "vigilante": "models/vigilante.glb",
+    "rubbish": "models/rubbish.glb"
   },
   "murals": {
     "twofaces": {

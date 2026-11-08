@@ -45,7 +45,7 @@ export class SignAtlas {
 
   /** Names of the look-alike brand signs (the ones with a graphic `style`). */
   get brands(): string[] {
-    return SIGNS.filter((d) => d.style).map((d) => d.text);
+    return SIGNS.filter((d) => d.style && (d.kind as string) !== 'pinned').map((d) => d.text);
   }
 
   /** `only` forces a specific sign by name (brand quota). */

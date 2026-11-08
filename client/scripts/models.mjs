@@ -24,6 +24,7 @@ try {
   });
   await page.goto('http://localhost:4178/tools/models.html');
   await page.waitForFunction(() => window.ready, null, { timeout: 60000 });
+  page.setDefaultTimeout(0);
   for (const p of plans) {
     const plan = { ...p, url: `/src-models/${p.url}`, tex: p.tex && `/src-models/${p.tex}`, texDir: p.texDir && `/src-models/${p.texDir}`, maps: p.maps && Object.fromEntries(Object.entries(p.maps).map(([k, v]) => [k, `/src-models/${v}`])) };
     if (p.flat) {
@@ -38,7 +39,7 @@ try {
       writeFileSync(`shots/_m_${p.key}.jpg`, Buffer.from(preview.split(',')[1], 'base64'));
       const raw = join(OUT, `${p.key}.raw.glb`), out = join(OUT, `${p.key}.glb`);
       writeFileSync(raw, Buffer.from(data, 'base64'));
-      execFileSync('npx', ['gltfpack', '-i', raw, '-o', out, '-noq', '-si', String(p.si ?? 1)], { stdio: 'pipe' });
+      execFileSync('npx', ['gltfpack', '-i', raw, '-o', out, '-noq', '-si', String(p.si ?? 1), ...(p.sa ? ['-sa'] : [])], { stdio: 'pipe' });
       execFileSync('rm', [raw]);
       console.log(`${p.key}: ${info} → ${(statSync(out).size / 1e6).toFixed(2)} MB`);
     } catch (e) { console.log(`${p.key}: FAILED ${String(e).slice(0, 200)}`); }

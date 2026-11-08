@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { addModel } from '../staticModels';
 import type { Builder } from '../buildingKit';
 import type { MaleconDef } from './layout';
 import { EXTENT, SIDEWALK, northZ, streetHalf } from './layout';
@@ -41,7 +42,7 @@ function frontage(b: Builder, x0: number, w: number, zFace: number, s: 1 | -1, r
   return { pos: new THREE.Vector3(gate - 2.2 * Math.sign(bx - gate), 0, zFace + s * 1.3), yaw: s > 0 ? 0 : Math.PI };
 }
 
-export type ShopSign = (pos: THREE.Vector3, q: THREE.Quaternion, w: number) => void;
+export type ShopSign = (pos: THREE.Vector3, q: THREE.Quaternion, w: number, brand?: string) => void;
 
 /** Ground-floor shops along a commercial street: glazed fronts, lit interiors, a sign over each and the odd awning. */
 function storefronts(b: Builder, x0: number, w: number, zFace: number, s: 1 | -1, sign: ShopSign, rand: () => number): void {
@@ -117,6 +118,7 @@ function casona(t: Builder, b: Builder, x0: number, w: number, zFace: number, d:
 /** Fills every block: tall towers facing the sea along the avenue, mid-rise behind; inland mostly modern houses. */
 export function buildTowers(t: Builder, b: Builder, def: MaleconDef, paints: string[], rand: () => number, gardens: THREE.Vector3[], guards: { pos: THREE.Vector3; yaw: number }[], shop?: ShopSign): { x: number; w: number; z: number; h: number }[] {
   const fronts: { x: number; w: number; z: number; h: number }[] = [];
+  let oxxos = 0;
   for (const [bx0, bx1, bz0, bz1, avenue] of cityBlocks(def)) {
     const depth = bz1 - bz0;
     const rows: [number, 1 | -1, number][] = depth > 52 ? [[bz1 - 2, 1, 24], [bz0 + 2, -1, 20]] : [[bz1 - 2, 1, Math.min(24, depth - 6)]];
@@ -137,7 +139,8 @@ export function buildTowers(t: Builder, b: Builder, def: MaleconDef, paints: str
         if (w < 12) break;
         const d = Math.max(12, Math.min(snap(14 + rand() * 10), Math.floor(maxD / 6) * 6));
         const front = avenue && s > 0, r = rand();
-        if (!front && !commercial && r < 0.16) casona(t, b, x, w, zFace, d, s, paints[Math.floor(rand() * paints.length)], rand);
+        if (commercial && r < 0.3 && oxxos < 2 && w >= 14) (addModel({ key: 'oxxo', x: x + w / 2, z: zFace - s * 5.4, yaw: s > 0 ? 0 : Math.PI }), shop?.(new THREE.Vector3(x + w / 2, 3.55, zFace + s * 0.35), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), s > 0 ? 0 : Math.PI), 7, 'OXXO'), oxxos++);
+        else if (!front && !commercial && r < 0.16) casona(t, b, x, w, zFace, d, s, paints[Math.floor(rand() * paints.length)], rand);
         else {
           const floors = front ? 13 + Math.floor(rand() * 13) : 5 + Math.floor(rand() * (avenue ? 12 : 9));
           const style = rand() < (front ? 0.1 : 0.06) ? 'glassWall' : FACADES[Math.floor(rand() * FACADES.length)];

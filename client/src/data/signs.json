@@ -869,5 +869,16 @@
   "font": "script",
   "sub": "CHOCOLATES",
   "style": "logo"
+ },
+ {
+  "text": "OXXO",
+  "kind": "pinned",
+  "bg": "#d8261d",
+  "fg": "#f6c518",
+  "accent": "#f6c518",
+  "shape": "bar",
+  "font": "heavy",
+  "sub": "ABIERTO 24 HORAS",
+  "style": "logo"
  }
 ]

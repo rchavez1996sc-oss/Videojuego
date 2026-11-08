@@ -156,7 +156,7 @@ export function buildMalecon(hf: Heightfield, def: MaleconDef, lighting: Lightin
   bake.push(...autoBake(lighting, mats, bake));
   const gardens: THREE.Vector3[] = [];
   const guards: { pos: THREE.Vector3; yaw: number }[] = [];
-  const fronts = buildTowers(t, b, def, PAINTS, rand, gardens, guards, (pos, q, w) => atlas.add(pos, q, w, 'shop', rand, rand() < 0.7 ? brands[Math.floor(rand() * brands.length)] : undefined));
+  const fronts = buildTowers(t, b, def, PAINTS, rand, gardens, guards, (pos, q, w, brand) => atlas.add(pos, q, w, 'shop', rand, brand ?? (rand() < 0.7 ? brands[Math.floor(rand() * brands.length)] : undefined)));
   const streetTrees = [...buildRoads(b, hf, def, c, rand), ...gardens];
   streetDetail(b, hf, def, rand);
   const plants = buildPark(b, hf, def, c, rand);

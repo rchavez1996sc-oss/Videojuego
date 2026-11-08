@@ -71,7 +71,7 @@ async function convert(p: Plan): Promise<{ data: string; info: string; preview: 
       const id = src.name || src.uuid;
       if (!byMat.has(id)) {
         const given = [...extra.entries()].find(([re]) => new RegExp(re, 'i').test(id))?.[1];
-        const map = shrink(given ?? src.map ?? fallback, 1024, !!src.transparent && src.alphaTest > 0);
+        const map = shrink(given ?? ((src.map?.image as { width?: number } | undefined)?.width ? src.map : fallback) ?? null, 1024, !!src.transparent && src.alphaTest > 0);
         const tint = Object.entries(p.tint ?? {}).find(([re]) => new RegExp(re, 'i').test(id))?.[1];
         const mat = new THREE.MeshStandardMaterial({ name: id.replace(/[^\w-]+/g, '_'), map, color: tint ? new THREE.Color(tint) : map ? new THREE.Color('#ffffff') : src.color?.clone() ?? new THREE.Color('#999'), roughness: 0.85, metalness: 0, transparent: !!src.transparent && !!map && src.alphaTest > 0, alphaTest: src.alphaTest || 0, side: THREE.DoubleSide });
         byMat.set(id, { mat, geos: [] });

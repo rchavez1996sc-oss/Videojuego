@@ -34,12 +34,6 @@
   "cut": 0.04
  },
  {
-  "key": "trafficlight",
-  "url": "trafficlight/source/trafik lambas\u0131 2.obj",
-  "tex": "trafficlight/textures/trafik_lambas\u0131_2_DefaultMaterial_BaseColor.png",
-  "height": 4.6
- },
- {
   "key": "oxxo",
   "url": "oxxo/source/Oxxo.fbx",
   "height": 4.2,
@@ -56,27 +50,6 @@
   }
  },
  {
-  "key": "graffitifence",
-  "url": "graffitifence/source/Wall_Example_Layout.fbx",
-  "scale": 0.01,
-  "maps": {
-   "side1": "graffitifence/source/Grafitti10_basecolor.jpg",
-   "side2": "graffitifence/source/Grafitti14_basecolor.jpg",
-   "square_post": "graffitifence/source/Post_concrete.jpg",
-   "round_post": "graffitifence/source/Post_concrete_dark.jpg",
-   "lambert71": "graffitifence/source/Grafitti18_basecolor.jpg",
-   "lambert57": "graffitifence/source/Grafitti9_basecolor.jpg",
-   "lambert58": "graffitifence/source/Grafitti3_basecolor.jpg",
-   "Edge": "graffitifence/source/Concrete1_basecolor.jpg"
-  }
- },
- {
-  "key": "barrio",
-  "url": "barrio/source/poly.glb",
-  "si": 0.25,
-  "flat": "x"
- },
- {
   "key": "vigilante",
   "url": "vigilante/source/textured.obj",
   "si": 0.08,
@@ -87,5 +60,13 @@
   "url": "zambo/source/poly.glb",
   "si": 0.15,
   "flat": "-x"
+ },
+ {
+  "key": "rubbish",
+  "url": "rubbish/source/rubbish1_1.fbx",
+  "tex": "rubbish/textures/RUBBISH_u1_v1.jpg",
+  "si": 0.03,
+  "scale": 0.001,
+  "sa": true
  }
 ]
