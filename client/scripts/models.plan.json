@@ -68,5 +68,61 @@
   "si": 0.03,
   "scale": 0.001,
   "sa": true
+ },
+ {
+  "key": "watertank",
+  "url": "watertank/source/Toilet_Toilet_0Motor6D.obj",
+  "tex": "watertank/textures/WaterContainer1_diff.jpg",
+  "height": 9
+ },
+ {
+  "key": "urbanhouse",
+  "url": "urbanhouse/source/Lowpoly urban house/Lowpoly Urban House.fbx",
+  "texDir": "urbanhouse/textures/",
+  "height": 7
+ },
+ {
+  "key": "brickpack",
+  "url": "brickpack/source/buildings.fbx",
+  "texDir": "brickpack/source/",
+  "height": 20
+ },
+ {
+  "key": "graffitifence",
+  "url": "graffitifence/source/Wall_Example_Layout.fbx",
+  "texDir": "graffitifence/source/",
+  "scale": 0.01,
+  "cut": 0.03
+ },
+ {
+  "key": "amor3",
+  "url": "amor3/source/cropped_textured_mesh.obj",
+  "si": 0.25,
+  "cut": 0.3
+ },
+ {
+  "key": "grass",
+  "url": "grass/source/cropped_textured_mesh.obj",
+  "si": 0.08
+ },
+ {
+  "key": "trafficlight",
+  "url": "trafficlight/source/trafik lambas\u0131 2.obj",
+  "tex": "trafficlight/textures/trafik_lambas\u0131_2_DefaultMaterial_BaseColor.png",
+  "height": 4.6
+ },
+ {
+  "key": "motoland",
+  "url": "motoland/motoland.glb",
+  "tex": "motoland/udim.jpg",
+  "uScale": 0.5,
+  "cut": 0.24,
+  "height": 1.2
+ },
+ {
+  "key": "ledone",
+  "url": "ledsignal/one.glb",
+  "si": 0.2,
+  "keep": "Cube"
  }
 ]

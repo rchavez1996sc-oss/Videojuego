@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import RAPIER from '@dimforge/rapier3d-compat';
 import type { Lighting } from '../render/lighting';
 
 /** A blank side wall offered to the street-art murals: centre at the foot, facing, room across and up. */
@@ -15,7 +16,7 @@ export function muralWall(foot: THREE.Vector3, quat: THREE.Quaternion, w: number
  * painted onto the offered walls, each mural as large as its wall allows keeping its proportions (at least 2.2 m
  * tall), cycling through the murals; one merged mesh per mural. Loads after the level, like the other photo props.
  */
-export async function placeMurals(scene: THREE.Object3D, lighting: Lighting): Promise<void> {
+export async function placeMurals(scene: THREE.Object3D, lighting: Lighting, world: RAPIER.World): Promise<void> {
   if (!walls.length) return;
   const base = `${import.meta.env.BASE_URL}assets/`;
   const manifest = await fetch(`${base}manifest.json`, { cache: 'no-store' }).then((r) => r.json()).catch(() => null);
@@ -25,9 +26,10 @@ export async function placeMurals(scene: THREE.Object3D, lighting: Lighting): Pr
   let turn = 0;
   for (const wall of walls) {
     for (let t = 0; t < murals.length; t++) {
-      const [key, m] = murals[(turn + t) % murals.length], w = Math.min(wall.w, wall.h * m.aspect), h = w / m.aspect;
-      if (h < 2.2) continue;
-      quads.get(key)!.push([wall.foot.x, wall.foot.y, wall.foot.z, ...wall.quat.toArray(), w, h]);
+      const [key, m] = murals[(turn + t) % murals.length], spot = fit(world, wall, m.aspect);
+      if (!spot) continue;
+      const [foot, w, h] = spot;
+      quads.get(key)!.push([foot.x, foot.y, foot.z, ...wall.quat.toArray(), w, h]);
       turn = (turn + t + 1) % murals.length;
       break;
     }
@@ -59,6 +61,31 @@ export async function placeMurals(scene: THREE.Object3D, lighting: Lighting): Pr
     scene.add(mesh);
   }
   walls.length = 0;
+}
+
+/**
+ * Where on the offered wall the mural fits on solid plaster: the largest size (down to 2.2 m tall) and position along
+ * the wall where an 8 × 5 grid of rays from 0.5 m in front all meet the wall a few cm behind the picture — no window,
+ * door, gap, lower stretch or sky behind any part, and nothing standing in front.
+ */
+function fit(world: RAPIER.World, wall: Wall, aspect: number): [THREE.Vector3, number, number] | null {
+  const n = new THREE.Vector3(0, 0, 1).applyQuaternion(wall.quat), along = new THREE.Vector3(1, 0, 0).applyQuaternion(wall.quat), p = new THREE.Vector3();
+  const dir = { x: -n.x, y: -n.y, z: -n.z };
+  for (let w = Math.min(wall.w, wall.h * aspect); w / aspect >= 2.2; w *= 0.88) {
+    const h = w / aspect, room = (wall.w - w) / 2;
+    for (let k = 0; k <= Math.ceil(room / 0.4) * 2; k++) {
+      const off = Math.min(room, Math.ceil(k / 2) * 0.4) * (k % 2 ? -1 : 1), foot = wall.foot.clone().addScaledVector(along, off);
+      let ok = true;
+      for (let i = 0; i < 8 && ok; i++) for (let j = 0; j < 5 && ok; j++) {
+        p.copy(foot).addScaledVector(along, ((i + 0.5) / 8 - 0.5) * w).addScaledVector(n, 0.5);
+        p.y += ((j + 0.5) / 5) * h;
+        const hit = world.castRay(new RAPIER.Ray(p, dir), 0.8, true, RAPIER.QueryFilterFlags.EXCLUDE_SENSORS);
+        ok = !!hit && Math.abs(hit.timeOfImpact - 0.55) < 0.12;
+      }
+      if (ok) return [foot, w, h];
+    }
+  }
+  return null;
 }
 
 /**

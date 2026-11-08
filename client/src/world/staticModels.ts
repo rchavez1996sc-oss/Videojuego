@@ -32,7 +32,7 @@ export async function placeModels(scene: THREE.Object3D, lighting: Lighting, wor
     if (!gltf) continue;
     gltf.scene.updateMatrixWorld(true);
     const mine = spots.filter((s) => s.key === key), box = new THREE.Box3().setFromObject(gltf.scene), size = box.getSize(new THREE.Vector3());
-    const place = mine.map((s) => m4.clone().compose(new THREE.Vector3(s.x, (s.y ?? hf.heightAt(s.x, s.z)) - 0.03 - box.min.y * (s.scale ?? 1), s.z), q.clone().setFromAxisAngle(up, s.yaw ?? 0), s3.setScalar(s.scale ?? 1)));
+    const place = mine.map((s) => m4.clone().compose(new THREE.Vector3(s.x, (s.y ??= hf.heightAt(s.x, s.z)) - 0.03 - box.min.y * (s.scale ?? 1), s.z), q.clone().setFromAxisAngle(up, s.yaw ?? 0), s3.setScalar(s.scale ?? 1)));
     gltf.scene.traverse((o) => {
       const part = o as THREE.Mesh;
       if (!part.isMesh) return;

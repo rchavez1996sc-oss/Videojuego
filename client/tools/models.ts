@@ -8,7 +8,7 @@ import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
 import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 /** One static model to convert (see scripts/models.mjs). */
-interface Plan { cut?: number; key: string; url: string; tex?: string; texDir?: string; maps?: Record<string, string>; height?: number; scale?: number; rotX?: number; rotY?: number; drop?: string; keep?: string; tint?: Record<string, string> }
+interface Plan { uScale?: number; cut?: number; key: string; url: string; tex?: string; texDir?: string; maps?: Record<string, string>; height?: number; scale?: number; rotX?: number; rotY?: number; drop?: string; keep?: string; tint?: Record<string, string> }
 
 async function load(p: Plan): Promise<THREE.Object3D> {
   const url = p.url, dir = url.slice(0, url.lastIndexOf('/') + 1), mgr = new THREE.LoadingManager();
@@ -66,6 +66,7 @@ async function convert(p: Plan): Promise<{ data: string; info: string; preview: 
         if (a) part.setAttribute(k, new THREE.BufferAttribute((a.array as Float32Array).slice(gr.start * a.itemSize, (gr.start + gr.count) * a.itemSize), a.itemSize));
       }
       if (!part.attributes.uv) part.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(gr.count * 2), 2));
+      else if (p.uScale) { const uv = part.attributes.uv as THREE.BufferAttribute; for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * p.uScale); }
       if (!part.attributes.normal) part.computeVertexNormals();
       part.applyMatrix4(m.matrixWorld);
       const id = src.name || src.uuid;

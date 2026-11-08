@@ -16,7 +16,7 @@ const COLORS: Record<string, string> = {
 export function carShowcase(scene: THREE.Scene, hf: Heightfield, x: number, z: number, lighting?: Lighting): number[][] {
   if (!lighting) return [];
   const mats = Object.fromEntries(Object.entries(COLORS).map(([k, c]) => [k, new THREE.MeshStandardMaterial({ color: c, roughness: 0.5 })]));
-  const list: [CarKind | 'moto' | 'delivery', number][] = [['delivery', 0], ['delivery', 1], ['sedan', 0], ['tico', 0], ['combi', 1], ['combi', 3], ['micro', 0], ['micro', 1], ['moto', 0], ['beetle', 0]], at: number[][] = [];
+  const list: [CarKind | 'moto' | 'delivery', number][] = [['delivery', 0], ['delivery', 1], ['tico', 1], ['tico', 0], ['combi', 1], ['combi', 3], ['micro', 0], ['micro', 1], ['moto', 0], ['beetle', 0]], at: number[][] = [];
   let cx = x;
   list.forEach(([k, n], i) => {
     const len = k === 'micro' ? 9 : k === 'delivery' ? 2.5 : 5, p = new THREE.Vector3(cx + len / 2, hf.heightAt(cx + len / 2, z), z);

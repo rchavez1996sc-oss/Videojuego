@@ -27,7 +27,7 @@ export function flsMarks(b: Builder, hf: Heightfield, atlas: SignAtlas, lot: Lot
   } else if (rand() < 0.6) {
     const w = Math.min(lot.d - 1.2, floors > 1 ? 9 : 6.4), half = w / 2;
     const ground = Math.max(hf.heightAt(wallX, zMid - half), hf.heightAt(wallX, zMid + half));
-    if (w > 3.5 && rand() < 0.35) muralWall(new THREE.Vector3(wallX + worldSide * 0.08, ground + 0.15, zMid + (lot.d / 4) * (rand() < 0.5 ? -1 : 1)), sideQ, lot.d / 2 - 0.4, FLOOR - 0.3);
+    if (w > 3.5 && rand() < 0.5) muralWall(new THREE.Vector3(wallX + worldSide * 0.08, ground + 0.15, zMid), sideQ, lot.d - 0.8, FLOOR - 0.3);
     else if (w > 3.5) pintaWall(new THREE.Vector3(wallX + worldSide * 0.05, ground + 0.35 + w * 0.1875, zMid), sideQ, w);
   }
   if (rand() < 0.35) {

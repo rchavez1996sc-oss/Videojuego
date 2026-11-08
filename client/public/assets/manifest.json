@@ -1,5 +1,5 @@
 {
-  "version": 30,
+  "version": 32,
   "characters": {
     "pnp": {
       "near": "characters/pnp.glb",
@@ -220,7 +220,15 @@
     "oxxo": "models/oxxo.glb",
     "trashbags": "models/trashbags.glb",
     "vigilante": "models/vigilante.glb",
-    "rubbish": "models/rubbish.glb"
+    "rubbish": "models/rubbish.glb",
+    "watertank": "models/watertank.glb",
+    "urbanhouse": "models/urbanhouse.glb",
+    "brickpack": "models/brickpack.glb",
+    "amor3": "models/amor3.glb",
+    "grass": "models/grass.glb",
+    "trafficlight": "models/trafficlight.glb",
+    "motoland": "models/motoland.glb",
+    "ledone": "models/ledone.glb"
   },
   "murals": {
     "twofaces": {
@@ -234,6 +242,46 @@
     "lostwall": {
       "img": "murals/lostwall.png",
       "aspect": 2.64
+    },
+    "graffiti12": {
+      "img": "murals/graffiti12.png",
+      "aspect": 1.0
+    },
+    "graffiti13": {
+      "img": "murals/graffiti13.png",
+      "aspect": 1.0
+    },
+    "graffiti15": {
+      "img": "murals/graffiti15.png",
+      "aspect": 1.0
+    },
+    "graffiti18": {
+      "img": "murals/graffiti18.png",
+      "aspect": 1.0
+    },
+    "graffiti19": {
+      "img": "murals/graffiti19.png",
+      "aspect": 1.0
+    },
+    "graffiti2": {
+      "img": "murals/graffiti2.png",
+      "aspect": 1.0
+    },
+    "graffiti3": {
+      "img": "murals/graffiti3.png",
+      "aspect": 1.0
+    },
+    "graffiti4": {
+      "img": "murals/graffiti4.png",
+      "aspect": 1.0
+    },
+    "graffiti5": {
+      "img": "murals/graffiti5.png",
+      "aspect": 1.0
+    },
+    "graffiti9": {
+      "img": "murals/graffiti9.png",
+      "aspect": 1.0
     }
   }
 }
