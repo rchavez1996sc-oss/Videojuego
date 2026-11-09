@@ -3,6 +3,8 @@ import type { DebugContext } from './debug';
 import { HP } from '../systems/traffic';
 
 type Civ = { pos: THREE.Vector3; mood: string; act: string | null; reactT: number; cart?: THREE.Object3D | null; model: { root: THREE.Object3D } };
+/** Tests set `on` to keep the town simulating while the camera is free (normally a free camera freezes it). */
+export const simFree = { on: false };
 const civs = () => ((window as unknown as { __civs?: { list: Civ[] } }).__civs?.list ?? []);
 const f = (v: THREE.Vector3) => [v.x, v.y, v.z].map((n) => +n.toFixed(1));
 
@@ -10,6 +12,7 @@ const f = (v: THREE.Vector3) => [v.x, v.y, v.z].map((n) => +n.toFixed(1));
 export function lifeDebug(c: DebugContext) {
   const run = (frames: number) => { for (let i = 0; i < frames; i++) c.frame(1 / 30); };
   return {
+    simFree(v: boolean) { simFree.on = v; },
     /** Positions of carts, roof dogs, laundry, patrolling police and the passers-by's acts. */
     lifeSpots() {
       const dogs = (window as unknown as { __roofDogs?: { a: THREE.Vector3 }[] }).__roofDogs ?? [];
@@ -64,6 +67,25 @@ export function lifeDebug(c: DebugContext) {
         c.frame(1 / 30);
       }
       return `cart civ ${civ.mood} @${f(civ.pos)}`;
+    },
+    /** Watches patrolling officer `i` for `frames` from in front: head yaw relative to the body and left-hand height every 10 frames. */
+    gestureTest(i: number, frames = 240) {
+      const e = c.enemies.list.filter((x) => x.alive && x.state === 'patrol' && !x.moveTarget)[i];
+      if (!e) return 'no officer';
+      const b = e.model.bones, head = b.get('mixamorigHead')!, hips = b.get('mixamorigHips')!, hand = b.get('mixamorigLeftHand')!, q = new THREE.Quaternion(), r = new THREE.Quaternion(), v = new THREE.Vector3();
+      const out: string[] = [];
+      for (let k = 0; k < frames; k++) {
+        const fwd = e.model.root.getWorldDirection(new THREE.Vector3()), at = e.position.clone().add(new THREE.Vector3(0, 1.4, 0));
+        c.setFreeCam(true);
+        c.tpc.place(at.clone().addScaledVector(fwd, 3.2).add(new THREE.Vector3(0, 0.3, 0)), at);
+        c.frame(1 / 30);
+        if (k % 10 === 9) {
+          head.getWorldQuaternion(q); hips.getWorldQuaternion(r);
+          const yaw = new THREE.Euler().setFromQuaternion(r.invert().multiply(q), 'YXZ').y;
+          out.push(`${(yaw * 57.3).toFixed(0)}°/${(hand.getWorldPosition(v).y - e.position.y).toFixed(2)}`);
+        }
+      }
+      return `${e.state} ${out.join(' ')}`;
     },
     run,
   };

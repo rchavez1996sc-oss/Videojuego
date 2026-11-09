@@ -1,4 +1,4 @@
-import * as THREE from 'three'; import { LOGO_FONTS } from './world/brandLogos';
+import * as THREE from 'three'; import { LOGO_FONTS } from './world/brandLogos'; import { simFree } from './core/debugLife';
 import RAPIER from '@dimforge/rapier3d-compat';
 import ch01 from './data/chapters/ch01_lima.json';
 import ch02 from './data/chapters/ch02_malecon.json';
@@ -259,7 +259,7 @@ async function boot(): Promise<void> {
       player.model.root.updateMatrixWorld(true);
       if (carGun.update(dt, input, driving)) void 0; else if (!driving.active && !nadeMode.update(input, deadT <= 0, dt) && deadT <= 0 && !melee.update(dt, input)) combat.update(dt, input, input.aiming, player.airborne); else combat.fx(dt);
       grenades.update(dt);
-    } else combat.fx(dt);
+    } else (simFree.on && (enemies.update(dt), civilians?.update(dt, player.position, input.aiming), life?.update(dt, player.position, false), physicsStep(world, dt)), combat.fx(dt));
     enemies.sync();
     squad?.sync();
     barrio?.tick?.(dt, [player.position, ...enemies.list.filter((e) => e.alive).map((e) => e.position), ...(squad?.positions ?? []), ...(civilians?.present ?? [])]);
