@@ -37,7 +37,7 @@ export function idleGestures(e: Enemy): Enemy {
   const head = get('Head'), neck = get('Neck'), chest = get('Spine2'), arm = get('LeftArm'), fore = get('LeftForeArm'), hand = get('LeftHand');
   if (!head || !neck || !chest || !arm || !fore || !hand) return e;
   const bent = [head, neck, chest, arm, fore, hand].map((x) => new Bent(x));
-  let wait = 3 + Math.random() * 8, kind: Kind | null = null, t = 0, dur = 0, side = 1, w = 0;
+  let wait = 1 + Math.random() * 5, kind: Kind | null = null, t = 0, dur = 0, side = 1, w = 0;
   const target = new THREE.Vector3(), fwd = new THREE.Vector3(), right = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
   e.model.post = (dt) => {
     const calm = e.state === 'patrol' && !e.moveTarget && !e.crouched;
@@ -51,7 +51,7 @@ export function idleGestures(e: Enemy): Enemy {
     const ease = Math.min(1, t / 0.6, Math.max(0, (dur - t) / 0.6));
     w = calm ? ease : Math.max(0, w - dt * 4);
     if (t >= dur || (!calm && w <= 0)) {
-      [kind, wait, w] = [null, 4 + Math.random() * 8, 0];
+      [kind, wait, w] = [null, 2.5 + Math.random() * 5, 0];
       return;
     }
     bent.forEach((x) => x.begin());
