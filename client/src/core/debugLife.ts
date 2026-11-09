@@ -99,6 +99,28 @@ export function lifeDebug(c: DebugContext) {
       }
       return `${e.state} ${out.join(' ')}`;
     },
+    /** Drives a sedan at `kmh` over a fallen policeman placed ahead; car height/pitch every 3 frames near the body. */
+    bumpTest(kmh = 30, frames = 45) {
+      const g = (window as unknown as { __game: { driveTest(k: string, p: [string[], number][]): string } }).__game;
+      g.driveTest('sedan', [[['KeyW'], 0.1]]);
+      const tr = c.traffic?.() as unknown as { list: { x: number; y: number; z: number; yaw: number; tilt: number; speed: number; state: string; group: THREE.Object3D; body: { setLinvel(v: object, w: boolean): void } }[] };
+      const v = tr.list.find((o) => o.state === 'player')!, fw = new THREE.Vector3(Math.sin(v.yaw), 0, Math.cos(v.yaw)), right = new THREE.Vector3(fw.z, 0, -fw.x);
+      const e = c.enemies.list.find((x) => x.alive)!, at = new THREE.Vector3(v.x, 0, v.z).addScaledVector(fw, 9).addScaledVector(right, 0.5);
+      e.teleport(at.setY(c.hf.heightAt(at.x, at.z)));
+      e.die(right.clone());
+      for (let i = 0; i < 60; i++) (v.body.setLinvel({ x: 0, y: 0, z: 0 }, true), c.frame(1 / 30));
+      v.body.setLinvel({ x: fw.x * kmh / 3.6, y: 0, z: fw.z * kmh / 3.6 }, true);
+      dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW' }));
+      const out: string[] = [], q = new THREE.Euler();
+      for (let i = 0; i < frames; i++) {
+        c.frame(1 / 30);
+        q.setFromQuaternion(v.group.quaternion, 'YXZ');
+        const h = e.model.bones.get('mixamorigHips')!.getWorldPosition(new THREE.Vector3()), rel = h.clone().sub(v.group.position);
+        if (i % 3 === 0) out.push(`hips along ${rel.dot(fw).toFixed(1)} lat ${rel.dot(right).toFixed(2)} dy ${rel.y.toFixed(2)} · ${i} y ${(v.y - c.hf.heightAt(v.x, v.z)).toFixed(2)} pitch ${(q.x * 57.3).toFixed(1)} roll ${(q.z * 57.3).toFixed(1)} v ${v.speed.toFixed(1)}`);
+      }
+      dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW' }));
+      return out.join('\n');
+    },
     run,
   };
 }

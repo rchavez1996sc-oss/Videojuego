@@ -23,6 +23,7 @@ import { Fling } from '../entities/fling';
 import { busCabin } from './busCabin';
 import { doorDuring, doorPulse, setDoor } from './carDoors';
 import { suspendWheels } from './wheelSpin';
+import { bumpOverBodies } from './bodyBump';
 import type { Rig } from '../entities/rig';
 
 interface Deps { traffic: Traffic | null; world: RAPIER.World; player: Player; tpc: ThirdPersonCamera; enemies: Enemies; squad: Squad | null; sfx: Sfx; lighting: Lighting; mixer: Mixer }
@@ -215,6 +216,8 @@ export class Driving {
       if (c && dv > 3) dent(v.group, c.at, Math.min(0.38, (dv - 2.5) * 0.055));
     }
     if (Math.abs(s.speed) > 0.4) this.runOver(s, sp.half, dt);
+    const bump = bumpOverBodies(v.body, v.group, this.rig.mounts, this.rig.mass, Math.abs(s.speed), this.d.enemies, this.clock, this.hitT);
+    if (bump) [sfx.thud(bump * 2), tpc.kick(0.01, 0, bump * 0.3)];
     world.getCollider(player.collisionHandle).parent()!.setNextKinematicTranslation({ x: s.x, y: s.y + this.bodyOff, z: s.z });
     const gear = sp.top / 4, sp1 = Math.abs(s.speed), rev = sp1 < 0.5 ? 0.12 : 0.3 + ((sp1 % gear) / gear) * 0.7;
     this.engine.set(true, rev, Math.max(u.throttle, u.brake * (s.speed < 0.5 ? 1 : 0)), sp1, !!sp.small);
