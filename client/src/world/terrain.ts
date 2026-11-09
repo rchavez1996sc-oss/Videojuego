@@ -96,6 +96,7 @@ function terrainMaterial(hf: Heightfield, biome: BiomeDef, lighting: Lighting): 
   const uniforms = {
     uMask: { value: maskTex },
     uSoil: { value: soil().map },
+    uSoilN: { value: soil().normalMap },
     uRock: { value: rock().map },
     uSize: { value: hf.size },
     uSnowLine: { value: biome.snowLine },

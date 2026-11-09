@@ -8,10 +8,10 @@ import { SharpenEffect } from './sharpen';
 import { N8AOPostPass } from 'n8ao';
 import { onQuality, preset, quality } from '../core/settings';
 
-/** Very faint animated film grain over everything. */
+/** Very faint animated film grain over everything — after the sharpening, which would otherwise turn it into static. */
 function grain(): NoiseEffect {
   const n = new NoiseEffect({ blendFunction: BlendFunction.OVERLAY, premultiply: true });
-  n.blendMode.opacity.value = 0.12;
+  n.blendMode.opacity.value = 0.07;
   return n;
 }
 
@@ -56,17 +56,16 @@ export class Renderer {
       new ToneMappingEffect({ mode: ToneMappingMode.AGX }),
       new LUT3DEffect(cinematicLut()),
       new VignetteEffect({ offset: 0.28, darkness: 0.52 }),
-      grain(),
     ));
     this.composer.addPass(new EffectPass(camera, new SMAAEffect()));
-    this.composer.addPass(new EffectPass(camera, this.sharpen));
+    this.composer.addPass(new EffectPass(camera, this.sharpen, grain()));
     this.resize(camera);
     addEventListener('resize', () => this.resize(camera));
   }
 
   /** Internal resolution scale; sharpening rises as it drops to offset the upscale blur. */
   setScale(scale: number): void {
-    this.sharpen.strength = 0.35 + (1 - scale) * 2;
+    this.sharpen.strength = Math.min(0.85, 0.3 + (1 - scale) * 1.2);
     this.gl.setPixelRatio(preset.pixelRatio * scale);
     this.composer.setSize(innerWidth, innerHeight, false);
   }

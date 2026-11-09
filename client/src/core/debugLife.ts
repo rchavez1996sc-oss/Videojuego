@@ -131,6 +131,15 @@ export function lifeDebug(c: DebugContext) {
       });
       return out.join('\n');
     },
+    /** Shows/hides every mesh whose material name matches `re` (to find what makes a visual artefact). */
+    hideMat(re: string, show = false) {
+      let n = 0;
+      c.scene?.traverse((o) => {
+        const m = (o as THREE.Mesh).material as THREE.Material | undefined;
+        if (m && !Array.isArray(m) && new RegExp(re).test(m.name)) [o.visible = show, n++];
+      });
+      return n;
+    },
     run,
   };
 }

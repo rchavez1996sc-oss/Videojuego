@@ -28,16 +28,35 @@ const BASE_GRIME = /* glsl */ `
 
 const SKIP = new Set(['grass', 'terrain', 'ocean', 'signs']);
 /** Masonry and painted walls (by material key) get the fine wall detail below. */
-const WALLISH = /plaster|brick|paint|concrete|facade|wall|tarrajeo|stucco|cream|apt|tile|zocalo|plinth|cement|block|policeGreen|sand|travert|ochre|terracotta|salmon|derB|derC|letBlue|uniBlue|adobe|house|shop/i;
+const WALLISH = /bare|plaster|brick|paint|concrete|facade|wall|tarrajeo|stucco|cream|apt|tile|zocalo|plinth|cement|block|policeGreen|sand|travert|ochre|terracotta|salmon|derB|derC|letBlue|uniBlue|adobe|house|shop/i;
 const NOT_WALL = /glass|car|metal|rim|tire|wheel|light|screen|road|asphalt|cobble|model-|kiosk|menu|mural|pinta|livery|water|bark|leaf|foliage/i;
 const isWall = (key: string) => WALLISH.test(key) && !NOT_WALL.test(key);
+/** Exposed masonry (bare brick, block, stone): no paint to flake off, so no plaster flakes revealing brick. */
+const BARE = /^(brick[\w-]*|blockWall|plasterBrick|stoneWall|pirca|adobe[\w-]*|auto-bare-\d+)$/;
+const isBare = (key: string) => BARE.test(key);
+
+/**
+ * Anti-tiling for wall textures: a second lookup at another scale and offset, blended in by a soft noise mask in the
+ * wall's plane, so a photo tile (a damaged patch, a stain) stops repeating every metre. Same blend for the normal map.
+ */
+const BOMB_UV = 'vMapUv * 0.77 + vec2(0.41, 0.23)';
+const MAP_BOMB = /* glsl */ `
+#ifdef USE_MAP
+  {
+    vec3 bn = normalize(tq_wnrm);
+    vec2 bp = abs(bn.y) > 0.7 ? tq_wpos.xz : vec2(dot(tq_wpos.xz, normalize(vec2(-bn.z, bn.x) + 1e-5)), tq_wpos.y);
+    tq_bomb = smoothstep(0.32, 0.68, tq_noise(bp * 0.3 + 5.0) * 0.5 + 0.5);
+    diffuseColor *= mix(texture2D(map, vMapUv), texture2D(map, ${BOMB_UV}), tq_bomb);
+  }
+#endif`;
+const NORMAL_BOMB = THREE.ShaderChunk.normal_fragment_maps.split('texture2D( normalMap, vNormalMapUv )').join(`mix(texture2D( normalMap, vNormalMapUv ), texture2D( normalMap, ${BOMB_UV.replace('vMapUv', 'vNormalMapUv')} ), tq_bomb)`);
 
 /**
  * Small imperfections on walls, in the wall's own plane (u along it, v up): repaint patches of a slightly other
  * tone, flaked plaster showing the brick under it with a pale rim, hairline cracks, pits and specks, scuffs and
  * grime where people pass (0.2–1.3 m), rust runs under fixings, salt bloom over the damp band and a fine grain.
  */
-const WALL_DETAIL = /* glsl */ `
+const wallDetail = (bare: boolean): string => /* glsl */ `
   if (tq_wall > 0.5) {
     vec2 tq_dir = normalize(vec2(-tq_n.z, tq_n.x) + 1e-5);
     vec2 pw = vec2(dot(tq_wpos.xz, tq_dir), tq_wpos.y);
@@ -47,7 +66,7 @@ const WALL_DETAIL = /* glsl */ `
     float patchT = step(0.82, rnd) * (rnd - 0.91) * 0.9;
     diffuseColor.rgb *= 1.0 + patchT;
     float flakeN = tq_noise(pw * 1.7 + 11.0) * 0.65 + tq_noise(pw * 6.5 + 3.0) * 0.35;
-    float flakeZone = smoothstep(0.25, 0.55, tq_noise(pw * 0.23 + 21.0));
+    float flakeZone = ${bare ? '0.0' : 'smoothstep(0.25, 0.55, tq_noise(pw * 0.23 + 21.0))'};
     float flake = smoothstep(0.42, 0.47, flakeN) * flakeZone;
     float rim = (smoothstep(0.36, 0.42, flakeN) - flake) * flakeZone;
     diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.5, 0.33, 0.25) * (0.7 + 0.3 * tq_noise(pw * 14.0)), flake * 0.85);
@@ -97,7 +116,7 @@ const PAINT_WEAR = /* glsl */ `
  * rain streaks down walls and a dusty tint on whatever faces up. A few noise lookups per pixel, no extra passes.
  */
 /** Program cache key: materials whose weathered shader comes out the same share one compiled program. */
-export const weatherClass = (key: string): string => (SKIP.has(key) ? `skip-${key}` : ROAD.has(key) ? 'wear-road' : PAINT.has(key) ? 'wear-paint' : isWall(key) ? 'wear-wall' : 'wear');
+export const weatherClass = (key: string): string => (SKIP.has(key) ? `skip-${key}` : ROAD.has(key) ? 'wear-road' : PAINT.has(key) ? 'wear-paint' : isWall(key) ? (isBare(key) ? 'wear-bare' : 'wear-wall') : 'wear');
 
 export function weathering(shader: THREE.WebGLProgramParametersWithUniforms & { skinning?: boolean }, key: string): void {
   if (SKIP.has(key) || shader.skinning || !shader.fragmentShader.includes('#include <map_fragment>') || !shader.fragmentShader.includes('#include <roughnessmap_fragment>')) return;
@@ -113,8 +132,8 @@ export function weathering(shader: THREE.WebGLProgramParametersWithUniforms & { 
   tq_wpos = (tq_m * vec4(transformed, 1.0)).xyz;
   tq_wnrm = normalize(mat3(tq_m) * objectNormal);`);
   shader.fragmentShader = shader.fragmentShader
-    .replace('#include <common>', `#include <common>\nvarying vec3 tq_wpos;\nvarying vec3 tq_wnrm;\nuniform sampler2D tq_ground;\nuniform float tq_ground_half;\nfloat tq_damp = 0.0;\nfloat tq_rough = 0.0;\n${NOISE_GLSL}`)
-    .replace('#include <map_fragment>', `#include <map_fragment>
+    .replace('#include <common>', `#include <common>\nvarying vec3 tq_wpos;\nvarying vec3 tq_wnrm;\nuniform sampler2D tq_ground;\nuniform float tq_ground_half;\nfloat tq_damp = 0.0;\nfloat tq_rough = 0.0;\nfloat tq_bomb = 0.0;\n${NOISE_GLSL}`)
+    .replace('#include <map_fragment>', `${isWall(key) ? MAP_BOMB : '#include <map_fragment>'}
   vec3 tq_n = normalize(tq_wnrm);
   float tq_wall = 1.0 - smoothstep(0.25, 0.6, abs(tq_n.y));
   vec2 tq_flat = tq_wpos.xz + tq_wpos.y * 0.7;
@@ -123,9 +142,10 @@ export function weathering(shader: THREE.WebGLProgramParametersWithUniforms & { 
   float tq_up = smoothstep(0.75, 0.95, tq_n.y);
   diffuseColor.rgb *= 1.0 + tq_macro * 0.09 - tq_streak * 0.13;
   ${BASE_GRIME}
-  ${isWall(key) ? WALL_DETAIL : ''}
+  ${isWall(key) ? wallDetail(isBare(key)) : ''}
   ${ROAD.has(key) ? ROAD_WEAR : PAINT.has(key) ? PAINT_WEAR : ''}
   diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.62, 0.57, 0.5) * dot(diffuseColor.rgb, vec3(0.33)) * 1.6, tq_up * (0.08 + 0.08 * max(tq_macro, 0.0)));`)
     .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
   roughnessFactor = clamp(roughnessFactor + tq_macro * 0.12 + tq_streak * 0.08 + tq_damp * 0.1 + tq_rough, 0.04, 1.0);`);
+  if (isWall(key)) shader.fragmentShader = shader.fragmentShader.replace('#include <normal_fragment_maps>', NORMAL_BOMB);
 }

@@ -31,7 +31,7 @@ export function bakeGroups(lighting: Lighting, extra: string[] = []): { material
 export function autoBake(lighting: Lighting, materials: Record<string, THREE.Material>, taken: { keys: string[] }[]): { material: THREE.Material; keys: string[] }[] {
   const used = new Set(taken.flatMap((g) => g.keys)), looks = new Map<string, string[]>();
   for (const [key, m] of Object.entries(materials)) {
-    if (used.has(key) || !(m instanceof THREE.MeshStandardMaterial) || m instanceof THREE.MeshPhysicalMaterial || !['wear', 'wear-wall'].includes(m.customProgramCacheKey())) continue;
+    if (used.has(key) || !(m instanceof THREE.MeshStandardMaterial) || m instanceof THREE.MeshPhysicalMaterial || !['wear', 'wear-wall', 'wear-bare'].includes(m.customProgramCacheKey())) continue;
     if (m.vertexColors || m.transparent || m.alphaTest > 0 || m.alphaMap || m.emissiveMap || m.emissive.getHex() !== 0 || m.lightMap || m.aoMap || m.displacementMap || m.envMap) continue;
     const look = [m.customProgramCacheKey(), m.map?.uuid, m.normalMap?.uuid, m.roughnessMap?.uuid, m.metalnessMap?.uuid, m.bumpMap?.uuid, Math.round(m.roughness * 10), Math.round(m.metalness * 10), m.side, m.envMapIntensity, m.normalScale.x, m.normalScale.y, m.flatShading, m.depthWrite, m.polygonOffset, m.polygonOffsetFactor].join('|');
     (looks.get(look) ?? looks.set(look, []).get(look)!).push(key);
@@ -45,6 +45,6 @@ export function autoBake(lighting: Lighting, materials: Record<string, THREE.Mat
       roughness: avg(keys, 'roughness'), metalness: avg(keys, 'metalness'), side: m.side, envMapIntensity: m.envMapIntensity, flatShading: m.flatShading, depthWrite: m.depthWrite,
       polygonOffset: m.polygonOffset, polygonOffsetFactor: m.polygonOffsetFactor, vertexColors: true,
     });
-    return { material: lighting.setup(mat, m.customProgramCacheKey() === 'wear-wall' ? `auto-wall-${i}` : `auto-${i}`), keys };
+    return { material: lighting.setup(mat, ({ 'wear-wall': `auto-wall-${i}`, 'wear-bare': `auto-bare-${i}` } as Record<string, string>)[m.customProgramCacheKey()] ?? `auto-${i}`), keys };
   });
 }
