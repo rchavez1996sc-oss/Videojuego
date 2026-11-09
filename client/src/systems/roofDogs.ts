@@ -23,6 +23,7 @@ export class RoofDogs {
   }
 
   update(dt: number, camera: THREE.Vector3): void {
+    if (location.search.includes('shot')) (window as unknown as { __roofDogs: RoofDog[] }).__roofDogs = this.list;
     for (const d of this.list) {
       const len = d.a.distanceTo(d.b), near = d.a.distanceToSquared(camera) < 70 * 70;
       d.beast.root.visible = near;
