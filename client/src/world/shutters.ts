@@ -27,6 +27,7 @@ export class Shutters {
     this.mesh.count = this.list.length;
     this.list.forEach((_, i) => this.write(i));
     this.mesh.onBeforeRender = () => this.update();
+    if (location.search.includes('shot')) Object.assign(window, { __shutters: this.list });
   }
 
   alarm(at: THREE.Vector3, radius: number): void {

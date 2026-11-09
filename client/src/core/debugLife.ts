@@ -32,6 +32,7 @@ export function lifeDebug(c: DebugContext) {
       return JSON.stringify({
         carts: civs().filter((x) => x.cart).map((x) => f(x.pos)), dogs: dogs.slice(0, 4).map((d) => f(d.a)), cloth,
         police: c.enemies.list.filter((e) => e.alive && e.state === 'patrol' && !e.moveTarget).slice(0, 4).map((e) => f(e.position)),
+        shutters: ((l) => `${l.filter((x) => x.t >= 1).length} cerradas / ${l.filter((x) => x.closing).length} cerrando / ${l.length}`)((window as unknown as { __shutters?: { t: number; closing: boolean }[] }).__shutters ?? []),
         acts: civs().filter((x) => x.act).map((x) => `${x.act}@${f(x.pos)}`),
       });
     },
