@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { Builder } from './buildingKit';
 
 type At = (x: number, y: number, z: number) => THREE.Vector3;
@@ -7,6 +8,18 @@ const UP = new THREE.Vector3(0, 1, 0);
 /** Roof edges a dog paces along (barking down at the street), and roof spots where a neighbour stands. */
 export const roofPerches: [THREE.Vector3, THREE.Vector3][] = [];
 export const roofPeople: { pos: THREE.Vector3; yaw: number }[] = [];
+
+/** A bushy potted plant of radius ~`r`: three lumpy, jittered leaf balls (no faceted low-poly blob). */
+function shrub(r: number, rand: () => number): THREE.BufferGeometry {
+  const parts = [0, 1, 2].map((k) => {
+    const g = new THREE.IcosahedronGeometry(r * (0.62 + rand() * 0.3), 2), p = g.attributes.position as THREE.BufferAttribute;
+    for (let i = 0; i < p.count; i++) p.setXYZ(i, p.getX(i) * (0.85 + rand() * 0.3), p.getY(i) * (0.8 + rand() * 0.35), p.getZ(i) * (0.85 + rand() * 0.3));
+    g.translate((k - 1) * r * 0.45 + (rand() - 0.5) * r * 0.2, (k === 1 ? 0.35 : 0) * r + rand() * r * 0.2, (rand() - 0.5) * r * 0.5);
+    g.computeVertexNormals();
+    return g.toNonIndexed();
+  });
+  return mergeGeometries(parts)!;
+}
 
 /**
  * Life on a flat Lima roof at height `H` (local frame of the house, +z to the street, depth `d`): a TV aerial on a
@@ -32,7 +45,7 @@ export function roofClutter(b: Builder, at: At, q: THREE.Quaternion, w: number, 
     if (rand() < 0.35) continue;
     const s = 0.22 + rand() * 0.14, p = at(x, H + 0.45 + s / 2, -0.35);
     b.box(rand() < 0.6 ? 'potTerracotta' : 'chairBlue', [s, s, s], p, q, false);
-    b.geometry('plantGreen', new THREE.IcosahedronGeometry(s * (0.8 + rand() * 0.6), 0), new THREE.Matrix4().makeTranslation(p.x, p.y + s * 0.8, p.z));
+    b.geometry('plantGreen', shrub(s * (0.8 + rand() * 0.5), rand), new THREE.Matrix4().makeTranslation(p.x, p.y + s * 0.85, p.z));
   }
   if (rand() < 0.35) {
     const [x, z] = spot();
