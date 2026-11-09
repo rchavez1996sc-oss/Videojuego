@@ -23,7 +23,7 @@ const UP_AXIS = new THREE.Vector3(0, 1, 0), IDENTITY = { x: 0, y: 0, z: 0, w: 1 
 type Mood = 'walk' | 'idle' | 'panic' | 'hide' | 'gone' | 'dead';
 
 export interface Civilian {
-  act: Act; filmed?: boolean; phone?: THREE.Object3D; cart?: THREE.Object3D | null;
+  act: Act; filmed?: boolean; phone?: THREE.Object3D; cart?: THREE.Object3D | null; cartBody?: RAPIER.RigidBody;
   model: Rig; body: RAPIER.RigidBody; collider: RAPIER.Collider;
   pos: THREE.Vector3; yaw: number; mood: Mood; node: number; target: number; exit: number;
   speed: number; timer: number; panicT: number; fallDir: THREE.Vector3; fallT: number; shadowed: boolean;
@@ -87,7 +87,7 @@ export class Civilians {
       flingers.set(collider.handle, (push) => this.runOver(collider.handle, push));
       onHit(collider.handle, (_dmg, p) => this.kill(c, new THREE.Vector3(p.x, p.y, p.z)));
     }
-    giveCarts(this.list, vendors, lighting);
+    giveCarts(this.list, vendors, lighting, world);
     if (location.search.includes('shot')) Object.assign(window, { __civs: this });
   }
 
@@ -193,7 +193,7 @@ export class Civilians {
     for (const turn of [0, 1.1, -1.1]) {
       const d = dir.clone().applyAxisAngle(UP_AXIS, turn), at = { x: c.pos.x + d.x * 0.7, y: c.pos.y + 0.9, z: c.pos.z + d.z * 0.7 };
       let hit = false;
-      this.world.intersectionsWithShape(at, IDENTITY, PROBE, (o) => ((hit = !o.isSensor() && !!o.parent()?.isKinematic()), !hit), RAPIER.QueryFilterFlags.EXCLUDE_FIXED, undefined, c.collider, undefined, pass ? (o) => !innocents.has(o.handle) : undefined);
+      this.world.intersectionsWithShape(at, IDENTITY, PROBE, (o) => ((hit = !o.isSensor() && !!o.parent()?.isKinematic() && o.parent() !== c.cartBody), !hit), RAPIER.QueryFilterFlags.EXCLUDE_FIXED, undefined, c.collider, undefined, pass ? (o) => !innocents.has(o.handle) : undefined);
       if (!hit) return d;
     }
     return null;

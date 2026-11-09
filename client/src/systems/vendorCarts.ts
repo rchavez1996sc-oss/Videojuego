@@ -1,10 +1,11 @@
 import * as THREE from 'three';
+import RAPIER from '@dimforge/rapier3d-compat';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { Lighting } from '../render/lighting';
 import type { Rig } from '../entities/rig';
 
 /** A passer-by who pushes a street-vendor tricycle (see `Civilians`). */
-export interface Pusher { model: Rig; mood: string; speed: number; cart?: THREE.Object3D | null }
+export interface Pusher { model: Rig; mood: string; speed: number; cart?: THREE.Object3D | null; cartBody?: RAPIER.RigidBody }
 
 /** Body, trim and canopy colours of each kind of cart: D'Onofrio-style ice cream box, emoliente stand, sandwich vitrine. */
 const KINDS: [string, string, string][] = [['#f2c400', '#d0021b', '#d0021b'], ['#2f7d3a', '#e8e0c8', '#2f62a8'], ['#f1efe8', '#2f62a8', '#e3542a']];
@@ -40,7 +41,7 @@ function cart(kind: number): THREE.BufferGeometry {
 let geos: THREE.BufferGeometry[] | null = null, mat: THREE.Material | null = null;
 
 /** Gives the first `n` passers-by a cart each (walking slower behind it). */
-export function giveCarts(list: Pusher[], n: number, lighting: Lighting): void {
+export function giveCarts(list: Pusher[], n: number, lighting: Lighting, world: RAPIER.World): void {
   geos ??= KINDS.map((_, k) => cart(k));
   mat ??= lighting.setup(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7 }), 'vendor-cart');
   list.slice(0, n).forEach((c, i) => {
@@ -48,13 +49,24 @@ export function giveCarts(list: Pusher[], n: number, lighting: Lighting): void {
     m.castShadow = m.receiveShadow = true;
     c.model.root.add(m);
     c.cart = m;
+    c.cartBody = world.createRigidBody(RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(0, -60, 0));
+    world.createCollider(RAPIER.ColliderDesc.cuboid(0.58, 0.75, 0.42).setTranslation(0, 0.75, 1.15), c.cartBody);
   });
 }
 
-/** Per frame: pushers keep a walking pace; when they panic they let go and the cart stays where it was. */
+const Q = new THREE.Quaternion(), P = new THREE.Vector3();
+
+/**
+ * Per frame: the cart's solid box follows it (others walk round it; its own pusher ignores it, see `Civilians.clearWay`),
+ * pushers keep a walking pace; when they panic they let go and the cart stays where it was.
+ */
 export function cartStep(list: Pusher[]): void {
   for (const c of list) {
     if (!c.cart) continue;
+    c.model.root.getWorldPosition(P);
+    c.model.root.getWorldQuaternion(Q);
+    c.cartBody?.setNextKinematicTranslation(P);
+    c.cartBody?.setNextKinematicRotation(Q);
     if (c.mood === 'walk' || c.mood === 'idle') {
       c.speed = Math.min(c.speed, 0.8);
       continue;
