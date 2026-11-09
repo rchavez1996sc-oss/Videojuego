@@ -53,6 +53,18 @@ export function lifeDebug(c: DebugContext) {
       }
       return `hp ${v.hp.toFixed(0)} speed ${v.speed.toFixed(1)} at ${v.x.toFixed(1)},${v.z.toFixed(1)} yaw ${v.yaw.toFixed(2)}`;
     },
+    /** Camera following passer-by `i` among those pushing a cart (from beside and behind) for `frames`. */
+    watchCart(i: number, frames = 20) {
+      const civ = civs().filter((x) => x.cart)[i];
+      if (!civ) return 'no cart';
+      for (let k = 0; k < frames; k++) {
+        const yaw = civ.model.root.rotation.y, fwd = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw)), at = civ.pos.clone().add(new THREE.Vector3(0, 1, 0));
+        c.setFreeCam(true);
+        c.tpc.place(at.clone().addScaledVector(fwd, 3.5).add(new THREE.Vector3(fwd.z * 3.5, 1.4, -fwd.x * 3.5)), at.clone().addScaledVector(fwd, 0.8));
+        c.frame(1 / 30);
+      }
+      return `cart civ ${civ.mood} @${f(civ.pos)}`;
+    },
     run,
   };
 }
