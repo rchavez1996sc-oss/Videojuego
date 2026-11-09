@@ -33,8 +33,13 @@ function cart(kind: number): THREE.BufferGeometry {
     painted(new THREE.ConeGeometry(0.85, 0.3, 10, 1, true), roof, t(0.45, 2.15, 1.0)),
     painted(new THREE.BoxGeometry(0.75, 0.03, 0.03), '#2a2a2c', t(0, 1.0, 0.5)),
     ...[-0.32, 0.32].map((x) => painted(new THREE.CylinderGeometry(0.018, 0.018, 0.5, 5), '#2a2a2c', t(x, 0.8, 0.6, 0.6))),
-    ...[-0.5, 0.5].map((x) => painted(new THREE.TorusGeometry(0.22, 0.04, 6, 14), '#1a1a1a', t(x, 0.24, 1.2, 0, Math.PI / 2).multiply(new THREE.Matrix4().makeRotationY(Math.PI / 2)))),
-    painted(new THREE.TorusGeometry(0.3, 0.035, 6, 16), '#1a1a1a', t(0, 0.32, 0.45).multiply(new THREE.Matrix4().makeRotationY(Math.PI / 2))),
+    ...[-0.5, 0.5].flatMap((x) => [
+      painted(new THREE.TorusGeometry(0.22, 0.04, 8, 20), '#1a1a1a', t(x, 0.26, 1.2).multiply(new THREE.Matrix4().makeRotationY(Math.PI / 2))),
+      painted(new THREE.CylinderGeometry(0.19, 0.19, 0.02, 16), '#8a8d90', t(x, 0.26, 1.2, 0, Math.PI / 2)),
+    ]),
+    painted(new THREE.CylinderGeometry(0.015, 0.015, 1.0, 5), '#2a2a2c', t(0, 0.26, 1.2, 0, Math.PI / 2)),
+    painted(new THREE.TorusGeometry(0.3, 0.035, 8, 22), '#1a1a1a', t(0, 0.33, 0.45).multiply(new THREE.Matrix4().makeRotationY(Math.PI / 2))),
+    painted(new THREE.CylinderGeometry(0.27, 0.27, 0.015, 16), '#8a8d90', t(0, 0.33, 0.45, 0, Math.PI / 2)),
   ];
   return mergeGeometries(parts)!;
 }

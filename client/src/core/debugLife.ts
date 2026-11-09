@@ -61,9 +61,9 @@ export function lifeDebug(c: DebugContext) {
       if (!v) return 'no vehicle';
       v.hp = HP * [1, 0.9, 0.7, 0.5, 0.3, 0.1][stage];
       for (let i = 0; i < frames; i++) {
-        const side = new THREE.Vector3(Math.cos(v.yaw), 0, -Math.sin(v.yaw)), at = new THREE.Vector3(v.x, c.hf.heightAt(v.x, v.z) + 1, v.z);
+        const at = new THREE.Vector3(v.x, c.hf.heightAt(v.x, v.z) + 1.2, v.z);
         c.setFreeCam(true);
-        c.tpc.place(at.clone().addScaledVector(side, 7).add(new THREE.Vector3(Math.sin(v.yaw) * 2, 1.5, Math.cos(v.yaw) * 2)), at);
+        c.tpc.place(clearView(c, at, 7, v.yaw + 1.2), at);
         c.frame(1 / 30);
       }
       return `hp ${v.hp.toFixed(0)} speed ${v.speed.toFixed(1)} at ${v.x.toFixed(1)},${v.z.toFixed(1)} yaw ${v.yaw.toFixed(2)}`;
