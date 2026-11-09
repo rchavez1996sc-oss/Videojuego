@@ -61,8 +61,8 @@ vec3 dryAvg = texture2D(uDryG, vec2(0.5), 12.0).rgb;
 dryC = mix(dryAvg, dryC, 0.55);
 vec3 blades = mix(lawnC, dryC, dryness);
 float bl = lum(blades), blAvg = lum(mix(texture2D(uLawn, vec2(0.5), 12.0).rgb, dryAvg, dryness));
-blades = mix(vec3(bl), blades, 0.3);
-blades = (blAvg + (blades - blAvg) * mix(0.7, 0.45, smoothstep(1.5, 10.0, camDist))) * 4.6;
+blades = mix(vec3(bl), blades, mix(1.0, 0.3, dryness));
+blades = (blAvg + (blades - blAvg) * mix(1.0, mix(0.7, 0.45, smoothstep(1.5, 10.0, camDist)), dryness)) * 4.6;
 grass = mix(grass * (0.78 + 0.28 * n2 + 0.12 * n3), grass * blades * (0.86 + 0.2 * n2), uPhoto);
 grass = mix(grass, grass * soilC * 2.0, 0.25 * (1.0 - uPhoto));
 
