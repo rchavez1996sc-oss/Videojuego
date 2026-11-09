@@ -6,6 +6,17 @@ type Civ = { pos: THREE.Vector3; mood: string; act: string | null; reactT: numbe
 /** Tests set `on` to keep the town simulating while the camera is free (normally a free camera freezes it). */
 export const simFree = { on: false };
 const civs = () => ((window as unknown as { __civs?: { list: Civ[] } }).__civs?.list ?? []);
+import RAPIER from '@dimforge/rapier3d-compat';
+
+/** A camera spot `dist` m from `at` (preferring direction `pref`) with a clear line of sight to it. */
+function clearView(c: DebugContext, at: THREE.Vector3, dist: number, pref = 0): THREE.Vector3 {
+  for (let k = 0; k < 16; k++) {
+    const a = pref + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * (Math.PI / 8), d = { x: Math.sin(a), y: 0.12, z: Math.cos(a) };
+    const hit = c.world?.castRay(new RAPIER.Ray(at, d), dist + 0.5, true, RAPIER.QueryFilterFlags.EXCLUDE_SENSORS | RAPIER.QueryFilterFlags.EXCLUDE_KINEMATIC);
+    if (!hit) return at.clone().add(new THREE.Vector3(d.x, d.y, d.z).multiplyScalar(dist));
+  }
+  return at.clone().add(new THREE.Vector3(0, dist, 0));
+}
 const f = (v: THREE.Vector3) => [v.x, v.y, v.z].map((n) => +n.toFixed(1));
 
 /** Test hooks for the living city: where things are, aiming at a passer-by, vehicle wear stages. */
@@ -31,9 +42,9 @@ export function lifeDebug(c: DebugContext) {
       if (!civ) return 'no civilian';
       const input = c.input as unknown as { aiming: boolean };
       input.aiming = true;
-      let log = '';
+      let log = '', view: THREE.Vector3 | undefined;
       for (let k = 0; k < frames; k++) {
-        const at = civ.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), from = at.clone().add(new THREE.Vector3(5, 0.6, 5));
+        const at = civ.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), from = view ??= clearView(c, at, 6);
         c.setFreeCam(true);
         c.tpc.place(from, at);
         c.frame(1 / 30);
@@ -63,7 +74,7 @@ export function lifeDebug(c: DebugContext) {
       for (let k = 0; k < frames; k++) {
         const yaw = civ.model.root.rotation.y, fwd = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw)), at = civ.pos.clone().add(new THREE.Vector3(0, 1, 0));
         c.setFreeCam(true);
-        c.tpc.place(at.clone().addScaledVector(fwd, 3.5).add(new THREE.Vector3(fwd.z * 3.5, 1.4, -fwd.x * 3.5)), at.clone().addScaledVector(fwd, 0.8));
+        c.tpc.place(clearView(c, at, 5, Math.atan2(fwd.x, fwd.z) + 0.6), at.clone().addScaledVector(fwd, 0.8));
         c.frame(1 / 30);
       }
       return `cart civ ${civ.mood} @${f(civ.pos)}`;
@@ -77,7 +88,7 @@ export function lifeDebug(c: DebugContext) {
       for (let k = 0; k < frames; k++) {
         const fwd = e.model.root.getWorldDirection(new THREE.Vector3()), at = e.position.clone().add(new THREE.Vector3(0, 1.4, 0));
         c.setFreeCam(true);
-        c.tpc.place(at.clone().addScaledVector(fwd, 3.2).add(new THREE.Vector3(0, 0.3, 0)), at);
+        c.tpc.place(clearView(c, at, 3.4, Math.atan2(fwd.x, fwd.z)), at);
         c.frame(1 / 30);
         if (k % 10 === 9) {
           head.getWorldQuaternion(q); hips.getWorldQuaternion(r);
