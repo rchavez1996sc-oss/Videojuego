@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import type { Lighting } from '../render/lighting';
 import type { Rig } from '../entities/rig';
 
@@ -24,10 +25,10 @@ function painted(g: THREE.BufferGeometry, hex: string, m: THREE.Matrix4): THREE.
 function cart(kind: number): THREE.BufferGeometry {
   const [body, trim, roof] = KINDS[kind], t = (x: number, y: number, z: number, rx = 0, rz = 0) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, 0, rz)), new THREE.Vector3(1, 1, 1));
   const parts = [
-    painted(new THREE.BoxGeometry(1.1, 0.7, 0.75), body, t(0, 0.75, 1.15)),
+    painted(new RoundedBoxGeometry(1.1, 0.7, 0.75, 3, 0.06), body, t(0, 0.75, 1.15)),
     painted(new THREE.BoxGeometry(1.12, 0.1, 0.77), trim, t(0, 0.5, 1.15)),
     painted(new THREE.BoxGeometry(1.12, 0.06, 0.77), trim, t(0, 1.1, 1.15)),
-    painted(new THREE.BoxGeometry(0.9, 0.32, 0.55), kind === 2 ? '#c9dde6' : kind === 1 ? '#c98a3c' : body, t(0, 1.29, 1.15)),
+    painted(new RoundedBoxGeometry(0.9, 0.32, 0.55, 3, 0.07), kind === 2 ? '#c9dde6' : kind === 1 ? '#c98a3c' : body, t(0, 1.29, 1.15)),
     painted(new THREE.CylinderGeometry(0.02, 0.02, 1.0, 6), '#2a2a2c', t(0.45, 1.62, 0.85)),
     painted(new THREE.ConeGeometry(0.85, 0.3, 10, 1, true), roof, t(0.45, 2.15, 1.0)),
     painted(new THREE.BoxGeometry(0.75, 0.03, 0.03), '#2a2a2c', t(0, 1.0, 0.5)),
