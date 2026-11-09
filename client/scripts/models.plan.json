@@ -124,5 +124,10 @@
   "url": "ledsignal/one.glb",
   "si": 0.2,
   "keep": "Cube"
+ },
+ {
+  "key": "trashpile",
+  "url": "trashpack/pile.glb",
+  "si": 0.35
  }
 ]

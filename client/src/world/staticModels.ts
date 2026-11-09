@@ -54,15 +54,16 @@ export async function placeModels(scene: THREE.Object3D, lighting: Lighting, wor
 }
 
 /** Scatter rule: `count` copies of `key` beside the walkable graph, inside `area` [x0, z0, x1, z1] when given. */
-export interface ModelScatter { key: string; count: number; area?: [number, number, number, number]; spacing?: number; side?: number; solid?: boolean }
+export interface ModelScatter { key: string; count: number; area?: [number, number, number, number]; spacing?: number; side?: number; solid?: boolean; clear?: number; offRoad?: boolean }
 
 /**
  * Spots beside the pedestrian graph (an edge's midpoint pushed `side` m off its line, facing it), on free ground —
- * no collider within the footprint — and at least `spacing` m from any earlier spot of the same key.
+ * no collider within the footprint (`clear` m around) — and at least `spacing` m from any earlier spot of the same key.
  */
-export function scatterModels(graph: { nodes: THREE.Vector3[]; edges: [number, number][] }, world: RAPIER.World, rules: ModelScatter[], rand: () => number, ground: (x: number, z: number) => number): void {
-  const shape = new RAPIER.Cuboid(0.6, 0.9, 0.6), rot = { x: 0, y: 0, z: 0, w: 1 };
+export function scatterModels(graph: { nodes: THREE.Vector3[]; edges: [number, number][] }, world: RAPIER.World, rules: ModelScatter[], rand: () => number, ground: (x: number, z: number) => number, road?: (x: number, z: number) => boolean): void {
+  const rot = { x: 0, y: 0, z: 0, w: 1 };
   for (const r of rules) {
+    const c = r.clear ?? 0.6, shape = new RAPIER.Cuboid(c, 0.9, c);
     const taken: THREE.Vector3[] = [];
     for (let tries = 0; taken.length < r.count && tries < r.count * 40; tries++) {
       const [a, b] = graph.edges[Math.floor(rand() * graph.edges.length)], A = graph.nodes[a], B = graph.nodes[b];
@@ -72,6 +73,8 @@ export function scatterModels(graph: { nodes: THREE.Vector3[]; edges: [number, n
       const x = x0 + nx * s * off, z = z0 + nz * s * off;
       if (r.area && (x < r.area[0] || z < r.area[1] || x > r.area[2] || z > r.area[3])) continue;
       if (taken.some((p) => Math.hypot(p.x - x, p.z - z) < (r.spacing ?? 25))) continue;
+      const k = r.clear ?? 0.6;
+      if (r.offRoad && road && [[0, 0], [k, k], [-k, k], [k, -k], [-k, -k]].some(([a, b]) => road(x + a, z + b))) continue;
       const y = ground(x, z);
       let hit = false;
       world.intersectionsWithShape({ x, y: y + 1.0, z }, rot, shape, () => ((hit = true), false));

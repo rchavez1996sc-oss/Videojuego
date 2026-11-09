@@ -1,5 +1,5 @@
 {
-  "version": 32,
+  "version": 33,
   "characters": {
     "pnp": {
       "near": "characters/pnp.glb",
@@ -228,7 +228,8 @@
     "grass": "models/grass.glb",
     "trafficlight": "models/trafficlight.glb",
     "motoland": "models/motoland.glb",
-    "ledone": "models/ledone.glb"
+    "ledone": "models/ledone.glb",
+    "trashpile": "models/trashpile.glb"
   },
   "murals": {
     "twofaces": {
