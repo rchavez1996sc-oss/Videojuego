@@ -45,7 +45,7 @@ export function wearTick(v: Vehicle, camera: THREE.Vector3, y: number, emit: (at
   last.set(v, now);
   const front = v.kind === 'micro' ? -0.42 : 0.33, at = new THREE.Vector3(Math.sin(v.yaw), 0, Math.cos(v.yaw)).multiplyScalar(v.len * front).add(new THREE.Vector3(v.x, y + (v.kind === 'moto' || v.kind === 'delivery' ? 0.7 : 1.0), v.z));
   emit(at, shade * (0.85 + Math.random() * 0.3));
-  if (s === 5 && Math.random() < 0.7) emit(at.clone().add(new THREE.Vector3((Math.random() - 0.5) * 0.4, -0.25, (Math.random() - 0.5) * 0.4)), 2.2 + Math.random() * 1.5);
+  if (s === 5) for (let k = 0; k < 2; k++) emit(at.clone().add(new THREE.Vector3((Math.random() - 0.5) * 0.4, -0.25, (Math.random() - 0.5) * 0.4)), 2.2 + Math.random() * 1.5);
 }
 
 /** A bullet hole: a small chipped, dimpled patch of paint where it struck, and the glass round it crazed. */
