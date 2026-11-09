@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { enginePower, steerPull } from './vehicleWear';
 import RAPIER from '@dimforge/rapier3d-compat';
 import type { Traffic, Vehicle } from './traffic';
 import type { Player } from '../entities/player';
@@ -197,6 +198,7 @@ export class Driving {
     const { world, player, tpc, sfx } = this.d, v = this.car!, s = this.state!, sp = SPECS[v.kind] ?? SPECS.sedan;
     this.rig ??= new CarRig(world, v, sp, (c) => c.shapeType() === RAPIER.ShapeType.Capsule || c.isSensor());
     const u = { throttle: input.down('KeyW') ? 1 : 0, brake: input.down('KeyS') ? 1 : 0, steer: (input.down('KeyA') ? 1 : 0) - (input.down('KeyD') ? 1 : 0), handbrake: input.down('Space') };
+    [u.throttle, u.steer] = [u.throttle * enginePower(v), u.steer + steerPull(v)];
     this.rig.update(u, dt);
     suspendWheels(v.group, this.rig.mounts, this.rig.drops());
     readBody(v);
@@ -207,7 +209,7 @@ export class Driving {
       const c = contactOf(world, v.collider);
       sfx.crash(0);
       tpc.kick(0, 0, Math.min(0.6, dv * 0.04));
-      v.hp -= (dv - 4) * 9;
+      v.hp -= (dv - 4) * 5;
       if (v.hp <= 0) v.state = 'wreck';
       if (dv > 8) player.hurt((dv - 8) * 3.5);
       if (c && dv > 3) dent(v.group, c.at, Math.min(0.38, (dv - 2.5) * 0.055));

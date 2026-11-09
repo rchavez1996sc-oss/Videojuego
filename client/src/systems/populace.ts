@@ -24,10 +24,11 @@ import { buildPintas } from '../world/pintas';
 import { roadAt } from '../world/groundStrips';
 import { LooseProps } from '../fx/looseProps';
 import { parkedCars } from '../world/parkedCars';
+import { laundryMesh } from '../world/laundryWind';
 
 /** Pedestrians plus city life (traffic, strays, birds, ambience) and the shared "something scary happened" alarm. */
 export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world: RAPIER.World; hf: Heightfield; lighting: Lighting; mixer: Mixer; sfx: Sfx; combat: Combat; hud: Hud; camera: THREE.Camera; scene: THREE.Scene }) {
-  const civilians = barrio && ch.civilians ? new Civilians(barrio.graph, d.hf, d.lighting, d.world, ch.civilians.count, ch.civilians.seed, d.camera, ch.civilians.gear) : null;
+  const civilians = barrio && ch.civilians ? new Civilians(barrio.graph, d.hf, d.lighting, d.world, ch.civilians.count, ch.civilians.seed, d.camera, ch.civilians.gear, ch.civilians.vendors) : null;
   const life = barrio && ch.life ? new CityLife(ch.life, d.world, d.hf, barrio, d.lighting, d.mixer, d.camera) : null;
   if (barrio && ch.litter) d.scene.add(litter(barrio.graph, d.world, ch.litter, d.lighting));
   if (barrio && ch.groundDetail) d.scene.add(groundDetail(barrio.graph, d.world, ch.groundDetail, d.lighting, (x, z) => d.hf.maskAt(x, z, 0) > 0.5 || d.hf.isPaved(z)));
@@ -40,6 +41,8 @@ export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world
   }
   const props = barrio && ch.looseProps ? new LooseProps(barrio.graph, d.world, d.lighting, ch.looseProps, d.sfx, d.camera) : null;
   if (props) d.scene.add(props.group);
+  const clothes = laundryMesh(d.lighting);
+  if (clothes) d.scene.add(clothes);
   const pintas = buildPintas(d.lighting);
   if (pintas) d.scene.add(pintas);
   if (barrio && ch.streetNames) d.scene.add(streetSigns(barrio.graph, d.world, d.lighting, ch.streetNames, (x, z) => d.hf.maskAt(x, z, 0) > 0.5 || d.hf.isPaved(z) || roadAt(x, z), ch.streetSignArea));
@@ -81,7 +84,7 @@ export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world
   if (life) {
     d.scene.add(life.group);
     const tr = life.trafficEvents;
-    tr.onSmoke = (p) => d.combat.smokePuff(p);
+    tr.onSmoke = (p, shade) => d.combat.smokePuff(p, shade);
     tr.onCrash = (p) => d.sfx.crash(p.distanceTo(d.camera.position));
     tr.onDisabled = (p, weight) => {
       if (!blame.player) return alarm(p, 80);

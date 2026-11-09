@@ -15,12 +15,15 @@ import type { Heightfield } from '../world/heightfield';
 import type { Lighting } from '../render/lighting';
 import type { StreetGraph } from '../world/barrio';
 import { PERSON_SOLVER } from '../physics/groups';
+import { reactPose, reactStep, type Act } from './civilianReact';
+import { giveCarts, cartStep } from './vendorCarts';
 
 const UP_AXIS = new THREE.Vector3(0, 1, 0), IDENTITY = { x: 0, y: 0, z: 0, w: 1 }, PROBE = new RAPIER.Capsule(0.45, 0.28);
 
 type Mood = 'walk' | 'idle' | 'panic' | 'hide' | 'gone' | 'dead';
 
-interface Civilian {
+export interface Civilian {
+  act: Act; filmed?: boolean; phone?: THREE.Object3D; cart?: THREE.Object3D | null;
   model: Rig; body: RAPIER.RigidBody; collider: RAPIER.Collider;
   pos: THREE.Vector3; yaw: number; mood: Mood; node: number; target: number; exit: number;
   speed: number; timer: number; panicT: number; fallDir: THREE.Vector3; fallT: number; shadowed: boolean;
@@ -53,7 +56,7 @@ export class Civilians {
     return surfaceTop(x, y, z);
   }
 
-  constructor(private graph: StreetGraph, private hf: Heightfield, lighting: Lighting, private world: RAPIER.World, count: number, seed: number, private camera: THREE.Camera, kit?: GearDef) {
+  constructor(private graph: StreetGraph, private hf: Heightfield, lighting: Lighting, private world: RAPIER.World, count: number, seed: number, private camera: THREE.Camera, kit?: GearDef, vendors = 0) {
     this.neighbors = graph.nodes.map(() => []);
     for (const [a, b] of graph.edges) {
       this.neighbors[a].push(b);
@@ -74,14 +77,17 @@ export class Civilians {
       const collider = world.createCollider(RAPIER.ColliderDesc.capsule(0.5, 0.3).setSolverGroups(PERSON_SOLVER), body);
       const c: Civilian = {
         model, body, collider, pos, yaw: 0, mood: rand() < 0.35 ? 'idle' : 'walk', node, target, exit: -1,
-        speed: 1.1 + rand() * 0.5, timer: 2 + rand() * 6, panicT: 0, fallDir: new THREE.Vector3(), fallT: 0, shadowed: true, stuckT: 0, passT: 0, reactT: 0, hideAt: null, hideT: 0, threat: new THREE.Vector3(), route: [],
+        act: null, speed: 1.1 + rand() * 0.5, timer: 2 + rand() * 6, panicT: 0, fallDir: new THREE.Vector3(), fallT: 0, shadowed: true, stuckT: 0, passT: 0, reactT: 0, hideAt: null, hideT: 0, threat: new THREE.Vector3(), route: [],
       };
       this.list.push(c);
+      if (rand() < 0.5) c.phone = gear(model.bones, { phone: 1 }, lighting, rand)[0];
+      reactPose(c);
       this.group.add(model.root);
       innocents.add(collider.handle);
       flingers.set(collider.handle, (push) => this.runOver(collider.handle, push));
       onHit(collider.handle, (_dmg, p) => this.kill(c, new THREE.Vector3(p.x, p.y, p.z)));
     }
+    giveCarts(this.list, vendors, lighting);
     if (location.search.includes('shot')) Object.assign(window, { __civs: this });
   }
 
@@ -96,6 +102,10 @@ export class Civilians {
         continue;
       }
       c.threat.copy(at);
+      if (c.phone && !c.filmed && c.mood !== 'panic' && c.mood !== 'hide' && d > 22 && Math.random() < 0.35) {
+        Object.assign(c, { act: 'film', filmed: true, reactT: 7 + Math.random() * 7 });
+        continue;
+      }
       if (c.mood !== 'panic' && c.mood !== 'hide') c.reactT = 0.15 + Math.random() * 0.55;
       const spot = c.mood !== 'hide' && d < HIDE_RANGE && Math.random() < 0.7 && c.collider.isEnabled() ? hideSpot(this.world, c.pos, at, c.collider) : null;
       if (spot) Object.assign(c, { mood: 'hide', hideAt: spot, hideT: 6 + Math.random() * 6, speed: 4.6 + Math.random() * 1.2 });
@@ -194,8 +204,10 @@ export class Civilians {
     c.yaw += Math.atan2(Math.sin(want - c.yaw), Math.cos(want - c.yaw)) * Math.min(1, dt * 8);
   }
 
-  update(dt: number, player: THREE.Vector3): void {
+  update(dt: number, player: THREE.Vector3, aiming = false): void {
     this.recycle(dt);
+    reactStep(this.list, this.camera, aiming, (c) => this.alarm(c.threat, c.pos.distanceTo(c.threat) + 0.5));
+    cartStep(this.list);
     for (const c of this.list) {
       if (c.mood === 'gone') continue;
       if (c.mood === 'dead') {

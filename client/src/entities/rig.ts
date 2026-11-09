@@ -48,11 +48,10 @@ export class Rig {
     this.cur = i;
     this.overlay = null;
   }
-  scared = false;
+  scared = false; idlePose: string | null = null; post: ((dt: number) => void) | null = null;
   /** Shouldered rifle (aiming, firing or in a firefight). */
   aiming = false; airborne = false;
-  /** Weapon put away (grenade in hand, climbing). */
-  holster = false;
+  holster = false; // weapon put away (grenade in hand, climbing)
   private mixer: THREE.AnimationMixer;
   readonly inst: ReturnType<typeof characters.create>;
   get bones(): Map<string, THREE.Bone> { return this.inst.bones; }
@@ -256,7 +255,7 @@ export class Rig {
       const k = 1 - Math.exp(-step * 10);
       this.move.x += ((delta.x * Math.sin(yaw) + delta.z * Math.cos(yaw)) * inv - this.move.x) * k;
       this.move.y += ((delta.x * -Math.cos(yaw) + delta.z * Math.sin(yaw)) * inv - this.move.y) * k;
-      const [low, rate] = chooseGait({ armed: this.armed, airborne: this.airborne, aiming: this.aiming, idle: this.scared ? 'terrified' : this.idleKey, steps: this.steps, was: this.lowKey.replace('+', '') }, speed, crouch, this.move.x, this.move.y);
+      const [low, rate] = chooseGait({ armed: this.armed, airborne: this.airborne, aiming: this.aiming, idle: this.idlePose ?? (this.scared ? 'terrified' : this.idleKey), steps: this.steps, was: this.lowKey.replace('+', '') }, speed, crouch, this.move.x, this.move.y);
       if (this.overlay && (this.overlay.t -= step) <= 0) {
         this.overlay = null;
         this.upKey = '';
@@ -285,6 +284,7 @@ export class Rig {
       supportHand(this.inst.bones, this.inst.model, this.ikW, this.grip);
     }
     if (this.armed) this.weapon.visible = !this.holster && (!this.held || this.dead);
+    if (!this.dead) this.post?.(step);
   }
 
   set far(v: boolean) {

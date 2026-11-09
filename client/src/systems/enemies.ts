@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import * as THREE from 'three'; import { idleGestures } from '../entities/gestures';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { Enemy, type EnemyDef } from '../entities/enemy';
 import { think, act, type AIContext } from '../ai/brain';
@@ -64,7 +64,7 @@ export class Enemies {
         spot.set(n.x, hf.heightAt(n.x, n.z), n.z);
       }
       const patrol = (s.patrol ?? []).map(([x, z]) => new THREE.Vector3(x, hf.heightAt(x, z), z));
-      const e = new Enemy(this.list.length, def, world, lighting, new THREE.Vector3(spot.x, s.at ?? spot.y + (s.y ?? 0), spot.z), patrol, s.y !== undefined || s.at !== undefined);
+      const e = idleGestures(new Enemy(this.list.length, def, world, lighting, new THREE.Vector3(spot.x, s.at ?? spot.y + (s.y ?? 0), spot.z), patrol, s.y !== undefined || s.at !== undefined));
       if (s.leash) e.leash = { at: e.position.clone(), r: s.leash };
       this.list.push(e);
       this.group.add(e.model.root, e.flash.group);

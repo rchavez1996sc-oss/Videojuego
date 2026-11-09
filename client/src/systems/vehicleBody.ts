@@ -29,6 +29,8 @@ export function makeDynamic(v: Vehicle, linvel?: THREE.Vector3): void {
   b.setLinearDamping(0.05);
   b.setAngularDamping(0.5);
   if (linvel) b.setLinvel(linvel, true);
+  // A body just placed (kinematic, born at the origin unturned) carries the velocity of that jump: a parked car starts still.
+  if (v.speed < 0.5) [b.setAngvel({ x: 0, y: 0, z: 0 }, true), linvel || b.setLinvel({ x: 0, y: 0, z: 0 }, true)];
   v.dyn = { prev: new THREE.Vector3().copy(b.linvel() as THREE.Vector3), still: 0 };
 }
 

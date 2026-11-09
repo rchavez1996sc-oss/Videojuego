@@ -9,7 +9,7 @@ const UP = new THREE.Vector3(0, 1, 0), Q = new THREE.Quaternion();
 /** The red bike lane runs this far inland of the promenade. */
 const BIKE = 4.6;
 /** A standing extra: where, facing, which looping clip. */
-export interface Extra { pos: THREE.Vector3; yaw: number; key: string }
+export interface Extra { pos: THREE.Vector3; yaw: number; key: string; kit?: import('../../entities/gear').GearDef }
 
 /** Two or three people chatting in a ring around `at`. */
 export function chatGroup(list: Extra[], at: THREE.Vector3, rand: () => number): void {

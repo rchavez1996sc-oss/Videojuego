@@ -256,10 +256,11 @@ export class Combat {
     this.blast.fire(at);
   }
 
-  smokePuff(at: THREE.Vector3): void {
-    const shade = 0.12 + Math.random() * 0.12;
-    this.tmp.set((Math.random() - 0.5) * 0.6, 1.2 + Math.random(), (Math.random() - 0.5) * 0.6);
-    this.dust.emit({ pos: at.clone(), vel: this.tmp.clone(), color: new THREE.Color(shade, shade, shade * 1.05), size: 0.6 + Math.random() * 0.4, grow: 1.6, life: 2.5 + Math.random() * 1.5, gravity: -0.4, drag: 0.8, alpha: 0.5 });
+  /** A puff of smoke of grey `shade` (0 black … 1 white steam); above 1 a short bright flame lick instead. */
+  smokePuff(at: THREE.Vector3, shade = 0.12 + Math.random() * 0.12): void {
+    const fire = shade > 1, k = fire ? 0.35 : 1;
+    this.tmp.set((Math.random() - 0.5) * 0.6 * k, (1.2 + Math.random()) * (fire ? 1.6 : 1), (Math.random() - 0.5) * 0.6 * k);
+    this.dust.emit({ pos: at.clone(), vel: this.tmp.clone(), color: fire ? new THREE.Color(shade, shade * 0.42, shade * 0.08) : new THREE.Color(shade, shade, shade * 1.05), size: (0.6 + Math.random() * 0.4) * k, grow: fire ? 0.6 : 1.6, life: fire ? 0.35 + Math.random() * 0.2 : 2.5 + Math.random() * 1.5, gravity: -0.4, drag: 0.8, alpha: fire ? 0.85 : 0.5 });
   }
 
   tracer(from: THREE.Vector3, to: THREE.Vector3): void {

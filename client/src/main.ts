@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import * as THREE from 'three'; import { LOGO_FONTS } from './world/brandLogos';
 import RAPIER from '@dimforge/rapier3d-compat';
 import ch01 from './data/chapters/ch01_lima.json';
 import ch02 from './data/chapters/ch02_malecon.json';
@@ -98,7 +98,7 @@ async function boot(): Promise<void> {
   const terrain = new Terrain(hf, ch.biome, lighting, world);
   scene.add(terrain.group);
   await step('Levantando las construcciones…');
-  await Promise.all(['64px "Permanent Marker"', '64px "Caveat Brush"'].map((f) => document.fonts.load(f))).catch(() => undefined);
+  await Promise.all(['64px "Permanent Marker"', '64px "Caveat Brush"', ...LOGO_FONTS].map((f) => document.fonts.load(f))).catch(() => undefined);
   const blockers: ((x: number, z: number) => boolean)[] = [];
   if (ch.village) {
     const village = buildVillage(hf, ch.village, ch.terrain, lighting, world);
@@ -248,7 +248,7 @@ async function boot(): Promise<void> {
       }
       enemies.update(dt);
       squad?.update(dt, tpc.yaw, input.down('KeyE'), deadT <= 0);
-      civilians?.update(dt, player.position);
+      civilians?.update(dt, player.position, input.aiming);
       const inCombat = enemies.list.some((e) => e.alive && e.state === 'combat');
       life?.update(dt, player.position, inCombat);
       physicsStep(world, dt);

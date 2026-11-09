@@ -1,5 +1,5 @@
 {
-  "version": 33,
+  "version": 34,
   "characters": {
     "pnp": {
       "near": "characters/pnp.glb",
@@ -192,6 +192,52 @@
       "normal": "textures/paintPlaster_nrm.jpg",
       "rough": "textures/paintPlaster_rgh.jpg",
       "source": "Poly Haven painted_plaster_wall (CC0)"
+    },
+    "oldfronts": {
+      "map": "textures/oldfronts_col.jpg",
+      "source": "Release referencias_adicionales: pack de edificios de ladrillo (fachadas)"
+    },
+    "brick2": {
+      "map": "textures/brick2_col.jpg",
+      "normal": "textures/brick2_nrm.jpg",
+      "rough": "textures/brick2_rgh.jpg",
+      "source": "Poly Haven red_brick_03 (CC0)"
+    },
+    "brick3": {
+      "map": "textures/brick3_col.jpg",
+      "normal": "textures/brick3_nrm.jpg",
+      "rough": "textures/brick3_rgh.jpg",
+      "source": "Poly Haven red_bricks_04 (CC0)"
+    },
+    "plasterBrick": {
+      "map": "textures/plasterBrick_col.jpg",
+      "normal": "textures/plasterBrick_nrm.jpg",
+      "rough": "textures/plasterBrick_rgh.jpg",
+      "source": "Poly Haven red_brick_plaster_patch_02 (CC0)"
+    },
+    "paintedBrick": {
+      "map": "textures/paintedBrick_col.jpg",
+      "normal": "textures/paintedBrick_nrm.jpg",
+      "rough": "textures/paintedBrick_rgh.jpg",
+      "source": "Poly Haven painted_worn_brick (CC0)"
+    },
+    "blockWall": {
+      "map": "textures/blockWall_col.jpg",
+      "normal": "textures/blockWall_nrm.jpg",
+      "rough": "textures/blockWall_rgh.jpg",
+      "source": "Poly Haven concrete_block_wall (CC0)"
+    },
+    "damagedPlaster": {
+      "map": "textures/damagedPlaster_col.jpg",
+      "normal": "textures/damagedPlaster_nrm.jpg",
+      "rough": "textures/damagedPlaster_rgh.jpg",
+      "source": "Poly Haven damaged_plaster (CC0)"
+    },
+    "brick4": {
+      "map": "textures/brick4_col.jpg",
+      "normal": "textures/brick4_nrm.jpg",
+      "rough": "textures/brick4_rgh.jpg",
+      "source": "Poly Haven wall_bricks_plaster (CC0)"
     }
   },
   "environment": {

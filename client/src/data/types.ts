@@ -64,7 +64,7 @@ export interface ChapterDef {
   /** Static tiles and tree groups farther than this (m) stop casting shadows. */
   shadowRange?: number;
   life?: import('../systems/cityLife').LifeDef;
-  civilians?: { count: number; seed: number; gear?: import('../entities/gear').GearDef };
+  civilians?: { count: number; seed: number; gear?: import('../entities/gear').GearDef; vendors?: number };
   squad?: number;
   lives?: number;
   /** Key in weapons.json the player carries. */

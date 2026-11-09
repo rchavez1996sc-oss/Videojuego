@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { Traffic, type Road } from './traffic';
 import { TrafficLights, type LightRoad } from './trafficLights';
+import { RoofDogs } from './roofDogs';
 import { Dogs } from './dogs';
 import { Birds } from '../fx/birds';
 import { Ambience } from '../audio/ambience';
@@ -18,6 +19,7 @@ export class CityLife {
   readonly group = new THREE.Group();
   private traffic: Traffic;
   private dogs: Dogs;
+  private roofDogs = new RoofDogs();
   private birds: Birds;
   private ambience: Ambience;
   private lights: TrafficLights | null = null;
@@ -27,14 +29,14 @@ export class CityLife {
     this.dogs = new Dogs(barrio.graph, hf, def.dogs);
     this.birds = new Birds(def.birds, 250);
     this.ambience = new Ambience(mixer);
-    this.group.add(this.traffic.group, this.dogs.group, this.birds.mesh);
+    this.group.add(this.traffic.group, this.dogs.group, this.roofDogs.group, this.birds.mesh);
     if (def.lights?.length) {
       const lights = (this.lights = new TrafficLights(def.lights, hf, lighting, world));
       this.group.add(lights.group);
       this.traffic.stopLine = (x, dir, base, speed) => lights.stopLine(x, dir, base, speed);
     }
     this.traffic.onHonk = (at, pitch) => this.cue(at, (d, p) => this.ambience.horn(d, p, pitch));
-    this.dogs.onBark = (at) => this.cue(at, (d, p) => this.ambience.bark(d, p));
+    this.dogs.onBark = this.roofDogs.onBark = (at) => this.cue(at, (d, p) => this.ambience.bark(d, p));
   }
 
   private cue(at: THREE.Vector3, play: (distance: number, pan: number) => void): void {
@@ -59,6 +61,7 @@ export class CityLife {
     this.lights?.update(dt);
     this.traffic.update(dt, player, this.camera.position);
     this.dogs.update(dt, this.camera.position);
+    this.roofDogs.update(dt, this.camera.position);
     this.birds.update(dt);
     this.ambience.update(dt, inCombat);
   }

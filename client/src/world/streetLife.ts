@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { Builder } from './buildingKit';
 import type { Heightfield } from './heightfield';
+import { hangCloth } from './laundryWind';
 
 const UP = new THREE.Vector3(0, 1, 0);
 export const CLOTHES = ['cloth0', 'cloth1', 'cloth2', 'cloth3', 'cloth4', 'cloth5'];
@@ -8,7 +9,7 @@ export const STREET_COLORS: Record<string, string> = {
   cloth0: '#c23b30', cloth1: '#2f62a8', cloth2: '#e8e2d2', cloth3: '#e3b630', cloth4: '#3d7a45', cloth5: '#8a4f9e',
   chairRed: '#c22a22', chairBlue: '#2a54a8', umbrella0: '#d83a2c', umbrella1: '#2e7bc4', umbrella2: '#e8c12e', umbrella3: '#3e9a4a',
   trashBag: '#1b1c1e', cardboard: '#a5845a', fruit0: '#e07a1f', fruit1: '#c9b62a', fruit2: '#7a2a1c', lampHead: '#5c6066',
-  roadWhite: '#e6e4dc', roadFaded: '#8e8b83', asphaltPatch: '#2c2b29', pothole: '#1a1918', crate: '#8a6a3a', facadeRed: '#b3121b', facadeBlue: '#123f8f', facadeGreen: '#00703c', facadeOrange: '#e8650f', facadeYellow: '#e8b400', facadeGrey: '#8a8d90', deliv0: '#f26b1d', deliv1: '#e3262f', deliv2: '#f5c518',
+  roadWhite: '#e6e4dc', roadFaded: '#8e8b83', asphaltPatch: '#2c2b29', pothole: '#1a1918', crate: '#8a6a3a', facadeRed: '#b3121b', facadeBlue: '#123f8f', facadeGreen: '#00703c', facadeOrange: '#e8650f', facadeYellow: '#e8b400', facadeGrey: '#8a8d90', deliv0: '#f26b1d', deliv1: '#e3262f', deliv2: '#f5c518', pitDirt: '#5c4a38', soilPile: '#6b5641', pipeBlue: '#2a6cb0', coneOrange: '#ec5a16', dishWhite: '#d9d8d2', potTerracotta: '#a2532f', plantGreen: '#3d6a2c',
 };
 
 type Rand = () => number;
@@ -23,7 +24,7 @@ export function laundry(b: Builder, a: THREE.Vector3, c: THREE.Vector3, rand: Ra
     const p = a.clone().lerp(c, t).add(new THREE.Vector3(0, -0.04 * Math.sin(t * Math.PI), 0));
     const big = rand() < 0.4;
     const h = big ? 0.8 : 0.5, w = big ? 0.35 : 0.5;
-    b.box(pick(CLOTHES, rand), [w, h, 0.02], p.clone().add(new THREE.Vector3(0, -h / 2, 0)), q.clone().multiply(new THREE.Quaternion().setFromAxisAngle(UP, (rand() - 0.5) * 0.3)), false);
+    hangCloth(p, w, h, Math.atan2(-dir.z, dir.x) + (rand() - 0.5) * 0.3, STREET_COLORS[pick(CLOTHES, rand)]);
   }
 }
 

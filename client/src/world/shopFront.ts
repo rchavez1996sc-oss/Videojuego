@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { Builder, Opening } from './buildingKit';
 import type { SignDef, SignKind } from './signs';
 import { addMenuBoard } from './menuBoards';
+import { addShutter } from './shutters';
 
 export type Sign = (at: THREE.Vector3, q: THREE.Quaternion, w: number, kind?: SignKind) => SignDef | void;
 type At = (x: number, y: number, z: number) => THREE.Vector3;
@@ -19,6 +20,7 @@ export function shopFront(b: Builder, at: At, q: THREE.Quaternion, o: Opening, y
   if (!open) b.box('shutter', [o.w, o.h, 0.06], at(o.x, floor + o.h / 2, -0.12), q, false);
   else {
     b.box('shutter', [o.w, 0.32, 0.26], at(o.x, top - 0.16, -0.14), q, false);
+    addShutter(at(o.x, top - 0.3, -0.07), o.w, o.h - 0.3, q);
     b.box('shopLit', [o.w - 0.05, o.h - 0.3, 0.04], at(o.x, floor + (o.h - 0.3) / 2, -0.27), q, false);
     b.box('crate', [o.w - 0.3, 0.95, 0.42], at(o.x, floor + 0.475, -0.04), q, false);
     for (let x = -o.w / 2 + 0.4; x < o.w / 2 - 0.35; x += 0.3 + rand() * 0.25) {

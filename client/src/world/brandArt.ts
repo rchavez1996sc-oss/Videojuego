@@ -1,4 +1,5 @@
 import type { SignDef } from './signs';
+import { LOGOS } from './brandLogos';
 
 type Ctx = CanvasRenderingContext2D;
 
@@ -208,7 +209,7 @@ export function brand(d: SignDef, w: number, h: number): HTMLCanvasElement {
   cv.width = w;
   cv.height = h;
   const c = cv.getContext('2d')!;
-  (STYLES[d.style!] ?? STYLES.pollo)(c, d, w, h);
+  (LOGOS[d.text.toLowerCase()] ?? STYLES[d.style!] ?? STYLES.pollo)(c, d, w, h);
   c.globalCompositeOperation = 'destination-out';
   for (let i = 0; i < 260; i++) {
     c.fillStyle = `rgba(0,0,0,${Math.random() * 0.35})`;

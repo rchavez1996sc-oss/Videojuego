@@ -27,6 +27,9 @@ import { STREET_COLORS, stall, trashPile, roadMarkings } from './streetLife';
 import { brick, concrete, plaster, corrugated, estera } from '../render/urbanTextures';
 import { asphalt, rock, wood } from '../render/textures';
 import { autoBake, bakeGroups } from './bake';
+import { barrioScenes, barrioCrowd } from './barrioLife';
+import { oldFront, fitsOldFront } from './oldFronts';
+import { photo } from '../render/photoTextures';
 
 export interface BarrioDef {
   seed: number;
@@ -120,16 +123,24 @@ export function materials(lighting: Lighting, atlas: SignAtlas): Record<string, 
     car4: std('car4', { color: '#2b4c7a', roughness: 0.35, metalness: 0.4 }),
     car5: std('car5', { color: '#eeeeea', roughness: 0.35, metalness: 0.3 }),
     ...facadeMaterials(std, pl),
+    oldfronts: ((m) => ((m.userData.keepUv = true), m))(std('oldfronts', { map: photo('oldfronts')?.map ?? br.map, roughness: 0.88 })),
     signs: std('signs', { map: atlas.texture, transparent: true, alphaTest: 0.1, roughness: 0.85, polygonOffset: true, polygonOffsetFactor: -2 }),
   };
-  PAINTS.forEach((k, i) => (m[k] = std(k, { map: pl.map, normalMap: pl.normalMap, roughness: 0.9, color: PAINT_COLORS[i] })));
+  const ph = (k: string, fb: { map: THREE.Texture; normalMap: THREE.Texture }) => photo(k) ?? fb;
+  for (const k of ['brick2', 'brick3', 'brick4', 'plasterBrick', 'blockWall']) m[k] = std(k, { map: ph(k, br).map, normalMap: ph(k, br).normalMap, roughness: 0.92 });
+  m.tarrajeo2 = std('tarrajeo2', { map: ph('damagedPlaster', pl).map, normalMap: ph('damagedPlaster', pl).normalMap, roughness: 0.95, color: '#bdb6aa' });
+  PAINTS.forEach((k, i) => {
+    m[k] = std(k, { map: pl.map, normalMap: pl.normalMap, roughness: 0.9, color: PAINT_COLORS[i] });
+    m[`${k}-worn`] = std(`${k}-worn`, { map: ph('damagedPlaster', pl).map, normalMap: ph('damagedPlaster', pl).normalMap, roughness: 0.92, color: PAINT_COLORS[i] });
+    m[`${k}-brick`] = std(`${k}-brick`, { map: ph('paintedBrick', pl).map, normalMap: ph('paintedBrick', pl).normalMap, roughness: 0.9, color: new THREE.Color(PAINT_COLORS[i]).multiplyScalar(1.25) });
+  });
   for (const [k, c] of Object.entries(STREET_COLORS)) m[k] = std(k, { color: c, roughness: 0.7 });
   return m;
 }
 
 export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting, world: RAPIER.World): Barrio {
   const b = Object.assign(new Builder(world, world.createRigidBody(RAPIER.RigidBodyDesc.fixed())), { ground: (x: number, z: number) => hf.heightAt(x, z) });
-  const rand = mulberry32(def.seed), deco = mulberry32(def.seed + 7), alley = mulberry32(def.seed + 13);
+  const rand = mulberry32(def.seed), deco = mulberry32(def.seed + 7), alley = mulberry32(def.seed + 13), fronts = mulberry32(def.seed + 53);
   const atlas = new SignAtlas();
   if (def.station) atlas.quietZone(def.station.x, def.station.z, 55);
   const pitch = def.blockW + def.street;
@@ -171,7 +182,8 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
           if (inLandmark(cx - w / 2, cx + w / 2, frontZ) || (st && x - w < st.x + st.w / 2 && x > st.x - st.w / 2 && Math.abs(frontZ - st.z) < 1)) continue;
           const lot: Lot = { x: cx, z: frontZ, y: hf.heightAt(cx, frontZ), facing, w, d: (z1 - z0 - backW) / 2 - 0.04 };
           const red = deco() < 0.12 && !(st && Math.hypot(cx - st.x, frontZ - st.z) < 55);
-          flsMarks(b, hf, atlas, lot, addRoof(lot, cityHouse(b, lot, rand, sign, facing === 0 ? worldSide : -worldSide, red)), red, worldSide, deco);
+          const photoFront = !red && fitsOldFront(lot) && fronts() < 0.32;
+          flsMarks(b, hf, atlas, lot, addRoof(lot, photoFront ? oldFront(b, lot, fronts) : cityHouse(b, lot, rand, sign, facing === 0 ? worldSide : -worldSide, red)), red, worldSide, deco);
           if (rand() < 0.18) {
             const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), facing);
             atlas.add(new THREE.Vector3(0, 1.4 + rand() * 0.6, 0.03).applyQuaternion(q).add(new THREE.Vector3(cx, lot.y, frontZ)), q, Math.min(w - 1, 3.6), 'graffiti', rand);
@@ -230,7 +242,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
   for (const [x, z, yaw, len] of def.barricades) sandbags(b, hf, x, z, yaw, len);
 
   const crossX = Array.from({ length: def.cols + 1 }, (_, k) => def.x0 - def.street / 2 + k * pitch);
-  const parked: THREE.Vector2[] = [];
+  const parked: THREE.Vector2[] = [], life = barrioScenes(b, hf, def, crossX, mulberry32(def.seed + 41), parked);
   for (let i = 0; i < def.mototaxis; i++) {
     const onAvenue = rand() < 0.6;
     const x = onAvenue ? def.x0 + rand() * (xEnd - def.x0) : crossX[Math.floor(rand() * crossX.length)] + (rand() < 0.5 ? -3 : 3);
@@ -291,6 +303,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
   for (let x = def.x0 + 8; x < xEnd - 8; x += 18 + rand() * 20) {
     if (crossX.some((cx) => Math.abs(cx - x) < 6) || rand() < 0.35) continue;
     const s = rand() < 0.5 ? 1 : -1;
+    if (life.stops.some((sx) => x > sx - 4 && x < sx + 11)) continue;
     if (rand() < 0.45) kioskAt(b, hf, x, s * 9.9, s > 0 ? Math.PI : 0, Math.floor(rand() * 6));
     else stall(b, new THREE.Vector3(x, hf.heightAt(x, s * 9.3) + 0.15, s * 9.3), s > 0 ? Math.PI : 0, rand);
   }
@@ -310,9 +323,9 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
     signs.receiveShadow = true;
     group.add(signs);
   }
-  const doors = new Doors(doorDefs.splice(0), lighting, world);
-  group.add(doors.group);
-  return { group, materials: mats, bake, station, tick: (dt, movers) => doors.tick(dt, movers[0]), graph: streetGraph(def, crossX, hf), blocked: (x, z) => Math.abs(z) < def.gap + 2 * def.blockD + def.street + 6 || hillSpots.some((h) => Math.hypot(h.x - x, h.z - z) < h.r + 1.5) };
+  const doors = new Doors(doorDefs.splice(0), lighting, world), people = barrioCrowd(life, lighting, world, mats.shutter);
+  group.add(doors.group, people.group);
+  return { group, materials: mats, bake, station, bystanders: people.bystanders, tick: (dt, movers) => doors.tick(dt, movers[0]), graph: streetGraph(def, crossX, hf), blocked: (x, z) => Math.abs(z) < def.gap + 2 * def.blockD + def.street + 6 || hillSpots.some((h) => Math.hypot(h.x - x, h.z - z) < h.r + 1.5) };
 }
 
 function streetGraph(def: BarrioDef, crossX: number[], hf: Heightfield): StreetGraph {

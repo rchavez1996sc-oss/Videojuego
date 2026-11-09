@@ -156,7 +156,7 @@ export function animDebug(c: DebugContext) {
       return out.join('\n');
     },
     /** Puts the player beside a traffic vehicle of `kind`, presses E, then plays `plan` ([keys, seconds][]) and logs the car. */
-    driveTest(kind: string, plan: [string[], number][], victim: boolean | 'civ' = false) {
+    driveTest(kind: string, plan: [string[], number][], victim: boolean | 'civ' = false, settle = 90) {
       let log0 = '';
       c.setFreeCam(false);
       const tr = c.traffic?.() as unknown as { list: { kind: string; x: number; z: number; yaw: number; speed: number; state: string; y?: number }[] } | undefined;
@@ -170,7 +170,7 @@ export function animDebug(c: DebugContext) {
       c.frame(1 / 30);
       c.frame(1 / 30);
       key('KeyE', true); c.frame(1 / 30); key('KeyE', false);
-      for (let i = 0; i < 90; i++) c.frame(1 / 30);
+      for (let i = 0; i < settle; i++) c.frame(1 / 30);
       v ??= tr!.list.find((o) => o.state === 'player') ?? tr!.list[tr!.list.length - 1];
       if (spot) log0 = `parked ${spot.kind} ${spot.model} `;
       const prey = victim === true ? c.enemies.list.find((e) => e.alive) : undefined;
@@ -183,7 +183,7 @@ export function animDebug(c: DebugContext) {
         for (let i = 0; i < Math.round(secs * 30); i++) c.frame(1 / 30);
         keys.forEach((k) => key(k, false));
         if (prey) log.push(`  prey hp ${prey.hp.toFixed(0)} stunned ${prey.stunned} @${prey.position.x.toFixed(1)},${prey.position.z.toFixed(1)}`);
-        log.push(`${keys.join('+') || '-'} ${secs}s → ${v.x.toFixed(1)},${(v.y ?? 0).toFixed(2)},${v.z.toFixed(1)} yaw ${v.yaw.toFixed(2)} v ${v.speed.toFixed(1)} hp ${c.player.hp.toFixed(0)}`);
+        log.push(`${keys.join('+') || '-'} ${secs}s → ${v.x.toFixed(1)},${(v.y ?? 0).toFixed(2)},${v.z.toFixed(1)} yaw ${v.yaw.toFixed(2)} v ${v.speed.toFixed(1)} hp ${c.player.hp.toFixed(0)} car ${((v as { hp?: number }).hp ?? 0).toFixed(0)} ${(v as { state: string }).state}`);
       }
       if (civ) log.push(`civilians ${civN} → ${c.civilians?.().length} (civ @${civ.x.toFixed(1)},${civ.z.toFixed(1)})`);
       if (prey) log.push(`prey stunned ${prey.stunned}`);

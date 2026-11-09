@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { wearTick, bulletMark } from './vehicleWear';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import RAPIER from '@dimforge/rapier3d-compat';
 import type { CarKind } from '../world/urbanProps';
@@ -36,7 +37,7 @@ export interface Victim { key: string; kind: 'player' | 'police' | 'ally' | 'civ
 /** A straight road along x: centre `z`, lane offset from the centre, half width, how many vehicles use it (and which kinds). */
 export interface Road { z: number; lane: number; half: number; count: number; kinds?: (CarKind | 'moto' | 'delivery')[] }
 
-const HP = 140;
+export const HP = 140;
 
 /** Avenue traffic with drivers/passengers; vehicles take bullet damage and, once disabled or hit, become real rigid bodies. */
 export class Traffic {
@@ -49,7 +50,7 @@ export class Traffic {
   onHonk: (at: THREE.Vector3, pitch: number) => void = () => {};
   onDisabled: (at: THREE.Vector3, weight: number) => void = () => {};
   onCrash: (at: THREE.Vector3, hard: number) => void = () => {};
-  onSmoke: (at: THREE.Vector3) => void = () => {};
+  onSmoke: (at: THREE.Vector3, shade?: number) => void = () => {};
   /** People a moving vehicle can run into (player, squad, soldiers); `hurt` receives damage, origin and a shove. */
   victims: () => Victim[] = () => [];
   /** This frame's `victims()` (also used by `Driving`). */ near: Victim[] = [];
@@ -110,6 +111,7 @@ export class Traffic {
     this.list.push(v);
     onHit(collider.handle, (dmg, p) => {
       this.damage(v, (kind === 'moto' || kind === 'delivery') && p.y - g.position.y > 1 ? HP : dmg);
+      bulletMark(g, new THREE.Vector3(p.x, p.y, p.z));
       return false;
     });
     return v;
@@ -204,7 +206,7 @@ export class Traffic {
     for (const v of this.list) {
       const d = Math.hypot(v.x - at.x, v.z - at.z);
       if (v.state === 'off' || d > radius) continue;
-      this.damage(v, HP);
+      this.damage(v, HP * (1.3 - d / radius));
       this.knock(v);
       const k = (1 - d / radius) * (MASS[v.kind] ?? 1300), out = new THREE.Vector3(v.x - at.x, 0, v.z - at.z).normalize();
       push(v, new THREE.Vector3(out.x * k * 6, k * 5, out.z * k * 6), new THREE.Vector3(at.x + (v.x - at.x) * 0.9, (v.y ?? at.y) + 0.4, at.z + (v.z - at.z) * 0.9));
@@ -286,6 +288,7 @@ export class Traffic {
     if (v.group.visible) rollAlong(v.group, v.x, v.z, v.yaw, SPECS[v.kind]?.base ?? 2.6);
     v.group.position.set(v.x, y, v.z);
     v.group.quaternion.copy(q);
+    if (v.group.visible) wearTick(v, camera, y, this.onSmoke);
     if (v.body.isDynamic()) return;
     v.body.setNextKinematicTranslation({ x: v.x, y, z: v.z });
     v.body.setNextKinematicRotation(q);

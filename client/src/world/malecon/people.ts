@@ -158,7 +158,8 @@ export function crowd(seats: { pos: THREE.Vector3; yaw: number; stay?: boolean }
         if (hit) spot.pos.y = Math.max(spot.pos.y, spot.pos.y + 1.2 - hit.timeOfImpact);
       }
       const x = extra(lighting, r, spot.pos, spot.yaw, seated ? SEATED[Math.floor(r() * SEATED.length)] : (spot as Extra).key);
-      if (kit && !seated) x.nearOnly(...gear(x.bones, kit, lighting, r));
+      const k = seated ? undefined : (spot as Extra).kit ?? kit;
+      if (k) x.nearOnly(...gear(x.bones, k, lighting, r));
       x.root.updateMatrixWorld(true);
       const col = shootable(world, x, spot.pos.y, seated, hurt, slumps, limp, dying, fleeing, flings);
       const diner = seated && !!(spot as { stay?: boolean }).stay;

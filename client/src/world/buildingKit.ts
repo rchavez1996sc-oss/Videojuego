@@ -120,7 +120,7 @@ export class Builder {
     const emit = (geos: THREE.BufferGeometry[], material: THREE.Material) => {
       for (const list of tiled(geos, tile)) {
         const merged = mergeBoxes(list);
-        boxProjectUV(merged, uvScale);
+        if (!material.userData.keepUv) boxProjectUV(merged, uvScale);
         const m = new THREE.Mesh(merged, material);
         m.receiveShadow = true;
         m.castShadow = !material.transparent && !/glass|globe|tube|shade|lamp|lit$|^tire$|^rim$/i.test(material.name);
@@ -163,12 +163,13 @@ function mergeBoxes(geos: THREE.BufferGeometry[]): THREE.BufferGeometry {
   let count = 0, icount = 0;
   for (const g of geos) { count += g.attributes.position.count; icount += g.index!.count; }
   const pos = new Float32Array(count * 3), nor = new Float32Array(count * 3), idx = new Uint32Array(icount);
-  const col = geos[0].attributes.color ? new Float32Array(count * 3) : null;
+  const col = geos[0].attributes.color ? new Float32Array(count * 3) : null, uv = geos.every((g) => g.attributes.uv) ? new Float32Array(count * 2) : null;
   let vo = 0, io = 0;
   for (const g of geos) {
     pos.set(g.attributes.position.array as Float32Array, vo * 3);
     nor.set(g.attributes.normal.array as Float32Array, vo * 3);
     if (col) col.set(g.attributes.color.array as Float32Array, vo * 3);
+    if (uv) uv.set(g.attributes.uv.array as Float32Array, vo * 2);
     const gi = g.index!.array;
     for (let i = 0; i < gi.length; i++) idx[io + i] = gi[i] + vo;
     vo += g.attributes.position.count;
@@ -179,6 +180,7 @@ function mergeBoxes(geos: THREE.BufferGeometry[]): THREE.BufferGeometry {
   m.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   m.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
   if (col) m.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  if (uv) m.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
   m.setIndex(new THREE.BufferAttribute(idx, 1));
   m.computeBoundingSphere();
   return m;

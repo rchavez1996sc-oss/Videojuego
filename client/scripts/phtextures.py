@@ -10,7 +10,7 @@ OUT = os.path.join(os.path.dirname(__file__), '..', 'public', 'assets', 'texture
 URL = 'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/{2}/{0}/{0}_{1}_{2}.jpg'
 HI = {'laja', 'plazaFlag', 'asphalt', 'slabs', 'cobble', 'flagstone', 'plaster', 'concrete', 'brick', 'lawn', 'dryGrass', 'soil'}
 # Roughness maps remapped to 0.8-1.0: they add breakup to the material's roughness but never make it glossier (no new glints).
-ROUGH = {'laja', 'plazaFlag', 'slateDark', 'paintPlaster', 'asphalt', 'slabs', 'cobble', 'flagstone', 'concrete', 'brick', 'plaster', 'stucco', 'rock', 'roofTiles', 'calamina', 'deck', 'wood', 'pirca', 'stoneWall', 'soil'}
+ROUGH = {'laja', 'plazaFlag', 'slateDark', 'paintPlaster', 'asphalt', 'slabs', 'cobble', 'flagstone', 'concrete', 'brick', 'plaster', 'stucco', 'rock', 'roofTiles', 'calamina', 'deck', 'wood', 'pirca', 'stoneWall', 'soil', 'brick2', 'brick3', 'plasterBrick', 'paintedBrick', 'blockWall', 'damagedPlaster', 'brick4'}
 GREY = (128, 128, 128)
 SETS = {
     'concrete': ('concrete_floor_worn_001', (134, 131, 125)),
@@ -39,6 +39,13 @@ SETS = {
     'plazaFlag': ('slate_floor', (168, 163, 155)),
     'slateDark': ('stacked_stone_wall', (80, 78, 76)),
     'paintPlaster': ('painted_plaster_wall', (231, 227, 219)),
+    'brick2': ('red_brick_03', None),
+    'brick3': ('red_bricks_04', None),
+    'plasterBrick': ('red_brick_plaster_patch_02', None),
+    'paintedBrick': ('painted_worn_brick', None),
+    'blockWall': ('concrete_block_wall', (138, 134, 126)),
+    'brick4': ('wall_bricks_plaster', None),
+    'damagedPlaster': ('damaged_plaster', (231, 227, 219)),
 }
 
 def fetch(asset, kind, res='1k'):

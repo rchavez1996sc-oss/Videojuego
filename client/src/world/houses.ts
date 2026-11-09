@@ -4,11 +4,16 @@ import { CLOTHES, laundry, sidewalkChairs, tire } from './streetLife';
 import { shopFront, type Sign } from './shopFront';
 import { ZOCALOS } from './facadeMats';
 import { doorDefs } from './doors';
+import { roofClutter } from './roofClutter';
 
 export interface Lot { x: number; z: number; y: number; facing: number; w: number; d: number; floors?: number }
 
 const UP = new THREE.Vector3(0, 1, 0);
 export const PAINTS = ['paint-celeste', 'paint-amarillo', 'paint-rosado', 'paint-verde', 'paint-crema', 'paint-naranja'];
+/** Wall finishes beside the paints: bare brick of several kinds (one patched with cement), and paint over worn plaster or over brick. */
+export const BRICKS = ['brick', 'brick', 'brick2', 'brick3', 'brick4', 'plasterBrick'];
+export const PAINT_FINISH = ['', '', '-worn', '-brick'];
+const pick = <T>(a: T[], rand: () => number) => a[Math.floor(rand() * a.length)];
 const FLOOR = 2.7, T = 0.25;
 
 type At = (x: number, y: number, z: number) => THREE.Vector3;
@@ -36,9 +41,9 @@ export function cityHouse(b: Builder, lot: Lot, rand: () => number, sign: Sign, 
   const floors = lot.floors ?? (rand() < 0.3 ? 1 : rand() < 0.65 ? 2 : 3);
   const w = lot.w - 0.06, d = lot.d, H = floors * FLOOR, sink = 0.8;
   const painted = rand() < 0.55;
-  const paint = PAINTS[Math.floor(rand() * PAINTS.length)];
-  const rendered = !painted && rand() < 0.45;
-  const front = (f: number) => (painted && (f === 0 || rand() < 0.6) ? paint : rendered && f === 0 ? 'tarrajeo' : 'brick');
+  const paint = PAINTS[Math.floor(rand() * PAINTS.length)] + pick(PAINT_FINISH, rand), bare = pick(BRICKS, rand);
+  const rendered = !painted && rand() < 0.45, render = rand() < 0.5 ? 'tarrajeo' : 'tarrajeo2';
+  const front = (f: number) => (painted && (f === 0 || rand() < 0.6) ? paint : rendered && f === 0 ? render : bare);
   const zocalo = (painted || rendered) && rand() < 0.7 ? ZOCALOS[Math.floor(rand() * ZOCALOS.length)] : '';
   const glassy = rand() < 0.22;
 
@@ -55,11 +60,11 @@ export function cityHouse(b: Builder, lot: Lot, rand: () => number, sign: Sign, 
       openings.push({ x: -w / 4, w: 1.3, y: 0.9, h: 1.1 }, { x: w / 4, w: 1.3, y: 0.9, h: 1.1 });
     }
     b.wall(front(f), w, h, T, at(0, y0, -T / 2), lot.facing, openings);
-    b.wall('brick', w, h, T, at(0, y0, -d + T / 2), lot.facing + Math.PI);
+    b.wall(bare, w, h, T, at(0, y0, -d + T / 2), lot.facing + Math.PI);
     for (const s of [1, -1]) {
       const exposed = s === exposedSide;
       const side: Opening[] = exposed ? [{ x: -d / 4, w: 1.2, y: base + 0.9, h: 1.0 }, { x: d / 4, w: 1.2, y: base + 0.9, h: 1.0 }] : [];
-      b.wall(exposed ? front(f) : 'brick', d - 2 * T, h, T, at(s * (w / 2 - T / 2), y0, -d / 2), lot.facing + s * Math.PI / 2, side);
+      b.wall(exposed ? front(f) : bare, d - 2 * T, h, T, at(s * (w / 2 - T / 2), y0, -d / 2), lot.facing + s * Math.PI / 2, side);
       if (exposed) for (const o of side) windowBars(b, (x, y, z) => at(s * (w / 2) + s * z, y, -d / 2 - s * x), q.clone().multiply(new THREE.Quaternion().setFromAxisAngle(UP, s * Math.PI / 2)), o.x, y0 + o.y, 0, o.w, o.h);
     }
     b.box('concrete', [w - 0.04, 0.22, d - 0.04], at(0, (f + 1) * FLOOR - 0.13, -d / 2 - 0.02), q);
@@ -91,10 +96,11 @@ export function cityHouse(b: Builder, lot: Lot, rand: () => number, sign: Sign, 
   }
   if (rand() < 0.25 && floors < 3) {
     for (const [x, z] of [[-1, 0], [1, 0], [-1, -1], [1, -1]]) b.box('concrete', [0.25, FLOOR * 0.8, 0.25], at(x * (w / 2 - 0.15), H + FLOOR * 0.4, z * (d - 0.3) - 0.15), q, false);
-    b.wall('brick', w, 1.1 + rand() * 0.8, T, at(0, H, -d + T / 2), lot.facing + Math.PI);
+    b.wall(rand() < 0.4 ? 'blockWall' : bare, w, 1.1 + rand() * 0.8, T, at(0, H, -d + T / 2), lot.facing + Math.PI);
   }
   if (rand() < 0.45) laundry(b, at(-w / 2 + 0.5, H + 1.5, -d * 0.35), at(w / 2 - 0.5, H + 1.5, -d * 0.55), rand);
   if (rand() < 0.25) tire(b, at((rand() - 0.5) * (w - 2), H + 0.12, -d * 0.7), rand);
+  roofClutter(b, at, q, w, d, H, rand);
   if (rand() < 0.55) {
     const tank = new THREE.CylinderGeometry(0.55, 0.6, 1.2, 14);
     const m = new THREE.Matrix4().compose(at((rand() - 0.5) * (w - 1.5), H + 0.6, -d * (0.3 + rand() * 0.4)), q, new THREE.Vector3(1, 1, 1));
@@ -129,7 +135,7 @@ function plinth(b: Builder, at: At, q: THREE.Quaternion, w: number, gaps: Openin
 export function hillHouse(b: Builder, lot: Lot, rand: () => number, baseLow: number): void {
   const { q, at } = frame(lot);
   const w = lot.w, d = lot.d, h = 2.4;
-  const r0 = rand(), mat = r0 < 0.3 ? 'brick' : r0 < 0.55 ? PAINTS[Math.floor(rand() * PAINTS.length)] : r0 < 0.75 ? 'estera' : 'calamina';
+  const r0 = rand(), mat = r0 < 0.3 ? pick([...BRICKS, 'blockWall'], rand) : r0 < 0.55 ? PAINTS[Math.floor(rand() * PAINTS.length)] + pick(PAINT_FINISH, rand) : r0 < 0.75 ? 'estera' : 'calamina';
   const baseH = lot.y - baseLow + 0.3;
   b.box('stone', [w + 0.6, baseH, d + 0.6], at(0, -baseH / 2 + 0.14, -d / 2), q);
   b.wall(mat, w, h, 0.15, at(0, 0.15, -0.08), lot.facing, [{ x: -w / 4, w: 0.9, y: 0, h: 1.95 }, { x: w / 4, w: 0.9, y: 0.9, h: 0.7 }]);

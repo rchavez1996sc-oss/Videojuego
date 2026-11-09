@@ -19,7 +19,7 @@ export function tumbleStep(t: Traffic, world: RAPIER.World, v: Vehicle, dt: numb
   for (const other of hits) exchange(world, v, other, (o) => t.knock(o));
   const dv = jolt(v, dt);
   if (dv > 2.5) {
-    t.damage(v, (dv - 2.5) * 16);
+    t.damage(v, (dv - 2.5) * 8);
     const c = contactOf(world, v.collider);
     if (c && dv > 3) dent(v.group, c.at, Math.min(0.38, (dv - 2.5) * 0.055));
     if (dv > 4) t.onCrash(c?.at ?? new THREE.Vector3(v.x, v.y ?? 0, v.z), dv);
