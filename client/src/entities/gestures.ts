@@ -41,6 +41,7 @@ export function idleGestures(e: Enemy): Enemy {
   const target = new THREE.Vector3(), fwd = new THREE.Vector3(), right = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
   e.model.post = (dt) => {
     const calm = e.state === 'patrol' && !e.moveTarget && !e.crouched;
+    e.model.root.userData.gesture = `${kind ?? '-'} w${w.toFixed(2)} wait${wait.toFixed(1)} calm${+calm}`;
     if (!kind) {
       if (!calm || (wait -= dt) > 0) return;
       kind = (['look', 'look', 'radio', 'shift'] as Kind[])[Math.floor(Math.random() * 4)];

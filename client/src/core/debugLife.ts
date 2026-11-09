@@ -93,7 +93,7 @@ export function lifeDebug(c: DebugContext) {
         if (k % 10 === 9) {
           head.getWorldQuaternion(q); hips.getWorldQuaternion(r);
           const yaw = new THREE.Euler().setFromQuaternion(r.invert().multiply(q), 'YXZ').y;
-          out.push(`${(yaw * 57.3).toFixed(0)}°/${(hand.getWorldPosition(v).y - e.position.y).toFixed(2)}`);
+          out.push(`${(yaw * 57.3).toFixed(0)}°/${(hand.getWorldPosition(v).y - e.position.y).toFixed(2)} ${e.model.root.userData.gesture ?? 'nohook'}`);
         }
       }
       return `${e.state} ${out.join(' ')}`;
