@@ -24,6 +24,7 @@ import { busCabin } from './busCabin';
 import { doorDuring, doorPulse, setDoor } from './carDoors';
 import { suspendWheels } from './wheelSpin';
 import { bumpOverBodies } from './bodyBump';
+import { rideBike } from '../entities/bikePose';
 import type { Rig } from '../entities/rig';
 
 interface Deps { traffic: Traffic | null; world: RAPIER.World; player: Player; tpc: ThirdPersonCamera; enemies: Enemies; squad: Squad | null; sfx: Sfx; lighting: Lighting; mixer: Mixer }
@@ -152,6 +153,7 @@ export class Driving {
     const at = seatsOf(v.group, v.kind)[0];
     this.seat = at ? seatedRig(lighting, Math.random, v.kind !== 'moto' && v.kind !== 'delivery', 'fls', true) : null;
     if (this.seat && at) {
+      if (v.kind === 'delivery') rideBike(this.seat, at[1]);
       this.seat.position.set(at[0], at[1], at[2]);
       v.group.add(this.seat);
     }

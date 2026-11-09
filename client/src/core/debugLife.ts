@@ -121,6 +121,16 @@ export function lifeDebug(c: DebugContext) {
       dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW' }));
       return out.join('\n');
     },
+    /** Bike riders: hands, feet and shoulders in the rider holder's frame (hips at the origin). */
+    bikeHands() {
+      const out: string[] = [];
+      c.scene?.traverse((o) => {
+        if (o.name !== 'rider' || !o.userData.bike || out.length > 3) return;
+        const r = o.userData.rig as { bones: Map<string, THREE.Bone> }, b = (n: string) => o.worldToLocal(r.bones.get(`mixamorig${n}`)!.getWorldPosition(new THREE.Vector3()));
+        out.push(['LeftHand', 'RightHand', 'LeftShoulder', 'LeftFoot', 'Head'].map((n) => `${n} ${f(b(n))}`).join(' | '));
+      });
+      return out.join('\n');
+    },
     run,
   };
 }

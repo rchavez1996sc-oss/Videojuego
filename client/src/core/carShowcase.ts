@@ -1,3 +1,4 @@
+import { rideBike } from '../entities/bikePose';
 import * as THREE from 'three';
 import type { CarKind } from '../world/urbanProps';
 import { vehicleLook, bikeLook } from '../systems/vehicleLook';
@@ -27,6 +28,7 @@ export function carShowcase(scene: THREE.Scene, hf: Heightfield, x: number, z: n
     for (const [j, [sx, sy, sz]] of seatsOf(g, k).entries()) {
       const r = seatedRig(lighting, Math.random, k !== 'moto' && k !== 'delivery', undefined, j === 0);
       if (!r) continue;
+      if (k === 'delivery') rideBike(r, sy);
       r.position.set(sx, sy, sz);
       g.add(r);
     }

@@ -8,6 +8,7 @@ import { carModels } from '../render/carModels';
 import type { ParkedSpot } from '../world/parkedCars';
 import { onHit, setSurface } from '../world/surfaces';
 import { seatedPerson, seatedRig, seatsOf } from '../entities/occupants';
+import { rideBike } from '../entities/bikePose';
 import type { Heightfield } from '../world/heightfield';
 import type { Lighting } from '../render/lighting';
 import type { Rig } from '../entities/rig';
@@ -81,6 +82,7 @@ export class Traffic {
         if (k > 0 && rand() < 0.45) return;
         const rider = seatedRig(lighting, rand, kind !== 'moto' && kind !== 'delivery', undefined, k === 0);
         if (rider) {
+          if (kind === 'delivery') rideBike(rider, y);
           rider.position.set(x, y, z);
           seats.push(rider);
           return void g.add(rider);
