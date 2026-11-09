@@ -24,7 +24,7 @@ import { Doors, doorDefs } from './doors';
 import { addRoof, rooftopLinks } from './rooftops';
 import { alleyLife } from './alleys';
 import { STREET_COLORS, stall, trashPile, roadMarkings } from './streetLife';
-import { brick, concrete, plaster, corrugated, estera } from '../render/urbanTextures';
+import { brick, concrete, plaster, corrugated, estera, slabs } from '../render/urbanTextures';
 import { asphalt, rock, wood } from '../render/textures';
 import { autoBake, bakeGroups } from './bake';
 import { barrioScenes, barrioCrowd } from './barrioLife';
@@ -76,6 +76,7 @@ export function materials(lighting: Lighting, atlas: SignAtlas): Record<string, 
   const m: Record<string, THREE.Material> = {
     brick: std('brick', { map: br.map, normalMap: br.normalMap, roughness: 0.92 }),
     concrete: std('concrete', { map: co.map, normalMap: co.normalMap, roughness: 0.95, color: '#a39d92' }),
+    sidewalk: std('sidewalk', { map: slabs().map, normalMap: slabs().normalMap, roughnessMap: slabs().roughnessMap, roughness: 0.95, color: '#b4ab9c' }),
     wood: std('beam', { map: co.map, normalMap: co.normalMap, roughness: 0.95, color: '#cfcac0' }),
     calamina: std('calamina', { map: ca.map, normalMap: ca.normalMap, roughness: 0.65, metalness: 0.4 }),
     estera: std('estera', { map: es.map, normalMap: es.normalMap, roughness: 1 }),
@@ -209,7 +210,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
       const bx0 = def.x0 + col * pitch;
       for (let k = 0, n = Math.ceil(def.blockW / 4), sw = def.blockW / n; k < n; k++) {
         const x0 = bx0 + k * sw, hs = [x0, x0 + sw].flatMap((x) => [8.2, 10.6].map((z) => hf.heightAt(x, s * z))), top = Math.max(...hs) + 0.15, base = Math.min(...hs) - 0.4;
-        b.box('concrete', [sw + 0.01, top - base, 2.4], new THREE.Vector3(x0 + sw / 2, (top + base) / 2, s * 9.4), new THREE.Quaternion());
+        b.box('sidewalk', [sw + 0.01, top - base, 2.4], new THREE.Vector3(x0 + sw / 2, (top + base) / 2, s * 9.4), new THREE.Quaternion());
       }
     }
     const poles: THREE.Vector3[] = [];
