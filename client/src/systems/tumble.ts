@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import type { Traffic, Vehicle } from './traffic';
 import { contactOf, exchange, jolt, readBody } from './vehicleBody';
 import { dent } from '../fx/dents';
+import { crashDamage } from './vehicleWear';
 
 /**
  * A vehicle that is a rigid body and nobody drives (hit, disabled, left by the player): pose from the physics, damage
@@ -19,7 +20,7 @@ export function tumbleStep(t: Traffic, world: RAPIER.World, v: Vehicle, dt: numb
   for (const other of hits) exchange(world, v, other, (o) => t.knock(o));
   const dv = jolt(v, dt);
   if (dv > 2.5) {
-    t.damage(v, (dv - 2.5) * 8);
+    t.damage(v, crashDamage(v, dv) * 1.3);
     const c = contactOf(world, v.collider);
     if (c && dv > 3) dent(v.group, c.at, Math.min(0.38, (dv - 2.5) * 0.055));
     if (dv > 4) t.onCrash(c?.at ?? new THREE.Vector3(v.x, v.y ?? 0, v.z), dv);

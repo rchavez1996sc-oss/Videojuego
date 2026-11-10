@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { enginePower, steerPull } from './vehicleWear';
+import { crashDamage, enginePower, steerPull } from './vehicleWear';
 import RAPIER from '@dimforge/rapier3d-compat';
 import type { Traffic, Vehicle } from './traffic';
 import type { Player } from '../entities/player';
@@ -13,7 +13,7 @@ import type { Mixer } from '../audio/mixer';
 import { EngineSound } from '../audio/engine';
 import { SPECS, type CarState } from './carPhysics';
 import { CarRig } from './carRig';
-import { contactOf, exchange, jolt, overturned, readBody } from './vehicleBody';
+import { contactOf, jolt, overturned, readBody } from './vehicleBody';
 import { dent } from '../fx/dents';
 import { seatedRig, seatsOf } from '../entities/occupants';
 import { roomy } from './respawn';
@@ -27,6 +27,9 @@ import { bumpOverBodies } from './bodyBump';
 import { rideBike } from '../entities/bikePose';
 import { SkidMarks, trackWheels } from '../fx/skidMarks';
 import { stripAt } from '../world/groundStrips';
+import { CarEscape, drivenCar, safeExit } from './carEscape';
+import { joinPhysics } from './carContacts';
+import { safely } from '../core/guard';
 import type { Heightfield } from '../world/heightfield';
 import type { Rig } from '../entities/rig';
 
@@ -59,6 +62,7 @@ export class Driving {
   private after: (() => void) | null = null;
 
   private marks: SkidMarks;
+  private escape = new CarEscape();
 
   constructor(private d: Deps) {
     this.engine = new EngineSound(d.mixer);
@@ -73,7 +77,7 @@ export class Driving {
     this.speedo.className = 'speedo';
     this.speedo.style.cssText = 'position:fixed;right:28px;bottom:28px;font:800 34px "Barlow Condensed",sans-serif;color:#fff;text-shadow:0 0 3px #000,0 0 6px #000;opacity:0;pointer-events:none;letter-spacing:1px';
     document.body.append(this.prompt, this.speedo);
-    if (d.traffic) d.traffic.onDrivenHit = (v, dmg) => v === this.car && d.player.hurt(dmg * 0.25);
+    if (d.traffic) d.traffic.onDrivenHit = (v, dmg, bullet) => v === this.car && (bullet ? Math.random() < 0.35 && d.player.hurt(dmg * 1.6) : d.player.hurt(dmg * 0.25));
   }
 
   get active(): boolean {
@@ -112,19 +116,21 @@ export class Driving {
       return !!this.car;
     }
     this.prompt.style.opacity = '0';
-    if (!alive || this.car.state === 'wreck' || (input.hit('KeyE') && Math.abs(this.state!.speed) < 4)) {
-      if (this.car.state === 'wreck' && alive) player.hurt(20);
-      this.exit(alive);
+    if (this.car.burst && this.car.state === 'player') [player.hurt(999), this.car.state = 'wreck'];
+    const how = this.car.state === 'wreck' ? 'bail' : this.escape.check(this.car, this.state!.speed, input.hit('KeyE'), input.down('KeyE'), dt, (x, z) => this.d.hf.heightAt(x, z));
+    if (!alive || how !== 'stay') {
+      if (how === 'bail' && alive) player.hurt(this.car.state === 'wreck' ? 20 : Math.min(40, Math.max(0, Math.abs(this.state!.speed) - 6) * 3));
+      if (!safely('exit', () => (this.exit(alive, how === 'bail'), true), false)) this.forceOut();
       return !!this.anim;
     }
-    this.drive(dt, input);
+    if (!safely('drive', () => (this.drive(dt, input), true), false)) this.forceOut();
     return true;
   }
 
   private enter(v: Vehicle): void {
     const { traffic, player, world, tpc } = this.d, sp = SPECS[v.kind] ?? SPECS.sedan;
     traffic!.seize(v);
-    this.car = v;
+    [this.car, drivenCar.handle] = [v, v.collider.handle];
     this.state = { x: v.x, y: v.y ?? player.position.y, z: v.z, yaw: v.yaw, vel: new THREE.Vector3(), vy: 0, steer: 0, speed: 0, len: v.len, tilt: new THREE.Quaternion() };
     const col = world.getCollider(player.collisionHandle);
     this.bodyOff = col.parent()!.translation().y - player.position.y;
@@ -166,18 +172,38 @@ export class Driving {
     this.speedo.style.opacity = '1';
   }
 
-  private exit(alive = true): void {
-    const { traffic, player, world, tpc } = this.d, v = this.car!, s = this.state!, sp = SPECS[v.kind] ?? SPECS.sedan;
+  /** Last resort if getting out threw half way: player on the ground beside the car, every driving state cleared. */
+  private forceOut(): void {
+    const { player, world } = this.d, v = this.car!;
+    world.getCollider(player.collisionHandle).setEnabled(true);
+    [this.anim, this.after, player.puppet, this.rig] = [null, null, false, null];
+    player.respawn(safeExit(v, player.position, (x, z) => this.d.hf.heightAt(x, z)).add(new THREE.Vector3(Math.cos(v.yaw) * 2, 0, -Math.sin(v.yaw) * 2)), v.yaw);
+    player.model.root.visible = true;
+    if (v.state === 'player') v.state = 'parked';
+    this.engine.set(false, 0, 0, 0, false);
+    this.speedo.style.opacity = '0';
+    this.clear();
+  }
+
+  private clear(): void {
+    this.d.tpc.vehicle = this.d.tpc.lift = 0;
+    this.cabin?.removeFromParent();
+    [this.car, this.state, this.seat, this.cabin, drivenCar.handle] = [null, null, null, null, -1];
+    this.escape.reset();
+  }
+
+  private exit(alive = true, bail = false): void {
+    const { traffic, player, world } = this.d, v = this.car!, s = this.state!, sp = SPECS[v.kind] ?? SPECS.sedan;
     const fwd = new THREE.Vector3(Math.sin(s.yaw), 0, Math.cos(s.yaw)), left = new THREE.Vector3(fwd.z, 0, -fwd.x);
     const side = Math.sign(seatsOf(v.group, v.kind)[0][0] || 1), base = new THREE.Vector3(s.x, s.y, s.z);
     const spots = [left.clone().multiplyScalar(side * (sp.half + 0.8)), left.clone().multiplyScalar(-side * (sp.half + 0.8)), fwd.clone().multiplyScalar(-(v.len / 2 + 1.1)), fwd.clone().multiplyScalar(v.len / 2 + 1.1)].map((o) => base.clone().add(o));
     const col = world.getCollider(player.collisionHandle);
     col.setEnabled(true);
-    const at = seatsOf(v.group, v.kind)[0], calm = alive && v.state !== 'wreck' && !overturned(v) && at && SeatAnim.possible() && v.kind !== 'moto' && v.kind !== 'delivery';
+    const at = seatsOf(v.group, v.kind)[0], calm = alive && !bail && v.state !== 'wreck' && !overturned(v) && at && SeatAnim.possible() && v.kind !== 'moto' && v.kind !== 'delivery';
     v.group.updateMatrixWorld(true);
     const anim = calm ? new SeatAnim(player.model, true, v.group.localToWorld(new THREE.Vector3(...at!)), s.yaw, s.y) : null;
     const walk = anim && roomy(world, anim.end.pos, player.collisionHandle);
-    const pos = walk ? anim.end.pos : spots.find((p) => roomy(world, p, player.collisionHandle)) ?? base.clone().setY(s.y + sp.height + 0.3);
+    const pos = walk ? anim.end.pos : spots.find((p) => roomy(world, p, player.collisionHandle)) ?? (Number.isFinite(s.y) && s.y > this.d.hf.heightAt(s.x, s.z) - 1 ? base.clone().setY(s.y + sp.height + 0.3) : safeExit(v, player.position, (x, z) => this.d.hf.heightAt(x, z)));
     const keep = { hp: player.hp, regenCap: player.regenCap, stamina: player.stamina };
     player.respawn(pos, walk ? anim.end.yaw + Math.PI : s.yaw + Math.PI);
     Object.assign(player, keep);
@@ -185,22 +211,18 @@ export class Driving {
     if (this.seat) v.group.remove(this.seat);
     traffic!.park(v);
     if (this.rig) suspendWheels(v.group, this.rig.mounts, this.rig.mounts.map(() => 0));
-    this.rig?.free(world);
+    try {
+      this.rig?.free(world);
+    } catch (e) {
+      console.error(e);
+    }
     this.rig = null;
+    this.escape.reset();
     this.engine.set(false, 0, 0, 0, false);
     this.speedo.style.opacity = '0';
-    const done = () => {
-      tpc.vehicle = tpc.lift = 0;
-      if (this.cabin) this.cabin.removeFromParent();
-      this.cabin = null;
-      [this.car, this.state, this.seat] = [null, null, null];
-    };
-    if (!walk) {
-      this.swing = { g: v.group, side: this.doorSide(v), t: 0 };
-      return done();
-    }
-    this.anim = anim.begin();
-    this.after = done;
+    this.swing = walk ? this.swing : { g: v.group, side: this.doorSide(v), t: 0 };
+    if (!walk) return this.clear();
+    [this.anim, this.after] = [anim.begin(), () => this.clear()];
   }
 
   private drive(dt: number, input: Input): void {
@@ -214,14 +236,14 @@ export class Driving {
     if (!this.marks.mesh.parent) v.group.parent?.add(this.marks.mesh);
     const lv = v.body.linvel(), earth = (p: THREE.Vector3) => (stripAt(p.x, p.y, p.z) ?? (this.d.hf.maskAt(p.x, p.z, 0) > 0.5 || this.d.hf.isPaved(p.z) ? 'hard' : 'dirt')) === 'dirt';
     trackWheels(this.marks, this.rig.contacts(), new THREE.Vector3(lv.x, lv.y, lv.z), v.yaw, !!u.brake && s.speed > 0, u.handbrake, earth, sp.small ? 0.12 : 0.2);
-    this.joinPhysics(v);
+    joinPhysics(this.d.world, this.d.traffic!, v, this.d.player.position);
     Object.assign(s, { x: v.x, y: v.y, z: v.z, yaw: v.yaw, tilt: v.tilt, speed: this.rig.speed });
     const dv = jolt(v, dt);
     if (dv > 3) {
       const c = contactOf(world, v.collider);
       sfx.crash(0);
       tpc.kick(0, 0, Math.min(0.6, dv * 0.04));
-      v.hp -= (dv - 4) * 5;
+      v.hp -= crashDamage(v, dv);
       if (v.hp <= 0) v.state = 'wreck';
       if (dv > 8) player.hurt((dv - 8) * 3.5);
       if (c && dv > 3) dent(v.group, c.at, Math.min(0.38, (dv - 2.5) * 0.055));
@@ -242,12 +264,7 @@ export class Driving {
     }
   }
 
-  /**
-   * People in the box swept by the bumper this frame (tested against each body's position, so nobody slips between
-   * frames or through a stale physics query): slow pushes stop the car against them (nobody gets shoved into the bodywork), from 4 m/s
-   * it is a real impact (damage from speed, thud, jolt): the body is thrown at about the bumper's speed (a plastic hit
-   * from a far heavier mass) and the car keeps its speed but for the mass it pushed.
-   */
+  /** People in the bumper's swept box: below 4 m/s they stop the car; above, an impact (thrown at bumper speed, car keeps its speed but for the mass pushed). */
   private runOver(s: CarState, half: number, dt: number): void {
     const { traffic, sfx, tpc } = this.d, sp = Math.abs(s.speed), dir = Math.sign(s.speed);
     const fwd = new THREE.Vector3(Math.sin(s.yaw), 0, Math.cos(s.yaw)), right = new THREE.Vector3(fwd.z, 0, -fwd.x);
@@ -275,20 +292,5 @@ export class Driving {
   private halt(k: number): void {
     const b = this.car!.body, l = b.linvel();
     b.setLinvel({ x: l.x * k, y: l.y, z: l.z * k }, true);
-  }
-
-  /** Traffic and parked cars the driven car touches become rigid bodies too, so momentum is exchanged by mass. */
-  private joinPhysics(v: Vehicle): void {
-    const { world, traffic, player } = this.d;
-    const hits: Vehicle[] = [];
-    world.contactPairsWith(v.collider, (o) => {
-      const other = traffic!.vehicleOf(o.handle), spot = other ? null : parkedCars.byCollider(o.handle);
-      if (other && !other.body.isDynamic()) hits.push(other);
-      else if (spot) {
-        parkedCars.take(spot, player.position);
-        hits.push(traffic!.adopt(spot));
-      }
-    });
-    for (const other of hits) exchange(world, v, other, (o) => traffic!.knock(o));
   }
 }

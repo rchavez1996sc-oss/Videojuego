@@ -8,7 +8,7 @@ import type { ChapterDef } from './data/types';
 import { Input } from './core/input';
 import { ThirdPersonCamera } from './core/camera';
 import { preset, PRESETS, quality, shotMode, testMode, gpuName, savedChapter } from './core/settings';
-import { guardFrame } from './core/guard';
+import { guardFrame, lastError } from './core/guard';
 import { FpsMeter } from './core/fpsMeter';
 import { Renderer } from './render/renderer';
 import { Lighting } from './render/lighting';
@@ -191,7 +191,7 @@ async function boot(): Promise<void> {
     showMissionComplete(g.complete, g.reward, `ENEMIGOS ABATIDOS ${enemies.list.length - enemies.aliveCount}/${enemies.list.length} · ${defense ? `ESTUDIANTES CAÍDOS ${defense.students.lost}` : `BAJAS CIVILES ${populace.casualties}`} · VIDAS ${lives}<br>${hud.rewards.summary()}`, g.loot, g.unlock, ch.next);
   });
   const blast = (at: THREE.Vector3) => (alarm(at, 150), detonate(at, { combat, sfx, tpc, enemies, player, world, playerAlive: deadT <= 0, also: [civilians, squad, life, props, defense?.students] }));
-  grenades.onExplode = blast;
+  grenades.onExplode = life ? (life.trafficEvents.onBurst = blast) : blast;
   enemies.onEnemyHit = (kill, headshot, at) => {
     [sfx.hitmarker(kill, headshot), hud.hitmarker(kill, headshot, ''), hud.rewards.hit(kill, headshot, at.distanceTo(player.position))];
     if (kill && enemies.aliveCount === 0 && !defense) setTimeout(() => hud.showToast('ZONA DESPEJADA'), 1200);
@@ -287,7 +287,7 @@ async function boot(): Promise<void> {
     lighting.update(camera);
     if (!skipRender) renderer.render(dt);
     input.endFrame();
-    fps.update(dt, (n, cpu) => `${n} fps · cpu ${cpu} ms · ${quality} · res ${Math.round(dynRes.scale * 100)}% · ${renderer.gl.info.render.calls} draws · ${(renderer.gl.info.render.triangles / 1e6).toFixed(2)}M tris · ${gpu}${stats.dataset.errors ? ` · err ${stats.dataset.errors}` : ''}`);
+    fps.update(dt, (n, cpu) => `${n} fps · cpu ${cpu} ms · ${quality} · res ${Math.round(dynRes.scale * 100)}% · ${renderer.gl.info.render.calls} draws · ${(renderer.gl.info.render.triangles / 1e6).toFixed(2)}M tris · ${gpu}${stats.dataset.errors || lastError.text ? ` · err ${stats.dataset.errors ?? 0} ${lastError.text}` : ''}`);
   };
   const safeFrame = guardFrame(() => (document.pointerLockElement === canvas && !counting ? fps.time(() => frame(Math.min(clock.getDelta(), 1 / 20))) : (clock.getDelta(), renderer.render(0))), (n) => stats.dataset.errors = String(n));
   if (!shotMode) void prologue.then(() => renderer.gl.setAnimationLoop(() => !failed && safeFrame()));

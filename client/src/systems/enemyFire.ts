@@ -7,7 +7,8 @@ import type { Enemies } from './enemies';
 import type { Combat } from '../weapons/combat';
 import type { Sfx } from '../audio/sfx';
 import type { Player } from '../entities/player';
-import { surfaceOf, pierceChance } from '../world/surfaces';
+import { surfaceOf, pierceChance, hitHandler } from '../world/surfaces';
+import { drivenCar } from './carEscape';
 import { difficulty } from '../core/difficulty';
 import { strayHit } from './blame';
 
@@ -49,6 +50,11 @@ export function enemyFire(e: Enemy, en: Enemies, ctx: AIContext, attacker: boole
   sfx.distantShot(muzzle.distanceTo(cam), pan, e.def.gun === 'pistol' ? 'own' : e.def.rpm < 100);
   if (hit?.collider.handle === player.collisionHandle) {
     en.onPlayerHit(e.def.damage * difficulty.value.damage * PLAYER_ARMOUR * (0.85 + Math.random() * 0.3), muzzle);
+    return;
+  }
+  if (hit?.collider.handle === drivenCar.handle) {
+    hitHandler(hit.collider.handle)?.(e.def.damage * difficulty.value.damage * 0.4, end);
+    combat.impact(end, new THREE.Vector3(hit.normal.x, hit.normal.y, hit.normal.z), 'metal', dir);
     return;
   }
   if (hit && strayHit(hit.collider.handle, e.def.damage, end)) {

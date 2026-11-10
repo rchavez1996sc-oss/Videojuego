@@ -1,3 +1,4 @@
+import { drivenCar } from './carEscape';
 import * as THREE from 'three'; import { idleGestures } from '../entities/gestures';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { Enemy, type EnemyDef } from '../entities/enemy';
@@ -86,11 +87,11 @@ export class Enemies {
       playerConcealment: 1,
       sees: (from, to, self) => {
         const r = ray(from, to, self);
-        return !r.hit || r.hit.collider.handle === player.collisionHandle || r.hit.timeOfImpact > r.len - 0.4;
+        return !r.hit || r.hit.collider.handle === player.collisionHandle || r.hit.collider.handle === drivenCar.handle || r.hit.timeOfImpact > r.len - 0.4;
       },
       blocked: (from, to, self) => {
         const r = ray(from, to, self);
-        return !!r.hit && r.hit.collider.handle !== player.collisionHandle && r.hit.timeOfImpact < r.len - 0.5;
+        return !!r.hit && r.hit.collider.handle !== player.collisionHandle && r.hit.collider.handle !== drivenCar.handle && r.hit.timeOfImpact < r.len - 0.5;
       },
       groundY: (x, z) => hf.heightAt(x, z),
       route: (from, to, self) => {

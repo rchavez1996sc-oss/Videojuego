@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { wearTick, bulletMark } from './vehicleWear';
+import { burnTick, explodeVehicle } from './vehicleFire';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import RAPIER from '@dimforge/rapier3d-compat';
 import type { CarKind } from '../world/urbanProps';
@@ -27,7 +28,7 @@ type State = 'drive' | 'off' | 'tumble' | 'wreck' | 'player' | 'parked';
 export interface Vehicle {
   kind: CarKind | 'moto' | 'delivery'; group: THREE.Group; body: RAPIER.RigidBody; collider: RAPIER.Collider; dir: 1 | -1;
   x: number; z: number; base: number; lane: number; half: number; yaw: number; speed: number; cruise: number; len: number;
-  honkT: number; horn: number; panic: boolean; state: State; hp: number; spin: number; drift: number; smokeT: number;
+  honkT: number; horn: number; panic: boolean; state: State; hp: number; burst?: boolean; spin: number; drift: number; smokeT: number;
   /** Seat holders (Mixamo sitters), the driver first. */ seats: THREE.Group[];
   /** While player-driven: floor height and body tilt (pitch/roll on slopes and in turns). */ y?: number; tilt?: THREE.Quaternion;
   /** Set once the body is dynamic: last velocity (for jolts) and how long it has been still. */ dyn?: { prev: THREE.Vector3; still: number };
@@ -52,6 +53,7 @@ export class Traffic {
   onDisabled: (at: THREE.Vector3, weight: number) => void = () => {};
   onCrash: (at: THREE.Vector3, hard: number) => void = () => {};
   onSmoke: (at: THREE.Vector3, shade?: number) => void = () => {};
+  onBurst: (at: THREE.Vector3) => void = () => {};
   /** People a moving vehicle can run into (player, squad, soldiers); `hurt` receives damage, origin and a shove. */
   victims: () => Victim[] = () => [];
   /** This frame's `victims()` (also used by `Driving`). */ near: Victim[] = [];
@@ -93,7 +95,7 @@ export class Traffic {
       });
       if (riders.length) g.add(new THREE.Mesh(mergeGeometries(riders), riderMat!));
       const dir = i % 2 ? 1 : -1;
-      const cruise = kind === 'delivery' ? 9 : kind === 'moto' ? 7 : kind === 'combi' || kind === 'micro' ? 11 : 10;
+      const cruise = 1.1 * (kind === 'delivery' ? 9 : kind === 'moto' ? 7 : kind === 'combi' || kind === 'micro' ? 11 : 10);
       this.register(kind, g, seats, this.xMin + ((i * 77) % (this.xMax - this.xMin)), lanes[i].z + dir * lanes[i].lane, dir, lanes[i], cruise, 360 + rand() * 110, 3 + rand() * 10);
     }
   }
@@ -112,7 +114,7 @@ export class Traffic {
     this.byHandle.set(collider.handle, v);
     this.list.push(v);
     onHit(collider.handle, (dmg, p) => {
-      this.damage(v, (kind === 'moto' || kind === 'delivery') && p.y - g.position.y > 1 ? HP : dmg);
+      this.damage(v, (kind === 'moto' || kind === 'delivery') && p.y - g.position.y > 1 ? HP : dmg, true);
       bulletMark(g, new THREE.Vector3(p.x, p.y, p.z));
       return false;
     });
@@ -128,14 +130,13 @@ export class Traffic {
     return v;
   }
 
-  /** Bullets into the player's (or a parked) vehicle: the car soaks it; at 0 it is wrecked and smokes. */
-  onDrivenHit: (v: Vehicle, dmg: number) => void = () => {};
-
-  damage(v: Vehicle, dmg: number): void {
+  onDrivenHit: (v: Vehicle, dmg: number, bullet: boolean) => void = () => {};
+  /** Into the player's (or a parked) vehicle the car soaks it (`onDrivenHit`); at 0 it is wrecked and smokes. */
+  damage(v: Vehicle, dmg: number, bullet = false): void {
     const was = v.hp;
     if (v.state === 'player' || v.state === 'parked' || v.state === 'tumble' || v.state === 'wreck') {
       v.hp -= dmg;
-      if (v.state !== 'tumble') this.onDrivenHit(v, dmg);
+      if (v.state !== 'tumble') this.onDrivenHit(v, dmg, bullet);
       if (v.hp <= 0 && (v.state === 'player' || v.state === 'parked')) [v.state, v.speed] = ['wreck', 0];
       if (was > 0 && v.hp <= 0 && v.seats.some((s) => s.visible)) this.disabled(v);
       return;
@@ -160,7 +161,7 @@ export class Traffic {
     return this.byHandle.get(handle);
   }
 
-  private disabled(v: Vehicle): void {
+  disabled(v: Vehicle): void {
     this.onDisabled(new THREE.Vector3(v.x, 1, v.z), v.kind === 'micro' ? 6 : v.kind === 'combi' ? 4 : v.kind === 'moto' || v.kind === 'delivery' ? 1 : 2);
     const driver = v.seats[0];
     if ((v.kind === 'moto' || v.kind === 'delivery') && driver?.parent === v.group) {
@@ -192,8 +193,7 @@ export class Traffic {
 
   /** The player got out: the car stays where it stopped. */
   park(v: Vehicle): void {
-    if (v.state === 'player') v.state = 'parked';
-    v.speed = 0;
+    [v.state, v.speed] = [v.state === 'player' ? 'parked' : v.state, 0];
   }
 
   /** Gunfire or a blast: only a scare near the camera clears the streets (fights far away leave traffic alone). */
@@ -290,7 +290,7 @@ export class Traffic {
     if (v.group.visible) rollAlong(v.group, v.x, v.z, v.yaw, SPECS[v.kind]?.base ?? 2.6);
     v.group.position.set(v.x, y, v.z);
     v.group.quaternion.copy(q);
-    if (v.group.visible) wearTick(v, camera, y, this.onSmoke);
+    [v.group.visible && wearTick(v, camera, y, this.onSmoke), burnTick(v, this.clock, (o) => explodeVehicle(this, o, this.hf.heightAt(o.x, o.z)))];
     if (v.body.isDynamic()) return;
     v.body.setNextKinematicTranslation({ x: v.x, y, z: v.z });
     v.body.setNextKinematicRotation(q);

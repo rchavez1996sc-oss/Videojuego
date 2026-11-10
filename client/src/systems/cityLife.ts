@@ -1,3 +1,4 @@
+import { safely } from '../core/guard';
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { Traffic, type Road } from './traffic';
@@ -128,7 +129,7 @@ export class CityLife {
 
   update(dt: number, player: THREE.Vector3, inCombat: boolean): void {
     this.lights?.update(dt);
-    this.traffic.update(dt, player, this.camera.position);
+    safely('traffic', () => this.traffic.update(dt, player, this.camera.position), undefined);
     this.dogs.update(dt, this.camera.position, player, (p, dir) => this.ledge(p, dir));
     this.roofDogs.update(dt, this.camera.position);
     this.birds.update(dt);
