@@ -25,9 +25,12 @@ import { doorDuring, doorPulse, setDoor } from './carDoors';
 import { suspendWheels } from './wheelSpin';
 import { bumpOverBodies } from './bodyBump';
 import { rideBike } from '../entities/bikePose';
+import { SkidMarks, trackWheels } from '../fx/skidMarks';
+import { stripAt } from '../world/groundStrips';
+import type { Heightfield } from '../world/heightfield';
 import type { Rig } from '../entities/rig';
 
-interface Deps { traffic: Traffic | null; world: RAPIER.World; player: Player; tpc: ThirdPersonCamera; enemies: Enemies; squad: Squad | null; sfx: Sfx; lighting: Lighting; mixer: Mixer }
+interface Deps { hf: Heightfield; traffic: Traffic | null; world: RAPIER.World; player: Player; tpc: ThirdPersonCamera; enemies: Enemies; squad: Squad | null; sfx: Sfx; lighting: Lighting; mixer: Mixer }
 
 const REACH = 2.2;
 
@@ -55,8 +58,11 @@ export class Driving {
   private rig: CarRig | null = null;
   private after: (() => void) | null = null;
 
+  private marks: SkidMarks;
+
   constructor(private d: Deps) {
     this.engine = new EngineSound(d.mixer);
+    this.marks = new SkidMarks(d.lighting);
     Fling.onSlam = (at, speed) => {
       const near = at.distanceTo(d.tpc.camera.position);
       d.sfx.thud(Math.min(1, speed / 10) / (1 + near / 15));
@@ -205,6 +211,9 @@ export class Driving {
     this.rig.update(u, dt);
     suspendWheels(v.group, this.rig.mounts, this.rig.drops());
     readBody(v);
+    if (!this.marks.mesh.parent) v.group.parent?.add(this.marks.mesh);
+    const lv = v.body.linvel(), earth = (p: THREE.Vector3) => (stripAt(p.x, p.y, p.z) ?? (this.d.hf.maskAt(p.x, p.z, 0) > 0.5 || this.d.hf.isPaved(p.z) ? 'hard' : 'dirt')) === 'dirt';
+    trackWheels(this.marks, this.rig.contacts(), new THREE.Vector3(lv.x, lv.y, lv.z), v.yaw, !!u.brake && s.speed > 0, u.handbrake, earth, sp.small ? 0.12 : 0.2);
     this.joinPhysics(v);
     Object.assign(s, { x: v.x, y: v.y, z: v.z, yaw: v.yaw, tilt: v.tilt, speed: this.rig.speed });
     const dv = jolt(v, dt);

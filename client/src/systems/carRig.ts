@@ -107,6 +107,16 @@ export class CarRig {
     return n;
   }
 
+  /** Ground contact of each wheel touching the ground (world space), with whether it is a rear wheel. */
+  contacts(): { at: THREE.Vector3; rear: boolean; i: number }[] {
+    const out: { at: THREE.Vector3; rear: boolean; i: number }[] = [];
+    for (let i = 0; i < this.ctrl.numWheels(); i++) {
+      const p = this.ctrl.wheelIsInContact(i) ? this.ctrl.wheelContactPoint(i) : null;
+      if (p) out.push({ at: new THREE.Vector3(p.x, p.y, p.z), rear: this.rear.includes(i), i });
+    }
+    return out;
+  }
+
   free(world: RAPIER.World): void {
     world.removeVehicleController(this.ctrl);
     this.v.body.setLinearDamping(0.05);
