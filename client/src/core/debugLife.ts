@@ -217,6 +217,30 @@ export function lifeDebug(c: DebugContext) {
       }
       return `nature ${d.nature.toFixed(2)} · ${log.join(' · ')}`;
     },
+    /** Free w×d rectangles near (x, z): candidates on a 6 m grid within `r`, flat (< 0.8 m relief) and with nothing standing on them. */
+    clearArea(x: number, z: number, r = 60, w = 21, d = 12) {
+      const out: string[] = [];
+      for (let cx = x - r; cx <= x + r; cx += 6) for (let cz = z - r; cz <= z + r; cz += 6) {
+        let ok = true, lo = 1e9, hi = -1e9;
+        for (let i = -w / 2; i <= w / 2 && ok; i += 1.5) for (let j = -d / 2; j <= d / 2 && ok; j += 1.5) {
+          const g = c.hf.heightAt(cx + i, cz + j);
+          [lo, hi] = [Math.min(lo, g), Math.max(hi, g)];
+          const hit = c.world?.castRay(new RAPIER.Ray({ x: cx + i, y: g + 15, z: cz + j }, { x: 0, y: -1, z: 0 }), 15.3, true, RAPIER.QueryFilterFlags.EXCLUDE_SENSORS);
+          if ((hit && hit.timeOfImpact < 14.85) || c.hf.isPaved(cz + j) || c.hf.maskAt(cx + i, cz + j, 0) > 0.4) ok = false;
+        }
+        if (ok && hi - lo < 0.8) out.push(`${cx},${cz}`);
+      }
+      return out.slice(0, 12).join(' ');
+    },
+    /** Camera at a scene: neighbours with an act (sweeping, washing, kick-about) — `i`-th extra of the scenes with a given clip key (or 'act'). */
+    sceneView(i: number, dist = 4, frames = 45) {
+      const sc = (window as unknown as { __scenes?: { standing: { pos: THREE.Vector3; act?: unknown }[] } }).__scenes;
+      const e = sc?.standing.filter((s) => s.act)[i];
+      if (!e) return `acts ${sc?.standing.filter((s) => s.act).length ?? 0}`;
+      const at = e.pos.clone().add(new THREE.Vector3(0, 1, 0));
+      for (let k = 0; k < frames; k++) [c.setFreeCam(true), c.tpc.place(clearView(c, at, dist, 0.5).setY(at.y + 1), at), c.frame(1 / 30)];
+      return `acts ${sc!.standing.filter((s) => s.act).length} @${f(e.pos)}`;
+    },
     run,
   };
 }

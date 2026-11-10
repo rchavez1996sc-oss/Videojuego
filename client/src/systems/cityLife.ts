@@ -7,7 +7,8 @@ import { Dogs } from './dogs';
 import { Birds } from '../fx/birds';
 import { Pigeons } from '../fx/pigeons';
 import { WindLitter } from '../fx/windLitter';
-import { puddles } from '../world/puddles';
+import { Cordons, clock as cordonClock, deaths } from './cordon';
+import { puddles, wetSpots } from '../world/puddles';
 import { surfaceTop, stripAt } from '../world/groundStrips';
 import { Ambience } from '../audio/ambience';
 import type { Mixer } from '../audio/mixer';
@@ -30,6 +31,7 @@ export class CityLife {
   private earth: (x: number, y: number, z: number) => boolean;
   private pigeons: Pigeons;
   private litter: WindLitter;
+  private cordons: Cordons;
   private dustT = new WeakMap<object, number>();
   private callT = 4 + Math.random() * 6;
   /** A puff of dust behind a vehicle driving on bare earth (position, colour). */
@@ -43,14 +45,16 @@ export class CityLife {
     this.pigeons = new Pigeons(pigeonHomes(barrio, hf, def.pigeons ?? 0), lighting, Math.random);
     const floor = (x: number, z: number) => surfaceTop(x, barrio.graph.ground?.(x, z) ?? hf.heightAt(x, z), z);
     this.litter = new WindLitter(lighting, def.windLitter ?? 0, floor);
+    this.cordons = new Cordons(lighting, world, floor);
+    this.group.add(this.cordons.group);
     this.earth = (x, y, z) => {
       const s = stripAt(x, y, z);
       return s ? s === 'dirt' : !(hf.maskAt(x, z, 0) > 0.5 || hf.isPaved(z)) && hf.maskAt(x, z, 1) < 0.3;
     };
     this.group.add(this.traffic.group, this.dogs.group, this.roofDogs.group, this.birds.mesh, this.pigeons.group, this.litter.group);
-    const wet = puddles(lighting, puddleSpots(barrio, def.puddles ?? 0, floor));
+    const wet = puddles(lighting, [...puddleSpots(barrio, def.puddles ?? 0, floor), ...wetSpots.splice(0).map((w) => ({ ...w, y: floor(w.x, w.z) }))]);
     if (wet) this.group.add(wet);
-    if (location.search.includes('shot')) Object.assign(window, { __litter: this.litter, __puddles: wet, __dogs: this.dogs });
+    if (location.search.includes('shot')) Object.assign(window, { __litter: this.litter, __puddles: wet, __dogs: this.dogs, __cordons: this.cordons, __deaths: deaths });
     if (def.lights?.length) {
       const lights = (this.lights = new TrafficLights(def.lights, hf, lighting, world));
       this.group.add(lights.group);
@@ -115,6 +119,7 @@ export class CityLife {
     this.traffic.alarm(at);
     this.dogs.alarm(at, radius);
     this.pigeons.alarm(at, radius);
+    this.cordons.calmSince = Math.max(this.cordons.calmSince, cordonClock.now);
   }
 
   update(dt: number, player: THREE.Vector3, inCombat: boolean): void {
@@ -124,6 +129,7 @@ export class CityLife {
     this.roofDogs.update(dt, this.camera.position);
     this.birds.update(dt);
     this.litter.update(dt, this.camera.position);
+    this.cordons.update(dt, this.camera.position);
     this.raiseDust();
     if (!inCombat && (this.callT -= dt) < 0) this.streetCall();
     this.pigeons.update(dt, this.camera, [...this.traffic.near.map((t) => ({ pos: t.pos, r: t.kind === 'player' ? 2 : 0.4 })), ...this.traffic.list.filter((v) => Math.abs(v.speed) > 1).map((v) => ({ pos: v.group.position, r: 4 }))]);

@@ -58,3 +58,9 @@ export function puddles(lighting: Lighting, spots: { x: number; y: number; z: nu
   mesh.renderOrder = 1;
   return mesh;
 }
+
+/** Wet patches other scenes ask for (a car being washed…); `CityLife` adds them to its puddles. */
+export const wetSpots: { x: number; y: number; z: number; size: number }[] = [];
+export function addWetSpot(at: THREE.Vector3, size: number): void {
+  wetSpots.push({ x: at.x, y: at.y, z: at.z, size });
+}

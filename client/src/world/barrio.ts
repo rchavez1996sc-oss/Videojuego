@@ -21,6 +21,8 @@ import { facadeMaterials } from './facadeMats';
 import { festiveStreets } from './bunting';
 import { avenueMedian } from './median';
 import { Doors, doorDefs } from './doors';
+import { neighborScenes } from './neighborScenes';
+import { parkedCars } from './parkedCars';
 import { addRoof, rooftopLinks } from './rooftops';
 import { alleyLife } from './alleys';
 import { STREET_COLORS, stall, trashPile, roadMarkings } from './streetLife';
@@ -33,6 +35,8 @@ import { photo } from '../render/photoTextures';
 
 export interface BarrioDef {
   seed: number;
+  /** Concrete football courts (centre x, z) with a kick-about. */
+  courts?: [number, number][];
   x0: number; cols: number; blockW: number; blockD: number; street: number; gap: number;
   hills: { zMin: number; zMax: number; count: number; xMax: number };
   stairs: [number, number, number][];
@@ -314,6 +318,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
     trashPile(b, new THREE.Vector3(x, hf.heightAt(x, z), z), rand);
   }
 
+  const neighbors = neighborScenes(b, hf, life, doorDefs, parkedCars.spots, def.courts ?? [], mulberry32(def.seed + 61));
   const group = new THREE.Group();
   const mats = materials(lighting, atlas);
   const bake = bakeGroups(lighting); bake.push(...autoBake(lighting, mats, bake));
@@ -324,6 +329,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
     signs.receiveShadow = true;
     group.add(signs);
   }
+  group.add(neighbors);
   const doors = new Doors(doorDefs.splice(0), lighting, world), people = barrioCrowd(life, lighting, world, mats.shutter);
   group.add(doors.group, people.group);
   return { group, materials: mats, bake, station, bystanders: people.bystanders, tick: (dt, movers) => doors.tick(dt, movers[0]), graph: streetGraph(def, crossX, hf), blocked: (x, z) => Math.abs(z) < def.gap + 2 * def.blockD + def.street + 6 || hillSpots.some((h) => Math.hypot(h.x - x, h.z - z) < h.r + 1.5) };

@@ -160,6 +160,7 @@ export function crowd(seats: { pos: THREE.Vector3; yaw: number; stay?: boolean }
       const x = extra(lighting, r, spot.pos, spot.yaw, seated ? SEATED[Math.floor(r() * SEATED.length)] : (spot as Extra).key);
       const k = seated ? undefined : (spot as Extra).kit ?? kit;
       if (k) x.nearOnly(...gear(x.bones, k, lighting, r));
+      if (!seated) (spot as Extra).act?.(x);
       x.root.updateMatrixWorld(true);
       const col = shootable(world, x, spot.pos.y, seated, hurt, slumps, limp, dying, fleeing, flings);
       const diner = seated && !!(spot as { stay?: boolean }).stay;

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { noVehicleLift } from '../physics/noLift';
+import { noVehicleLift } from '../physics/noLift'; import { deaths, clock } from '../systems/cordon';
 import { floorAt, stepAssist } from '../physics/floor';
 import { surfaceTop } from '../world/groundStrips';
 import RAPIER from '@dimforge/rapier3d-compat';
@@ -268,7 +268,7 @@ export class Enemy {
 
   /** `launch`: thrown by a vehicle or a blast (velocity, m/s): hit-by-car or flying-back clip, turned to the hit, and a slide. */
   die(dir: THREE.Vector3, launch?: THREE.Vector3, by: 'car' | 'blast' = 'car'): void {
-    [this.state, this.knock] = ['dead', null];
+    [this.state, this.knock] = ['dead', null, deaths.push({ at: this.position.clone(), t: clock.now })];
     if (this.cover) this.cover.owner = -1;
     this.collider.setEnabled(false);
     const flat = dir.clone().setY(0);
