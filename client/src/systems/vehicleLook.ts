@@ -4,7 +4,8 @@ import { Builder } from '../world/buildingKit';
 import { car, mototaxi, type CarKind } from '../world/urbanProps';
 import { combiLivery, companyColor, type Fit } from '../world/livery';
 import { carModels } from '../render/carModels';
-import { deliveryBike, thermalBox } from '../world/deliveryBike';
+import { deliveryBike } from '../world/deliveryBike';
+import { thermalBoxMesh } from '../world/thermalBox';
 
 export interface VehicleMats { materials: Record<string, THREE.Material>; bake: { material: THREE.Material; keys: string[] }[] }
 
@@ -47,7 +48,6 @@ export function bikeLook(lighting: Lighting, mats: VehicleMats, i: number): THRE
   const model = carModels.pick('delivery', i), b = new Builder(null, null);
   if (!model) return deliveryBike(b, i % 3), new THREE.Group().add(...buildLoose(b, lighting, mats));
   const g = carModels.make(model, 'delivery', ['moto0', 'moto1', 'car1', 'car2', 'car4', 'car0'][i % 6]);
-  if (i % 2 === 0) (thermalBox(b, i % 3, BOX_LIFT, BOX_BACK), g.add(...buildLoose(b, lighting, mats)));
+  if (i % 2 === 0) g.add(thermalBoxMesh(lighting, i).translateY(1.2).translateZ(-0.7));
   return g;
 }
-const BOX_LIFT = 0.02, BOX_BACK = 0.12;
