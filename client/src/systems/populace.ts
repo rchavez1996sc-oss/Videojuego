@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GlassBreak } from '../fx/glassBreak';
 import { placeMenuBoards } from '../world/menuBoards';
 import { placeKiosks } from '../world/kiosks';
 import { mulberry32 } from '../core/rng';
@@ -36,8 +37,12 @@ export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world
     parkedCars.build(d.lighting, d.world, barrio);
     d.scene.add(parkedCars.group);
     parkedCars.tick(0, d.camera.position, true);
-    const tick = barrio.tick;
-    barrio.tick = (dt, movers) => (tick?.(dt, movers), parkedCars.tick(dt, d.camera.position));
+    const tick = barrio.tick, glass = new GlassBreak(d.lighting, d.mixer, d.world);
+    d.scene.add(glass.group);
+    setTimeout(() => glass.scan(barrio.group), 0);
+    d.combat.onTrace = (from, dir, dist) => glass.trace(from, dir, dist);
+    if (location.search.includes('shot')) Object.assign(window, { __glass: glass });
+    barrio.tick = (dt, movers) => (tick?.(dt, movers), parkedCars.tick(dt, d.camera.position), glass.update(dt));
   }
   const props = barrio && ch.looseProps ? new LooseProps(barrio.graph, d.world, d.lighting, ch.looseProps, d.sfx, d.camera) : null;
   if (props) d.scene.add(props.group);

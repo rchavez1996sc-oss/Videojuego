@@ -158,6 +158,38 @@ export function lifeDebug(c: DebugContext) {
       for (let k = 0; k < frames; k++) [c.setFreeCam(true), c.tpc.place(clearView(c, at.clone().setY(at.y + 0.2), dist, 0.6).setY(at.y + dist * 0.6), at), c.frame(1 / 30)];
       return f(at);
     },
+    /** Shoots the window pane nearest to (x, z) `n` times from 6 m in front, then frames it; returns panes found. */
+    glassTest(x: number, z: number, n = 1) {
+      const g = (window as unknown as { __glass?: { panes: THREE.Mesh[]; trace(f: THREE.Vector3, d: THREE.Vector3, l: number): void } }).__glass;
+      if (!g) return 'no glass';
+      let best: { p: THREE.Vector3; n: THREE.Vector3 } | null = null, bd = 1e9;
+      const a = new THREE.Vector3(), b = new THREE.Vector3(), cc = new THREE.Vector3(), ref = new THREE.Vector3(x, 0, z);
+      for (const m of g.panes) {
+        const pos = m.geometry.attributes.position, idx = m.geometry.index;
+        for (let t = 0; t < (idx ? idx.count : pos.count) / 3; t++) {
+          const i0 = idx ? idx.getX(t * 3) : t * 3, i1 = idx ? idx.getX(t * 3 + 1) : t * 3 + 1, i2 = idx ? idx.getX(t * 3 + 2) : t * 3 + 2;
+          a.fromBufferAttribute(pos, i0).applyMatrix4(m.matrixWorld); b.fromBufferAttribute(pos, i1).applyMatrix4(m.matrixWorld); cc.fromBufferAttribute(pos, i2).applyMatrix4(m.matrixWorld);
+          const ctr = a.clone().add(b).add(cc).divideScalar(3), d = Math.hypot(ctr.x - x, ctr.z - z);
+          const nn = b.clone().sub(a).cross(cc.clone().sub(a)).normalize();
+          if (nn.x * (x - ctr.x) + nn.z * (z - ctr.z) < 0) nn.negate();
+          if (d < bd && Math.abs(nn.y) < 0.2 && ctr.y - ref.y > 0.5) { bd = d; best = { p: ctr, n: nn }; }
+        }
+      }
+      if (!best) return `panes ${g.panes.length}, none near`;
+      const from = best.p.clone().addScaledVector(best.n, 6);
+      for (let k = 0; k < n; k++) g.trace(from, best.p.clone().sub(from).normalize(), 7);
+      for (let k = 0; k < 20; k++) [c.setFreeCam(true), c.tpc.place(best.p.clone().addScaledVector(best.n, 3.5).add(new THREE.Vector3(0.5, 0.3, 0.5)), best.p), c.frame(1 / 30)];
+      return `panes ${g.panes.length} hit @${f(best.p)} dist ${bd.toFixed(1)}`;
+    },
+    /** Material names in the scene matching `re`, with mesh counts (instanced marked *). */
+    matNames(re: string) {
+      const out = new Map<string, number>();
+      c.scene?.traverse((o) => {
+        const m = (o as THREE.Mesh).material as THREE.Material | undefined;
+        if (m && !Array.isArray(m) && new RegExp(re, 'i').test(m.name)) out.set(m.name + ((o as THREE.InstancedMesh).isInstancedMesh ? '*' : ''), (out.get(m.name) ?? 0) + 1);
+      });
+      return [...out].map(([k, v]) => `${k}:${v}`).join(' ');
+    },
     run,
   };
 }

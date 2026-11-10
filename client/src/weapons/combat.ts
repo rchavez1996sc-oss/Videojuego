@@ -37,7 +37,7 @@ export class Combat {
   from: { muzzle: THREE.Object3D; skip: number } | null = null;
   private drawT = 0;
   onHitConfirmed: (e: HitEvent) => void = () => {};
-  onShot: (from: THREE.Vector3) => void = () => {};
+  onShot: (from: THREE.Vector3) => void = () => {}; onTrace: ((from: THREE.Vector3, dir: THREE.Vector3, dist: number) => void) | null = null;
   private dust = new Particles(1500, false);
   private sparks = new Particles(400, true);
   private decals: Decals;
@@ -185,7 +185,7 @@ export class Combat {
     if (this.shots++ % def.tracerEvery === 0) this.tracers.fire(muzzle, end);
     this.shells.eject(this.from?.muzzle ?? this.player.model.ejector, right);
     this.sfx.rifleShot();
-    this.onShot(muzzle);
+    [this.onShot(muzzle), this.onTrace?.(muzzle, toAim, hit ? hit.timeOfImpact : dist)];
     const [kUp, kSide] = this.gun.recoil(aiming);
     const k = this.cam.steady;
     this.cam.kick(kUp * k, kSide * k, (aiming ? 0.012 : 0.02) * k);
