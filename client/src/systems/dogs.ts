@@ -2,23 +2,27 @@ import * as THREE from 'three';
 import type { Heightfield } from '../world/heightfield';
 import type { StreetGraph } from '../world/barrio';
 import { pets, type Pet } from '../render/pets';
+import { petsMeetPlayer } from './petMoods';
 
-interface Dog { node: number; queue: THREE.Vector3[]; root: THREE.Group; beast: Pet; pos: THREE.Vector3; target: THREE.Vector3; yaw: number; speed: number; idle: number; panic: number; gone: boolean }
+interface Dog { node: number; queue: THREE.Vector3[]; root: THREE.Group; beast: Pet; pos: THREE.Vector3; target: THREE.Vector3; yaw: number; speed: number; idle: number; panic: number; gone: boolean; nature: number; mode: Mode; modeT: number; jump: { from: THREE.Vector3; to: THREE.Vector3; t: number } | null; perch: number; barkT: number }
+type Mode = 'roam' | 'follow' | 'bark' | 'perched';
 
 
 /** Stray dogs trotting around the streets; they bark now and then and run off when shooting starts. */
+export type { Dog };
+
 export class Dogs {
   readonly group = new THREE.Group();
-  private dogs: Dog[] = [];
+  readonly dogs: Dog[] = [];
   onBark: (at: THREE.Vector3) => void = () => {};
   private barkT = 4;
-  private neighbors: number[][];
+  readonly neighbors: number[][];
 
-  private groundAt(x: number, z: number): number {
+  groundAt(x: number, z: number): number {
     return this.graph.ground?.(x, z) ?? this.hf.heightAt(x, z);
   }
 
-  constructor(private graph: StreetGraph, private hf: Heightfield, count: number) {
+  constructor(readonly graph: StreetGraph, private hf: Heightfield, count: number) {
     this.neighbors = graph.nodes.map(() => []);
     for (const [a, b] of graph.edges) {
       this.neighbors[a].push(b);
@@ -31,7 +35,7 @@ export class Dogs {
       this.group.add(root);
       const node = (i * 7) % graph.nodes.length;
       const pos = graph.nodes[node].clone().add(new THREE.Vector3(Math.random() * 2 - 1, 0, Math.random() * 2 - 1));
-      this.dogs.push({ node, queue: [], root, beast, pos, target: pos.clone(), yaw: 0, speed: 0, idle: Math.random() * 4, panic: 0, gone: false });
+      this.dogs.push({ node, queue: [], root, beast, pos, target: pos.clone(), yaw: 0, speed: 0, idle: Math.random() * 4, panic: 0, gone: false, nature: Math.random(), mode: 'roam', modeT: -6, jump: null, perch: 0, barkT: 0 });
     }
   }
 
@@ -45,10 +49,27 @@ export class Dogs {
     }
   }
 
-  update(dt: number, camera: THREE.Vector3): void {
+  /** Nearest graph node to `p` (to resume roaming after following someone). */
+  nearestNode(p: THREE.Vector3): number {
+    let best = 0, bd = Infinity;
+    this.graph.nodes.forEach((n, i) => {
+      const d = n.distanceToSquared(p);
+      if (d < bd) [bd, best] = [d, i];
+    });
+    return best;
+  }
+
+  update(dt: number, camera: THREE.Vector3, player?: THREE.Vector3, ledge?: (from: THREE.Vector3, dir: THREE.Vector3) => THREE.Vector3 | null): void {
     this.barkT -= dt;
     for (const d of this.dogs) {
       if (d.gone) continue;
+      if (player && petsMeetPlayer(this, d, dt, player, ledge)) {
+        d.root.position.copy(d.pos);
+        d.root.rotation.y = d.yaw;
+        d.root.visible = d.pos.distanceToSquared(camera) < 90 * 90;
+        if (d.root.visible && d.pos.distanceToSquared(camera) < 45 * 45) d.beast.update(dt, d.speed);
+        continue;
+      }
       const to = d.target.clone().sub(d.pos).setY(0), dist = to.length();
       if (d.panic > 0) {
         d.panic -= dt;

@@ -35,7 +35,7 @@ export class CityLife {
   /** A puff of dust behind a vehicle driving on bare earth (position, colour). */
   onDust: ((at: THREE.Vector3, tint: THREE.Color) => void) | null = null;
 
-  constructor(def: LifeDef, world: RAPIER.World, hf: Heightfield, barrio: Barrio, lighting: Lighting, mixer: Mixer, private camera: THREE.Camera) {
+  constructor(def: LifeDef, private world: RAPIER.World, hf: Heightfield, barrio: Barrio, lighting: Lighting, mixer: Mixer, private camera: THREE.Camera) {
     this.traffic = new Traffic(world, hf, lighting, barrio.materials, barrio.bake, def.roads ?? [{ z: 0, lane: 3.2, half: 7.6, count: def.traffic }], def.span);
     this.dogs = new Dogs(barrio.graph, hf, def.dogs);
     this.birds = new Birds(def.birds, 250);
@@ -50,7 +50,7 @@ export class CityLife {
     this.group.add(this.traffic.group, this.dogs.group, this.roofDogs.group, this.birds.mesh, this.pigeons.group, this.litter.group);
     const wet = puddles(lighting, puddleSpots(barrio, def.puddles ?? 0, floor));
     if (wet) this.group.add(wet);
-    if (location.search.includes('shot')) Object.assign(window, { __litter: this.litter, __puddles: wet });
+    if (location.search.includes('shot')) Object.assign(window, { __litter: this.litter, __puddles: wet, __dogs: this.dogs });
     if (def.lights?.length) {
       const lights = (this.lights = new TrafficLights(def.lights, hf, lighting, world));
       this.group.add(lights.group);
@@ -86,6 +86,18 @@ export class CityLife {
     this.cue(cam.clone().add(new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r)), (d, p) => this.ambience.call('cry', d, p));
   }
 
+  /** A wall top or ledge 0.8–2.4 m above `p`, about 1.4 m along `dir`, with room to sit on (for cats). */
+  private ledge(p: THREE.Vector3, dir: THREE.Vector3): THREE.Vector3 | null {
+    for (const reach of [1.2, 1.7]) {
+      const x = p.x + dir.x * reach, z = p.z + dir.z * reach;
+      const hit = this.world.castRay(new RAPIER.Ray({ x, y: p.y + 2.6, z }, { x: 0, y: -1, z: 0 }), 2.6, true, RAPIER.QueryFilterFlags.ONLY_FIXED | RAPIER.QueryFilterFlags.EXCLUDE_SENSORS);
+      if (!hit) continue;
+      const h = p.y + 2.6 - hit.timeOfImpact;
+      if (h - p.y > 0.8 && h - p.y < 2.4 && !this.world.castRay(new RAPIER.Ray({ x, y: h + 0.05, z }, { x: 0, y: 1, z: 0 }), 0.6, true, RAPIER.QueryFilterFlags.ONLY_FIXED)) return new THREE.Vector3(x, h, z);
+    }
+    return null;
+  }
+
   private cue(at: THREE.Vector3, play: (distance: number, pan: number) => void): void {
     const right = new THREE.Vector3(1, 0, 0).applyQuaternion(this.camera.quaternion);
     play(at.distanceTo(this.camera.position), at.clone().sub(this.camera.position).normalize().dot(right));
@@ -108,7 +120,7 @@ export class CityLife {
   update(dt: number, player: THREE.Vector3, inCombat: boolean): void {
     this.lights?.update(dt);
     this.traffic.update(dt, player, this.camera.position);
-    this.dogs.update(dt, this.camera.position);
+    this.dogs.update(dt, this.camera.position, player, (p, dir) => this.ledge(p, dir));
     this.roofDogs.update(dt, this.camera.position);
     this.birds.update(dt);
     this.litter.update(dt, this.camera.position);

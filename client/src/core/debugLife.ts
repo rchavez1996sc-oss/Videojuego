@@ -201,6 +201,22 @@ export function lifeDebug(c: DebugContext) {
       for (let k = 0; k < frames; k++) [c.setFreeCam(true), c.tpc.place(mid.clone().add(new THREE.Vector3(0, -3.5, mid.z > 0 ? -9 : 9)), mid.clone().add(new THREE.Vector3(0, -2.2, 0))), c.frame(1 / 30)];
       return `spans ${w.count} cut ${spans!.filter((x) => (x as unknown as { cut: number }).cut >= 0).length} mid ${f(mid)}`;
     },
+    /** Puts the player `dist` m from stray `i` (dog or cat), simulates `frames` and reports what it does. */
+    petTest(kind: 'dog' | 'cat', i: number, dist = 5, frames = 60) {
+      const dogs = (window as unknown as { __dogs?: { dogs: { pos: THREE.Vector3; mode: string; beast: { kind: string }; jump: unknown; nature: number; gone: boolean }[] } }).__dogs;
+      const d = dogs?.dogs.filter((x) => x.beast.kind === kind && !x.gone)[i];
+      if (!d) return 'none';
+      const p = d.pos.clone().add(new THREE.Vector3(dist, 0, 0));
+      c.player.respawn(p.setY(c.hf.heightAt(p.x, p.z)), -Math.PI / 2);
+      const log: string[] = [];
+      for (let k = 0; k < frames; k++) {
+        c.setFreeCam(true);
+        c.tpc.place(d.pos.clone().add(new THREE.Vector3(1.5, 2.2, 4)), d.pos.clone().add(new THREE.Vector3(0, 0.4, 0)));
+        c.frame(1 / 30);
+        if (k % 15 === 14) log.push(`${d.mode} y${(d.pos.y - c.hf.heightAt(d.pos.x, d.pos.z)).toFixed(2)} d${d.pos.distanceTo(c.player.position).toFixed(1)}`);
+      }
+      return `nature ${d.nature.toFixed(2)} · ${log.join(' · ')}`;
+    },
     run,
   };
 }
