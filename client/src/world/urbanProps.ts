@@ -1,5 +1,6 @@
 import { parkedCars, type ParkedSpot } from './parkedCars';
 import * as THREE from 'three';
+import { addSpan } from './cables';
 import { carBody, topAt, wheelParts } from './carBody';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import type { Builder } from './buildingKit';
@@ -35,12 +36,8 @@ export function powerLine(b: Builder, hf: Heightfield, points: THREE.Vector3[], 
 }
 
 export function cable(b: Builder, a: THREE.Vector3, c: THREE.Vector3, sag: number): void {
-  const pts: THREE.Vector3[] = [];
-  for (let k = 0; k <= 10; k++) {
-    const t = k / 10;
-    pts.push(a.clone().lerp(c, t).add(new THREE.Vector3(0, -sag * 4 * t * (1 - t), 0)));
-  }
-  b.geometry('cable', new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 10, 0.012, 4), new THREE.Matrix4());
+  void b;
+  addSpan(a, c, sag);
 }
 
 /** Side profile (length along x, height along y) extruded across the vehicle width and laid along local z. */

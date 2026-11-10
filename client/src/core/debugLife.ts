@@ -190,6 +190,17 @@ export function lifeDebug(c: DebugContext) {
       });
       return [...out].map(([k, v]) => `${k}:${v}`).join(' ');
     },
+    /** Shoots cable span `i` at mid-span from 5 m below/beside (`n` rounds), frames it; reports spans. */
+    cableTest(i: number, n = 1, frames = 30) {
+      const w = (window as unknown as { __wires?: { count: number; trace(f: THREE.Vector3, d: THREE.Vector3, l: number): void } }).__wires;
+      const spans = (w as unknown as { constructor: unknown }) && (window as unknown as { __spans?: { a: THREE.Vector3; c: THREE.Vector3; sag: number }[] }).__spans;
+      const s = spans?.filter((x) => x.a.distanceTo(x.c) > 25)[i];
+      if (!w || !s) return `spans ${w?.count ?? 0}`;
+      const mid = s.a.clone().lerp(s.c, 0.5).add(new THREE.Vector3(0, -s.sag, 0)), from = mid.clone().add(new THREE.Vector3(0, -4, 3));
+      for (let k = 0; k < n; k++) w.trace(from, mid.clone().sub(from).normalize(), 10);
+      for (let k = 0; k < frames; k++) [c.setFreeCam(true), c.tpc.place(mid.clone().add(new THREE.Vector3(0, -3.5, mid.z > 0 ? -9 : 9)), mid.clone().add(new THREE.Vector3(0, -2.2, 0))), c.frame(1 / 30)];
+      return `spans ${w.count} cut ${spans!.filter((x) => (x as unknown as { cut: number }).cut >= 0).length} mid ${f(mid)}`;
+    },
     run,
   };
 }
