@@ -31,6 +31,7 @@ export class CityLife {
   private pigeons: Pigeons;
   private litter: WindLitter;
   private dustT = new WeakMap<object, number>();
+  private callT = 4 + Math.random() * 6;
   /** A puff of dust behind a vehicle driving on bare earth (position, colour). */
   onDust: ((at: THREE.Vector3, tint: THREE.Color) => void) | null = null;
 
@@ -75,6 +76,16 @@ export class CityLife {
     }
   }
 
+  /** Every 6–15 s: a tout shouting from a combi or micro within 45 m, else a vendor's cry from somewhere down the street. */
+  private streetCall(): void {
+    this.callT = 6 + Math.random() * 9;
+    const cam = this.camera.position;
+    const bus = this.traffic.list.filter((v) => (v.kind === 'combi' || v.kind === 'micro') && v.group.position.distanceTo(cam) < 45).sort((a, b) => Math.abs(a.speed) - Math.abs(b.speed))[0];
+    if (bus && Math.random() < 0.7) return this.cue(bus.group.position, (d, p) => this.ambience.call('tout', d, p));
+    const a = Math.random() * Math.PI * 2, r = 15 + Math.random() * 30;
+    this.cue(cam.clone().add(new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r)), (d, p) => this.ambience.call('cry', d, p));
+  }
+
   private cue(at: THREE.Vector3, play: (distance: number, pan: number) => void): void {
     const right = new THREE.Vector3(1, 0, 0).applyQuaternion(this.camera.quaternion);
     play(at.distanceTo(this.camera.position), at.clone().sub(this.camera.position).normalize().dot(right));
@@ -102,6 +113,7 @@ export class CityLife {
     this.birds.update(dt);
     this.litter.update(dt, this.camera.position);
     this.raiseDust();
+    if (!inCombat && (this.callT -= dt) < 0) this.streetCall();
     this.pigeons.update(dt, this.camera, [...this.traffic.near.map((t) => ({ pos: t.pos, r: t.kind === 'player' ? 2 : 0.4 })), ...this.traffic.list.filter((v) => Math.abs(v.speed) > 1).map((v) => ({ pos: v.group.position, r: 4 }))]);
     this.ambience.update(dt, inCombat);
   }

@@ -1,5 +1,6 @@
 import type { Mixer } from './mixer';
 import { CityBed } from './cityBed';
+import { CRIES, TOUT, shout } from './voiceCalls';
 
 /** City bed: distant traffic rumble plus positional horns and barking (distance in m, pan -1..1). */
 export class Ambience {
@@ -96,5 +97,12 @@ export class Ambience {
       src.start(t);
       src.stop(t + 0.06);
     }
+  }
+
+  /** A combi tout or a street vendor shouting (formant-synthesised voice, see `voiceCalls`). */
+  call(kind: 'tout' | 'cry', distance: number, pan: number): void {
+    if (this.m.ctx.state !== 'running') return;
+    const list = kind === 'tout' ? TOUT : CRIES;
+    shout(this.m, list[Math.floor(Math.random() * list.length)], distance, pan, kind === 'cry' && Math.random() < 0.55);
   }
 }
