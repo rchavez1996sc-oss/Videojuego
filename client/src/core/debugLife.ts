@@ -140,6 +140,15 @@ export function lifeDebug(c: DebugContext) {
       });
       return n;
     },
+    /** Camera 3.5 m from pigeon flock `i` (looking at it) for `frames`; returns pigeons still on the ground. */
+    pigeonView(i: number, frames = 20, dist = 3.5) {
+      const pg = (window as unknown as { __pigeons?: { homes: THREE.Vector3[]; count: number; grounded(i: number): number } }).__pigeons;
+      const home = pg?.homes[i];
+      if (!home) return 'no flock';
+      const at = home.clone().add(new THREE.Vector3(0, 0.3, 0));
+      for (let k = 0; k < frames; k++) [c.setFreeCam(true), c.tpc.place(clearView(c, at, dist, 0.7).setY(home.y + 1.2), at), c.frame(1 / 30)];
+      return `flock ${pg!.grounded(i)} · all ${pg!.count} on ground @${f(home)}`;
+    },
     run,
   };
 }

@@ -78,4 +78,23 @@ export class Ambience {
       this.blip(t, 'sawtooth', 340 + Math.random() * 60, 0.09, 0.2, g);
     }
   }
+
+  /** Pigeons taking off: a quick rattle of wing claps (≈ 12 per second, overlapping for a flock) dying away. */
+  flutter(distance: number, pan: number, birds: number): void {
+    const { ctx } = this.m;
+    const p = ctx.createStereoPanner(), g = ctx.createGain(), f = ctx.createBiquadFilter();
+    p.pan.value = Math.max(-1, Math.min(1, pan));
+    g.gain.value = Math.max(0.02, 0.5 / (1 + distance / 8));
+    f.type = 'bandpass';
+    f.frequency.value = 1800;
+    f.Q.value = 0.8;
+    f.connect(g).connect(p).connect(this.m.sfx);
+    const t0 = ctx.currentTime + distance / 343;
+    for (let i = 0, n = Math.min(40, 8 + birds * 4); i < n; i++) {
+      const t = t0 + (i / n) * 0.9 + Math.random() * 0.05, src = this.m.noise(), e = this.m.env(t, 0.6 * (1 - i / n * 0.7), 0.003, 0.035);
+      src.connect(e).connect(f);
+      src.start(t);
+      src.stop(t + 0.06);
+    }
+  }
 }
