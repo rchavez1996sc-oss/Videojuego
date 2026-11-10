@@ -149,6 +149,15 @@ export function lifeDebug(c: DebugContext) {
       for (let k = 0; k < frames; k++) [c.setFreeCam(true), c.tpc.place(clearView(c, at, dist, 0.7).setY(home.y + 1.2), at), c.frame(1 / 30)];
       return `flock ${pg!.grounded(i)} · all ${pg!.count} on ground @${f(home)}`;
     },
+    /** Camera `dist` m from puddle `i` (or the wind-blown piece nearest the camera when i < 0), looking at it. */
+    wetView(i: number, dist = 3, frames = 3) {
+      const w = window as unknown as { __puddles?: THREE.InstancedMesh; __litter?: { spots: THREE.Vector3[] } };
+      const m = new THREE.Matrix4(), cam = c.tpc.camera.position;
+      const at = i >= 0 ? (w.__puddles?.getMatrixAt(i, m), new THREE.Vector3().setFromMatrixPosition(m)) : w.__litter?.spots.slice().sort((a, b) => a.distanceTo(cam) - b.distanceTo(cam))[0]?.clone();
+      if (!at) return 'none';
+      for (let k = 0; k < frames; k++) [c.setFreeCam(true), c.tpc.place(clearView(c, at.clone().setY(at.y + 0.2), dist, 0.6).setY(at.y + dist * 0.6), at), c.frame(1 / 30)];
+      return f(at);
+    },
     run,
   };
 }

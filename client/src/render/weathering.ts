@@ -26,7 +26,7 @@ const BASE_GRIME = /* glsl */ `
     }
   }`;
 
-const SKIP = new Set(['grass', 'terrain', 'ocean', 'signs']);
+const SKIP = new Set(['grass', 'terrain', 'ocean', 'signs', 'puddle']);
 /** Masonry and painted walls (by material key) get the fine wall detail below. */
 const WALLISH = /bare|plaster|brick|paint|concrete|facade|wall|tarrajeo|stucco|cream|apt|tile|zocalo|plinth|cement|block|policeGreen|sand|travert|ochre|terracotta|salmon|derB|derC|letBlue|uniBlue|adobe|house|shop/i;
 const NOT_WALL = /glass|car|metal|rim|tire|wheel|light|screen|road|asphalt|cobble|model-|kiosk|menu|mural|pinta|livery|water|bark|leaf|foliage/i;
