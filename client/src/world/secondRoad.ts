@@ -14,11 +14,13 @@ export function secondRoad(b: Builder, hf: Heightfield, x0: number, x1: number, 
     pos.push(x, hf.heightAt(x, z) + 0.035, z);
     uv.push(x / 6, z / 6);
   };
-  for (let x = x0; x < x1; x += 2) {
-    const a = road.z - road.half, c = road.z + road.half;
-    v(x, a); v(x, c); v(x + 2, a);
-    v(x + 2, a); v(x, c); v(x + 2, c);
-  }
+  const rows = Math.max(1, Math.round(road.half)), dz = (2 * road.half) / rows;
+  for (let x = x0; x < x1; x += 2)
+    for (let r = 0; r < rows; r++) {
+      const a = road.z - road.half + r * dz, c = a + dz;
+      v(x, a); v(x, c); v(x + 2, a);
+      v(x + 2, a); v(x, c); v(x + 2, c);
+    }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
