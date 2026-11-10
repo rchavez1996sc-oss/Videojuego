@@ -109,26 +109,25 @@ export class GlassBreak {
     this.crash(!old);
   }
 
-  /** Crash of the pane going (noise burst) then the tinkle of shards: bright, quickly decaying pings. */
+  /** A pane going: a dull crack, the crunch of glass breaking, then a few soft clinks of shards (noise, no pure tones). */
   private crash(big: boolean): void {
     const { ctx } = this.mixer;
     if (ctx.state !== 'running') return;
-    const t = ctx.currentTime, out = ctx.createGain(), hp = ctx.createBiquadFilter();
-    out.gain.value = big ? 0.55 : 0.35;
-    hp.type = 'highpass';
-    hp.frequency.value = 1800;
-    hp.connect(out).connect(this.mixer.sfx);
-    const n = this.mixer.noise(), e = this.mixer.env(t, 0.9, 0.002, big ? 0.35 : 0.2);
-    n.connect(e).connect(hp);
-    n.start(t);
-    n.stop(t + 0.5);
-    for (let k = 0; k < (big ? 18 : 9); k++) {
-      const o = ctx.createOscillator(), g = this.mixer.env(t + 0.05 + Math.random() * 0.7, 0.12 + Math.random() * 0.15, 0.001, 0.05 + Math.random() * 0.12);
-      o.frequency.value = 2600 + Math.random() * 5000;
-      o.connect(g).connect(out);
-      o.start(t);
-      o.stop(t + 1);
-    }
+    const t = ctx.currentTime, out = ctx.createGain();
+    out.gain.value = big ? 0.32 : 0.22;
+    out.connect(this.mixer.sfx);
+    const burst = (at: number, type: BiquadFilterType, f: number, q: number, vol: number, dur: number) => {
+      const n = this.mixer.noise(), flt = ctx.createBiquadFilter();
+      flt.type = type;
+      flt.frequency.value = f;
+      flt.Q.value = q;
+      n.connect(flt).connect(this.mixer.env(at, vol, 0.001, dur)).connect(out);
+      n.start(at);
+      n.stop(at + dur + 0.05);
+    };
+    burst(t, 'lowpass', 900, 0.8, 0.9, 0.06);
+    burst(t, 'bandpass', 3200, 0.7, 0.7, big ? 0.22 : 0.14);
+    for (let k = 0; k < (big ? 7 : 3); k++) burst(t + 0.15 + Math.random() * 0.6, 'bandpass', 3000 + Math.random() * 2500, 3, 0.18 + Math.random() * 0.12, 0.025 + Math.random() * 0.03);
   }
 
   update(dt: number): void {

@@ -1,6 +1,6 @@
 import type { Mixer } from './mixer';
 import { CityBed } from './cityBed';
-import { CRIES, TOUT, shout } from './voiceCalls';
+import { streetSound, type StreetKind } from './streetSounds';
 
 /** City bed: distant traffic rumble plus positional horns and barking (distance in m, pan -1..1). */
 export class Ambience {
@@ -99,10 +99,8 @@ export class Ambience {
     }
   }
 
-  /** A combi tout or a street vendor shouting (formant-synthesised voice, see `voiceCalls`). */
-  call(kind: 'tout' | 'cry', distance: number, pan: number): void {
-    if (this.m.ctx.state !== 'running') return;
-    const list = kind === 'tout' ? TOUT : CRIES;
-    shout(this.m, list[Math.floor(Math.random() * list.length)], distance, pan, kind === 'cry' && Math.random() < 0.55);
+  /** A random street noise (car or truck going by, moto, door, shutter, air brakes). */
+  street(kind: StreetKind, distance: number, pan: number): void {
+    streetSound(this.m, kind, distance, pan);
   }
 }

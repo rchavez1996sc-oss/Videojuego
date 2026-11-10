@@ -80,14 +80,18 @@ export class CityLife {
     }
   }
 
-  /** Every 6–15 s: a tout shouting from a combi or micro within 45 m, else a vendor's cry from somewhere down the street. */
+  /** Every 4–10 s: a vehicle within 70 m is heard going by (car, truck, moto), else a door, shutter or air brakes nearby. */
   private streetCall(): void {
-    this.callT = 6 + Math.random() * 9;
+    this.callT = 4 + Math.random() * 6;
     const cam = this.camera.position;
-    const bus = this.traffic.list.filter((v) => (v.kind === 'combi' || v.kind === 'micro') && v.group.position.distanceTo(cam) < 45).sort((a, b) => Math.abs(a.speed) - Math.abs(b.speed))[0];
-    if (bus && Math.random() < 0.7) return this.cue(bus.group.position, (d, p) => this.ambience.call('tout', d, p));
-    const a = Math.random() * Math.PI * 2, r = 15 + Math.random() * 30;
-    this.cue(cam.clone().add(new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r)), (d, p) => this.ambience.call('cry', d, p));
+    const moving = this.traffic.list.filter((v) => Math.abs(v.speed) > 3 && v.group.position.distanceTo(cam) < 70);
+    const v = moving[Math.floor(Math.random() * moving.length)];
+    if (v && Math.random() < 0.65) {
+      const kind = v.kind === 'delivery' || v.kind === 'moto' ? 'moto' : v.kind === 'micro' || v.kind === 'combi' ? 'truck' : 'pass';
+      return this.cue(v.group.position, (d, p) => this.ambience.street(kind, d, p));
+    }
+    const a = Math.random() * Math.PI * 2, r = 12 + Math.random() * 40, kinds = ['door', 'door', 'shutter', 'airbrake', 'pass', 'moto'] as const;
+    this.cue(cam.clone().add(new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r)), (d, p) => this.ambience.street(kinds[Math.floor(Math.random() * kinds.length)], d, p));
   }
 
   /** A wall top or ledge 0.8–2.4 m above `p`, about 1.4 m along `dir`, with room to sit on (for cats). */
