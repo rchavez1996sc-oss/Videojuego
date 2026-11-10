@@ -1,4 +1,5 @@
 import './hud.css';
+import { Rewards } from './rewards';
 
 export class Hud {
   private root = document.createElement('div');
@@ -23,6 +24,7 @@ export class Hud {
   private cache = new Map<string, string>();
   private hitT = 0;
   private toastT = 0;
+  readonly rewards: Rewards;
 
   constructor() {
     this.root.id = 'hud';
@@ -63,6 +65,7 @@ export class Hud {
     this.nades = q('.nades');
     this.civ = q('.counter .civ');
     this.zoom = q('.zoom');
+    this.rewards = new Rewards(this.root, (t) => this.showToast(t));
   }
 
   private set(key: string, value: string, apply: () => void): void {
@@ -138,6 +141,7 @@ export class Hud {
       el.classList.toggle('empty', s.ammo === 0 && held === 0);
       (el.querySelector('rect') as SVGRectElement).style.strokeDashoffset = String(100 * (1 - held));
     });
+    this.rewards.update(dt);
     this.hitT = Math.max(0, this.hitT - dt);
     this.toastT = Math.max(0, this.toastT - dt);
     const hitO = Math.min(1, this.hitT * 5).toFixed(2), toastO = Math.min(1, this.toastT * 3).toFixed(2);
@@ -154,7 +158,11 @@ export class Hud {
   }
 
   set enemies(n: number) {
-    this.set('enemies', String(n), () => (this.counter.textContent = String(n)));
+    const was = Number(this.cache.get('enemies') ?? n);
+    this.set('enemies', String(n), () => {
+      this.counter.textContent = String(n);
+      if (n < was) [this.counter.classList.remove('bump'), void this.counter.offsetWidth, this.counter.classList.add('bump')];
+    });
   }
 
   set civilians(v: { count: number; limit: number }) {
@@ -165,10 +173,11 @@ export class Hud {
   hitmarker(kill: boolean, headshot: boolean, killLabel = 'BLANCO DERRIBADO'): void {
     this.hitT = kill ? 0.45 : 0.22;
     this.hit.classList.toggle('kill', kill);
+    this.hit.classList.toggle('head', headshot);
     this.hit.classList.remove('pop');
     void this.hit.offsetWidth;
     this.hit.classList.add('pop');
-    if (headshot || kill) this.showToast(headshot ? (kill ? 'HEADSHOT' : 'HEADSHOT') : killLabel);
+    if (killLabel && (headshot || kill)) this.showToast(headshot ? 'HEADSHOT' : killLabel);
   }
 
   showToast(text: string): void {

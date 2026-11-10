@@ -155,6 +155,7 @@ async function boot(): Promise<void> {
     failed = true;
   }, 2600);
   combat.onShot = (p) => {
+    hud.rewards.shots++;
     enemies.hearShot(p, ch.alertAll);
     alarm(p, 90);
   };
@@ -187,13 +188,12 @@ async function boot(): Promise<void> {
   if (goal) (goal.onFail = lose), (goal.onComplete = () => {
     failed = true;
     const g = (objective?.def ?? defense!.def) as { complete: string; reward: string; loot?: string[]; unlock?: string };
-    showMissionComplete(g.complete, g.reward, `ENEMIGOS ABATIDOS ${enemies.list.length - enemies.aliveCount}/${enemies.list.length} · ${defense ? `ESTUDIANTES CAÍDOS ${defense.students.lost}` : `BAJAS CIVILES ${populace.casualties}`} · VIDAS ${lives}`, g.loot, g.unlock, ch.next);
+    showMissionComplete(g.complete, g.reward, `ENEMIGOS ABATIDOS ${enemies.list.length - enemies.aliveCount}/${enemies.list.length} · ${defense ? `ESTUDIANTES CAÍDOS ${defense.students.lost}` : `BAJAS CIVILES ${populace.casualties}`} · VIDAS ${lives}<br>${hud.rewards.summary()}`, g.loot, g.unlock, ch.next);
   });
   const blast = (at: THREE.Vector3) => (alarm(at, 150), detonate(at, { combat, sfx, tpc, enemies, player, world, playerAlive: deadT <= 0, also: [civilians, squad, life, props, defense?.students] }));
   grenades.onExplode = blast;
-  enemies.onEnemyHit = (kill, headshot) => {
-    sfx.hitmarker(kill);
-    hud.hitmarker(kill, headshot, 'BAJA');
+  enemies.onEnemyHit = (kill, headshot, at) => {
+    [sfx.hitmarker(kill, headshot), hud.hitmarker(kill, headshot, ''), hud.rewards.hit(kill, headshot, at.distanceTo(player.position))];
     if (kill && enemies.aliveCount === 0 && !defense) setTimeout(() => hud.showToast('ZONA DESPEJADA'), 1200);
   };
   physicsStep(world);

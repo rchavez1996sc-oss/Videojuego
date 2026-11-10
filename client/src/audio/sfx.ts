@@ -297,9 +297,10 @@ export class Sfx {
     else this.filtered(t, 'lowpass', 900, 1, vol, 0.001, 0.09);
   }
 
-  hitmarker(kill: boolean): void {
+  hitmarker(kill: boolean, head = false): void {
     const t = this.m.ctx.currentTime + 0.02;
     this.tone(t, 'square', kill ? 1300 : 1900, kill ? 1200 : 1850, kill ? 0.18 : 0.1, kill ? 0.12 : 0.04);
+    if (head) [this.tone(t + 0.03, 'sine', 2900, 2880, 0.14, 0.22, 0.4), this.tone(t + 0.03, 'sine', 4350, 4330, 0.06, 0.16, 0.4)];
   }
 
   steelPing(distance: number): void {

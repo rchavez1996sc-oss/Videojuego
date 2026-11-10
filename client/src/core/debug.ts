@@ -65,6 +65,11 @@ export function installDebug(c: DebugContext): void {
       if (c.shotMode) c.frame(1 / 60);
     },
     views: () => c.views.length,
+    rewardTest(n = 3, head = true, dist = 64) {
+      for (let i = 0; i < n; i++) c.enemies.onEnemyHit(true, head && i % 2 === 0, c.player.position.clone().add(new THREE.Vector3(dist, 0, 0)));
+      for (let i = 0; i < 12; i++) c.frame(1 / 30);
+      return document.querySelector('#hud .rewards')?.textContent;
+    },
     bot: (seconds: number) => playBot(c, seconds, c.status),
     route(x: number, z: number, tx: number, tz: number) {
       const r = c.nav?.route(new THREE.Vector3(x, 0, z), new THREE.Vector3(tx, 0, tz)) ?? [];
