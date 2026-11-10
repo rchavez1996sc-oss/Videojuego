@@ -24,6 +24,8 @@ export interface TerrainDef {
 
 export interface BiomeDef {
   sunElevation: number;
+  /** Sun height for the sky only (night: below the horizon) when the light itself comes from elsewhere (the moon). */
+  skyElevation?: number;
   sunAzimuth: number;
   turbidity: number;
   rayleigh: number;

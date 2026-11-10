@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { GlassBreak } from '../fx/glassBreak';
+import { NightLights } from '../render/nightLights';
+import { lampGlow } from '../core/timeOfDay';
 import { Cables } from '../world/cables';
 import { placeMenuBoards } from '../world/menuBoards';
 import { placeKiosks } from '../world/kiosks';
@@ -38,7 +40,7 @@ export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world
     parkedCars.build(d.lighting, d.world, barrio);
     d.scene.add(parkedCars.group);
     parkedCars.tick(0, d.camera.position, true);
-    const tick = barrio.tick, glass = new GlassBreak(d.lighting, d.mixer, d.world);
+    const tick = barrio.tick, glass = new GlassBreak(d.lighting, d.mixer, d.world), night = new NightLights(d.scene, lampGlow());
     d.scene.add(glass.group);
     setTimeout(() => glass.scan(barrio.group), 0);
     const wires = new Cables(d.lighting, (x, z) => d.hf.heightAt(x, z));
@@ -46,7 +48,7 @@ export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world
     wires.onSpark = (at) => d.combat.impact(at, new THREE.Vector3(0, 1, 0), 'metal', new THREE.Vector3(0, -1, 0), false);
     d.combat.onTrace = (from, dir, dist) => (glass.trace(from, dir, dist), wires.trace(from, dir, dist));
     if (location.search.includes('shot')) Object.assign(window, { __glass: glass, __wires: wires });
-    barrio.tick = (dt, movers) => (tick?.(dt, movers), parkedCars.tick(dt, d.camera.position), glass.update(dt), wires.update(dt));
+    barrio.tick = (dt, movers) => (tick?.(dt, movers), parkedCars.tick(dt, d.camera.position), glass.update(dt), wires.update(dt), night.update(dt, d.camera.position));
   }
   const props = barrio && ch.looseProps ? new LooseProps(barrio.graph, d.world, d.lighting, ch.looseProps, d.sfx, d.camera) : null;
   if (props) d.scene.add(props.group);

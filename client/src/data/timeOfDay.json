@@ -1,0 +1,52 @@
+{
+ "dawn": {
+  "label": "AMANECER",
+  "sunElevation": 7,
+  "sunAzimuthShift": 180,
+  "sunColor": "#ffc9a8",
+  "sunIntensity": 1.1,
+  "ambient": 0.5,
+  "exposure": 1.05,
+  "fogColor": "#c9c6c4",
+  "fogMul": 2.4,
+  "turbidity": 9,
+  "rayleigh": 1.4,
+  "cloudColor": "#e9d8cf",
+  "cloudShade": "#8e8a90",
+  "glow": 0.25
+ },
+ "day": {
+  "label": "DÍA"
+ },
+ "dusk": {
+  "label": "ATARDECER",
+  "sunElevation": 5,
+  "sunColor": "#ffa25c",
+  "sunIntensity": 1.5,
+  "ambient": 0.42,
+  "exposure": 1.0,
+  "fogColor": "#c79a7a",
+  "fogMul": 1.3,
+  "turbidity": 10,
+  "rayleigh": 2.2,
+  "cloudColor": "#f2b48a",
+  "cloudShade": "#6c5a63",
+  "glow": 0.6
+ },
+ "night": {
+  "label": "NOCHE",
+  "sunElevation": 38,
+  "skyElevation": -14,
+  "sunColor": "#9fb2e6",
+  "sunIntensity": 0.14,
+  "ambient": 0.06,
+  "exposure": 1.25,
+  "fogColor": "#1c2230",
+  "fogMul": 1.1,
+  "turbidity": 2,
+  "rayleigh": 0.6,
+  "cloudColor": "#3a4152",
+  "cloudShade": "#151820",
+  "glow": 1
+ }
+}

@@ -1,6 +1,7 @@
 import { parkedCars, type ParkedSpot } from './parkedCars';
 import * as THREE from 'three';
 import { addSpan } from './cables';
+import { lampSpots } from '../render/nightLights';
 import { carBody, topAt, wheelParts } from './carBody';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import type { Builder } from './buildingKit';
@@ -25,6 +26,7 @@ export function powerLine(b: Builder, hf: Heightfield, points: THREE.Vector3[], 
     const arm = -Math.sign(p.z || 1);
     b.box('bars', [0.06, 0.06, 1.6], new THREE.Vector3(p.x, y + h - 1.6, p.z + arm * 0.8), new THREE.Quaternion(), false);
     b.box('lampHead', [0.3, 0.12, 0.55], new THREE.Vector3(p.x, y + h - 1.68, p.z + arm * 1.55), new THREE.Quaternion(), false);
+    lampSpots.push(new THREE.Vector3(p.x, y + h - 1.75, p.z + arm * 1.55));
     tops.push(new THREE.Vector3(p.x, y + h - 0.55, p.z));
   }
   for (let i = 0; i < tops.length - 1; i++) {

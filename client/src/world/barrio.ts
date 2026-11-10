@@ -140,6 +140,7 @@ export function materials(lighting: Lighting, atlas: SignAtlas): Record<string, 
     m[`${k}-brick`] = std(`${k}-brick`, { map: ph('paintedBrick', pl).map, normalMap: ph('paintedBrick', pl).normalMap, roughness: 0.9, color: new THREE.Color(PAINT_COLORS[i]).multiplyScalar(1.25) });
   });
   for (const [k, c] of Object.entries(STREET_COLORS)) m[k] = std(k, { color: c, roughness: 0.7 });
+  m.lampHead = std('lampHead', { color: '#5c6066', roughness: 0.5, emissive: '#000001' });
   return m;
 }
 

@@ -47,7 +47,7 @@ export class Lighting {
     u.rayleigh.value = biome.rayleigh;
     u.mieCoefficient.value = biome.mieCoefficient;
     u.mieDirectionalG.value = biome.mieDirectionalG;
-    u.sunPosition.value.copy(this.sunDir);
+    u.sunPosition.value.copy(biome.skyElevation === undefined ? this.sunDir : new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(90 - biome.skyElevation), theta));
     scene.add(sky);
     if (biome.clouds) scene.add(cloudDeck(biome.clouds, this.sunDir));
 

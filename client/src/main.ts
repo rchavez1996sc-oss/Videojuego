@@ -1,4 +1,4 @@
-import * as THREE from 'three'; import { LOGO_FONTS } from './world/brandLogos'; import { simFree } from './core/debugLife';
+import * as THREE from 'three'; import { applyTime } from './core/timeOfDay'; import { LOGO_FONTS } from './world/brandLogos'; import { simFree } from './core/debugLife';
 import RAPIER from '@dimforge/rapier3d-compat';
 import ch01 from './data/chapters/ch01_lima.json';
 import ch02 from './data/chapters/ch02_malecon.json';
@@ -88,7 +88,7 @@ async function boot(): Promise<void> {
   const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
   const canvas = document.getElementById('game') as HTMLCanvasElement;
   const [scene, camera] = [new THREE.Scene(), new THREE.PerspectiveCamera(57, innerWidth / innerHeight, 0.1, 4000)];
-  const renderer = new Renderer(canvas, scene, camera, ch.biome.exposure);
+  const renderer = new Renderer(canvas, scene, camera, applyTime(ch.biome).exposure);
   const lighting = new Lighting(scene, camera, renderer.gl, ch.biome);
 
   await Promise.all([loadPhotoTextures(), carModels.load(lighting)]);

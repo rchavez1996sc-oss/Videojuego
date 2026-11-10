@@ -1,5 +1,6 @@
 import { chooseQuality, quality, type Quality } from '../core/settings';
 import { DIFFICULTIES, difficulty, type DifficultyId } from '../core/difficulty';
+import { TIME_LIST, chooseTime, timeOfDay } from '../core/timeOfDay';
 
 export interface ChapterCard { id: string; number: number; title: string }
 
@@ -15,11 +16,12 @@ export function showLauncher(chapters: ChapterCard[], initial: string): Promise<
   el.innerHTML = `<h1>TIERRA QUEMADA</h1><p class="sub">Lima, 2036</p>
     <h4>CAPÍTULO</h4><div class="chapters"></div>
     <h4>DIFICULTAD</h4><div class="qualities diffs"></div>
+    <h4>HORA</h4><div class="qualities times"></div>
     <h4>CALIDAD GRÁFICA</h4><div class="qualities"></div>
     <button class="go">COMENZAR</button>`;
   document.body.appendChild(el);
   let pick = chapters.some((c) => c.id === initial) ? initial : chapters[0].id;
-  const list = el.querySelector('.chapters')!, qs = el.querySelector('.qualities:not(.diffs)')!, ds = el.querySelector('.diffs')!;
+  const list = el.querySelector('.chapters')!, qs = el.querySelector('.qualities:not(.diffs):not(.times)')!, ds = el.querySelector('.diffs')!, ts = el.querySelector('.times')!;
   const draw = () => {
     list.innerHTML = '';
     for (const c of chapters) {
@@ -36,6 +38,14 @@ export function showLauncher(chapters: ChapterCard[], initial: string): Promise<
       b.classList.toggle('on', id === difficulty.id);
       b.onclick = () => (difficulty.set(id as DifficultyId), draw());
       ds.appendChild(b);
+    }
+    ts.innerHTML = '';
+    for (const [id, label] of TIME_LIST) {
+      const b = document.createElement('button');
+      b.textContent = label;
+      b.classList.toggle('on', id === timeOfDay);
+      b.onclick = () => (chooseTime(id), draw());
+      ts.appendChild(b);
     }
     qs.innerHTML = '';
     for (const [q, label] of QUALITIES) {
