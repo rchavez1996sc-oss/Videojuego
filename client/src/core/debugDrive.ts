@@ -17,6 +17,20 @@ export function driveDebug(c: DebugContext, drive: (kind: string, plan: [string[
       key('KeyE', true); c.frame(1 / 30); key('KeyE', false);
       return `${spot.kind} ${spot.model}`;
     },
+    /** Gets into the nearest parked `kind` (or out of the car, `out`), sampling the head against the roof each frame: worst height over the roof line while over the car. */
+    duckTrace(kind: string, out = false, frames = 80) {
+      if (!out) this.doorStart(kind); else { key('KeyE', true); c.frame(1 / 30); key('KeyE', false); }
+      const tr = c.traffic?.() as unknown as { list: { state: string; group: THREE.Group }[] };
+      const v = tr.list.find((o) => o.state === 'player') ?? tr.list[tr.list.length - 1], box: THREE.Box3 | undefined = v.group.userData.body;
+      const head = c.player.model.bones.get('mixamorigHead')!;
+      let worst = -9, at = -1;
+      for (let i = 0; i < frames; i++) {
+        c.frame(1 / 30);
+        const l = v.group.worldToLocal(head.getWorldPosition(new THREE.Vector3()));
+        if (box && Math.abs(l.x) < box.max.x + 0.3 && l.z > box.min.z && l.z < box.max.z && l.y - box.max.y > worst) [worst, at] = [l.y - box.max.y, i];
+      }
+      return `${kind} head over roof top: worst ${worst.toFixed(2)} m at frame ${at} (roof ${box?.max.y.toFixed(2)})`;
+    },
     /** Advances `frames` (E first if `press`), then frames the driven/last car from its driver's side. */
     doorStep(frames: number, press = false) {
       if (press) { key('KeyE', true); c.frame(1 / 30); key('KeyE', false); }

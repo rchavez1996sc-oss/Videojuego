@@ -101,6 +101,7 @@ export class Driving {
       if (alive && this.anim.update(dt)) return true;
       const then = this.after!;
       [this.anim, this.after, player.puppet] = [null, null, false];
+      player.model.post = null;
       player.model.release(0.25);
       then();
       return !!this.car;
@@ -145,7 +146,7 @@ export class Driving {
     const at = seatsOf(v.group, v.kind)[0];
     if (at && SeatAnim.possible() && v.kind !== 'moto' && v.kind !== 'delivery') {
       v.group.updateMatrixWorld(true);
-      this.anim = new SeatAnim(player.model, false, v.group.localToWorld(new THREE.Vector3(...at)), v.yaw, player.position.y).begin();
+      this.anim = new SeatAnim(player.model, false, v.group.localToWorld(new THREE.Vector3(...at)), v.yaw, player.position.y).begin(v.group);
       this.after = () => this.seatIn(v);
     } else {
       this.seatIn(v);
@@ -222,7 +223,7 @@ export class Driving {
     this.speedo.style.opacity = '0';
     this.swing = walk ? this.swing : { g: v.group, side: this.doorSide(v), t: 0 };
     if (!walk) return this.clear();
-    [this.anim, this.after] = [anim.begin(), () => this.clear()];
+    [this.anim, this.after] = [anim.begin(v.group), () => this.clear()];
   }
 
   private drive(dt: number, input: Input): void {

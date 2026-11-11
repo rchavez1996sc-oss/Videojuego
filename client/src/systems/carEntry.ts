@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { characters } from '../render/characters';
 import type { Rig } from '../entities/rig';
+import { duckUnderRoof } from './carDuck';
 
 interface Pose { hips: THREE.Vector3; yaw: number }
 
@@ -57,7 +58,8 @@ export class SeatAnim {
   }
 
   /** Starts the clip (after any respawn of the body, which clears its actions). */
-  begin(): this {
+  begin(car?: THREE.Object3D): this {
+    if (car) this.rig.post = duckUnderRoof(this.rig, car);
     this.rig.release(0);
     this.rig.hold(this.out ? 'car_out' : 'car_in', RATE, true, 0);
     this.place();
@@ -78,6 +80,7 @@ export class SeatAnim {
     this.t += dt;
     this.place();
     this.rig.animate(dt, 0, 0, 0);
+    if (this.t >= this.dur) this.rig.post = null;
     return this.t < this.dur;
   }
 
