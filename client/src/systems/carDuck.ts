@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import type { Rig } from '../entities/rig';
 
 /** The car body's box in the group's own space (models carry `userData.body`; others measured once and cached). */
-function bodyBox(group: THREE.Object3D): THREE.Box3 {
-  if (group.userData.body) return group.userData.body;
+export function bodyBox(group: THREE.Object3D): THREE.Box3 {
+  if (group.userData.body && !(group.userData.body as THREE.Box3).isEmpty()) return group.userData.body;
   const [p, q] = [group.position.clone(), group.quaternion.clone()];
   group.position.set(0, 0, 0);
   group.quaternion.identity();
@@ -35,19 +35,32 @@ export function duckUnderRoof(rig: Rig, car: THREE.Object3D): (dt: number) => vo
     const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(rig.bones.get('mixamorigHips')!.getWorldQuaternion(Q)).setY(0).normalize();
     const axis = new THREE.Vector3(0, 1, 0).cross(fwd).negate().normalize();
     let want = 0;
-    for (let a = 0; a <= 1.2; a += 0.05) {
-      const p = h.clone().sub(pivot).applyAxisAngle(axis, a).add(pivot), l = car.worldToLocal(p.clone());
-      const over = Math.abs(l.x) < box.max.x + 0.3 && l.z > box.min.z && l.z < box.max.z;
-      want = a;
-      if (!over || l.y < roof) break;
+    search: for (let a = 0; a <= 1.2; a += 0.05) {
+      let best: number | null = null, bx = Infinity;
+      for (const sign of [1, -1]) {
+        const l = car.worldToLocal(h.clone().sub(pivot).applyAxisAngle(axis, a * sign).add(pivot));
+        const over = Math.abs(l.x) < box.max.x + 0.3 && l.z > box.min.z && l.z < box.max.z;
+        if ((!over || l.y < roof) && Math.abs(l.x) < bx) [best, bx] = [a * sign, Math.abs(l.x)];
+      }
+      if (best !== null) {
+        want = best;
+        break search;
+      }
+      const down = (sign: number) => car.worldToLocal(h.clone().sub(pivot).applyAxisAngle(axis, a * sign).add(pivot)).y;
+      want = down(1) <= down(-1) ? a : -a;
     }
-    bend = THREE.MathUtils.damp(bend, want * 1.15, want * 1.15 > bend ? 14 : 5, dt);
-    if (bend < 0.005) return;
+    bend = THREE.MathUtils.damp(bend, want * 1.15, Math.abs(want) * 1.15 > Math.abs(bend) ? 14 : 5, dt);
+    if (Math.abs(bend) < 0.005) return;
     for (const [b, w] of bones) {
       b!.parent!.getWorldQuaternion(P);
       Q.setFromAxisAngle(W.copy(axis), bend * w);
       b!.quaternion.premultiply(P.clone().invert().multiply(Q).multiply(P));
       b!.updateMatrixWorld(true);
+    }
+    const l = car.worldToLocal(head.getWorldPosition(new THREE.Vector3()));
+    if (Math.abs(l.x) < box.max.x - 0.15 && l.z > box.min.z && l.z < box.max.z && l.y > roof) {
+      rig.root.position.y -= Math.min(0.45, l.y - roof);
+      rig.root.updateMatrixWorld(true);
     }
   };
 }

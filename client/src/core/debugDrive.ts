@@ -1,3 +1,4 @@
+import { bodyBox } from '../systems/carDuck';
 import * as THREE from 'three';
 import type RAPIER from '@dimforge/rapier3d-compat';
 import { parkedCars } from '../world/parkedCars';
@@ -19,17 +20,21 @@ export function driveDebug(c: DebugContext, drive: (kind: string, plan: [string[
     },
     /** Gets into the nearest parked `kind` (or out of the car, `out`), sampling the head against the roof each frame: worst height over the roof line while over the car. */
     duckTrace(kind: string, out = false, frames = 80) {
-      if (!out) this.doorStart(kind); else { key('KeyE', true); c.frame(1 / 30); key('KeyE', false); }
+      if (!out) this.doorStart(kind); else { for (let i = 0; i < 30; i++) c.frame(1 / 30); key('KeyE', true); c.frame(1 / 30); key('KeyE', false); }
       const tr = c.traffic?.() as unknown as { list: { state: string; group: THREE.Group }[] };
-      const v = tr.list.find((o) => o.state === 'player') ?? tr.list[tr.list.length - 1], box: THREE.Box3 | undefined = v.group.userData.body;
+      const v = tr.list.find((o) => o.state === 'player') ?? tr.list[tr.list.length - 1], box = bodyBox(v.group);
       const head = c.player.model.bones.get('mixamorigHead')!;
       let worst = -9, at = -1;
+      const trace: string[] = [];
+      c.setSkipRender(true);
       for (let i = 0; i < frames; i++) {
         c.frame(1 / 30);
         const l = v.group.worldToLocal(head.getWorldPosition(new THREE.Vector3()));
-        if (box && Math.abs(l.x) < box.max.x + 0.3 && l.z > box.min.z && l.z < box.max.z && l.y - box.max.y > worst) [worst, at] = [l.y - box.max.y, i];
+        if (i % 6 === 0) trace.push(`${i}:${l.x.toFixed(2)}/${(l.y - box.max.y).toFixed(2)}`);
+        if (Math.abs(l.x) < box.max.x - 0.1 && l.z > box.min.z && l.z < box.max.z && l.y - box.max.y > worst) [worst, at] = [l.y - box.max.y, i];
       }
-      return `${kind} head over roof top: worst ${worst.toFixed(2)} m at frame ${at} (roof ${box?.max.y.toFixed(2)})`;
+      c.setSkipRender(false);
+      return `${kind} head over roof top: worst ${worst.toFixed(2)} m at frame ${at} (roof ${box.max.y.toFixed(2)} half ${box.max.x.toFixed(2)})\n${trace.join(' ')}`;
     },
     /** Advances `frames` (E first if `press`), then frames the driven/last car from its driver's side. */
     doorStep(frames: number, press = false) {
@@ -41,7 +46,7 @@ export function driveDebug(c: DebugContext, drive: (kind: string, plan: [string[
       const seat = Math.sign(v.group.userData.doors?.[0]?.side ?? 1);
       const f = new THREE.Vector3(Math.sin(v.yaw), 0, Math.cos(v.yaw)), r = new THREE.Vector3(Math.cos(v.yaw), 0, -Math.sin(v.yaw)).multiplyScalar(seat);
       const at = new THREE.Vector3(v.x, c.hf.heightAt(v.x, v.z), v.z);
-      c.tpc.place(at.clone().addScaledVector(r, 4.2).addScaledVector(f, 2.6).setY(at.y + 1.7), at.clone().addScaledVector(f, 0.3).setY(at.y + 0.9));
+      c.tpc.place(at.clone().addScaledVector(r, 1.6).addScaledVector(f, (window as unknown as { __back?: number }).__back ?? 2.6).setY(at.y + ((window as unknown as { __up?: number }).__up ?? 1.7)), at.clone().addScaledVector(r, 0.6).setY(at.y + 1.1));
       return `${v.state} doors ${(v.group.userData.doors ?? []).map((d: { side: number; node: THREE.Object3D }) => `${d.side}:${d.node.quaternion.y.toFixed(2)}`).join(' ')}`;
     },
     /** Drives `kind` a bit, stops, gets out with E, then walks with `keys`: logs body, model, flags and camera every 0.2 s. */
