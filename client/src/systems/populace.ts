@@ -97,7 +97,7 @@ export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world
     const tr = life.trafficEvents;
     tr.onSmoke = (p, shade) => d.combat.smokePuff(p, shade);
     life.onDust = (p, tint) => d.combat.smokePuff(p, 0.4, tint);
-    tr.onCrash = (p) => d.sfx.crash(p.distanceTo(d.camera.position));
+    tr.onCrash = (p, hard) => d.sfx.crash(p.distanceTo(d.camera.position), (hard - 3) / 14);
     tr.onDisabled = (p, weight) => {
       if (!blame.player) return alarm(p, 80);
       d.hud.showToast(`VEHÍCULO CIVIL   ${weight} BAJA${weight > 1 ? 'S' : ''}`);

@@ -1,3 +1,4 @@
+import { crashSound } from './crashSound';
 import type { Mixer } from './mixer';
 import { buildGunshots } from './gunshot';
 import { buildExplosions } from './explosionSound';
@@ -148,11 +149,9 @@ export class Sfx {
     }, (distance / 343 + 5) * 1000);
   }
 
-  crash(distance: number): void {
-    const t = this.m.ctx.currentTime + distance / 343, vol = Math.max(0.1, 1 - distance / 120);
-    this.filtered(t, 'lowpass', 300, 0.8, 1.1 * vol, 0.004, 0.35, 0.5);
-    this.filtered(t + 0.02, 'bandpass', 1800, 2, 0.5 * vol, 0.002, 0.25, 0.4);
-    this.filtered(t + 0.18, 'bandpass', 3200, 4, 0.2 * vol, 0.002, 0.4, 0.3);
+  /** A vehicle crash: `hard` 0..1 from the impact speed (see `crashSound`). */
+  crash(distance: number, hard = 0.6): void {
+    crashSound(this.m, distance, hard);
   }
 
   /** Rifle swung hard: an airy whoosh and the sling/gear jostling. */

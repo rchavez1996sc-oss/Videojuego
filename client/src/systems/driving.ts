@@ -63,6 +63,7 @@ export class Driving {
 
   private marks: SkidMarks;
   private escape = new CarEscape();
+  private crashT = -9;
 
   constructor(private d: Deps) {
     this.engine = new EngineSound(d.mixer);
@@ -242,7 +243,7 @@ export class Driving {
     const dv = jolt(v, dt);
     if (dv > 3) {
       const c = contactOf(world, v.collider);
-      sfx.crash(0);
+      if (this.clock - this.crashT > 0.25) [sfx.crash(0, (dv - 3) / 14), this.crashT = this.clock];
       tpc.kick(0, 0, Math.min(0.6, dv * 0.04));
       v.hp -= crashDamage(v, dv);
       if (v.hp <= 0) v.state = 'wreck';
@@ -283,7 +284,7 @@ export class Driving {
       const shove = fwd.clone().multiplyScalar(dir * sp * 0.95).addScaledVector(right, Math.sign(lat || 1) * (0.8 + sp * 0.15));
       t.hurt(t.kind === 'ally' ? dmg * 0.4 : dmg, from, shove);
       sfx.thud(Math.min(1, sp / 14));
-      sfx.crash(0);
+      sfx.crash(0, 0.25);
       tpc.kick(0.02, 0, Math.min(0.35, sp * 0.02));
       this.halt(this.rig!.mass / (this.rig!.mass + 90));
     }

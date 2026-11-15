@@ -1,3 +1,4 @@
+import { paraPilot } from '../entities/paraPilot';
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { mulberry32 } from '../core/rng';
@@ -8,7 +9,7 @@ const COLORS = ['#f2f2ee', '#e8462c', '#2d6fd1', '#f2c230', '#e2e2dc', '#13a37a'
 const WING_HITS = 3;
 
 interface Flier {
-  obj: THREE.Group; wing: THREE.Mesh; pilot: THREE.Mesh; lines: THREE.LineSegments; x: number; span: number; z: number; y: number; speed: number; phase: number;
+  obj: THREE.Group; wing: THREE.Mesh; pilot: THREE.Object3D; lines: THREE.LineSegments; x: number; span: number; z: number; y: number; speed: number; phase: number;
   body: RAPIER.RigidBody; hits: number; state: 'fly' | 'fall' | 'down'; vy: number; spin: number;
 }
 
@@ -23,7 +24,7 @@ export class Paragliders {
   private fliers: Flier[] = [];
   private last = 0;
 
-  constructor(count: number, edge: number, lighting: Lighting, world: RAPIER.World, private ground: (x: number, z: number) => number) {
+  constructor(count: number, edge: number, private lighting: Lighting, world: RAPIER.World, private ground: (x: number, z: number) => number) {
     const r = mulberry32(61);
     const wingGeo = new THREE.TorusGeometry(4.6, 0.32, 4, 20, Math.PI * 0.8).rotateZ(Math.PI * 0.1).scale(1, 0.42, 3.4);
     const pilotMat = lighting.setup(new THREE.MeshStandardMaterial({ color: '#2b2d31', roughness: 0.8 }), 'pg-pilot');
@@ -34,7 +35,7 @@ export class Paragliders {
       wing.position.y = 1.2;
       const pilot = new THREE.Mesh(new THREE.CapsuleGeometry(0.28, 0.7, 3, 6).rotateX(1.1), pilotMat);
       pilot.position.y = -5.2;
-      const pts = [-4, -2, 2, 4].flatMap((x) => [new THREE.Vector3(0, -4.9, 0), new THREE.Vector3(x, 1.3 + (Math.abs(x) < 3 ? 0.9 : 0), 0)]);
+      const pts = [-4, -2, 2, 4].flatMap((x) => [new THREE.Vector3(Math.sign(x) * 0.22, -4.55, 0), new THREE.Vector3(x, 1.3 + (Math.abs(x) < 3 ? 0.9 : 0), 0)]);
       const lines = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), lineMat);
       obj.add(wing, pilot, lines);
       obj.traverse((o) => (o.castShadow = o instanceof THREE.Mesh));
@@ -54,7 +55,27 @@ export class Paragliders {
     const anchor = new THREE.Mesh(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]), new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false }));
     anchor.frustumCulled = false;
     anchor.onBeforeRender = () => this.tick();
+    if (location.search.includes('shot')) Object.assign(window, { __fliers: this.fliers });
     this.group.add(anchor);
+  }
+
+  private dressed = false;
+  private tried = 0;
+
+  /** Swaps the stand-in capsules for real seated pilots once the character models have loaded. */
+  private dress(now: number): void {
+    this.tried = now;
+    const r = mulberry32(62);
+    for (const f of this.fliers) {
+      const p = paraPilot(this.lighting, r);
+      if (!p) return;
+      p.position.copy(f.pilot.position);
+      p.rotation.x = f.pilot.rotation.x;
+      f.obj.remove(f.pilot);
+      f.obj.add(p);
+      f.pilot = p;
+    }
+    this.dressed = true;
   }
 
   private holeGeo = new THREE.SphereGeometry(0.16, 6, 4);
@@ -81,6 +102,7 @@ export class Paragliders {
   private tick(): void {
     const now = performance.now() / 1000, dt = Math.min(0.1, now - (this.last || now));
     this.last = now;
+    if (!this.dressed && now - this.tried > 1) this.dress(now);
     for (const f of this.fliers) {
       if (f.state === 'down') continue;
       if (f.state === 'fall') {
