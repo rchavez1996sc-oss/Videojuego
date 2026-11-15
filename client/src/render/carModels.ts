@@ -75,7 +75,8 @@ class CarModels {
         const m = o as THREE.Mesh;
         if (!m.isMesh) return;
         m.material = Array.isArray(m.material) ? m.material.map((x) => setup(x as THREE.MeshStandardMaterial)) : setup(m.material as THREE.MeshStandardMaterial);
-        m.castShadow = m.receiveShadow = true;
+        m.receiveShadow = true;
+        m.castShadow = bodyCaster(m);
       });
       pivotWheels(car);
       this.protos.set(car.name, car);
@@ -201,4 +202,17 @@ function pivotWheels(car: THREE.Object3D): void {
     pivot.updateMatrixWorld(true);
     pivot.attach(w);
   }
+}
+
+/**
+ * Only the shell of a vehicle throws a shadow: glass, rims, tyres and small trim pieces add a shadow draw per piece
+ * and per cascade (hundreds per frame with traffic) for a shadow nobody sees under the body's own.
+ */
+export function bodyCaster(m: THREE.Mesh): boolean {
+  const name = (Array.isArray(m.material) ? m.material[0] : m.material)?.name ?? '';
+  if (/glass|rim|tire|tyre|wheel|plastic|light|lamp|chrome|mirror/i.test(name)) return false;
+  if (/paint|body/i.test(name)) return true;
+  m.geometry.computeBoundingBox();
+  const size = m.geometry.boundingBox!.getSize(new THREE.Vector3());
+  return [size.x, size.y, size.z].filter((d) => d > 1.4).length >= 2;
 }

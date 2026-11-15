@@ -57,7 +57,7 @@ export class WindLitter {
       const n = Math.max(1, Math.round(count / looks.length));
       const mesh = new THREE.InstancedMesh(geo, mat, n);
       mesh.frustumCulled = false;
-      mesh.castShadow = true;
+      mesh.castShadow = false;
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       this.kinds.push({ mesh, pieces: Array.from({ length: n }, () => ({ p: new THREE.Vector3(0, -999, 0), v: new THREE.Vector3(), rot: new THREE.Euler(Math.random() * 6, Math.random() * 6, 0), spin: new THREE.Vector3(), bag, air: 0 })) });
       this.group.add(mesh);

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { Lighting } from '../render/lighting';
-import { carModels, PAINT } from '../render/carModels';
+import { bodyCaster, carModels, PAINT } from '../render/carModels';
 import { toFloat } from '../render/floatGeometry';
 import { carExtent, type CarKind } from './urbanProps';
 import { setSurface } from './surfaces';
@@ -71,7 +71,7 @@ class ParkedCars {
       }
       for (const p of parts.values()) {
         const mesh = new THREE.InstancedMesh(p.geo, p.mat, list.length * p.locals.length);
-        mesh.castShadow = !p.mat.transparent;
+        mesh.castShadow = !p.mat.transparent && bodyCaster(mesh);
         mesh.receiveShadow = true;
         mesh.count = 0;
         mesh.visible = false;
