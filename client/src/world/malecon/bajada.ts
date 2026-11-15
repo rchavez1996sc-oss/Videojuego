@@ -1,3 +1,4 @@
+import { lampSpots } from '../../render/nightLights';
 import * as THREE from 'three';
 import type { Builder } from '../buildingKit';
 import type { Heightfield } from '../heightfield';
@@ -14,6 +15,7 @@ function colonialLamp(b: Builder, at: THREE.Vector3): void {
   b.geometry('lhBlack', new THREE.CylinderGeometry(0.2, 0.26, 0.6, 8), m(0.3));
   b.geometry('lhBlack', new THREE.CylinderGeometry(0.06, 0.09, 3.6, 8), m(2.4));
   b.geometry('lanternGlass', new THREE.CylinderGeometry(0.22, 0.14, 0.55, 4).rotateY(Math.PI / 4), m(4.5));
+  lampSpots.push(at.clone().setY(at.y + 4.5));
   b.geometry('lhBlack', new THREE.ConeGeometry(0.3, 0.3, 4).rotateY(Math.PI / 4), m(4.92));
   b.box('none', [0.25, 4, 0.25], at.clone().setY(at.y + 2), new THREE.Quaternion(), true);
 }

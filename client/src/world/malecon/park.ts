@@ -1,3 +1,4 @@
+import { lampSpots } from '../../render/nightLights';
 import * as THREE from 'three';
 import { addStrip } from '../groundStrips';
 import type { Builder } from '../buildingKit';
@@ -85,6 +86,7 @@ export function lamp(b: Builder, at: THREE.Vector3): void {
   b.geometry('lampPole', new THREE.CylinderGeometry(0.06, 0.1, 4.2, 8).translate(0, 2.1, 0), m);
   b.geometry('lampPole', new THREE.CylinderGeometry(0.16, 0.2, 0.5, 10).translate(0, 0.25, 0), m);
   b.geometry('globe', new THREE.SphereGeometry(0.3, 16, 12).translate(0, 4.5, 0), m);
+  lampSpots.push(at.clone().setY(at.y + 4.5));
   b.geometry('lampPole', new THREE.CylinderGeometry(0.33, 0.33, 0.04, 16).translate(0, 4.48, 0), m);
   b.box('none', [0.2, 4, 0.2], at.clone().setY(at.y + 2), Q, true);
 }

@@ -1,3 +1,4 @@
+import { roadLight } from './beach';
 import * as THREE from 'three';
 import type { Builder } from '../buildingKit';
 import type { Heightfield } from '../heightfield';
@@ -77,6 +78,11 @@ export function buildRoads(b: Builder, hf: Heightfield, def: MaleconDef, c: Coas
     if (def.streets.x.some((sx) => Math.abs(sx - x) < sh + 6)) continue;
     for (const z of def.streets.z) trees.push(new THREE.Vector3(x, 0, z + (rand() < 0.5 ? -1 : 1) * (streetHalf(def, z) + 1.2)));
     trees.push(new THREE.Vector3(x + 5, 0, av.z - av.half - 1.4));
+  }
+  for (let x = -L + 8, k = 0; x < L; x += 17, k++) {
+    if (def.streets.x.some((sx) => Math.abs(sx - x) < sh + 3)) continue;
+    const z = k % 2 ? av.z + av.half + 0.5 : av.z - av.half - 0.5;
+    roadLight(b, new THREE.Vector3(x, 0.15, z));
   }
   const br = def.beachRoad, beachY = (x: number, z: number) => hf.heightAt(x, z);
   drape(b, hf, br.z, br.half, 'asphalt', 0.08);

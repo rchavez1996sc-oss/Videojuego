@@ -40,7 +40,7 @@ export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world
     parkedCars.build(d.lighting, d.world, barrio);
     d.scene.add(parkedCars.group);
     parkedCars.tick(0, d.camera.position, true);
-    const tick = barrio.tick, glass = new GlassBreak(d.lighting, d.mixer, d.world), night = new NightLights(d.scene, lampGlow());
+    const tick = barrio.tick, glass = new GlassBreak(d.lighting, d.mixer, d.world), night = new NightLights(d.scene, lampGlow(), (x, z) => d.hf.heightAt(x, z));
     d.scene.add(glass.group);
     setTimeout(() => glass.scan(barrio.group), 0);
     const wires = new Cables(d.lighting, (x, z) => d.hf.heightAt(x, z));

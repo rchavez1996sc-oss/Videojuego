@@ -1,3 +1,4 @@
+import { lampSpots } from '../../render/nightLights';
 import * as THREE from 'three';
 import type { Builder } from '../buildingKit';
 import { UP, offset, sample, type CampusDef, type CampusRoad } from './layout';
@@ -20,6 +21,7 @@ export function campusLamp(b: Builder, at: THREE.Vector3, yaw = 0): void {
   b.geometry('lampPole', new THREE.BoxGeometry(0.9, 0.03, 0.5).translate(0, 4.62, 0), m);
   for (const s of [-1, 1]) b.geometry('globe', new THREE.SphereGeometry(0.2, 14, 10).translate(s * 0.58, 4.35, 0), m);
   b.box('none', [0.24, 4.4, 0.24], at.clone().setY(at.y + 2.2), Q, true);
+  lampSpots.push(at.clone().setY(at.y + 4.35));
 }
 
 /** True when (x, z) is on the carriageway of a road other than `skip` (or of Av. Venezuela). */
@@ -61,6 +63,16 @@ export function buildCampusRoads(b: Builder, def: CampusDef, rand: () => number)
   }
   b.box('kerbYellow', [2 * X, 0.32, v.median], new THREE.Vector3(0, 0.16, v.z), Q, true);
   b.box('hedge', [2 * X, 0.05, v.median - 0.3], new THREE.Vector3(0, 0.33, v.z), Q, false);
+  const reach = Math.min(cw * 0.55, 4);
+  for (let x = -X + 15; x < X; x += 32) {
+    b.geometry('alu', new THREE.CylinderGeometry(0.1, 0.16, 9.5, 8).translate(x, 5.05, v.z), new THREE.Matrix4());
+    b.box('none', [0.3, 6, 0.3], new THREE.Vector3(x, 3.3, v.z), Q, true);
+    for (const s of [-1, 1]) {
+      b.box('alu', [0.08, 0.08, reach], new THREE.Vector3(x, 9.6, v.z + s * reach / 2), Q, false);
+      b.box('globe', [0.35, 0.12, 0.65], new THREE.Vector3(x, 9.5, v.z + s * reach), Q, false);
+      lampSpots.push(new THREE.Vector3(x, 9.4, v.z + s * reach));
+    }
+  }
 
   const kerbLine = v.z - v.half - v.sidewalk - 1.3;
   def.roads.forEach((r, ri) => {

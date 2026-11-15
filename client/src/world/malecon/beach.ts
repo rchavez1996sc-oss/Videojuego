@@ -1,3 +1,4 @@
+import { lampSpots } from '../../render/nightLights';
 import type { Plants } from './park';
 import * as THREE from 'three';
 import type { Builder } from '../buildingKit';
@@ -12,11 +13,12 @@ const Q = new THREE.Quaternion();
 const PARKS: [number, number][] = [[-150, -122], [-100, -62], [112, 150], [160, 196]];
 
 /** Tall street light with two arms reaching over both carriageways. */
-function roadLight(b: Builder, at: THREE.Vector3): void {
+export function roadLight(b: Builder, at: THREE.Vector3): void {
   b.geometry('alu', new THREE.CylinderGeometry(0.1, 0.16, 9, 8).translate(0, 4.5, 0), new THREE.Matrix4().makeTranslation(at.x, at.y, at.z));
   for (const s of [-1, 1]) {
     b.box('alu', [0.08, 0.08, 2.2], new THREE.Vector3(at.x, at.y + 8.9, at.z + s * 1.1), Q, false);
     b.box('lanternGlass', [0.35, 0.12, 0.6], new THREE.Vector3(at.x, at.y + 8.8, at.z + s * 2.1), Q, false);
+    lampSpots.push(new THREE.Vector3(at.x, at.y + 8.7, at.z + s * 2.1));
   }
   b.box('none', [0.3, 6, 0.3], at.clone().setY(at.y + 3), Q, true);
 }
