@@ -38,10 +38,10 @@ export function clearStrips(): void {
 }
 
 /** Top of the visible strip (road, path) covering (x, z) within 0.12 m above `y`, else `y`: collider-less slabs a few cm proud of the ground. */
-export function surfaceTop(x: number, y: number, z: number): number {
+export function surfaceTop(x: number, y: number, z: number, reach = 0.12): number {
   let top = y;
   for (const s of grid.get(key(Math.floor(x / CELL), Math.floor(z / CELL))) ?? []) {
-    if (!(s.top > top && s.top - y < 0.12)) continue;
+    if (!(s.top > top && s.top - y < reach)) continue;
     const dx = s.c.x - s.a.x, dz = s.c.y - s.a.y, l2 = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((x - s.a.x) * dx + (z - s.a.y) * dz) / l2));
     if (Math.hypot(x - s.a.x - dx * t, z - s.a.y - dz * t) < s.hw) top = s.top;
   }

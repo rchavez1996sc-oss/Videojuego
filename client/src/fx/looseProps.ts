@@ -7,9 +7,10 @@ import { mulberry32 } from '../core/rng';
 import { onHit, setSurface, type Surface } from '../world/surfaces';
 import { surfaceTop } from '../world/groundStrips';
 import { shotMode } from '../core/settings';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 /** A loose object: half-extents (m), mass (kg), bounciness, surface for bullet sounds, colours to pick from. */
-interface Kind { geo: () => THREE.BufferGeometry; half: [number, number, number]; mass: number; bounce: number; surface: Surface; colors: string[]; rough: number; metal: number; shadow: boolean; weight: number }
+interface Kind { vc?: boolean; geo: () => THREE.BufferGeometry; half: [number, number, number]; mass: number; bounce: number; surface: Surface; colors: string[]; rough: number; metal: number; shadow: boolean; weight: number }
 
 const cyl = (r: number, h: number, seg = 10) => new THREE.CylinderGeometry(r, r, h, seg);
 const KINDS: Kind[] = [
@@ -19,7 +20,27 @@ const KINDS: Kind[] = [
   { geo: () => new THREE.ConeGeometry(0.16, 0.5, 12).translate(0, 0.02, 0), half: [0.18, 0.25, 0.18], mass: 1.2, bounce: 0.25, surface: 'tile', colors: ['#f05a14'], rough: 0.6, metal: 0, shadow: true, weight: 1 },
   { geo: () => new THREE.BoxGeometry(0.42, 0.3, 0.32), half: [0.21, 0.15, 0.16], mass: 0.8, bounce: 0.1, surface: 'wood', colors: ['#a98a5d', '#b89a6a', '#8f744c'], rough: 0.95, metal: 0, shadow: true, weight: 2 },
   { geo: () => new THREE.BoxGeometry(0.42, 0.28, 0.3), half: [0.21, 0.14, 0.15], mass: 1.5, bounce: 0.2, surface: 'tile', colors: ['#e7c228', '#c4161c', '#1d5fb0'], rough: 0.55, metal: 0, shadow: true, weight: 1 },
+  { geo: () => new THREE.BoxGeometry(0.24, 0.09, 0.13), half: [0.12, 0.045, 0.065], mass: 2.6, bounce: 0.12, surface: 'adobe', colors: ['#7a4532', '#86503a', '#6e3e2c', '#8f5a42'], rough: 0.95, metal: 0, shadow: true, weight: 0 },
+  { vc: true, geo: potGeometry, half: [0.15, 0.24, 0.15], mass: 3.5, bounce: 0.15, surface: 'tile', colors: ['#ffffff'], rough: 0.85, metal: 0, shadow: true, weight: 0 },
 ];
+
+/** A clay pot (terracotta, or a painted tin) with a leafy plant: vertex-coloured, one geometry. */
+function potGeometry(): THREE.BufferGeometry {
+  const paint = (g: THREE.BufferGeometry, hex: string) => {
+    const c = new THREE.Color(hex), n = g.attributes.position.count;
+    g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(n * 3).map((_, i) => [c.r, c.g, c.b][i % 3]), 3));
+    return g.index ? g.toNonIndexed() : g;
+  };
+  const parts = [paint(new THREE.CylinderGeometry(0.15, 0.11, 0.24, 20).translate(0, -0.12, 0), '#8e4a2c'), paint(new THREE.TorusGeometry(0.15, 0.018, 8, 20).rotateX(Math.PI / 2).translate(0, 0, 0), '#8f4527')];
+  for (let k = 0; k < 16; k++) {
+    const a = k * 2.4, d = 0.03 + (k % 4) * 0.025, leaf = new THREE.SphereGeometry(0.045 + (k % 3) * 0.012, 7, 5).scale(1.4, 0.45, 0.8).rotateY(a).rotateZ(0.35 + (k % 3) * 0.25);
+    parts.push(paint(leaf.translate(Math.cos(a) * d, 0.04 + (k % 5) * 0.035, Math.sin(a) * d), ['#3d6b2c', '#4f7f34', '#5c8a3a', '#355f27'][k % 4]));
+  }
+  return mergeGeometries(parts.map((g) => { g.deleteAttribute('uv'); return g; }))!;
+}
+
+/** Loose objects other builders want placed (brick piles, flower pots): taken by the next `LooseProps`. */
+export const looseExtra: { k: 'brick' | 'pot'; p: THREE.Vector3; yaw: number }[] = [];
 
 interface Prop { k: number; i: number; pos: THREE.Vector3; q: THREE.Quaternion; vel: THREE.Vector3; spin: THREE.Vector3; awake: boolean; col: RAPIER.Collider; rest: number }
 
@@ -55,10 +76,15 @@ export class LooseProps {
         spots.push({ k, p, yaw: r() * 6.28, lying: k < 2 && r() < 0.6 });
       }
     }
+    for (const e of looseExtra.splice(0)) {
+      const p = e.p.clone(), hit = world.castRay(new RAPIER.Ray({ x: p.x, y: p.y + 2, z: p.z }, { x: 0, y: -1, z: 0 }), 4, true, FLAGS);
+      if (hit) p.y = surfaceTop(p.x, p.y + 2 - hit.timeOfImpact, p.z);
+      spots.push({ k: e.k === 'brick' ? 6 : 7, p, yaw: e.yaw, lying: false });
+    }
     KINDS.forEach((kind, k) => {
       const mine = spots.filter((s) => s.k === k);
       if (!mine.length) return;
-      const mat = lighting.setup(new THREE.MeshStandardMaterial({ roughness: kind.rough, metalness: kind.metal, side: k === 2 ? THREE.DoubleSide : THREE.FrontSide }), `prop-${k}`);
+      const mat = lighting.setup(new THREE.MeshStandardMaterial({ vertexColors: !!kind.vc, roughness: kind.rough, metalness: kind.metal, side: k === 2 ? THREE.DoubleSide : THREE.FrontSide }), `prop-${k}`);
       const mesh = new THREE.InstancedMesh(kind.geo(), mat, mine.length);
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       mesh.castShadow = kind.shadow;

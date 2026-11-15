@@ -22,6 +22,9 @@ import { festiveStreets } from './bunting';
 import { avenueMedian } from './median';
 import { Doors, doorDefs } from './doors';
 import { neighborScenes } from './neighborScenes';
+import { streetJunk } from './streetJunk';
+import { roofBoards } from './roofBoards';
+import { WaterDrums } from '../fx/waterDrums';
 import { parkedCars } from './parkedCars';
 import { addRoof, rooftopLinks } from './rooftops';
 import { alleyLife } from './alleys';
@@ -320,6 +323,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
   }
 
   const neighbors = neighborScenes(b, hf, life, doorDefs, parkedCars.spots, def.courts ?? [], mulberry32(def.seed + 61));
+  const junk = streetJunk(b, hf, lighting, doorDefs, mulberry32(def.seed + 77)), drums = new WaterDrums(junk.drums, lighting, world);
   const group = new THREE.Group();
   const mats = materials(lighting, atlas);
   const bake = bakeGroups(lighting); bake.push(...autoBake(lighting, mats, bake));
@@ -330,10 +334,10 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
     signs.receiveShadow = true;
     group.add(signs);
   }
-  group.add(neighbors);
+  group.add(neighbors, junk.group, drums.group, roofBoards(lighting, def.gap + def.blockD * 0.6, mulberry32(def.seed + 91)));
   const doors = new Doors(doorDefs.splice(0), lighting, world), people = barrioCrowd(life, lighting, world, mats.shutter);
   group.add(doors.group, people.group);
-  return { group, materials: mats, bake, station, bystanders: people.bystanders, tick: (dt, movers) => doors.tick(dt, movers[0]), graph: streetGraph(def, crossX, hf), blocked: (x, z) => Math.abs(z) < def.gap + 2 * def.blockD + def.street + 6 || hillSpots.some((h) => Math.hypot(h.x - x, h.z - z) < h.r + 1.5) };
+  return { group, materials: mats, bake, station, bystanders: people.bystanders, tick: (dt, movers) => (doors.tick(dt, movers[0]), drums.update(dt, (x, z) => hf.heightAt(x, z))), graph: streetGraph(def, crossX, hf), blocked: (x, z) => Math.abs(z) < def.gap + 2 * def.blockD + def.street + 6 || hillSpots.some((h) => Math.hypot(h.x - x, h.z - z) < h.r + 1.5) };
 }
 
 function streetGraph(def: BarrioDef, crossX: number[], hf: Heightfield): StreetGraph {

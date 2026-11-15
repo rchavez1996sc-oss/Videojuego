@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { Builder } from './buildingKit';
 
+import { roofBoardSpots } from './roofBoards';
+
 type At = (x: number, y: number, z: number) => THREE.Vector3;
 const UP = new THREE.Vector3(0, 1, 0);
 
@@ -55,4 +57,5 @@ export function roofClutter(b: Builder, at: At, q: THREE.Quaternion, w: number, 
     const [x, z] = spot();
     b.geometry(rand() < 0.5 ? 'chairRed' : 'potTerracotta', new THREE.CylinderGeometry(0.17, 0.14, 0.32, 10), new THREE.Matrix4().makeTranslation(...at(x, H + 0.16, z).toArray()));
   }
+  if (rand() < 0.22 && w > 4.5) roofBoardSpots.push({ pos: at(0, H, -0.45), yaw: new THREE.Euler().setFromQuaternion(q, 'YXZ').y, w });
 }

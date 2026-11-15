@@ -1,0 +1,8 @@
+[
+  { "top": "ADMISIÓN 2036", "big": "ACADEMIA «EL INGENIERO»", "sub": "CICLO INTENSIVO · HUAYCÁN · ZONA B", "bg": "#0f3d8a", "ink": "#ffffff", "accent": "#f2c618" },
+  { "top": "FIBRA ÓPTICA", "big": "HUAYCANET 300 Mbps", "sub": "S/ 59 AL MES · INSTALACIÓN GRATIS", "bg": "#e8e8e8", "ink": "#1d2f6b", "accent": "#e2231a" },
+  { "top": "TIERRA Y TRABAJO", "big": "QUISPE ALCALDE", "sub": "MARCA LA LAMPA · N.º 4", "bg": "#1f6a2c", "ink": "#ffffff", "accent": "#f2c618", "face": true },
+  { "top": "GOBIERNO DE RECONSTRUCCIÓN NACIONAL", "big": "ORDEN · TRABAJO · PROGRESO", "sub": "GRACIAS, GENERAL RAMÍREZ", "bg": "#c8102e", "ink": "#ffffff", "accent": "#ffffff" },
+  { "top": "MATERIALES DE CONSTRUCCIÓN", "big": "FERRETERÍA EL MAESTRO", "sub": "LADRILLO · CEMENTO · FIERRO · DELIVERY", "bg": "#f2c618", "ink": "#1a1a1a", "accent": "#c8102e" },
+  { "top": "PROGRESO YA", "big": "FLORES CONGRESO", "sub": "MARCA LA CASITA · N.º 7", "bg": "#d6302a", "ink": "#ffffff", "accent": "#1a1a1a", "face": true }
+]

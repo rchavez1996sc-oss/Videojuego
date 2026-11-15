@@ -14,7 +14,7 @@ const HALF = 1.2, KERB = 0.2, SEG = 2;
  * worn lawn and a row of trees and palms, broken at each cross street. Kerbs collide; everything is one draw per material.
  */
 export function avenueMedian(b: Builder, hf: Heightfield, lighting: Lighting, x0: number, x1: number, crossX: number[]): THREE.Group {
-  const r = mulberry32(415), geo: Record<'yellow' | 'black' | 'lawn', THREE.BufferGeometry[]> = { yellow: [], black: [], lawn: [] };
+  const r = mulberry32(415), geo: Record<'yellow' | 'black' | 'lawn' | 'rail' | 'bush', THREE.BufferGeometry[]> = { yellow: [], black: [], lawn: [], rail: [], bush: [] };
   const q = new THREE.Quaternion(), trees: THREE.Vector3[] = [], palms: THREE.Vector3[] = [];
   const box = (k: keyof typeof geo, w: number, h: number, d: number, x: number, y: number, z: number) => geo[k].push(new THREE.BoxGeometry(w, h, d).translate(x, y, z));
   for (let x = x0; x < x1; x += SEG) {
@@ -27,12 +27,27 @@ export function avenueMedian(b: Builder, hf: Heightfield, lighting: Lighting, x0
     }
     box('lawn', SEG, KERB + 0.1, HALF * 2 - 0.32, cx, y + (KERB - 0.1) / 2, 0);
     b.box('none', [SEG, 0.04, HALF * 2 - 0.32], new THREE.Vector3(cx, y + KERB - 0.02, 0), q, true);
+    geo.rail.push(new THREE.CylinderGeometry(0.025, 0.025, 0.8, 6).translate(cx - SEG / 2, y + KERB + 0.4, HALF - 0.08));
+    for (const h of [0.45, 0.85]) geo.rail.push(new THREE.CylinderGeometry(0.022, 0.022, SEG, 6).rotateZ(Math.PI / 2).translate(cx, y + KERB + h, HALF - 0.08));
+    b.box('grate', [SEG, 0.9, 0.08], new THREE.Vector3(cx, y + KERB + 0.45, HALF - 0.08), q, true);
+    if (r() < 0.45) {
+      const bx = cx + (r() - 0.5) * 1.2, bz = (r() - 0.5) * 0.9, s0 = 0.35 + r() * 0.3;
+      for (let k = 0; k < 14; k++) {
+        const lump = new THREE.IcosahedronGeometry(s0 * (0.22 + r() * 0.22), 1), p = lump.attributes.position;
+        for (let i = 0; i < p.count; i++) p.setXYZ(i, p.getX(i) * (0.75 + r() * 0.5), p.getY(i) * (0.7 + r() * 0.5), p.getZ(i) * (0.75 + r() * 0.5));
+        lump.computeVertexNormals();
+        const a = r() * 6.28, d = r() * s0 * 0.75;
+        geo.bush.push(lump.translate(bx + Math.cos(a) * d, y + KERB + 0.1 + r() * s0 * 0.8, bz + Math.sin(a) * d * 0.6));
+      }
+    }
     if (Math.round(x / SEG) % 7 === 0 && r() < 0.85) (r() < 0.3 ? palms : trees).push(new THREE.Vector3(cx + (r() - 0.5), y + KERB - 0.05, (r() - 0.5) * 0.4));
   }
   const lawn = photo('lawn');
   const mats = {
     yellow: lighting.setup(new THREE.MeshStandardMaterial({ color: '#d8b42a', roughness: 0.75 }), 'median-yellow'),
     black: lighting.setup(new THREE.MeshStandardMaterial({ color: '#1d1d1d', roughness: 0.8 }), 'median-black'),
+    rail: lighting.setup(new THREE.MeshStandardMaterial({ color: '#2f6b3a', roughness: 0.55, metalness: 0.5 }), 'median-rail'),
+    bush: lighting.setup(new THREE.MeshStandardMaterial({ color: '#4a6530', roughness: 0.9, flatShading: true }), 'median-bush'),
     lawn: lighting.setup(new THREE.MeshStandardMaterial({ map: lawn?.map ?? null, normalMap: lawn?.normalMap ?? null, color: lawn ? '#8f9a66' : '#6f7a45', roughness: 0.95 }), 'median-lawn'),
   };
   const g = new THREE.Group();
