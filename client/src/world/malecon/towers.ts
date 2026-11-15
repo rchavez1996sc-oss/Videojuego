@@ -1,3 +1,4 @@
+import { constructionSites } from './construction';
 import * as THREE from 'three';
 import { addModel } from '../staticModels';
 import type { Builder } from '../buildingKit';
@@ -140,6 +141,7 @@ export function buildTowers(t: Builder, b: Builder, def: MaleconDef, paints: str
         const d = Math.max(12, Math.min(snap(14 + rand() * 10), Math.floor(maxD / 6) * 6));
         const front = avenue && s > 0, r = rand();
         if (commercial && r < 0.3 && oxxos < 2 && w >= 14) (addModel({ key: 'oxxo', x: x + w / 2, z: zFace - s * 5.4, yaw: s > 0 ? 0 : Math.PI }), shop?.(new THREE.Vector3(x + w / 2, 3.55, zFace + s * 0.35), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), s > 0 ? 0 : Math.PI), 7, 'OXXO'), oxxos++);
+        else if (!commercial && r > 0.86 && constructionSites.length < 3) constructionSites.push({ x, w, zFace, d, s, floors: 7 + Math.floor(rand() * 6) });
         else if (!front && !commercial && r < 0.16) casona(t, b, x, w, zFace, d, s, paints[Math.floor(rand() * paints.length)], rand);
         else {
           const floors = front ? 13 + Math.floor(rand() * 13) : 5 + Math.floor(rand() * (avenue ? 12 : 9));

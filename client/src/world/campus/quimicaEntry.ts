@@ -7,10 +7,10 @@ type At = (x: number, y: number, z: number) => THREE.Vector3;
 const UP = new THREE.Vector3(0, 1, 0);
 
 /** Steel bicycle leaning in a rack: two tyres with rims, a diamond frame, bars and saddle. */
-function bike(b: Builder, at: At, q: THREE.Quaternion, x: number, z: number, frame: string): void {
+export function bike(b: Builder, at: At, q: THREE.Quaternion, x: number, z: number, frame: string, tyre = 'mullion'): void {
   const yz = q.clone().multiply(new THREE.Quaternion().setFromAxisAngle(UP, Math.PI / 2));
   for (const u of [-0.52, 0.52]) {
-    b.geometry('mullion', new THREE.TorusGeometry(0.33, 0.035, 6, 20), new THREE.Matrix4().compose(at(x, 0.36, z + u), yz, new THREE.Vector3(1, 1, 1)));
+    b.geometry(tyre, new THREE.TorusGeometry(0.33, 0.035, 8, 24), new THREE.Matrix4().compose(at(x, 0.36, z + u), yz, new THREE.Vector3(1, 1, 1)));
     b.geometry('alu', new THREE.TorusGeometry(0.29, 0.012, 4, 16), new THREE.Matrix4().compose(at(x, 0.36, z + u), yz, new THREE.Vector3(1, 1, 1)));
   }
   const bar = (len: number, y: number, v: number, tilt: number) =>
@@ -20,8 +20,8 @@ function bike(b: Builder, at: At, q: THREE.Quaternion, x: number, z: number, fra
   bar(0.55, 0.5, 0.25, -0.5);
   bar(0.5, 0.42, -0.36, 1.2);
   bar(0.3, 0.86, 0.46, 0.2);
-  b.box('mullion', [0.5, 0.03, 0.04], at(x, 1.0, z + 0.48), q);
-  b.box('mullion', [0.12, 0.05, 0.25], at(x, 0.88, z - 0.27), q);
+  b.box(tyre, [0.5, 0.03, 0.04], at(x, 1.0, z + 0.48), q);
+  b.box(tyre, [0.12, 0.05, 0.25], at(x, 0.88, z - 0.27), q);
 }
 
 /**

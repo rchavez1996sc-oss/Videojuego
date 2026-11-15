@@ -1,3 +1,4 @@
+import { bikeRack } from './bikeRack';
 import * as THREE from 'three';
 import type { Builder } from '../buildingKit';
 import type { Heightfield } from '../heightfield';
@@ -53,6 +54,7 @@ export function buildBoulevard(b: Builder, hf: Heightfield, def: MaleconDef, pla
       bench(b, new THREE.Vector3(x, 0, z + s * 3.1), s > 0 ? Math.PI : 0, 'benchGreen');
       if (k % 2) lamp(b, new THREE.Vector3(x + 5, 0, z - s * 2.9));
       if (k % 3 === 1) bin(b, new THREE.Vector3(x + 1.6, 0, z + s * 3));
+      if (k % 4 === 2) bikeRack(b, new THREE.Vector3(x + 5.5, 0.1, z - s * 1.9), 0, rand);
     }
   }
   paintLawns(hf, (x, zz) => (!crossing(x) && Math.abs(zz - z) > 3 && Math.abs(zz - z) < m - 0.4 ? 1 : 0), z - m - 2, z + m + 2);

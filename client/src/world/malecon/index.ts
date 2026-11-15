@@ -1,3 +1,4 @@
+import { buildConstruction } from './construction';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import RAPIER from '@dimforge/rapier3d-compat';
@@ -170,6 +171,7 @@ export function buildMalecon(hf: Heightfield, def: MaleconDef, lighting: Lightin
   const group = new THREE.Group();
   group.add(buildLarcomar(b, def, c, lighting, plants, rand));
   group.add(buildMonuments(b, hf, def, lighting, plants.seats, (at, yaw) => bench(b, at, yaw)));
+  group.add(buildConstruction(b, lighting, rand));
   group.add(buildPropaganda(b, hf, def, lighting, fronts, rand));
   group.add(buildVegetation(b, plants, streetTrees, lighting));
   const bystanders = { onHurt: (_p: THREE.Vector3) => {} };
