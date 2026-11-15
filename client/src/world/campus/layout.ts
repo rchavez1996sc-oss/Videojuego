@@ -48,6 +48,8 @@ export interface CampusDef {
   stalls?: { x: number; z: number; yaw: number; kind: 'kiosk' | 'copies' | 'office'; text: string }[];
   /** The Venezuela fence starts here (west of it the Puerta 1 plaza meets the avenue). */
   fenceWest?: number;
+  /** Fuel station on the far side of Av. Venezuela (houses skip its lot). */
+  gasStation?: import('../gasStation').GasStationDef;
   /** Dense tree stands: rectangle and spacing. */
   forests?: { x0: number; x1: number; z0: number; z1: number; gap: number }[];
   plazuela?: import('./plazuela').PlazuelaDef;

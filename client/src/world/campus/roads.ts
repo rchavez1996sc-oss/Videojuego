@@ -37,12 +37,18 @@ export function onCarriageway(def: CampusDef, x: number, z: number, margin: numb
 }
 
 /** Av. Venezuela (two carriageways, planted median, lane marks), campus roads with kerbed sidewalks cut at junctions, lamps, bus stops. */
-export function buildCampusRoads(b: Builder, def: CampusDef, rand: () => number): void {
-  const v = def.venezuela, X = Math.max(-def.bounds.west, def.bounds.x) + 80, inner = v.median / 2, cw = v.half - inner;
+/** Half-length of Av. Venezuela and the campus road mouths on it ([x0, x1] each). */
+export function venezuelaSpan(def: CampusDef): { X: number; entries: [number, number][] } {
+  const v = def.venezuela, X = Math.max(-def.bounds.west, def.bounds.x) + 80;
   const entries = def.roads.filter((r) => r.pts[r.pts.length - 1][1] > v.z - v.half - v.sidewalk - 3).map((r) => {
     const x = r.pts[r.pts.length - 1][0];
     return [x - r.w / 2 - 0.4, x + r.w / 2 + 0.4] as [number, number];
   });
+  return { X, entries };
+}
+
+export function buildCampusRoads(b: Builder, def: CampusDef, rand: () => number): void {
+  const v = def.venezuela, { X, entries } = venezuelaSpan(def), inner = v.median / 2, cw = v.half - inner;
   const crossings = entries.map(([a, c]) => (a + c) / 2);
   for (const x of crossings) {
     for (let z = v.z - v.half + 0.6; z < v.z + v.half - 0.4; z += 1.1) if (Math.abs(z - v.z) > inner + 0.3) b.box('roadWhite', [3.2, 0.012, 0.55], new THREE.Vector3(x, ASPHALT + 0.007, z), Q, false);
@@ -61,8 +67,7 @@ export function buildCampusRoads(b: Builder, def: CampusDef, rand: () => number)
     }
     for (const [x0, x1] of cuts) strip(b, 'asphalt', new THREE.Vector2(x0, zs), new THREE.Vector2(x1, zs), v.sidewalk + 0.4, ASPHALT, false);
   }
-  b.box('kerbYellow', [2 * X, 0.32, v.median], new THREE.Vector3(0, 0.16, v.z), Q, true);
-  b.box('hedge', [2 * X, 0.05, v.median - 0.3], new THREE.Vector3(0, 0.33, v.z), Q, false);
+  b.box('kerbYellow', [2 * X, 0.12, v.median], new THREE.Vector3(0, 0.06, v.z), Q, true);
   const reach = Math.min(cw * 0.55, 4);
   for (let x = -X + 15; x < X; x += 32) {
     b.geometry('alu', new THREE.CylinderGeometry(0.1, 0.16, 9.5, 8).translate(x, 5.05, v.z), new THREE.Matrix4());

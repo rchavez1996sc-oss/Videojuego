@@ -9,13 +9,15 @@ import { kioskAt } from '../kiosks';
 /** The far side of Av. Venezuela: a continuous row of 2–4 storey brick and painted houses with shops, facing the campus. */
 export function venezuelaSouth(b: Builder, hf: Heightfield, def: CampusDef, rand: () => number, sign: Sign): void {
   const v = def.venezuela, z = v.z + v.half + v.sidewalk + 0.15, X = def.bounds.x + 30;
+  const lot = def.gasStation ? [def.gasStation.x - (def.gasStation.w ?? 30) / 2, def.gasStation.x + (def.gasStation.w ?? 30) / 2] : [1e9, 1e9];
   for (let x = -X; x < X; ) {
     const w = 6 + rand() * 4;
-    cityHouse(b, { x: x + w / 2, z, y: hf.heightAt(x + w / 2, z), facing: Math.PI, w, d: 11, floors: 2 + Math.floor(rand() * 2.6) }, rand, sign);
+    if (x + w > lot[0] && x < lot[1]) { x = Math.max(x + w, lot[1]); continue; }
+    cityHouse(b, { x: x + w / 2, z, y: hf.heightAt(x + w / 2, z), facing: Math.PI, w, d: 11, floors: 2 + Math.floor(rand() * 3.6) }, rand, sign);
     x += w;
   }
-  for (let x = -X + 25; x < X - 25; x += 45 + rand() * 40) if (rand() < 0.6) kioskAt(b, hf, x, v.z + v.half + 2.1, Math.PI, Math.floor(rand() * 6));
-  b.box('none', [2 * X, 8, 0.5], new THREE.Vector3(0, 4, z + 0.6), new THREE.Quaternion(), true);
+  for (let x = -X + 25; x < X - 25; x += 45 + rand() * 40) if (rand() < 0.6 && (x < lot[0] - 3 || x > lot[1] + 3)) kioskAt(b, hf, x, v.z + v.half + 2.1, Math.PI, Math.floor(rand() * 6));
+  for (const [a, c] of [[-X, lot[0]], [lot[1], X]]) if (c > a) b.box('none', [c - a, 8, 0.5], new THREE.Vector3((a + c) / 2, 4, z + 0.6), new THREE.Quaternion(), true);
 }
 
 /** Av. Universitaria past the east fence (out of reach): carriageways, median, far sidewalk, lamp posts. */

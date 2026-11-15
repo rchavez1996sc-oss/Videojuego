@@ -46,6 +46,7 @@ import { setupWorldMap } from './ui/worldMap';
 import { loadPhotoTextures, photoEnvironment } from './render/photoTextures';
 import { carModels } from './render/carModels';
 import { installDebug } from './core/debug';
+import { worldFx } from './fx/worldFx';
 import { physicsStep } from './physics/fastStep';
 import { ShadowCull } from './render/shadowCull';
 import { buildBarrio } from './world/barrio';
@@ -196,6 +197,7 @@ async function boot(): Promise<void> {
     showMissionComplete(g.complete, g.reward, `ENEMIGOS ABATIDOS ${enemies.list.length - enemies.aliveCount}/${enemies.list.length} · ${defense ? `ESTUDIANTES CAÍDOS ${defense.students.lost}` : `BAJAS CIVILES ${populace.casualties}`} · VIDAS ${lives}<br>${hud.rewards.summary()}`, g.loot, g.unlock, ch.next);
   });
   const blast = (at: THREE.Vector3) => (alarm(at, 150), detonate(at, { combat, sfx, tpc, enemies, player, world, playerAlive: deadT <= 0, also: [civilians, squad, life, props, defense?.students] }));
+  Object.assign(worldFx, { blast, puff: (at: THREE.Vector3, shade?: number) => combat.smokePuff(at, shade) });
   grenades.onExplode = life ? (life.trafficEvents.onBurst = blast) : blast;
   enemies.onEnemyHit = (kill, headshot, at) => {
     [sfx.hitmarker(kill, headshot), hud.hitmarker(kill, headshot, ''), hud.rewards.hit(kill, headshot, at.distanceTo(player.position))];
