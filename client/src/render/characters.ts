@@ -86,12 +86,13 @@ class CharacterLibrary {
   private looks = new Map<THREE.Material, THREE.Material[]>();
   ready = false;
 
-  async load(lighting: Lighting): Promise<void> {
+  /** `skip`: character kinds this level never shows (not downloaded). */
+  async load(lighting: Lighting, skip: string[] = []): Promise<void> {
     const manifest = (await (await fetch(`${BASE}manifest.json`, { cache: 'no-cache' })).json()) as Manifest;
     const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
     const get = (url: string) => loader.loadAsync(`${BASE}${url}?v=${ver(url)}`);
-    const petsReady = pets.load(lighting, manifest.pets);
-    const [anims, ...models] = await Promise.all([get(manifest.animations), ...Object.values(manifest.characters).flatMap((c) => [get(c.near), get(c.far)])]);
+    const petsReady = pets.load(lighting, manifest.pets), kinds = (Object.keys(manifest.characters) as CharKind[]).filter((k) => !skip.includes(k));
+    const [anims, ...models] = await Promise.all([get(manifest.animations), ...kinds.flatMap((k) => [get(manifest.characters[k].near), get(manifest.characters[k].far)])]);
     for (const clip of anims.animations) this.clips.set(clip.name, smoothClip(clip));
     const walk = this.clips.get('civ_walk');
     if (walk) this.clips.set('civ_stand', still(walk, 'civ_stand', walk.duration * STAND_AT));
@@ -102,11 +103,11 @@ class CharacterLibrary {
     if (shoot && pIdle) this.clips.set('p_aim', onHips(still(shoot, 'p_aim', 0), pIdle));
     if (reload && pIdle) onHips(reload, pIdle);
     const masks = new Map<string, THREE.Texture>();
-    await Promise.all(Object.keys(manifest.characters).filter((k) => k.startsWith('civ')).map((k) => new THREE.TextureLoader().loadAsync(`${BASE}characters/${k}.mask.png?v=${ver(`characters/${k}.mask.png`)}`).then((t) => {
+    await Promise.all(kinds.filter((k) => k.startsWith('civ')).map((k) => new THREE.TextureLoader().loadAsync(`${BASE}characters/${k}.mask.png?v=${ver(`characters/${k}.mask.png`)}`).then((t) => {
       t.flipY = false;
       masks.set(k, t);
     }, () => {})));
-    Object.keys(manifest.characters).forEach((kind, i) => {
+    kinds.forEach((kind, i) => {
       const near = models[i * 2].scene, farScene = models[i * 2 + 1].scene;
       const mats = new Map<string, THREE.Material>();
       near.traverse((m) => {

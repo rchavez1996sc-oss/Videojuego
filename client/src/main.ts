@@ -43,7 +43,7 @@ import { Grenades } from './weapons/grenades';
 import { detonate } from './weapons/explosion';
 import { Minimap } from './ui/minimap';
 import { setupWorldMap } from './ui/worldMap';
-import { loadPhotoTextures, photoEnvironment } from './render/photoTextures';
+import { loadPhotoTextures, photoEnvironment, photosLoaded } from './render/photoTextures';
 import { carModels } from './render/carModels';
 import { installDebug } from './core/debug';
 import { worldFx } from './fx/worldFx';
@@ -123,9 +123,10 @@ async function boot(): Promise<void> {
   const grass = new Grass(hf, ch.biome, lighting, preset.grassBlades, Math.max(preset.grassBlades, PRESETS.high.grassBlades));
   scene.add(grass.mesh);
   mark('grass');
+  await photosLoaded();
   const shaders = renderer.gl.compileAsync(scene, camera).catch(() => undefined);
   await step('Cargando personajes…');
-  await Promise.all([characters.load(lighting), shaders]); mark('characters');
+  await Promise.all([characters.load(lighting, ch.objective?.capture ? [] : ['vip']), shaders]); mark('characters');
   const minimap = new Minimap(renderer.gl, scene, ch.terrain.playable, ['asphalt', 'asphaltWorn'].flatMap((k) => barrio?.materials[k] ?? []), ch.barrio && barrio ? { ...barrio.graph, width: ch.barrio.street } : undefined);
 
   mark('minimap');
