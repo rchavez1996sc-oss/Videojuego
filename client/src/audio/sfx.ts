@@ -13,7 +13,7 @@ export class Sfx {
   private mine: AudioBuffer[];
   private banks = new Map<number, AudioBuffer[]>();
 
-  constructor(private m: Mixer, light = 0) {
+  constructor(readonly m: Mixer, light = 0) {
     this.shots = buildGunshots(m.ctx, 4);
     this.heavy = buildGunshots(m.ctx, 2, true);
     this.own = this.mine = light ? buildGunshots(m.ctx, 4, false, light) : this.shots;

@@ -1,5 +1,7 @@
 import * as THREE from 'three';
-import { crashDamage, enginePower, steerPull } from './vehicleWear';
+import { enginePower, steerPull } from './vehicleWear';
+import { scrapeSpeed, vehicleImpact } from './carImpacts';
+import { knock, Scrape } from '../audio/carNoise';
 import RAPIER from '@dimforge/rapier3d-compat';
 import type { Traffic, Vehicle } from './traffic';
 import type { Player } from '../entities/player';
@@ -13,8 +15,7 @@ import type { Mixer } from '../audio/mixer';
 import { EngineSound } from '../audio/engine';
 import { SPECS, type CarState } from './carPhysics';
 import { CarRig } from './carRig';
-import { contactOf, jolt, overturned, readBody } from './vehicleBody';
-import { dent } from '../fx/dents';
+import { overturned, readBody } from './vehicleBody';
 import { seatedRig, seatsOf } from '../entities/occupants';
 import { roomy } from './respawn';
 import { parkedCars } from '../world/parkedCars';
@@ -32,11 +33,8 @@ import { joinPhysics } from './carContacts';
 import { safely } from '../core/guard';
 import type { Heightfield } from '../world/heightfield';
 import type { Rig } from '../entities/rig';
-
 interface Deps { hf: Heightfield; traffic: Traffic | null; world: RAPIER.World; player: Player; tpc: ThirdPersonCamera; enemies: Enemies; squad: Squad | null; sfx: Sfx; lighting: Lighting; mixer: Mixer }
-
 const REACH = 2.2;
-
 /**
  * Getting into traffic vehicles and driving them (E in/out): the player takes the driver's seat (the occupants get
  * out), drives with W/S/A/D and Space (handbrake), the chase camera swings in behind, people in the way are run
@@ -47,6 +45,7 @@ export class Driving {
   private state: CarState | null = null;
   private seat: THREE.Group | null = null;
   private engine: EngineSound;
+  private scrape: Scrape;
   private prompt = document.createElement('div');
   private speedo = document.createElement('div');
   private bodyOff = 0;
@@ -67,6 +66,7 @@ export class Driving {
 
   constructor(private d: Deps) {
     this.engine = new EngineSound(d.mixer);
+    this.scrape = new Scrape(d.mixer);
     this.marks = new SkidMarks(d.lighting);
     Fling.onSlam = (at, speed) => {
       const near = at.distanceTo(d.tpc.camera.position);
@@ -192,6 +192,7 @@ export class Driving {
     this.cabin?.removeFromParent();
     [this.car, this.state, this.seat, this.cabin, drivenCar.handle] = [null, null, null, null, -1];
     this.escape.reset();
+    this.scrape.stop();
   }
 
   private exit(alive = true, bail = false): void {
@@ -240,16 +241,16 @@ export class Driving {
     trackWheels(this.marks, this.rig.contacts(), new THREE.Vector3(lv.x, lv.y, lv.z), v.yaw, !!u.brake && s.speed > 0, u.handbrake, earth, sp.small ? 0.12 : 0.2);
     joinPhysics(this.d.world, this.d.traffic!, v, this.d.player.position);
     Object.assign(s, { x: v.x, y: v.y, z: v.z, yaw: v.yaw, tilt: v.tilt, speed: this.rig.speed });
-    const dv = jolt(v, dt);
-    if (dv > 3) {
-      const c = contactOf(world, v.collider);
-      if (this.clock - this.crashT > 0.25) [sfx.crash(0, (dv - 3) / 14), this.crashT = this.clock];
-      tpc.kick(0, 0, Math.min(0.6, dv * 0.04));
-      v.hp -= crashDamage(v, dv);
+    const hit = vehicleImpact(world, v, dt);
+    if (hit) {
+      if (hit.event.dv < 4.5) knock(sfx.m, 0, hit.hard * 2);
+      else if (this.clock - this.crashT > 0.25) [sfx.crash(0, hit.hard), this.crashT = this.clock];
+      tpc.kick(0, 0, Math.min(0.6, hit.event.dv * 0.035));
+      v.hp -= hit.damage;
       if (v.hp <= 0) v.state = 'wreck';
-      if (dv > 8) player.hurt((dv - 8) * 3.5);
-      if (c && dv > 3) dent(v.group, c.at, Math.min(0.38, (dv - 2.5) * 0.055));
+      if (hit.injury > 0) player.hurt(hit.injury);
     }
+    this.scrape.set(scrapeSpeed(world, v, (c) => c.shapeType() === RAPIER.ShapeType.Capsule));
     if (Math.abs(s.speed) > 0.4) this.runOver(s, sp.half, dt);
     const bump = bumpOverBodies(v.body, v.group, this.rig.mounts, this.rig.mass, Math.abs(s.speed), this.d.enemies, this.clock, this.hitT);
     if (bump) [sfx.thud(bump * 2), tpc.kick(0.01, 0, bump * 0.3)];

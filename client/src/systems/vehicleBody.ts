@@ -6,7 +6,7 @@ import type { Vehicle } from './traffic';
 /** Kerb masses (kg): what decides who comes off worse in a crash. */
 export const MASS: Record<string, number> = { delivery: 180, moto: 420, tico: 760, beetle: 850, sedan: 1250, wagon: 1450, pickup: 1800, combi: 2100, micro: 8800 };
 
-const UP = new THREE.Vector3(0, 1, 0), G = 9.81;
+const UP = new THREE.Vector3(0, 1, 0);
 
 /**
  * Turns a vehicle's body into a real rigid body under gravity (being driven, or hit by one): its mass with the centre
@@ -40,14 +40,6 @@ export function readBody(v: Vehicle): void {
   const f = new THREE.Vector3(0, 0, 1).applyQuaternion(q), yaw = Math.atan2(f.x, f.z);
   Object.assign(v, { x: t.x, y: t.y, z: t.z, yaw, speed: new THREE.Vector3().copy(v.body.linvel() as THREE.Vector3).length() });
   v.tilt = new THREE.Quaternion().setFromAxisAngle(UP, yaw).invert().multiply(q);
-}
-
-/** Velocity change this step beyond gravity (m/s): how hard it hit something. */
-export function jolt(v: Vehicle, dt: number): number {
-  const now = new THREE.Vector3().copy(v.body.linvel() as THREE.Vector3), prev = v.dyn!.prev;
-  const dv = now.clone().sub(prev).setY(now.y - prev.y + G * dt).length();
-  prev.copy(now);
-  return dv;
 }
 
 /** A world point where `col` touches something else (for dents), and that collider. */

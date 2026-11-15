@@ -1,10 +1,11 @@
 import './rewards.css';
 
-const STREAK = ['', '', 'DOBLE BAJA', 'TRIPLE BAJA', 'CUÁDRUPLE BAJA'];
+const STREAK = ['', '', 'DOBLE BAJA', 'TRIPLE BAJA', 'CUÁDRUPLE BAJA', 'IMPARABLE'];
 
 /**
- * Small, steady rewards: a kill feed under the enemy counter (points and tags: head, long shot, streak), a running
- * score that rolls up, multi-kill callouts, and a summary for the end screen (accuracy, heads, longest shot, time).
+ * Small, steady rewards without a score: a kill feed under the enemy counter (tags: head, long shot, streak, one
+ * shot), multi-kill callouts, milestones every 5 kills, and a summary for the end screen (accuracy, heads, longest
+ * shot, time).
  */
 export class Rewards {
   shots = 0;
@@ -12,21 +13,18 @@ export class Rewards {
   private kills = 0;
   private heads = 0;
   private longest = 0;
-  private score = 0;
-  private shown = 0;
+  private lifeShots = 0;
   private streak = 0;
   private lastKill = -99;
   private clock = 0;
   private feed: HTMLElement;
-  private total: HTMLElement;
 
   constructor(root: HTMLElement, private callout: (text: string) => void) {
     const box = document.createElement('div');
     box.className = 'rewards';
-    box.innerHTML = '<div class="score"><span>PUNTOS</span><b>0</b></div><div class="feed"></div>';
+    box.innerHTML = '<div class="feed"></div>';
     root.appendChild(box);
     this.feed = box.querySelector('.feed')!;
-    this.total = box.querySelector('.score b')!;
   }
 
   hit(kill: boolean, head: boolean, distance: number): void {
@@ -35,17 +33,18 @@ export class Rewards {
     this.kills++;
     this.streak = this.clock - this.lastKill < 4.5 ? this.streak + 1 : 1;
     this.lastKill = this.clock;
-    const tags: [string, number][] = [['BAJA', 100]];
-    if (head) [this.heads++, tags.push(['CABEZA', 50])];
-    if (distance >= 50) tags.push([`${Math.round(distance)} M`, 25 + Math.round((distance - 50) / 2)]);
-    if (this.streak >= 2) tags.push([`RACHA ×${this.streak}`, 50 * (this.streak - 1)]);
+    const tags = ['BAJA'], oneShot = this.shots - this.lifeShots <= 1;
+    this.lifeShots = this.shots;
+    if (head) [this.heads++, tags.push('CABEZA')];
+    if (distance >= 50) tags.push(`${Math.round(distance)} M`);
+    if (oneShot && !head) tags.push('UN TIRO');
+    if (this.streak >= 2) tags.push(`RACHA ×${this.streak}`);
     this.longest = Math.max(this.longest, distance);
-    const pts = tags.reduce((s, t) => s + t[1], 0);
-    this.score += pts;
-    if (this.streak >= 2) this.callout(STREAK[this.streak] ?? `RACHA ×${this.streak}`);
+    if (this.streak >= 2) this.callout(STREAK[Math.min(this.streak, STREAK.length - 1)]);
+    else if (this.kills % 5 === 0) this.callout(`${this.kills} BAJAS`);
     const line = document.createElement('div');
     line.className = `line${head ? ' head' : ''}`;
-    line.innerHTML = `<b>+${pts}</b>${tags.map(([t], i) => `<span${i ? ` class="tag${t === 'CABEZA' ? ' gold' : ''}"` : ''}>${t}</span>`).join('')}`;
+    line.innerHTML = `<b>✕</b>${tags.map((t, i) => `<span${i ? ` class="tag${t === 'CABEZA' ? ' gold' : ''}"` : ''}>${t}</span>`).join('')}`;
     this.feed.prepend(line);
     while (this.feed.children.length > 4) this.feed.lastElementChild!.remove();
     line.dataset.t = String(this.clock);
@@ -58,14 +57,10 @@ export class Rewards {
       if (age > 3.7) l.remove();
       else if (age > 3.2) l.classList.add('out');
     }
-    if (this.shown === this.score) return;
-    this.shown = Math.min(this.score, this.shown + Math.max(1, Math.ceil((this.score - this.shown) * dt * 6)));
-    this.total.textContent = String(this.shown);
-    this.total.parentElement!.classList.toggle('rolling', this.shown < this.score);
   }
 
   summary(): string {
     const acc = this.shots ? Math.round((this.hits / this.shots) * 100) : 0, m = Math.floor(this.clock / 60), s = Math.floor(this.clock % 60);
-    return `PUNTOS ${this.score} · PRECISIÓN ${acc} % · DISPAROS A LA CABEZA ${this.heads}/${this.kills} · TIRO MÁS LARGO ${Math.round(this.longest)} M · TIEMPO ${m}:${String(s).padStart(2, '0')}`;
+    return `BAJAS ${this.kills} · PRECISIÓN ${acc} % · DISPAROS A LA CABEZA ${this.heads}/${this.kills} · TIRO MÁS LARGO ${Math.round(this.longest)} M · TIEMPO ${m}:${String(s).padStart(2, '0')}`;
   }
 }

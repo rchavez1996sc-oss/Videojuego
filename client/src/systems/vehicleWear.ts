@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import type { Vehicle } from './traffic';
 import { HP } from './traffic';
-import { MASS } from './vehicleBody';
 import { dent } from '../fx/dents';
 import { crackGlass } from '../fx/carDamage';
 
@@ -56,7 +55,3 @@ export function bulletMark(group: THREE.Object3D, at: THREE.Vector3): void {
   crackGlass(group, at, 0.3);
 }
 
-/** Crash damage from the velocity change (m/s): grows faster than linear with speed, and bigger vehicles carry more energy into it. */
-export function crashDamage(v: Vehicle, dv: number): number {
-  return Math.max(0, dv - 3) ** 1.2 * 3.5 * ((MASS[v.kind] ?? 1300) / 1300) ** 0.25;
-}

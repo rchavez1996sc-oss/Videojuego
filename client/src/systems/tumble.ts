@@ -1,9 +1,8 @@
 import RAPIER from '@dimforge/rapier3d-compat';
 import * as THREE from 'three';
 import type { Traffic, Vehicle } from './traffic';
-import { contactOf, exchange, jolt, readBody } from './vehicleBody';
-import { dent } from '../fx/dents';
-import { crashDamage } from './vehicleWear';
+import { exchange, readBody } from './vehicleBody';
+import { vehicleImpact } from './carImpacts';
 
 /**
  * A vehicle that is a rigid body and nobody drives (hit, disabled, left by the player): pose from the physics, damage
@@ -18,12 +17,10 @@ export function tumbleStep(t: Traffic, world: RAPIER.World, v: Vehicle, dt: numb
     if (other && !other.body.isDynamic() && other.state !== 'off') hits.push(other);
   });
   for (const other of hits) exchange(world, v, other, (o) => t.knock(o));
-  const dv = jolt(v, dt);
-  if (dv > 2.5) {
-    t.damage(v, crashDamage(v, dv) * 1.3);
-    const c = contactOf(world, v.collider);
-    if (c && dv > 3) dent(v.group, c.at, Math.min(0.38, (dv - 2.5) * 0.055));
-    if (dv > 4) t.onCrash(c?.at ?? new THREE.Vector3(v.x, v.y ?? 0, v.z), dv);
+  const hit = vehicleImpact(world, v, dt);
+  if (hit) {
+    if (hit.damage > 0) t.damage(v, hit.damage);
+    if (hit.event.dv > 4) t.onCrash(hit.at ?? new THREE.Vector3(v.x, v.y ?? 0, v.z), hit.event.dv);
   }
   const w = v.body.angvel(), still = v.speed < 0.4 && Math.hypot(w.x, w.y, w.z) < 0.4;
   v.dyn!.still = still ? v.dyn!.still + dt : 0;

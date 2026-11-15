@@ -91,6 +91,24 @@ export function driveDebug(c: DebugContext, drive: (kind: string, plan: [string[
       c.setSkipRender(false);
       return out.join('\n');
     },
+    /** Drives `kind` from (x, z) along `yaw` at `kmh` without throttle until it stops: car hp and player health before/after. */
+    crashTest(kind: string, x: number, z: number, yaw: number, kmh: number, secs = 3) {
+      drive(kind, []);
+      const tr = c.traffic?.() as unknown as { list: { state: string; body: RAPIER.RigidBody; hp: number }[] };
+      const v = tr.list.find((o) => o.state === 'player'), p = c.player as unknown as { hp: number };
+      if (!v) return 'not driving';
+      v.body.setTranslation({ x, y: c.hf.heightAt(x, z) + 0.6, z }, true);
+      v.body.setRotation(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw), true);
+      v.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      c.setSkipRender(true);
+      for (let i = 0; i < 40; i++) c.frame(1 / 30);
+      const [hp0, h0] = [v.hp, p.hp];
+      v.body.setLinvel({ x: Math.sin(yaw) * kmh / 3.6, y: 0, z: Math.cos(yaw) * kmh / 3.6 }, true);
+      for (let i = 0; i < secs * 30; i++) c.frame(1 / 30);
+      c.setSkipRender(false);
+      const t = v.body.translation();
+      return `${kind} ${kmh} km/h: car ${hp0.toFixed(0)} -> ${v.hp.toFixed(0)}, player ${h0.toFixed(0)} -> ${p.hp.toFixed(0)}, end z ${t.z.toFixed(1)}, hits ${JSON.stringify((window as unknown as { __crashes?: unknown[] }).__crashes ?? [])}`;
+    },
     /** San Marcos: clears traffic off Av. Venezuela, puts the driven `kind` at its west end and floors it: 0–100 time and speeds. */
     accelTest(kind: string, secs = 22) {
       const how = drive(kind, []);

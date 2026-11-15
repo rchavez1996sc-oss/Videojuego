@@ -1,8 +1,4 @@
 #hud .rewards { position: absolute; right: 30px; top: 178px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-family: 'Barlow Condensed', sans-serif; text-shadow: var(--gta-line, 0 1px 2px #000); }
-#hud .rewards .score { display: flex; align-items: baseline; gap: 6px; }
-#hud .rewards .score span { font: 700 12px 'Barlow Condensed', sans-serif; letter-spacing: 0.14em; color: #e8e8e8; }
-#hud .rewards .score b { font: 800 20px 'Barlow Condensed', sans-serif; color: #fff; font-variant-numeric: tabular-nums; transition: color 0.2s, transform 0.2s; }
-#hud .rewards .score.rolling b { color: #ffcf3f; transform: scale(1.12); }
 #hud .rewards .feed { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
 #hud .rewards .line { display: flex; align-items: baseline; gap: 6px; font: 700 15px 'Barlow Condensed', sans-serif; letter-spacing: 0.06em; color: #f3efe6; animation: rw-in 0.28s cubic-bezier(0.2, 1.3, 0.4, 1); transition: opacity 0.5s, transform 0.5s; }
 #hud .rewards .line b { font-weight: 800; font-size: 17px; color: #ffcf3f; }
