@@ -3,6 +3,7 @@ import type { Builder } from '../buildingKit';
 import type { Heightfield } from '../heightfield';
 import type { Lighting } from '../../render/lighting';
 import { SIDEWALK, type MaleconDef } from './layout';
+import { ver } from '../../core/assetVersion';
 
 export interface PropagandaDef { portrait?: string; slogans: [string, string][]; billboards: [number, number, number][]; banners: number; columns: number }
 
@@ -41,7 +42,7 @@ function loadPortrait(key: string | undefined): void {
       portrait = img;
       redraws.forEach((r) => r());
     };
-    img.src = `${base}${path}?v=${m.version ?? 0}`;
+    img.src = `${base}${path}?v=${ver(path)}`;
   }).catch(() => {});
 }
 

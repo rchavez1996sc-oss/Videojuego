@@ -4,6 +4,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import type { Lighting } from './lighting';
 import { useGlassLighting } from '../fx/carDamage';
+import { ver } from '../core/assetVersion';
 
 const BASE = `${import.meta.env.BASE_URL}assets/`;
 
@@ -55,7 +56,7 @@ class CarModels {
     const manifest = await fetch(`${BASE}manifest.json`, { cache: 'no-store' }).then((r) => r.json()).catch(() => null);
     const urls = [manifest?.cars, manifest?.vehicles].filter(Boolean) as string[];
     const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-    for (const g of await Promise.all(urls.map((u) => loader.loadAsync(`${BASE}${u}?v=${manifest.version ?? 0}`).catch(() => null)))) if (g) this.add(g.scene, lighting);
+    for (const g of await Promise.all(urls.map((u) => loader.loadAsync(`${BASE}${u}?v=${ver(u)}`).catch(() => null)))) if (g) this.add(g.scene, lighting);
   }
 
   private add(scene: THREE.Object3D, lighting: Lighting): void {

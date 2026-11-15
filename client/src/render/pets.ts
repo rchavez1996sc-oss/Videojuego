@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { Lighting } from './lighting';
+import { ver } from '../core/assetVersion';
 
 export type PetKind = 'dog' | 'cat';
 
@@ -20,11 +21,11 @@ interface Joint { bone: THREE.Bone; rest: THREE.Quaternion; swing: THREE.Vector3
 class PetLibrary {
   private protos = new Map<PetKind, { scene: THREE.Object3D; clips: THREE.AnimationClip[] }>();
 
-  async load(lighting: Lighting, version: number, files?: Record<PetKind, string>): Promise<void> {
+  async load(lighting: Lighting, files?: Record<PetKind, string>): Promise<void> {
     if (!files) return;
     const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
     await Promise.all(Object.entries(files).map(async ([kind, url]) => {
-      const g = await loader.loadAsync(`${BASE}${url}?v=${version}`).catch(() => null);
+      const g = await loader.loadAsync(`${BASE}${url}?v=${ver(url)}`).catch(() => null);
       if (!g) return;
       g.scene.traverse((o) => {
         const m = o as THREE.Mesh;

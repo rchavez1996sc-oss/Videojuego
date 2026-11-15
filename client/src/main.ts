@@ -75,7 +75,9 @@ const CHAPTERS: Record<string, unknown> = { '1': ch01, '2': ch02, '3': ch03, '4'
 const status = document.getElementById('status')!;
 const overlay = document.getElementById('overlay')!;
 const stats = document.getElementById('stats')!;
-const step = (msg: string) => prologueQuiet().then(() => new Promise<void>((r) => { status.textContent = msg; requestAnimationFrame(() => r()); }));
+export const loadLog: [string, number][] = [];
+const mark = (msg: string) => loadLog.push([msg, Math.round(performance.now())]);
+const step = (msg: string) => (mark(msg), prologueQuiet().then(() => new Promise<void>((r) => { status.textContent = msg; requestAnimationFrame(() => r()); })));
 
 async function boot(): Promise<void> {
   if (shotMode) document.body.classList.add('shot');
@@ -91,7 +93,7 @@ async function boot(): Promise<void> {
   const renderer = new Renderer(canvas, scene, camera, applyTime(ch.biome).exposure);
   const lighting = new Lighting(scene, camera, renderer.gl, ch.biome);
 
-  await Promise.all([loadPhotoTextures(), carModels.load(lighting)]);
+  mark('rapier'); await Promise.all([loadPhotoTextures(), carModels.load(lighting)]); mark('textures+cars');
   for (const env of [photoEnvironment()]) if (env) lighting.useEnvironment(env.texture, env.gain);
   await step('Generando terreno…');
   const hf = new Heightfield(ch.terrain);
@@ -119,10 +121,13 @@ async function boot(): Promise<void> {
   scene.add(buildScatter(hf, lighting, world, ch.scatter, nearBuilding));
   const grass = new Grass(hf, ch.biome, lighting, preset.grassBlades, Math.max(preset.grassBlades, PRESETS.high.grassBlades));
   scene.add(grass.mesh);
+  mark('grass');
+  const shaders = renderer.gl.compileAsync(scene, camera).catch(() => undefined);
+  await step('Cargando personajes…');
+  await Promise.all([characters.load(lighting), shaders]); mark('characters');
   const minimap = new Minimap(renderer.gl, scene, ch.terrain.playable, ['asphalt', 'asphaltWorn'].flatMap((k) => barrio?.materials[k] ?? []), ch.barrio && barrio ? { ...barrio.graph, width: ch.barrio.street } : undefined);
 
-  await step('Cargando personajes…');
-  await characters.load(lighting);
+  mark('minimap');
   physicsStep(world);
   const respawnPts = barrio ? streetPoints(barrio.graph) : undefined;
   const startGoal = ch.objective?.capture ?? barrio?.station?.entrance ?? barrio?.refuge?.[0];
@@ -200,6 +205,8 @@ async function boot(): Promise<void> {
   cover.prune(world, (x, z) => hf.heightAt(x, z));
 
   let freeCam = false;
+  mark('ready');
+  (window as unknown as { __loadLog: unknown }).__loadLog = loadLog;
   installDebug({
     extraLog: () => (civilians ? `civ:${civilians.list.map((c) => c.mood[0]).join('')}` : ''),
     views: ch.views ?? [], lighting, tpc, hf, player, combat, input, enemies, grenades, pickups, renderer, shotMode, scene, squad, grenadeMode: nadeMode, objective, civilians: () => civilians?.present ?? [], world, nav, goal: () => objective?.position ?? defense?.goal, status: () => (defense ? defense.status() : objective ? `obj ${objective.position ? 'on' : '-'}` : '') + ` civ=${populace.casualties} lives=${lives}`,

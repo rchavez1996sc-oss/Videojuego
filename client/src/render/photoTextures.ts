@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 import type { PbrSet } from './textures';
+import { ver } from '../core/assetVersion';
 
 const BASE = `${import.meta.env.BASE_URL}assets/`;
 const sets = new Map<string, PbrSet>();
@@ -10,10 +11,10 @@ let env: { texture: THREE.DataTexture; gain: number } | null = null;
 export async function loadPhotoTextures(): Promise<void> {
   try {
     const manifest = (await (await fetch(`${BASE}manifest.json`, { cache: 'no-cache' })).json()) as { version?: number; textures?: Record<string, { map: string; normal: string; rough?: string }>; environment?: { file: string; gain: number } };
-    const loader = new THREE.TextureLoader(), v = manifest.version ?? 0, e = manifest.environment;
-    const hdr = e ? new RGBELoader().setDataType(THREE.FloatType).loadAsync(`${BASE}${e.file}?v=${v}`).then((texture) => (env = { texture, gain: e.gain })).catch(() => null) : null;
+    const loader = new THREE.TextureLoader(), e = manifest.environment;
+    const hdr = e ? new RGBELoader().setDataType(THREE.FloatType).loadAsync(`${BASE}${e.file}?v=${ver(e.file)}`).then((texture) => (env = { texture, gain: e.gain })).catch(() => null) : null;
     await Promise.all(Object.entries(manifest.textures ?? {}).map(async ([key, t]) => {
-      const [map, normalMap, roughnessMap] = await Promise.all([t.map, t.normal, t.rough].map((f) => (f ? loader.loadAsync(`${BASE}${f}?v=${v}`) : Promise.resolve(undefined))));
+      const [map, normalMap, roughnessMap] = await Promise.all([t.map, t.normal, t.rough].map((f) => (f ? loader.loadAsync(`${BASE}${f}?v=${ver(f)}`) : Promise.resolve(undefined))));
       map!.colorSpace = THREE.SRGBColorSpace;
       for (const x of [map, normalMap, roughnessMap]) {
         if (!x) continue;

@@ -1,5 +1,6 @@
 import { Cast, Stage } from './stage';
 import { SCENES } from './scenes';
+import { ver } from '../../core/assetVersion';
 
 const BASE = `${import.meta.env.BASE_URL}assets/`;
 /** Manifest `art` keys for the 3D fallback scenes, in order (chapter 1). */
@@ -17,7 +18,7 @@ export async function renderPlates(onPlate: (i: number, url: string) => void, ke
   const art: Record<string, string> = manifest.art ?? {};
   await Promise.all(keys.map(async (k, i) => {
     if (!art[k]) return;
-    const url = `${BASE}${art[k]}?v=${manifest.version ?? 0}`, img = new Image();
+    const url = `${BASE}${art[k]}?v=${ver(art[k])}`, img = new Image();
     img.src = url;
     await img.decode().catch(() => {});
     decoded.push(img);

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import type { Lighting } from '../render/lighting';
+import { ver } from '../core/assetVersion';
 
 /** A blank side wall offered to the street-art murals: centre at the foot, facing, room across and up. */
 interface Wall { foot: THREE.Vector3; quat: THREE.Quaternion; w: number; h: number }
@@ -39,7 +40,7 @@ export async function placeMurals(scene: THREE.Object3D, lighting: Lighting, wor
   for (const [key, m] of murals) {
     const list = quads.get(key)!;
     if (!list.length) continue;
-    const tex = weathered((await loader.loadAsync(`${base}${m.img}?v=${manifest.version}`)).image as HTMLImageElement);
+    const tex = weathered((await loader.loadAsync(`${base}${m.img}?v=${ver(m.img)}`)).image as HTMLImageElement);
     const pos: number[] = [], uv: number[] = [], nrm: number[] = [], idx: number[] = [];
     for (const [x, y, z, qx, qy, qz, qw, w, h] of list) {
       const q = new THREE.Quaternion(qx, qy, qz, qw), n = new THREE.Vector3(0, 0, 1).applyQuaternion(q), o = pos.length / 3;

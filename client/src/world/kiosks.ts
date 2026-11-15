@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { Lighting } from '../render/lighting';
+import { ver } from '../core/assetVersion';
 
 /**
  * Street food stalls (metal kiosk kit cut out of the Release's street scene: counter, awning, gas cylinder, fridge,
@@ -53,7 +54,7 @@ export async function placeKiosks(scene: THREE.Object3D, lighting: Lighting): Pr
   const manifest = await fetch(`${base}manifest.json`, { cache: 'no-store' }).then((r) => r.json()).catch(() => null);
   const url = manifest?.props?.stall;
   if (!url) return;
-  const gltf = await new GLTFLoader().loadAsync(`${base}${url}?v=${manifest.version}`);
+  const gltf = await new GLTFLoader().loadAsync(`${base}${url}?v=${ver(url)}`);
   gltf.scene.updateMatrixWorld(true);
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), one = new THREE.Vector3(1, 1, 1);
   const place = spots.map((s) => m4.clone().compose(s.p, q.setFromAxisAngle(up, s.yaw), one));

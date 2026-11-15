@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { Builder } from './buildingKit';
 import type { Lighting } from '../render/lighting';
 import { stationPosters } from './stationPosters';
+import { ver } from '../core/assetVersion';
 
 type At = (x: number, y: number, z: number) => THREE.Vector3;
 const UP = new THREE.Vector3(0, 1, 0);
@@ -195,7 +196,7 @@ export function stationArt(lighting: Lighting, at: At, q: THREE.Quaternion, back
   void fetch(`${base}manifest.json`, { cache: 'no-cache' }).then((r) => r.json()).then((m) => {
     const path = m.art?.general;
     if (!path) return;
-    new THREE.TextureLoader().load(`${base}${path}?v=${m.version ?? 0}`, (tex) => {
+    new THREE.TextureLoader().load(`${base}${path}?v=${ver(path)}`, (tex) => {
       tex.colorSpace = THREE.SRGBColorSpace;
       const aspect = tex.image.width / tex.image.height, w = Math.min(1, 1.26 / 1.7 / aspect);
       tex.repeat.set(w, 1);

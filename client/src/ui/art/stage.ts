@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { sketch } from './portrait';
+import { ver } from '../../core/assetVersion';
 
 export const W = 1280, H = 720;
 const BASE = `${import.meta.env.BASE_URL}assets/`;
@@ -17,9 +18,8 @@ export class Cast {
   async load(): Promise<void> {
     const manifest = await (await fetch(`${BASE}manifest.json`, { cache: 'no-cache' })).json();
     const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-    const v = `?v=${manifest.version ?? 0}`;
     const kinds: Kind[] = ['pnp', 'fls', 'civ_a', 'civ_b'];
-    const [anims, ...models] = await Promise.all([manifest.animations, ...kinds.map((k) => manifest.characters[k].near)].map((u: string) => loader.loadAsync(BASE + u + v)));
+    const [anims, ...models] = await Promise.all([manifest.animations, ...kinds.map((k) => manifest.characters[k].near)].map((u: string) => loader.loadAsync(`${BASE}${u}?v=${ver(u)}`)));
     for (const c of anims.animations) this.clips.set(c.name, c);
     kinds.forEach((k, i) => this.protos.set(k, models[i].scene));
   }

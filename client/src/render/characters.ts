@@ -10,6 +10,7 @@ import { DRAB, LOOKS, variants, type Cover } from './outfitTint';
 /** Bare legs, shorts and trainers on civilian atlases, turned into field trousers and boots in the drab look. */
 const COVER: Partial<Record<string, Cover>> = { civ_b: [[0, 0.49, 0.435, 1], [0, 0.31, 0.7, 0.57], [0.43, 0.86, 0.468, 1], [0.65, 0, 1, 0.52]] };
 import { pets, type PetKind } from './pets';
+import { ver } from '../core/assetVersion';
 
 export type CharKind = 'pnp' | 'fls' | 'civ_a' | 'civ_b' | 'civ_c' | 'vip';
 
@@ -88,8 +89,8 @@ class CharacterLibrary {
   async load(lighting: Lighting): Promise<void> {
     const manifest = (await (await fetch(`${BASE}manifest.json`, { cache: 'no-cache' })).json()) as Manifest;
     const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-    const get = (url: string) => loader.loadAsync(`${BASE}${url}?v=${manifest.version ?? 0}`);
-    const petsReady = pets.load(lighting, manifest.version ?? 0, manifest.pets);
+    const get = (url: string) => loader.loadAsync(`${BASE}${url}?v=${ver(url)}`);
+    const petsReady = pets.load(lighting, manifest.pets);
     const [anims, ...models] = await Promise.all([get(manifest.animations), ...Object.values(manifest.characters).flatMap((c) => [get(c.near), get(c.far)])]);
     for (const clip of anims.animations) this.clips.set(clip.name, smoothClip(clip));
     const walk = this.clips.get('civ_walk');
@@ -101,7 +102,7 @@ class CharacterLibrary {
     if (shoot && pIdle) this.clips.set('p_aim', onHips(still(shoot, 'p_aim', 0), pIdle));
     if (reload && pIdle) onHips(reload, pIdle);
     const masks = new Map<string, THREE.Texture>();
-    await Promise.all(Object.keys(manifest.characters).filter((k) => k.startsWith('civ')).map((k) => new THREE.TextureLoader().loadAsync(`${BASE}characters/${k}.mask.png?v=${manifest.version ?? 0}`).then((t) => {
+    await Promise.all(Object.keys(manifest.characters).filter((k) => k.startsWith('civ')).map((k) => new THREE.TextureLoader().loadAsync(`${BASE}characters/${k}.mask.png?v=${ver(`characters/${k}.mask.png`)}`).then((t) => {
       t.flipY = false;
       masks.set(k, t);
     }, () => {})));

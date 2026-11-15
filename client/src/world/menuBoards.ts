@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import type { Lighting } from '../render/lighting';
+import { ver } from '../core/assetVersion';
 
 /** Sidewalk chalkboards (A-frame "welcome" boards) in front of eateries, registered while the level is built. */
 const spots: { p: THREE.Vector3; yaw: number; kind: number }[] = [];
@@ -77,7 +78,7 @@ export async function placeMenuBoards(scene: THREE.Object3D, lighting: Lighting,
   const manifest = await fetch(`${base}manifest.json`, { cache: 'no-store' }).then((r) => r.json()).catch(() => null);
   const def = manifest?.props?.menuBoard;
   if (!def) return;
-  const gltf = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(`${base}${def.model}?v=${manifest.version}`);
+  const gltf = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(`${base}${def.model}?v=${ver(def.model)}`);
   const img = (u: string) => new Promise<HTMLImageElement>((ok, no) => Object.assign(new Image(), { onload: function (this: HTMLImageElement) { ok(this); }, onerror: no, src: `${base}${u}` }));
   const [col, nrm] = await Promise.all([img(def.color), img(def.normal)]);
   await document.fonts.load(`40px ${TITLE}`).catch(() => undefined);

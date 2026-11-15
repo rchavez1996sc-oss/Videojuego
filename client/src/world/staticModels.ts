@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { Lighting } from '../render/lighting';
+import { ver } from '../core/assetVersion';
 
 /** A static model placed in a level (key in `manifest.models`): ground position, yaw, optional height and scale. */
 export interface ModelSpot { key: string; x: number; z: number; yaw?: number; y?: number; scale?: number; solid?: boolean }
@@ -28,7 +29,7 @@ export async function placeModels(scene: THREE.Object3D, lighting: Lighting, wor
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), s3 = new THREE.Vector3();
   for (const key of new Set(spots.map((s) => s.key))) {
     if (!urls[key]) continue;
-    const gltf = await loader.loadAsync(`${base}${urls[key]}?v=${manifest.version}`).catch(() => null);
+    const gltf = await loader.loadAsync(`${base}${urls[key]}?v=${ver(urls[key])}`).catch(() => null);
     if (!gltf) continue;
     gltf.scene.updateMatrixWorld(true);
     const mine = spots.filter((s) => s.key === key), box = new THREE.Box3().setFromObject(gltf.scene), size = box.getSize(new THREE.Vector3());
