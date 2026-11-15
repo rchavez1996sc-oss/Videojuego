@@ -1,4 +1,5 @@
 import { buildConstruction } from './construction';
+import { gantrySign, gantryBoards } from './beach';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import RAPIER from '@dimforge/rapier3d-compat';
@@ -165,13 +166,14 @@ export function buildMalecon(hf: Heightfield, def: MaleconDef, lighting: Lightin
   plants.standing.push(...guards.map((g) => ({ ...g, key: rand() < 0.5 ? 'civ_idle' : 'texting' })));
   buildLandmarks(b, hf, def, c);
   buildBajada(b, hf, def, c, plants);
-  buildBeach(b, hf, def, c, rand);
+  buildBeach(b, hf, def, c, rand, plants);
   const station = rosaNautica(b, hf, def, c, plants.standing, plants.seats);
   buildBorder(b, hf, def, c, hf.def.playable / 2);
   const group = new THREE.Group();
   group.add(buildLarcomar(b, def, c, lighting, plants, rand));
   group.add(buildMonuments(b, hf, def, lighting, plants.seats, (at, yaw) => bench(b, at, yaw)));
   group.add(buildConstruction(b, lighting, rand));
+  if (gantryBoards.length) group.add(new THREE.Mesh(mergeGeometries(gantryBoards.splice(0)), lighting.setup(new THREE.MeshStandardMaterial({ map: gantrySign(), roughness: 0.5 }), 'gantry-sign')));
   group.add(buildPropaganda(b, hf, def, lighting, fronts, rand));
   group.add(buildVegetation(b, plants, streetTrees, lighting));
   const bystanders = { onHurt: (_p: THREE.Vector3) => {} };

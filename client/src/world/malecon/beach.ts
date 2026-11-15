@@ -1,3 +1,4 @@
+import type { Plants } from './park';
 import * as THREE from 'three';
 import type { Builder } from '../buildingKit';
 import type { Heightfield } from '../heightfield';
@@ -24,7 +25,23 @@ function roadLight(b: Builder, at: THREE.Vector3): void {
  * Circuito de Playas (user's photos): four-lane road under the cliff with a mesh fence at its foot, tall double-arm
  * lights, cars parked on the sand strip, and a band of grey shingle (canto rodado) along the waterline.
  */
-export function buildBeach(b: Builder, hf: Heightfield, def: MaleconDef, c: CoastDef, rand: () => number): void {
+/** Board quads of the gantries (both faces), turned into one textured mesh by the level. */
+export const gantryBoards: THREE.BufferGeometry[] = [];
+
+/** Overhead sign gantry across the beach road: two steel posts, a truss beam and green direction boards. */
+function gantry(b: Builder, at: THREE.Vector3, half: number): void {
+  for (const s of [-1, 1]) {
+    b.box('steelDark', [0.35, 6.4, 0.35], new THREE.Vector3(at.x, at.y + 3.2, at.z + s * (half + 0.8)), Q, true);
+  }
+  for (const yy of [5.6, 6.3]) b.box('steelDark', [0.18, 0.18, half * 2 + 1.6], new THREE.Vector3(at.x, at.y + yy, at.z), Q, false);
+  for (const s of [-1, 1]) {
+    gantryBoards.push(new THREE.PlaneGeometry(half * 0.85, 1.6).rotateY(-Math.PI / 2).translate(at.x - 0.2, at.y + 5.3, at.z + s * half * 0.5));
+    gantryBoards.push(new THREE.PlaneGeometry(half * 0.85, 1.6).rotateY(Math.PI / 2).translate(at.x + 0.2, at.y + 5.3, at.z - s * half * 0.5));
+    b.box('steelDark', [0.06, 1.7, half * 0.87], new THREE.Vector3(at.x, at.y + 5.3, at.z + s * half * 0.5), Q, false);
+  }
+}
+
+export function buildBeach(b: Builder, hf: Heightfield, def: MaleconDef, c: CoastDef, rand: () => number, plants: Plants): void {
   const br = def.beachRoad, L = EXTENT, y = (x: number, z: number) => hf.heightAt(x, z);
   for (let x = -L; x < L; x += 9) for (const s of [-1, 1]) b.box('roadWhite', [3, 0.02, 0.12], new THREE.Vector3(x, y(x, br.z) + 0.07, br.z + s * br.half / 2), Q, false);
   const fz = br.z - br.half - 2.8, gaps = (c.ravines ?? []).map((r) => ravineCentre(r, fz));
@@ -35,6 +52,15 @@ export function buildBeach(b: Builder, hf: Heightfield, def: MaleconDef, c: Coas
     b.box('cliffMesh', [3, 2.4, 0.03], new THREE.Vector3(x + 1.5, g + 1.3, fz), Q, false);
     b.box('grate', [3, 2.6, 0.3], new THREE.Vector3(x + 1.5, g + 1.3, fz), Q, true);
   }
+  const mz = br.z, cut = (x: number) => Math.abs(x - (def.pier?.x ?? 1e4)) < 10 || (c.ravines ?? []).some((r) => Math.abs(ravineCentre(r, mz) + (r.skew ?? 0) * 4 - x) < 14);
+  for (let x = -L; x < L; x += 2) {
+    if (cut(x) || cut(x + 2)) continue;
+    const g = y(x + 1, mz);
+    b.box('kerbYellow', [2, 0.2, 1.4], new THREE.Vector3(x + 1, g + 0.1, mz), Q, true);
+    b.box('hedge', [2, 0.12, 1.1], new THREE.Vector3(x + 1, g + 0.26, mz), Q, false);
+    if (Math.round(x / 2) % 11 === 0) plants.palms.push(new THREE.Vector3(x + 1, g + 0.2, mz));
+  }
+  for (const gx of [-L * 0.55, L * 0.35]) gantry(b, new THREE.Vector3(gx, y(gx, mz), mz), br.half);
   for (let x = -L + 10; x < L; x += 34) roadLight(b, new THREE.Vector3(x, y(x, br.z + br.half + 1.4), br.z + br.half + 1.4));
   const shore: THREE.Vector2[] = [];
   for (let x = -L - 10; x <= L + 10; x += 4) shore.push(new THREE.Vector2(x, c.shore - 4));
@@ -69,5 +95,29 @@ export function chainLink(): THREE.CanvasTexture {
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = 8;
   t.repeat.set(5, 5);
+  return t;
+}
+
+/** Green direction board of the beach-road gantries: destinations in white with arrows, white border. */
+export function gantrySign(): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = 1024;
+  c.height = 256;
+  const g = c.getContext('2d')!;
+  g.fillStyle = '#1d6a3c';
+  g.fillRect(0, 0, 1024, 256);
+  g.strokeStyle = '#ffffff';
+  g.lineWidth = 10;
+  g.strokeRect(12, 12, 1000, 232);
+  g.fillStyle = '#ffffff';
+  g.font = '700 74px "Barlow Condensed", Arial, sans-serif';
+  g.fillText('BARRANCO · CHORRILLOS', 150, 112, 820);
+  g.font = '600 56px "Barlow Condensed", Arial, sans-serif';
+  g.fillText('BAJADA BALTA  ·  MIRAFLORES', 150, 200, 820);
+  g.beginPath();
+  g.moveTo(40, 128); g.lineTo(110, 70); g.lineTo(110, 105); g.lineTo(130, 105); g.lineTo(130, 151); g.lineTo(110, 151); g.lineTo(110, 186);
+  g.fill();
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
