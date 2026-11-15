@@ -181,6 +181,30 @@ export function lifeDebug(c: DebugContext) {
       for (let k = 0; k < 20; k++) [c.setFreeCam(true), c.tpc.place(best.p.clone().addScaledVector(best.n, 3.5).add(new THREE.Vector3(0.5, 0.3, 0.5)), best.p), c.frame(1 / 30)];
       return `panes ${g.panes.length} hit @${f(best.p)} dist ${bd.toFixed(1)}`;
     },
+    /** Untextured materials ranked by visible surface (m²): name, area, colour, `vc` when vertex colours carry it. */
+    texAudit(top = 40) {
+      const area = new Map<string, [number, string]>(), cache = new WeakMap<THREE.BufferGeometry, number>(), a = new THREE.Vector3(), b = new THREE.Vector3(), d = new THREE.Vector3();
+      const geoArea = (g: THREE.BufferGeometry) => {
+        if (cache.has(g)) return cache.get(g)!;
+        const p = g.attributes.position, ix = g.index, n = ix ? ix.count : p.count;
+        let s = 0;
+        for (let i = 0; i + 2 < n; i += 3) {
+          const [i0, i1, i2] = ix ? [ix.getX(i), ix.getX(i + 1), ix.getX(i + 2)] : [i, i + 1, i + 2];
+          a.fromBufferAttribute(p, i1).sub(d.fromBufferAttribute(p, i0)); b.fromBufferAttribute(p, i2).sub(d);
+          s += a.cross(b).length() / 2;
+        }
+        cache.set(g, s);
+        return s;
+      };
+      c.scene?.traverse((o) => {
+        const m = (o as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
+        if (!m || Array.isArray(m) || !(o as THREE.Mesh).geometry || m.map || !o.visible || (m as THREE.Material).type === 'ShaderMaterial') return;
+        const g = (o as THREE.Mesh).geometry, sc = Math.abs(o.matrixWorld.determinant()) ** (2 / 3), k = (o as THREE.InstancedMesh).isInstancedMesh ? (o as THREE.InstancedMesh).count : 1;
+        const key = m.name || '(anon)', prev = area.get(key);
+        area.set(key, [(prev?.[0] ?? 0) + geoArea(g) * sc * k, (m.vertexColors ? 'vc ' : '') + (m.color ? '#' + m.color.getHexString() : '')]);
+      });
+      return [...area].sort((x, y) => y[1][0] - x[1][0]).slice(0, top).map(([k, [v, col]]) => `${k}:${Math.round(v)}${col ? '(' + col + ')' : ''}`).join(' ');
+    },
     /** Material names in the scene matching `re`, with mesh counts (instanced marked *). */
     matNames(re: string) {
       const out = new Map<string, number>();

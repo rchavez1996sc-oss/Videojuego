@@ -1,3 +1,4 @@
+import { shotMode } from '../core/settings';
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { markSkin, setPorous, setSurface, type Surface } from './surfaces';
@@ -140,11 +141,26 @@ export class Builder {
           geos.push(g);
         }
         parts.delete(key);
+        if (shotMode) keyArea(group.material.name + '/' + key, list);
       }
       if (geos.length) emit(geos, group.material);
     }
     for (const [key, geos] of parts) emit(geos, materials[key]);
     return out;
+  }
+}
+
+/** Shot mode: surface (m²) each baked key contributes, for the texture audit (`window.__bakeArea`). */
+function keyArea(key: string, list: THREE.BufferGeometry[]): void {
+  const w = window as unknown as { __bakeArea?: Record<string, number> }, t = (w.__bakeArea ??= {});
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), o = new THREE.Vector3();
+  for (const g of list) {
+    const p = g.attributes.position, ix = g.index!;
+    for (let i = 0; i + 2 < ix.count; i += 3) {
+      o.fromBufferAttribute(p, ix.getX(i));
+      a.fromBufferAttribute(p, ix.getX(i + 1)).sub(o); b.fromBufferAttribute(p, ix.getX(i + 2)).sub(o);
+      t[key] = (t[key] ?? 0) + a.cross(b).length() / 2;
+    }
   }
 }
 

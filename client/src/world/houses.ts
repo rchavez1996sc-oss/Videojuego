@@ -67,7 +67,7 @@ export function cityHouse(b: Builder, lot: Lot, rand: () => number, sign: Sign, 
       b.wall(exposed ? front(f) : bare, d - 2 * T, h, T, at(s * (w / 2 - T / 2), y0, -d / 2), lot.facing + s * Math.PI / 2, side);
       if (exposed) for (const o of side) windowBars(b, (x, y, z) => at(s * (w / 2) + s * z, y, -d / 2 - s * x), q.clone().multiply(new THREE.Quaternion().setFromAxisAngle(UP, s * Math.PI / 2)), o.x, y0 + o.y, 0, o.w, o.h);
     }
-    b.box('concrete', [w - 0.04, 0.22, d - 0.04], at(0, (f + 1) * FLOOR - 0.13, -d / 2 - 0.02), q);
+    b.box(f === floors - 1 ? 'roofSlab' : 'concrete', [w - 0.04, 0.22, d - 0.04], at(0, (f + 1) * FLOOR - 0.13, -d / 2 - 0.02), q);
     b.box('concrete', [w + 0.04, 0.25, 0.3], at(0, (f + 1) * FLOOR - 0.12, 0.02), q, false);
     for (const s of [1, -1]) b.box('concrete', [0.3, FLOOR, 0.3], at(s * (w / 2 - 0.12), f * FLOOR + FLOOR / 2, 0.02), q, false);
     for (const o of openings) {

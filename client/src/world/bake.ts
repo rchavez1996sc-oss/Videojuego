@@ -4,6 +4,7 @@ import { PAINTS } from './houses';
 import { STREET_COLORS } from './streetLife';
 import { plaster } from '../render/urbanTextures';
 import { carPaintMaterial } from '../render/carPaint';
+import { photo } from '../render/photoTextures';
 
 /** Road markings: their own group so the weathering pass can fade and chip them. */
 const ROAD_PAINT = ['roadWhite', 'roadFaded', 'paintYellow'];
@@ -11,15 +12,15 @@ const CAR_PAINT = ['car0', 'car1', 'car2', 'car3', 'car4', 'car5', 'moto0', 'mot
 
 /** Plain-coloured keys folded into vertex-coloured materials (painted plaster, road markings, everything else). */
 export function bakeGroups(lighting: Lighting, extra: string[] = []): { material: THREE.Material; keys: string[] }[] {
-  const pl = plaster();
+  const pl = photo('paintWall') ?? plaster();
   return [
-    { material: lighting.setup(new THREE.MeshStandardMaterial({ map: pl.map, normalMap: pl.normalMap, roughness: 0.9, vertexColors: true }), 'paint-baked'), keys: PAINTS },
+    { material: lighting.setup(new THREE.MeshStandardMaterial({ map: pl.map, normalMap: pl.normalMap, roughnessMap: pl.roughnessMap, roughness: 0.9, vertexColors: true }), 'paint-baked'), keys: PAINTS },
     { material: lighting.setup(new THREE.MeshStandardMaterial({ roughness: 0.8, vertexColors: true }), 'road-paint'), keys: ROAD_PAINT },
     { material: carPaintMaterial(lighting), keys: CAR_PAINT },
     { material: lighting.setup(new THREE.MeshStandardMaterial({ roughness: 0.22, metalness: 0, envMapIntensity: 1.7, vertexColors: true }), 'carglass-baked'), keys: ['glass'] },
     { material: lighting.setup(new THREE.MeshStandardMaterial({ roughness: 0.45, metalness: 0.35, vertexColors: true }), 'plain-baked'),
       keys: ['tankBlack', 'tankBlue', 'stripe', 'checker', 'canopy', 'seat', 'tire', 'bars', 'rebar', 'cable', 'light', 'rim', 'plate', 'tail', 'plastic', ...Object.keys(STREET_COLORS), ...extra].filter((k) => !ROAD_PAINT.includes(k) && !CAR_PAINT.includes(k) && k !== 'glass' && !k.startsWith('facade')) },
-    { material: lighting.setup(new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0, vertexColors: true }), 'facade-wall-baked'), keys: Object.keys(STREET_COLORS).filter((k) => k.startsWith('facade')) },
+    { material: lighting.setup(new THREE.MeshStandardMaterial({ map: pl.map, normalMap: pl.normalMap, roughnessMap: pl.roughnessMap, roughness: 0.85, metalness: 0, vertexColors: true }), 'facade-wall-baked'), keys: Object.keys(STREET_COLORS).filter((k) => k.startsWith('facade')) },
   ];
 }
 

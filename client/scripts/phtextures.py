@@ -10,8 +10,10 @@ OUT = os.path.join(os.path.dirname(__file__), '..', 'public', 'assets', 'texture
 URL = 'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/{2}/{0}/{0}_{1}_{2}.jpg'
 HI = {'laja', 'plazaFlag', 'asphalt', 'slabs', 'cobble', 'flagstone', 'plaster', 'concrete', 'brick', 'lawn', 'dryGrass', 'soil'}
 # Roughness maps remapped to 0.8-1.0: they add breakup to the material's roughness but never make it glossier (no new glints).
-ROUGH = {'laja', 'plazaFlag', 'slateDark', 'paintPlaster', 'asphalt', 'slabs', 'cobble', 'flagstone', 'concrete', 'brick', 'plaster', 'stucco', 'rock', 'roofTiles', 'calamina', 'deck', 'wood', 'pirca', 'stoneWall', 'soil', 'brick2', 'brick3', 'plasterBrick', 'paintedBrick', 'blockWall', 'damagedPlaster', 'brick4'}
+ROUGH = {'laja', 'plazaFlag', 'slateDark', 'paintPlaster', 'asphalt', 'slabs', 'cobble', 'flagstone', 'concrete', 'brick', 'plaster', 'stucco', 'rock', 'roofTiles', 'calamina', 'deck', 'wood', 'pirca', 'stoneWall', 'soil', 'brick2', 'brick3', 'plasterBrick', 'paintedBrick', 'blockWall', 'damagedPlaster', 'brick4', 'paintWall', 'roofSlab'}
 GREY = (128, 128, 128)
+# Faint photos (stains lost once tinted by vertex colour): (contrast gain, new mean) so the dirt reads like the graffiti walls.
+PUNCH = {'paintWall': (2.6, 208), 'paintPlaster': (2.2, 212)}
 SETS = {
     'concrete': ('concrete_floor_worn_001', (134, 131, 125)),
     'slabs': ('concrete_pavement', (134, 131, 125)),
@@ -46,6 +48,8 @@ SETS = {
     'blockWall': ('concrete_block_wall', (138, 134, 126)),
     'brick4': ('wall_bricks_plaster', None),
     'damagedPlaster': ('damaged_plaster', (231, 227, 219)),
+    'paintWall': ('blue_plaster_weathered', (231, 227, 219)),
+    'roofSlab': ('dirty_concrete', (150, 146, 138)),
 }
 
 def fetch(asset, kind, res='1k'):
@@ -63,6 +67,10 @@ for key, (asset, target) in SETS.items():
     if target:
         mean = ImageStat.Stat(col).mean
         col = Image.merge('RGB', [band.point(lambda v, k=t / m: min(255, int(v * k))) for band, t, m in zip(col.split(), target, mean)])
+    if key in PUNCH:
+        lum = ImageStat.Stat(col.convert('L')).mean[0]
+        k, base = PUNCH[key]
+        col = col.point(lambda v: max(0, min(255, int(base + (v - lum) * k))))
     col.save(os.path.join(OUT, f'{key}_col.jpg'), quality=82, optimize=True)
     fetch(asset, 'nor_gl').resize((1024, 1024) if hi else (512, 512), Image.LANCZOS).save(os.path.join(OUT, f'{key}_nrm.jpg'), quality=88, optimize=True)
     if key in ROUGH:

@@ -83,6 +83,7 @@ export function materials(lighting: Lighting, atlas: SignAtlas): Record<string, 
   const m: Record<string, THREE.Material> = {
     brick: std('brick', { map: br.map, normalMap: br.normalMap, roughness: 0.92 }),
     concrete: std('concrete', { map: co.map, normalMap: co.normalMap, roughness: 0.95, color: '#a39d92' }),
+    roofSlab: std('roofSlab', { map: (photo('roofSlab') ?? co).map, normalMap: (photo('roofSlab') ?? co).normalMap, roughness: 0.95, color: '#c4beb2' }),
     sidewalk: std('sidewalk', { map: slabs().map, normalMap: slabs().normalMap, roughnessMap: slabs().roughnessMap, roughness: 0.95, color: '#b4ab9c' }),
     wood: std('beam', { map: co.map, normalMap: co.normalMap, roughness: 0.95, color: '#cfcac0' }),
     calamina: std('calamina', { map: ca.map, normalMap: ca.normalMap, roughness: 0.65, metalness: 0.4 }),

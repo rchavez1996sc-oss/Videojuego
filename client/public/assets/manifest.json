@@ -1,5 +1,5 @@
 {
-  "version": 35,
+  "version": 36,
   "characters": {
     "pnp": {
       "near": "characters/pnp.glb",
@@ -226,6 +226,18 @@
       "normal": "textures/blockWall_nrm.jpg",
       "rough": "textures/blockWall_rgh.jpg",
       "source": "Poly Haven concrete_block_wall (CC0)"
+    },
+    "paintWall": {
+      "map": "textures/paintWall_col.jpg",
+      "normal": "textures/paintWall_nrm.jpg",
+      "rough": "textures/paintWall_rgh.jpg",
+      "source": "Poly Haven blue_plaster_weathered (CC0)"
+    },
+    "roofSlab": {
+      "map": "textures/roofSlab_col.jpg",
+      "normal": "textures/roofSlab_nrm.jpg",
+      "rough": "textures/roofSlab_rgh.jpg",
+      "source": "Poly Haven dirty_concrete (CC0)"
     },
     "damagedPlaster": {
       "map": "textures/damagedPlaster_col.jpg",
