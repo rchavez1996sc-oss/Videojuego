@@ -89,5 +89,35 @@
     },
     "rig": "pnp",
     "gun": "pistol"
+  },
+  "soldier": {
+    "hp": 140,
+    "damage": 8,
+    "rpm": 520,
+    "burst": [
+      3,
+      6
+    ],
+    "burstPause": [
+      0.7,
+      1.6
+    ],
+    "spread": 1.8,
+    "spreadPerMeter": 0.01,
+    "reaction": 0.8,
+    "sight": 150,
+    "fov": 120,
+    "hearing": 170,
+    "walk": 1.7,
+    "run": 4.3,
+    "preferredRange": 28,
+    "palette": {
+      "id": "pnp",
+      "cloth": "#3e4650",
+      "vest": "#23282e",
+      "skin": "#8f6650",
+      "helmet": "#2c3238"
+    },
+    "rig": "pnp"
   }
 }

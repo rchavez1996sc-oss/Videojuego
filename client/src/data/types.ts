@@ -56,6 +56,10 @@ export interface ChapterDef {
   farCity?: import('../world/farCity').FarCityDef;
   malecon?: import('../world/malecon/layout').MaleconDef;
   campus?: import('../world/campus/layout').CampusDef;
+  barranco?: import('../world/barranco/layout').BarrancoDef;
+  handover?: import('../systems/handover').HandoverDef;
+  /** Forced time of day for the chapter ('night'…), over the player's choice. */
+  time?: string;
   /** Once a shot is heard, every mobile enemy on the map converges on the player. */
   alertAll?: boolean;
   /** `?ch=` value of the chapter that follows this one. */

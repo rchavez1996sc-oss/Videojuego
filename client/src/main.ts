@@ -3,7 +3,8 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import ch01 from './data/chapters/ch01_lima.json';
 import ch02 from './data/chapters/ch02_malecon.json';
 import ch03 from './data/chapters/ch03_sanmarcos.json';
-import ch04 from './data/chapters/ch04_aldea.json';
+import ch04 from './data/chapters/ch04_barranco.json';
+import ch05 from './data/chapters/ch05_aldea.json';
 import type { ChapterDef } from './data/types';
 import { Input } from './core/input';
 import { ThirdPersonCamera } from './core/camera';
@@ -53,6 +54,7 @@ import { buildBarrio } from './world/barrio';
 import { buildFarCity } from './world/farCity';
 import { buildMalecon } from './world/malecon';
 import { buildCampus } from './world/campus';
+import { buildBarranco } from './world/barranco';
 import { StreetNav, walkClear } from './ai/nav';
 import { cover } from './ai/cover';
 import { createPopulace } from './systems/populace';
@@ -66,13 +68,14 @@ import { characters } from './render/characters';
 import { Loot } from './systems/loot';
 import { Objective } from './systems/objective';
 import { Defense } from './systems/defense';
+import { Handover } from './systems/handover';
 import { showMissionComplete } from './ui/missionComplete';
 import { prologueQuiet, showPrologue } from './ui/prologue';
 import { showLauncher } from './ui/launcher';
 import { counting } from './ui/countdown';
 import allyDef from './data/allies.json';
 
-const CHAPTERS: Record<string, unknown> = { '1': ch01, '2': ch02, '3': ch03, '4': ch04 };
+const CHAPTERS: Record<string, unknown> = { '1': ch01, '2': ch02, '3': ch03, '4': ch04, '5': ch05 };
 const status = document.getElementById('status')!;
 const overlay = document.getElementById('overlay')!;
 const stats = document.getElementById('stats')!;
@@ -83,7 +86,7 @@ const step = (msg: string) => (mark(msg), prologueQuiet().then(() => new Promise
 async function boot(): Promise<void> {
   if (shotMode) document.body.classList.add('shot');
   const asked = new URLSearchParams(location.search).get('ch') ?? savedChapter() ?? '1';
-  const cards = (['1', '2', '3'] as const).map((id) => ({ id, number: (CHAPTERS[id] as ChapterDef).number ?? +id, title: (CHAPTERS[id] as ChapterDef).title }));
+  const cards = (['1', '2', '3', '4'] as const).map((id) => ({ id, number: (CHAPTERS[id] as ChapterDef).number ?? +id, title: (CHAPTERS[id] as ChapterDef).title }));
   const chId = shotMode || testMode ? asked : await showLauncher(cards, asked), ch = (CHAPTERS[chId] ?? ch01) as ChapterDef;
   document.querySelector('#overlay .sub')!.textContent = `Capítulo ${ch.number ?? 1} — ${ch.title}`;
   const prologue = shotMode || testMode ? Promise.resolve() : showPrologue(`CAPÍTULO ${ch.number ?? 1}`, ch.title.toUpperCase(), ch.intro ?? [], ch.introPlates, ch.introScore, true);
@@ -91,7 +94,7 @@ async function boot(): Promise<void> {
   const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
   const canvas = document.getElementById('game') as HTMLCanvasElement;
   const [scene, camera] = [new THREE.Scene(), new THREE.PerspectiveCamera(57, innerWidth / innerHeight, 0.1, 4000)];
-  const renderer = new Renderer(canvas, scene, camera, applyTime(ch.biome).exposure);
+  const renderer = new Renderer(canvas, scene, camera, applyTime(ch.biome, ch.time).exposure);
   const lighting = new Lighting(scene, camera, renderer.gl, ch.biome);
 
   mark('rapier'); await Promise.all([loadPhotoTextures(), carModels.load(lighting)]); mark('textures+cars');
@@ -109,7 +112,7 @@ async function boot(): Promise<void> {
     blockers.push((x, z) => village.footprints.some((f) => Math.hypot(f.x - x, f.z - z) < f.r + 2));
   }
   const shadowCull = new ShadowCull(ch.shadowRange ?? 90);
-  const barrio = ch.barrio ? buildBarrio(hf, ch.barrio, lighting, world) : ch.malecon ? buildMalecon(hf, ch.malecon, lighting, world) : ch.campus ? buildCampus(hf, ch.campus, lighting, world) : null;
+  const barrio = ch.barrio ? buildBarrio(hf, ch.barrio, lighting, world) : ch.malecon ? buildMalecon(hf, ch.malecon, lighting, world) : ch.campus ? buildCampus(hf, ch.campus, lighting, world) : ch.barranco ? buildBarranco(hf, ch.barranco, lighting, world) : null;
   if (barrio) {
     scene.add(barrio.group);
     shadowCull.add(barrio.group);
@@ -191,10 +194,11 @@ async function boot(): Promise<void> {
   const objective = ch.objective && barrio?.station ? new Objective(ch.objective, barrio.station, camera, { lighting, world, scene, mixer, cinematic: (eye, look) => (freeCam = true, tpc.place(eye, look)) }) : null;
   let lives = (hud.lives = ch.lives ?? 5);
   const defense = ch.defense && barrio?.refuge ? new Defense(ch.defense, { scene, world, lighting, enemies, sfx, camera, refuge: barrio.refuge, entry: barrio.entry, blast: (at) => blast(at) }) : null;
-  const goal = objective ?? defense, lose = (why: string) => !failed && window.setTimeout(() => !failed && ((failed = true), showMissionFailed(why)), 4200);
+  const handover = ch.handover && barrio ? new Handover(ch.handover, { scene, world, lighting, enemies, sfx, camera, floor: barrio.graph.ground ?? ((x, z) => hf.heightAt(x, z)) }) : null;
+  const goal = objective ?? defense ?? handover, lose = (why: string) => !failed && window.setTimeout(() => !failed && ((failed = true), showMissionFailed(why)), 4200);
   if (goal) (goal.onFail = lose), (goal.onComplete = () => {
     failed = true;
-    const g = (objective?.def ?? defense!.def) as { complete: string; reward: string; loot?: string[]; unlock?: string };
+    const g = (objective?.def ?? defense?.def ?? handover!.def) as { complete: string; reward: string; loot?: string[]; unlock?: string };
     showMissionComplete(g.complete, g.reward, `ENEMIGOS ABATIDOS ${enemies.list.length - enemies.aliveCount}/${enemies.list.length} · ${defense ? `ESTUDIANTES CAÍDOS ${defense.students.lost}` : `BAJAS CIVILES ${populace.casualties}`} · VIDAS ${lives}<br>${hud.rewards.summary()}`, g.loot, g.unlock, ch.next);
   });
   const blast = (at: THREE.Vector3) => (alarm(at, 150), detonate(at, { combat, sfx, tpc, enemies, player, world, playerAlive: deadT <= 0, also: [civilians, squad, life, props, defense?.students] }));
@@ -212,7 +216,7 @@ async function boot(): Promise<void> {
   (window as unknown as { __loadLog: unknown }).__loadLog = loadLog;
   installDebug({
     extraLog: () => (civilians ? `civ:${civilians.list.map((c) => c.mood[0]).join('')}` : ''),
-    views: ch.views ?? [], lighting, tpc, hf, player, combat, input, enemies, grenades, pickups, renderer, shotMode, scene, squad, grenadeMode: nadeMode, objective, civilians: () => civilians?.present ?? [], world, nav, goal: () => objective?.position ?? defense?.goal, status: () => (defense ? defense.status() : objective ? `obj ${objective.position ? 'on' : '-'}` : '') + ` civ=${populace.casualties} lives=${lives}`,
+    views: ch.views ?? [], lighting, tpc, hf, player, combat, input, enemies, grenades, pickups, renderer, shotMode, scene, squad, grenadeMode: nadeMode, objective, civilians: () => civilians?.present ?? [], world, nav, goal: () => objective?.position ?? defense?.goal ?? handover?.goal, status: () => (handover ? handover.status() : defense ? defense.status() : objective ? `obj ${objective.position ? 'on' : '-'}` : '') + ` civ=${populace.casualties} lives=${lives}`,
     frame: (dt) => frame(dt),
     setFreeCam: (v) => (freeCam = v),
     setSkipRender: (v) => (skipRender = v),
@@ -220,7 +224,7 @@ async function boot(): Promise<void> {
     traffic: () => life?.trafficEvents,
   });
   setupStartMenu(overlay, status, canvas, () => !failed && (mixer.resume(), input.lock()), { chapters: cards, current: chId });
-  setupWorldMap(minimap, overlay, canvas, () => ({ player: player.position, forward: camera.getWorldDirection(new THREE.Vector3()), goal: objective?.position ?? defense?.goal, allies: squad?.positions ?? [], supplies: pickups.markers }));
+  setupWorldMap(minimap, overlay, canvas, () => ({ player: player.position, forward: camera.getWorldDirection(new THREE.Vector3()), goal: objective?.position ?? defense?.goal ?? handover?.goal, allies: squad?.positions ?? [], supplies: pickups.markers }));
   const gpu = gpuName.replace(/^ANGLE \((.*)\)$/, '$1').slice(0, 60);
   const melee = new Melee(player, enemies, sfx, tpc), seekCover = coverSeeker({ world, cover, hf, player, enemies, camera, hud });
   const feel = new MoveFeel(player, tpc, sfx, () => surfaceUnder(world, hf, player));
@@ -276,8 +280,9 @@ async function boot(): Promise<void> {
     collectSupplies(dt, pickups, { player, guns: combat.guns, grenades, sfx, hud, alive: deadT <= 0 });
     objective?.update(dt, player.position, enemies.list, input, deadT <= 0);
     defense?.update(dt, player.position, input, deadT <= 0);
+    handover?.update(dt, player.position, input, deadT <= 0);
     corpses.update(dt, { dead: enemies.list.filter((e) => !e.alive), fallen: squad?.fallen ?? [] });
-    const threats = gatherThreats(enemies, civilians, pickups.markers, player.position, camera, squad?.positions, objective?.position ?? defense?.goal);
+    const threats = gatherThreats(enemies, civilians, pickups.markers, player.position, camera, squad?.positions, objective?.position ?? defense?.goal ?? handover?.goal);
     minimap.update(player.position, tpc.yaw, threats);
     damageFx.update(dt, player.hp / 100);
     hud.enemies = enemies.aliveCount;

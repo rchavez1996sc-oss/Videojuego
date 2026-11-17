@@ -10,7 +10,7 @@ export interface CoastDef {
   /** Stretches where the edge juts out to sea: centre x, half width, extra z. */
   bulges?: { x: number; w: number; dz: number }[];
   /** Green ravines cutting the plateau down to the beach: centre x, head z, mouth width. */
-  ravines?: { x: number; head: number; width: number; skew?: number }[];
+  ravines?: { x: number; head: number; width: number; skew?: number; floorHalf?: number; knee?: { z: number; y: number } }[];
   /** Sunken floors (plazas cut into the cliff top); they only ever lower the ground. */
   carves?: { x0: number; x1: number; z0: number; z1: number; y: number }[];
 }
@@ -47,19 +47,21 @@ export function ravineCentre(r: Ravine, z: number): number {
 /** Height of the road on the ravine floor at z: street level at the head, beach level at the mouth. */
 export function ravineFloor(c: CoastDef, r: Ravine, z: number): number {
   const mouth = edgeZ(c, r.x) + c.run;
-  return z <= r.head ? 0 : lerp(0, -c.drop, Math.pow(smoothstep(r.head, mouth, z), 0.85));
+  if (z <= r.head) return 0;
+  if (r.knee) return z < r.knee.z ? r.knee.y * Math.pow((z - r.head) / (r.knee.z - r.head), 0.6) : lerp(r.knee.y, -c.drop, smoothstep(r.knee.z, mouth, z));
+  return lerp(0, -c.drop, Math.pow(smoothstep(r.head, mouth, z), 0.85));
 }
 
 /** Half width of the cut at z, from the centre line to the top of the retaining wall. */
 export function ravineHalf(c: CoastDef, r: Ravine, z: number): number {
   const f = ravineFloor(c, r, z), R = RAVINE;
   if (z < r.head) return 0;
-  return R.floor + R.lipRun + Math.max(0, R.top - f - R.lip) / R.slope + R.topRun;
+  return (r.floorHalf ?? R.floor) + R.lipRun + Math.max(0, R.top - f - R.lip) / R.slope + R.topRun;
 }
 
 function ravineCut(c: CoastDef, r: Ravine, x: number, z: number, h: number): number {
   if (z < r.head - 1) return h;
-  const R = RAVINE, f = ravineFloor(c, r, z), d = Math.abs(x - ravineCentre(r, z));
+  const R = { ...RAVINE, floor: r.floorHalf ?? RAVINE.floor }, f = ravineFloor(c, r, z), d = Math.abs(x - ravineCentre(r, z));
   const dTop = R.floor + R.lipRun + Math.max(0, R.top - f - R.lip) / R.slope;
   let v: number;
   if (d <= R.floor) v = f;
