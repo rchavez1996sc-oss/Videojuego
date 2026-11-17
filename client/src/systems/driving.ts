@@ -34,7 +34,8 @@ import { safely } from '../core/guard';
 import type { Heightfield } from '../world/heightfield';
 import type { Rig } from '../entities/rig';
 interface Deps { hf: Heightfield; traffic: Traffic | null; world: RAPIER.World; player: Player; tpc: ThirdPersonCamera; enemies: Enemies; squad: Squad | null; sfx: Sfx; lighting: Lighting; mixer: Mixer }
-const REACH = 2.2;
+/** `SEAT_CLIPS` off: getting in/out, the door swings open and shut while the driver pops straight in/out. */
+const REACH = 2.2, SEAT_CLIPS = false;
 /**
  * Getting into traffic vehicles and driving them (E in/out): the player takes the driver's seat (the occupants get
  * out), drives with W/S/A/D and Space (handbrake), the chase camera swings in behind, people in the way are run
@@ -59,7 +60,6 @@ export class Driving {
   private anim: SeatAnim | null = null;
   private rig: CarRig | null = null;
   private after: (() => void) | null = null;
-
   private marks: SkidMarks;
   private escape = new CarEscape();
   private crashT = -9;
@@ -145,7 +145,7 @@ export class Driving {
       [tpc.vehicle, tpc.lift] = [0.15, this.cabin.userData.eye - 1.78];
     }
     const at = seatsOf(v.group, v.kind)[0];
-    if (at && SeatAnim.possible() && v.kind !== 'moto' && v.kind !== 'delivery') {
+    if (at && SEAT_CLIPS && SeatAnim.possible() && v.kind !== 'moto' && v.kind !== 'delivery') {
       v.group.updateMatrixWorld(true);
       this.anim = new SeatAnim(player.model, false, v.group.localToWorld(new THREE.Vector3(...at)), v.yaw, player.position.y).begin(v.group);
       this.after = () => this.seatIn(v);
@@ -202,7 +202,7 @@ export class Driving {
     const spots = [left.clone().multiplyScalar(side * (sp.half + 0.8)), left.clone().multiplyScalar(-side * (sp.half + 0.8)), fwd.clone().multiplyScalar(-(v.len / 2 + 1.1)), fwd.clone().multiplyScalar(v.len / 2 + 1.1)].map((o) => base.clone().add(o));
     const col = world.getCollider(player.collisionHandle);
     col.setEnabled(true);
-    const at = seatsOf(v.group, v.kind)[0], calm = alive && !bail && v.state !== 'wreck' && !overturned(v) && at && SeatAnim.possible() && v.kind !== 'moto' && v.kind !== 'delivery';
+    const at = seatsOf(v.group, v.kind)[0], calm = SEAT_CLIPS && alive && !bail && v.state !== 'wreck' && !overturned(v) && at && SeatAnim.possible() && v.kind !== 'moto' && v.kind !== 'delivery';
     v.group.updateMatrixWorld(true);
     const anim = calm ? new SeatAnim(player.model, true, v.group.localToWorld(new THREE.Vector3(...at!)), s.yaw, s.y) : null;
     const walk = anim && roomy(world, anim.end.pos, player.collisionHandle);
