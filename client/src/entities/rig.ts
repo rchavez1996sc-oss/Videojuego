@@ -19,6 +19,7 @@ const CLIP_START: Record<string, number> = { hit_car: 0.555, stumble: 0.14 };
 const HOLD_FIX: Record<string, { yaw: number; y: number }> = { ladder: { yaw: Math.PI, y: -0.75 } };
 
 /** Skinned Mixamo character with layered animation: legs from speed/direction, torso from stance and gestures. */
+/** While true (a parley, a handover), armed people carry their weapon lowered at rest unless they aim or fire. */ export const carry = { relaxed: false };
 export class Rig {
   readonly root = new THREE.Group();
   private arms: Arm[]; private cur = 0; private detailed: boolean;
@@ -237,6 +238,7 @@ export class Rig {
   private chooseUpper(low: string, crouch: number): string {
     if (this.overlay) return this.overlay.key;
     if (!this.armed) return low;
+    if (carry.relaxed && !this.aiming && this.aimT <= 0 && crouch < 0.5 && !low.startsWith('sprint')) return this.gunModel === 'pistol' ? 'p_idle' : 'idle';
     const aim = this.aiming || this.aimT > 0 || (this.gunModel !== 'pistol' && (low === 'idle' || low === 'crouch_idle'));
     const up = aim ? (crouch > 0.5 ? 'crouch_aim' : 'aim') : low;
     return this.gunModel === 'pistol' ? pistolUpper(up) : up;

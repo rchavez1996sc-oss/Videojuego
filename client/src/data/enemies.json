@@ -118,6 +118,7 @@
       "skin": "#8f6650",
       "helmet": "#2c3238"
     },
-    "rig": "pnp"
+    "rig": "pnp",
+    "uniform": "army"
   }
 }

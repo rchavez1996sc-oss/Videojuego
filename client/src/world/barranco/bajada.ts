@@ -3,7 +3,7 @@ import type { Builder } from '../buildingKit';
 import type { Heightfield } from '../heightfield';
 import type { Lighting } from '../../render/lighting';
 import { edgeZ, ravineCentre, ravineFloor, ravineHalf, type CoastDef } from '../coast';
-import { ribbon, bench, type Plants } from '../malecon/park';
+import { bench, type Plants } from '../malecon/park';
 import { globeLamp } from './bridge';
 import { muralSpan, ravineOf, type BarrancoDef } from './layout';
 
@@ -46,8 +46,14 @@ export function bajadaDeBanos(b: Builder, hf: Heightfield, def: BarrancoDef, c: 
   const r = ravineOf(c), mouth = edgeZ(c, r.x) + c.run, half = (r.floorHalf ?? 4) - 0.2, end = def.beachRoad.z - def.beachRoad.half;
   const centre: THREE.Vector2[] = [];
   for (let z = r.head - 8; z <= end; z += 1.5) centre.push(new THREE.Vector2(ravineCentre(r, Math.min(Math.max(z, r.head), mouth)), z));
-  ribbon(b, hf, centre, half * 2, 'cobble', 0.1);
-  for (const s of [-1, 1]) ribbon(b, hf, centre.map((p) => new THREE.Vector2(p.x + s * (half - 0.15), p.y)), 0.3, 'stairStone', 0.16);
+  for (let k = 1; k < centre.length; k++) {
+    const a = centre[k - 1], e = centre[k], fa = ravineFloor(c, r, Math.min(a.y, mouth)) + 0.06 - 0.25, fe = ravineFloor(c, r, Math.min(e.y, mouth)) + 0.06 - 0.25;
+    run(b, 'cobble', new THREE.Vector3(a.x, fa, a.y), new THREE.Vector3(e.x, fe, e.y), half * 2 + 0.9, 0.5);
+  }
+  for (const s of [-1, 1]) for (let k = 1; k < centre.length; k++) {
+    const a = centre[k - 1], e = centre[k], fa = ravineFloor(c, r, Math.min(a.y, mouth)) + 0.07, fe = ravineFloor(c, r, Math.min(e.y, mouth)) + 0.07;
+    run(b, 'stairStone', new THREE.Vector3(a.x + s * (half - 0.15), fa, a.y), new THREE.Vector3(e.x + s * (half - 0.15), fe, e.y), 0.3, 0.06, false);
+  }
   const group = new THREE.Group(), m = muralSpan(c, def);
   for (let z = r.head + 2, i = 0; z < mouth - 3; z += 4, i++) {
     const zn = z + 4, f = ravineFloor(c, r, z), fn = ravineFloor(c, r, zn);

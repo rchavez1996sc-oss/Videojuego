@@ -129,7 +129,7 @@ async function boot(): Promise<void> {
   await photosLoaded();
   const shaders = renderer.gl.compileAsync(scene, camera).catch(() => undefined);
   await step('Cargando personajes…');
-  await Promise.all([characters.load(lighting, ch.objective?.capture ? [] : ['vip']), shaders]); mark('characters');
+  await Promise.all([characters.load(lighting, ch.objective?.capture || ch.handover ? [] : ['vip']), shaders]); mark('characters');
   const minimap = new Minimap(renderer.gl, scene, ch.terrain.playable, ['asphalt', 'asphaltWorn'].flatMap((k) => barrio?.materials[k] ?? []), ch.barrio && barrio ? { ...barrio.graph, width: ch.barrio.street } : undefined);
 
   mark('minimap');

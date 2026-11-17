@@ -6,6 +6,7 @@ import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.j
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { Lighting } from './lighting';
 import { DRAB, LOOKS, variants, type Cover } from './outfitTint';
+import { armyHook } from './armyUniform';
 
 /** Bare legs, shorts and trainers on civilian atlases, turned into field trousers and boots in the drab look. */
 const COVER: Partial<Record<string, Cover>> = { civ_b: [[0, 0.49, 0.435, 1], [0, 0.31, 0.7, 0.57], [0.43, 0.86, 0.468, 1], [0.65, 0, 1, 0.52]] };
@@ -119,7 +120,10 @@ class CharacterLibrary {
           const looks = variants(mat, `char-${kind}-${mat.name}`, lighting, masks.get(kind), Math.random, COVER[kind]);
           this.looks.set(looks[0], looks);
           m.material = looks[0];
-        } else m.material = lighting.setup(mat, `char-${kind}-${mat.name}`);
+        } else {
+          m.material = lighting.setup(mat, `char-${kind}-${mat.name}`);
+          if (kind === 'pnp') this.army.set(m.material as THREE.Material, lighting.setup(mat.clone(), `char-army-${mat.name}`, armyHook));
+        }
         mats.set(mat.name, m.material as THREE.Material);
       });
       const far: THREE.SkinnedMesh[] = [];
@@ -161,6 +165,12 @@ class CharacterLibrary {
     const inst = { model, near, far, bones };
     shadowedChars.add(inst);
     return inst;
+  }
+
+  private army = new Map<THREE.Material, THREE.Material>();
+  /** Swaps the police uniform for the army's woodland camouflage (soldiers). */
+  armyDress(inst: CharInstance): void {
+    for (const m of [...inst.near, ...inst.far]) m.material = this.army.get(m.material as THREE.Material) ?? m.material;
   }
 
   /** Re-dresses an instance with one of its model's looks (`DRAB` = muted field clothes). */

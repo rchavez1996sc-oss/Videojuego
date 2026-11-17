@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import type { Enemies } from './enemies';
 import { Vip } from './vip';
+import { carry } from '../entities/rig';
 import { truce } from './truce';
 import { PoliceTruck, vehicleMats } from '../entities/policeTruck';
 import { celebrate } from '../ui/objectiveDone';
@@ -96,6 +97,8 @@ export class Handover {
   update(dt: number, player: THREE.Vector3, input: Input, alive: boolean): void {
     if (this.done) return;
     this.t += dt;
+    carry.relaxed = this.phase !== 'fight';
+    this.nameTag();
     if (this.phase !== 'fight') {
       truce.until = performance.now() + 1500;
       if (this.party.some((p) => p.e.hp < p.hp)) this.betray();
@@ -214,6 +217,19 @@ export class Handover {
     this.alertT = window.setTimeout(() => this.alert.classList.remove('on'), seconds * 1000);
   }
   private alertT = 0;
+  private tag = Object.assign(document.createElement('div'), { textContent: 'GIACOMO MIRÓ QUESADA' });
+  /** Name label floating over the hostage's head while he is alive and in view. */
+  private nameTag(): void {
+    if (!this.tag.isConnected) {
+      Object.assign(this.tag.style, { position: 'fixed', left: '0', top: '0', pointerEvents: 'none', font: '600 12px "Barlow Condensed", sans-serif', letterSpacing: '0.12em', color: '#f3e7c9', textShadow: '0 1px 3px #000, 0 0 6px #000', padding: '2px 8px', background: 'rgba(20,16,10,0.55)', borderLeft: '2px solid #d9a640', whiteSpace: 'nowrap', zIndex: '5' });
+      document.body.append(this.tag);
+    }
+    const head = this.vip.position.clone().setY(this.vip.position.y + 2.15), cam = this.d.camera as THREE.PerspectiveCamera, far = head.distanceTo(cam.position);
+    const v = head.clone().project(cam), ahead = head.clone().sub(cam.position).dot(cam.getWorldDirection(new THREE.Vector3())) > 0;
+    const on = this.vip.alive && ahead && far < 70 && Math.abs(v.x) < 1 && Math.abs(v.y) < 1 && !document.body.classList.contains('paused');
+    this.tag.style.opacity = on ? String(Math.min(1, (70 - far) / 20)) : '0';
+    if (on) this.tag.style.transform = `translate(${((v.x + 1) / 2) * innerWidth}px, ${((1 - v.y) / 2) * innerHeight}px) translate(-50%, -100%)`;
+  }
 
   private text(player: THREE.Vector3): void {
     const p = this.phase, [mx, mz] = this.def.meet;

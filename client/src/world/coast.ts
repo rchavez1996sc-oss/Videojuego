@@ -64,7 +64,8 @@ function ravineCut(c: CoastDef, r: Ravine, x: number, z: number, h: number): num
   const R = { ...RAVINE, floor: r.floorHalf ?? RAVINE.floor }, f = ravineFloor(c, r, z), d = Math.abs(x - ravineCentre(r, z));
   const dTop = R.floor + R.lipRun + Math.max(0, R.top - f - R.lip) / R.slope;
   let v: number;
-  if (d <= R.floor) v = f;
+  if (r.floorHalf !== undefined && d <= R.floor + 0.4) v = f - 0.6;
+  else if (d <= R.floor) v = f;
   else if (d <= R.floor + R.lipRun) v = f + R.lip * (d - R.floor) / R.lipRun;
   else if (d <= dTop) v = f + R.lip + (d - R.floor - R.lipRun) * R.slope;
   else v = lerp(Math.max(R.top, f + R.lip), 0, smoothstep(dTop, dTop + R.topRun, d));

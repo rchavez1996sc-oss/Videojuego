@@ -55,7 +55,7 @@ export function walkHeight(def: BarrancoDef, c: CoastDef, hf: Heightfield, x: nu
   if (Math.abs(z - b.z) < 1.6 && x > b.x0 && x < b.x1) return DECK;
   if (Math.abs(z - m.z) < def.mural.half + 2 && x > m.x0 && x < m.x1) return 0.15;
   const r = ravineOf(c);
-  if (z > r.head && z < edgeZ(c, r.x) + c.run && Math.abs(x - ravineCentre(r, z)) < (r.floorHalf ?? 8) - 0.3) return ravineFloor(c, r, z) + 0.12;
+  if (z > r.head && z < edgeZ(c, r.x) + c.run && Math.abs(x - ravineCentre(r, z)) < (r.floorHalf ?? 8) - 0.3) return ravineFloor(c, r, z) + 0.06;
   return hf.heightAt(x, z);
 }
 

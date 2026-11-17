@@ -23,7 +23,7 @@ const FRONT = [['death_head', 'death_front', 'fall_back'], ['fall_back', 'fall_b
 export interface EnemyDef {
   hp: number; damage: number; rpm: number; burst: [number, number]; burstPause: [number, number];
   spread: number; spreadPerMeter: number; reaction: number; sight: number; fov: number; hearing: number;
-  walk: number; run: number; preferredRange: number; palette: Palette; rig?: CharKind; gun?: import('../weapons/gunModels').GunModel;
+  walk: number; run: number; preferredRange: number; palette: Palette; rig?: CharKind; uniform?: 'army'; gun?: import('../weapons/gunModels').GunModel;
 }
 
 export type EnemyState = 'patrol' | 'alert' | 'combat' | 'dead';
@@ -97,6 +97,7 @@ export class Enemy {
   constructor(readonly id: number, readonly def: EnemyDef, private world: RAPIER.World, lighting: Lighting, spawn: THREE.Vector3, readonly patrol: THREE.Vector3[], readonly isStatic: boolean, outfit?: Outfit) {
     this.hp = def.hp;
     this.model = new Rig(def.rig ?? 'pnp', lighting, true, false, outfit, def.gun);
+    if (def.uniform === 'army') characters.armyDress(this.model.inst);
     const y0 = floorAt(world, spawn.x, spawn.y, spawn.z);
     this.body = world.createRigidBody(RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(spawn.x, y0 + HALF + RADIUS + 0.05, spawn.z));
     this.collider = world.createCollider(RAPIER.ColliderDesc.capsule(HALF, RADIUS).setSolverGroups(PERSON_SOLVER), this.body);
