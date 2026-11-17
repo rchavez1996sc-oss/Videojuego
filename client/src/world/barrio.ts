@@ -28,6 +28,7 @@ import { WaterDrums } from '../fx/waterDrums';
 import { parkedCars } from './parkedCars';
 import { addRoof, rooftopLinks } from './rooftops';
 import { alleyLife } from './alleys';
+import { barrioLamps } from './streetLamps';
 import { STREET_COLORS, stall, trashPile, roadMarkings } from './streetLife';
 import { brick, concrete, plaster, corrugated, estera, slabs } from '../render/urbanTextures';
 import { asphalt, rock, wood } from '../render/textures';
@@ -252,6 +253,7 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
   for (const [x, z, yaw, len] of def.barricades) sandbags(b, hf, x, z, yaw, len);
 
   const crossX = Array.from({ length: def.cols + 1 }, (_, k) => def.x0 - def.street / 2 + k * pitch);
+  barrioLamps(b, hf, crossX, [1, -1].map((s) => s * (def.gap + def.blockD + def.street / 2)), def.stairs, [def.x0, xEnd], def.street / 2);
   const parked: THREE.Vector2[] = [], life = barrioScenes(b, hf, def, crossX, mulberry32(def.seed + 41), parked);
   for (let i = 0; i < def.mototaxis; i++) {
     const onAvenue = rand() < 0.6;

@@ -7,13 +7,15 @@ export interface QualityPreset {
   shadowFar: number;
   grassBlades: number;
   ao: boolean;
+  /** Real point lights serving the street lamps nearest the camera at night. */
+  lamps: number;
 }
 
 export const PRESETS: Record<Quality, QualityPreset> = {
-  low: { pixelRatio: 1, shadowMapSize: 1024, cascades: 2, shadowFar: 140, grassBlades: 22000, ao: false },
-  medium: { pixelRatio: 1, shadowMapSize: 2048, cascades: 2, shadowFar: 150, grassBlades: 24000, ao: true },
-  high: { pixelRatio: 1, shadowMapSize: 3072, cascades: 2, shadowFar: 190, grassBlades: 28000, ao: true },
-  ultra: { pixelRatio: Math.min(window.devicePixelRatio, 2), shadowMapSize: 4096, cascades: 4, shadowFar: 500, grassBlades: 100000, ao: true },
+  low: { pixelRatio: 1, shadowMapSize: 1024, cascades: 2, shadowFar: 140, grassBlades: 22000, ao: false, lamps: 8 },
+  medium: { pixelRatio: 1, shadowMapSize: 2048, cascades: 2, shadowFar: 150, grassBlades: 24000, ao: true, lamps: 12 },
+  high: { pixelRatio: 1, shadowMapSize: 3072, cascades: 2, shadowFar: 190, grassBlades: 28000, ao: true, lamps: 16 },
+  ultra: { pixelRatio: Math.min(window.devicePixelRatio, 2), shadowMapSize: 4096, cascades: 4, shadowFar: 500, grassBlades: 100000, ao: true, lamps: 20 },
 };
 
 function detectGpu(): string {

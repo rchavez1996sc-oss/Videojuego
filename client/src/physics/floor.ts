@@ -32,3 +32,16 @@ export function stepAssist(world: RAPIER.World, ctrl: RAPIER.KinematicCharacterC
   }
   return moved;
 }
+
+/** Walkable surface under a lamp head: the first upward-facing fixed surface at least 2.2 m below it (skips the pole, its arm and caps). */
+export function lampFloor(world: RAPIER.World, p: { x: number; y: number; z: number }, fallback: number): number {
+  let y = p.y;
+  for (let k = 0; k < 6; k++) {
+    const hit = world.castRayAndGetNormal(new RAPIER.Ray({ x: p.x, y, z: p.z }, { x: 0, y: -1, z: 0 }), 40, true, RAPIER.QueryFilterFlags.ONLY_FIXED | RAPIER.QueryFilterFlags.EXCLUDE_SENSORS);
+    if (!hit) return fallback;
+    const at = y - hit.timeOfImpact;
+    if (p.y - at > 2.2 && hit.normal.y > 0.6) return at;
+    y = at - 0.03;
+  }
+  return fallback;
+}

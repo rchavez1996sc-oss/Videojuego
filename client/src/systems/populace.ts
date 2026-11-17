@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { GlassBreak } from '../fx/glassBreak';
 import { NightLights } from '../render/nightLights';
+import { lampFloor } from '../physics/floor';
+import { preset } from '../core/settings';
 import { lampGlow } from '../core/timeOfDay';
 import { Cables } from '../world/cables';
 import { placeMenuBoards } from '../world/menuBoards';
@@ -40,7 +42,7 @@ export function createPopulace(ch: ChapterDef, barrio: Barrio | null, d: { world
     parkedCars.build(d.lighting, d.world, barrio);
     d.scene.add(parkedCars.group);
     parkedCars.tick(0, d.camera.position, true);
-    const tick = barrio.tick, glass = new GlassBreak(d.lighting, d.mixer, d.world), night = new NightLights(d.scene, lampGlow(), (x, z) => d.hf.heightAt(x, z));
+    const tick = barrio.tick, glass = new GlassBreak(d.lighting, d.mixer, d.world), night = new NightLights(d.scene, lampGlow(), (p) => lampFloor(d.world, p, d.hf.heightAt(p.x, p.z)), preset.lamps ?? 12);
     d.scene.add(glass.group);
     setTimeout(() => glass.scan(barrio.group), 0);
     const wires = new Cables(d.lighting, (x, z) => d.hf.heightAt(x, z));
