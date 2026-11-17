@@ -64,6 +64,15 @@ export class Renderer {
   }
 
   /** Internal resolution scale; sharpening rises as it drops to offset the upscale blur. */
+  /** Compiles every material in parallel with the same program variant the composer's linear half-float buffer uses (no tone mapping, linear output). */
+  precompile(scene: THREE.Object3D, camera: THREE.Camera): Promise<unknown> {
+    const rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType }), prev = this.gl.getRenderTarget();
+    this.gl.setRenderTarget(rt);
+    const done = this.gl.compileAsync(scene, camera).catch(() => undefined);
+    this.gl.setRenderTarget(prev);
+    return done.finally(() => rt.dispose());
+  }
+
   setScale(scale: number): void {
     this.sharpen.strength = Math.min(0.85, 0.3 + (1 - scale) * 1.2);
     this.gl.setPixelRatio(preset.pixelRatio * scale);

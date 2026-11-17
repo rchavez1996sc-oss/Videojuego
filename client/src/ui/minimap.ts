@@ -19,7 +19,7 @@ export class Minimap {
    * `roads`: asphalt materials, rendered alone in a mask pass to draw the street plan; `streets`: centre lines
    * painted `width` metres wide where the streets are part of the ground instead.
    */
-  constructor(gl: THREE.WebGLRenderer, scene: THREE.Scene, playable: number, private roads: THREE.Material[] = [], private streets?: { nodes: THREE.Vector3[]; edges: [number, number][]; width: number }) {
+  constructor(gl: THREE.WebGLRenderer, scene: THREE.Scene, playable: number, private roads: THREE.Material[] = [], private streets?: { nodes: THREE.Vector3[]; edges: [number, number][]; width: number }, cached?: HTMLImageElement | null) {
     this.half = playable / 2 + 15;
     const dpr = Math.min(devicePixelRatio, 2);
     this.canvas.id = 'minimap';
@@ -30,7 +30,8 @@ export class Minimap {
     this.ctx = this.canvas.getContext('2d')!;
     this.ctx.scale(dpr, dpr);
     document.body.appendChild(this.canvas);
-    this.capture(gl, scene);
+    if (cached) [this.map.width = this.map.height = SHOT, this.map.getContext('2d')!.drawImage(cached, 0, 0, SHOT, SHOT)];
+    else this.capture(gl, scene);
   }
 
   private shoot(gl: THREE.WebGLRenderer, scene: THREE.Scene): Uint8Array {

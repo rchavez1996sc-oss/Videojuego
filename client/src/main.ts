@@ -43,6 +43,7 @@ import { coverSeeker } from './systems/takeCover';
 import { Grenades } from './weapons/grenades';
 import { detonate } from './weapons/explosion';
 import { Minimap } from './ui/minimap';
+import { cachedMinimap } from './ui/minimapCache';
 import { setupWorldMap } from './ui/worldMap';
 import { loadPhotoTextures, photoEnvironment, photosLoaded } from './render/photoTextures';
 import { carModels } from './render/carModels';
@@ -127,10 +128,12 @@ async function boot(): Promise<void> {
   scene.add(grass.mesh);
   mark('grass');
   await photosLoaded();
-  const shaders = renderer.gl.compileAsync(scene, camera).catch(() => undefined);
+  const mapCache = cachedMinimap(ch.id);
+  const shaders = renderer.precompile(scene, camera);
   await step('Cargando personajes…');
   await Promise.all([characters.load(lighting, ch.objective?.capture || ch.handover ? [] : ['vip']), shaders]); mark('characters');
-  const minimap = new Minimap(renderer.gl, scene, ch.terrain.playable, ['asphalt', 'asphaltWorn'].flatMap((k) => barrio?.materials[k] ?? []), ch.barrio && barrio ? { ...barrio.graph, width: ch.barrio.street } : undefined);
+  const minimap = new Minimap(renderer.gl, scene, ch.terrain.playable, ['asphalt', 'asphaltWorn'].flatMap((k) => barrio?.materials[k] ?? []), ch.barrio && barrio ? { ...barrio.graph, width: ch.barrio.street } : undefined, await mapCache);
+  if (shotMode) (window as unknown as { __minimap: Minimap }).__minimap = minimap;
 
   mark('minimap');
   physicsStep(world);
@@ -210,9 +213,11 @@ async function boot(): Promise<void> {
   };
   physicsStep(world);
   cover.prune(world, (x, z) => hf.heightAt(x, z));
+  await step('Preparando sombreadores…');
+  await renderer.precompile(scene, camera);
 
   let freeCam = false;
-  mark('ready');
+  mark(`ready p${renderer.gl.info.programs?.length}`);
   (window as unknown as { __loadLog: unknown }).__loadLog = loadLog;
   installDebug({
     extraLog: () => (civilians ? `civ:${civilians.list.map((c) => c.mood[0]).join('')}` : ''),

@@ -1,3 +1,4 @@
+import { levelSigs } from './scripts/levelSig.mjs';
 import { defineConfig, type Plugin } from 'vite';
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
@@ -21,9 +22,15 @@ function assetHashes(): Plugin {
   };
 }
 
+/** `virtual:level-sigs`: per-chapter signature checked against `manifest.minimaps` before using a cached minimap. */
+function levelSigPlugin(): Plugin {
+  const id = 'virtual:level-sigs';
+  return { name: 'level-sigs', resolveId: (i) => (i === id ? `\0${id}` : undefined), load: (i) => (i === `\0${id}` ? `export default ${JSON.stringify(levelSigs(__dirname))};` : undefined) };
+}
+
 export default defineConfig({
   base: './',
-  plugins: [assetHashes()],
+  plugins: [assetHashes(), levelSigPlugin()],
   build: { target: 'es2022', chunkSizeWarningLimit: 4000 },
   optimizeDeps: { exclude: ['@dimforge/rapier3d-compat'] },
 });

@@ -358,43 +358,61 @@
   },
   "graffiti12": {
    "img": "murals/graffiti12.png",
-   "aspect": 1.0
+   "aspect": 1
   },
   "graffiti13": {
    "img": "murals/graffiti13.png",
-   "aspect": 1.0
+   "aspect": 1
   },
   "graffiti15": {
    "img": "murals/graffiti15.png",
-   "aspect": 1.0
+   "aspect": 1
   },
   "graffiti18": {
    "img": "murals/graffiti18.png",
-   "aspect": 1.0
+   "aspect": 1
   },
   "graffiti19": {
    "img": "murals/graffiti19.png",
-   "aspect": 1.0
+   "aspect": 1
   },
   "graffiti2": {
    "img": "murals/graffiti2.png",
-   "aspect": 1.0
+   "aspect": 1
   },
   "graffiti3": {
    "img": "murals/graffiti3.png",
-   "aspect": 1.0
+   "aspect": 1
   },
   "graffiti4": {
    "img": "murals/graffiti4.png",
-   "aspect": 1.0
+   "aspect": 1
   },
   "graffiti5": {
    "img": "murals/graffiti5.png",
-   "aspect": 1.0
+   "aspect": 1
   },
   "graffiti9": {
    "img": "murals/graffiti9.png",
-   "aspect": 1.0
+   "aspect": 1
+  }
+ },
+ "minimaps": {
+  "ch01": {
+   "file": "minimap/ch01.png",
+   "sig": "264e7de39201"
+  },
+  "ch02": {
+   "file": "minimap/ch02.png",
+   "sig": "5637732c58e2"
+  },
+  "ch03": {
+   "file": "minimap/ch03.png",
+   "sig": "4644a3cce894"
+  },
+  "ch04": {
+   "file": "minimap/ch04.png",
+   "sig": "c8793a0a8167"
   }
  }
 }
