@@ -1,346 +1,400 @@
 {
-  "version": 36,
-  "characters": {
-    "pnp": {
-      "near": "characters/pnp.glb",
-      "far": "characters/pnp.lod.glb",
-      "source": "Mixamo: SWAT"
-    },
-    "fls": {
-      "near": "characters/fls.glb",
-      "far": "characters/fls.lod.glb",
-      "source": "Mixamo: Ch28 (ropa oscura)"
-    },
-    "civ_a": {
-      "near": "characters/civ_a.glb",
-      "far": "characters/civ_a.lod.glb",
-      "source": "Mixamo: Ch07 (traje)"
-    },
-    "civ_b": {
-      "near": "characters/civ_b.glb",
-      "far": "characters/civ_b.lod.glb",
-      "source": "Mixamo: Ch02 (polera naranja)"
-    },
-    "civ_c": {
-      "near": "characters/civ_c.glb",
-      "far": "characters/civ_c.lod.glb",
-      "source": "Mixamo: Ch42 (polo rojo)"
-    },
-    "vip": {
-      "near": "characters/vip.glb",
-      "far": "characters/vip.lod.glb"
-    }
+ "version": 36,
+ "characters": {
+  "pnp": {
+   "near": "characters/pnp.glb",
+   "far": "characters/pnp.lod.glb",
+   "source": "Mixamo: SWAT"
   },
-  "animations": "characters/anims.glb",
-  "art": {
-    "general": "art/general.webp",
-    "tanks": "art/tanks.webp",
-    "detentions": "art/detentions.webp",
-    "voices": "art/voices.webp",
-    "barrio": "art/barrio.webp",
-    "forum": "art/forum.webp",
-    "alliance": "art/alliance.webp",
-    "dinner": "art/dinner.webp"
+  "fls": {
+   "near": "characters/fls.glb",
+   "far": "characters/fls.lod.glb",
+   "source": "Mixamo: Ch28 (ropa oscura)"
   },
-  "textures": {
-    "concrete": {
-      "map": "textures/concrete_col.jpg",
-      "normal": "textures/concrete_nrm.jpg",
-      "rough": "textures/concrete_rgh.jpg",
-      "source": "Poly Haven concrete_floor_worn_001 (CC0)"
-    },
-    "slabs": {
-      "map": "textures/slabs_col.jpg",
-      "normal": "textures/slabs_nrm.jpg",
-      "rough": "textures/slabs_rgh.jpg",
-      "source": "Poly Haven concrete_pavement (CC0)"
-    },
-    "plaster": {
-      "map": "textures/plaster_col.jpg",
-      "normal": "textures/plaster_nrm.jpg",
-      "rough": "textures/plaster_rgh.jpg",
-      "source": "Poly Haven white_plaster_02 (CC0)"
-    },
-    "brick": {
-      "map": "textures/brick_col.jpg",
-      "normal": "textures/brick_nrm.jpg",
-      "rough": "textures/brick_rgh.jpg",
-      "source": "Poly Haven brick_wall_006 (CC0)"
-    },
-    "rock": {
-      "map": "textures/rock_col.jpg",
-      "normal": "textures/rock_nrm.jpg",
-      "rough": "textures/rock_rgh.jpg",
-      "source": "Poly Haven rock_face_03 (CC0)"
-    },
-    "asphalt": {
-      "map": "textures/asphalt_col.jpg",
-      "normal": "textures/asphalt_nrm.jpg",
-      "rough": "textures/asphalt_rgh.jpg",
-      "source": "Poly Haven asphalt_01 (CC0)"
-    },
-    "roofTiles": {
-      "map": "textures/roofTiles_col.jpg",
-      "normal": "textures/roofTiles_nrm.jpg",
-      "rough": "textures/roofTiles_rgh.jpg",
-      "source": "Poly Haven clay_roof_tiles_02 (CC0)"
-    },
-    "deck": {
-      "map": "textures/deck_col.jpg",
-      "normal": "textures/deck_nrm.jpg",
-      "rough": "textures/deck_rgh.jpg",
-      "source": "Poly Haven wood_floor_deck (CC0)"
-    },
-    "parquet": {
-      "map": "textures/parquet_col.jpg",
-      "normal": "textures/parquet_nrm.jpg",
-      "source": "Poly Haven herringbone_parquet (CC0)"
-    },
-    "flagstone": {
-      "map": "textures/flagstone_col.jpg",
-      "normal": "textures/flagstone_nrm.jpg",
-      "rough": "textures/flagstone_rgh.jpg",
-      "source": "Poly Haven stone_tiles_02 (CC0)"
-    },
-    "stucco": {
-      "map": "textures/stucco_col.jpg",
-      "normal": "textures/stucco_nrm.jpg",
-      "rough": "textures/stucco_rgh.jpg",
-      "source": "Poly Haven white_stucco_02 (CC0)"
-    },
-    "bark": {
-      "map": "textures/bark_col.jpg",
-      "normal": "textures/bark_nrm.jpg",
-      "source": "Poly Haven bark_platanus (CC0)"
-    },
-    "palmBark": {
-      "map": "textures/palmBark_col.jpg",
-      "normal": "textures/palmBark_nrm.jpg",
-      "source": "Poly Haven palm_bark (CC0)"
-    },
-    "cobble": {
-      "map": "textures/cobble_col.jpg",
-      "normal": "textures/cobble_nrm.jpg",
-      "rough": "textures/cobble_rgh.jpg",
-      "source": "Poly Haven cobblestone_05 (CC0)"
-    },
-    "pirca": {
-      "map": "textures/pirca_col.jpg",
-      "normal": "textures/pirca_nrm.jpg",
-      "rough": "textures/pirca_rgh.jpg",
-      "source": "Poly Haven old_stone_wall (CC0)"
-    },
-    "stoneWall": {
-      "map": "textures/stoneWall_col.jpg",
-      "normal": "textures/stoneWall_nrm.jpg",
-      "rough": "textures/stoneWall_rgh.jpg",
-      "source": "Poly Haven yellow_stone_wall (CC0)"
-    },
-    "pebbles": {
-      "map": "textures/pebbles_col.jpg",
-      "normal": "textures/pebbles_nrm.jpg",
-      "source": "Poly Haven ganges_river_pebbles (CC0)"
-    },
-    "lawn": {
-      "map": "textures/lawn_col.jpg",
-      "normal": "textures/lawn_nrm.jpg",
-      "source": "Poly Haven leafy_grass (CC0)"
-    },
-    "dryGrass": {
-      "map": "textures/dryGrass_col.jpg",
-      "normal": "textures/dryGrass_nrm.jpg",
-      "source": "Poly Haven sparse_grass (CC0)"
-    },
-    "soil": {
-      "map": "textures/soil_col.jpg",
-      "normal": "textures/soil_nrm.jpg",
-      "rough": "textures/soil_rgh.jpg",
-      "source": "Poly Haven dry_ground_rocks (CC0)"
-    },
-    "calamina": {
-      "map": "textures/calamina_col.jpg",
-      "normal": "textures/calamina_nrm.jpg",
-      "rough": "textures/calamina_rgh.jpg",
-      "source": "Poly Haven worn_corrugated_iron (CC0)"
-    },
-    "wood": {
-      "map": "textures/wood_col.jpg",
-      "normal": "textures/wood_nrm.jpg",
-      "rough": "textures/wood_rgh.jpg",
-      "source": "Poly Haven weathered_planks (CC0)"
-    },
-    "laja": {
-      "map": "textures/laja_col.jpg",
-      "normal": "textures/laja_nrm.jpg",
-      "rough": "textures/laja_rgh.jpg",
-      "source": "Poly Haven slate_driveway (CC0)"
-    },
-    "plazaFlag": {
-      "map": "textures/plazaFlag_col.jpg",
-      "normal": "textures/plazaFlag_nrm.jpg",
-      "rough": "textures/plazaFlag_rgh.jpg",
-      "source": "Poly Haven slate_floor (CC0)"
-    },
-    "slateDark": {
-      "map": "textures/slateDark_col.jpg",
-      "normal": "textures/slateDark_nrm.jpg",
-      "rough": "textures/slateDark_rgh.jpg",
-      "source": "Poly Haven stacked_stone_wall (CC0)"
-    },
-    "paintPlaster": {
-      "map": "textures/paintPlaster_col.jpg",
-      "normal": "textures/paintPlaster_nrm.jpg",
-      "rough": "textures/paintPlaster_rgh.jpg",
-      "source": "Poly Haven painted_plaster_wall (CC0)"
-    },
-    "oldfronts": {
-      "map": "textures/oldfronts_col.jpg",
-      "source": "Release referencias_adicionales: pack de edificios de ladrillo (fachadas)"
-    },
-    "brick2": {
-      "map": "textures/brick2_col.jpg",
-      "normal": "textures/brick2_nrm.jpg",
-      "rough": "textures/brick2_rgh.jpg",
-      "source": "Poly Haven red_brick_03 (CC0)"
-    },
-    "brick3": {
-      "map": "textures/brick3_col.jpg",
-      "normal": "textures/brick3_nrm.jpg",
-      "rough": "textures/brick3_rgh.jpg",
-      "source": "Poly Haven red_bricks_04 (CC0)"
-    },
-    "plasterBrick": {
-      "map": "textures/plasterBrick_col.jpg",
-      "normal": "textures/plasterBrick_nrm.jpg",
-      "rough": "textures/plasterBrick_rgh.jpg",
-      "source": "Poly Haven red_brick_plaster_patch_02 (CC0)"
-    },
-    "paintedBrick": {
-      "map": "textures/paintedBrick_col.jpg",
-      "normal": "textures/paintedBrick_nrm.jpg",
-      "rough": "textures/paintedBrick_rgh.jpg",
-      "source": "Poly Haven painted_worn_brick (CC0)"
-    },
-    "blockWall": {
-      "map": "textures/blockWall_col.jpg",
-      "normal": "textures/blockWall_nrm.jpg",
-      "rough": "textures/blockWall_rgh.jpg",
-      "source": "Poly Haven concrete_block_wall (CC0)"
-    },
-    "paintWall": {
-      "map": "textures/paintWall_col.jpg",
-      "normal": "textures/paintWall_nrm.jpg",
-      "rough": "textures/paintWall_rgh.jpg",
-      "source": "Poly Haven blue_plaster_weathered (CC0)"
-    },
-    "roofSlab": {
-      "map": "textures/roofSlab_col.jpg",
-      "normal": "textures/roofSlab_nrm.jpg",
-      "rough": "textures/roofSlab_rgh.jpg",
-      "source": "Poly Haven dirty_concrete (CC0)"
-    },
-    "damagedPlaster": {
-      "map": "textures/damagedPlaster_col.jpg",
-      "normal": "textures/damagedPlaster_nrm.jpg",
-      "rough": "textures/damagedPlaster_rgh.jpg",
-      "source": "Poly Haven damaged_plaster (CC0)"
-    },
-    "brick4": {
-      "map": "textures/brick4_col.jpg",
-      "normal": "textures/brick4_nrm.jpg",
-      "rough": "textures/brick4_rgh.jpg",
-      "source": "Poly Haven wall_bricks_plaster (CC0)"
-    }
+  "civ_a": {
+   "near": "characters/civ_a.glb",
+   "far": "characters/civ_a.lod.glb",
+   "source": "Mixamo: Ch07 (traje)"
   },
-  "environment": {
-    "file": "hdri/beach_parking_1k.hdr",
-    "gain": 1.3,
-    "source": "Poly Haven beach_parking (CC0)"
+  "civ_b": {
+   "near": "characters/civ_b.glb",
+   "far": "characters/civ_b.lod.glb",
+   "source": "Mixamo: Ch02 (polera naranja)"
   },
-  "pets": {
-    "dog": "pets/dog.glb",
-    "cat": "pets/cat.glb"
+  "civ_c": {
+   "near": "characters/civ_c.glb",
+   "far": "characters/civ_c.lod.glb",
+   "source": "Mixamo: Ch42 (polo rojo)"
   },
-  "cars": "cars/cars.glb",
-  "vehicles": "cars/vehicles.glb",
-  "props": {
-    "menuBoard": {
-      "model": "props/menuBoard.glb",
-      "color": "props/menuBoard_col.jpg",
-      "normal": "props/menuBoard_nrm.jpg"
-    },
-    "stall": "props/stall.glb"
-  },
-  "models": {
-    "reiche": "models/reiche.glb",
-    "phonebooth": "models/phonebooth.glb",
-    "paulet": "models/paulet.glb",
-    "oxxo": "models/oxxo.glb",
-    "trashbags": "models/trashbags.glb",
-    "vigilante": "models/vigilante.glb",
-    "rubbish": "models/rubbish.glb",
-    "watertank": "models/watertank.glb",
-    "urbanhouse": "models/urbanhouse.glb",
-    "brickpack": "models/brickpack.glb",
-    "amor3": "models/amor3.glb",
-    "grass": "models/grass.glb",
-    "trafficlight": "models/trafficlight.glb",
-    "motoland": "models/motoland.glb",
-    "ledone": "models/ledone.glb",
-    "trashpile": "models/trashpile.glb"
-  },
-  "murals": {
-    "twofaces": {
-      "img": "murals/twofaces.png",
-      "aspect": 0.81
-    },
-    "zambo": {
-      "img": "murals/zambo.png",
-      "aspect": 1.47
-    },
-    "lostwall": {
-      "img": "murals/lostwall.png",
-      "aspect": 2.64
-    },
-    "graffiti12": {
-      "img": "murals/graffiti12.png",
-      "aspect": 1.0
-    },
-    "graffiti13": {
-      "img": "murals/graffiti13.png",
-      "aspect": 1.0
-    },
-    "graffiti15": {
-      "img": "murals/graffiti15.png",
-      "aspect": 1.0
-    },
-    "graffiti18": {
-      "img": "murals/graffiti18.png",
-      "aspect": 1.0
-    },
-    "graffiti19": {
-      "img": "murals/graffiti19.png",
-      "aspect": 1.0
-    },
-    "graffiti2": {
-      "img": "murals/graffiti2.png",
-      "aspect": 1.0
-    },
-    "graffiti3": {
-      "img": "murals/graffiti3.png",
-      "aspect": 1.0
-    },
-    "graffiti4": {
-      "img": "murals/graffiti4.png",
-      "aspect": 1.0
-    },
-    "graffiti5": {
-      "img": "murals/graffiti5.png",
-      "aspect": 1.0
-    },
-    "graffiti9": {
-      "img": "murals/graffiti9.png",
-      "aspect": 1.0
-    }
+  "vip": {
+   "near": "characters/vip.glb",
+   "far": "characters/vip.lod.glb"
   }
+ },
+ "animations": "characters/anims.glb",
+ "art": {
+  "general": "art/general.webp",
+  "tanks": "art/tanks.webp",
+  "detentions": "art/detentions.webp",
+  "voices": "art/voices.webp",
+  "barrio": "art/barrio.webp",
+  "forum": "art/forum.webp",
+  "alliance": "art/alliance.webp",
+  "dinner": "art/dinner.webp"
+ },
+ "textures": {
+  "concrete": {
+   "map": "textures/concrete_col.jpg",
+   "normal": "textures/concrete_nrm.jpg",
+   "rough": "textures/concrete_rgh.jpg",
+   "source": "Poly Haven concrete_floor_worn_001 (CC0)"
+  },
+  "slabs": {
+   "map": "textures/slabs_col.jpg",
+   "normal": "textures/slabs_nrm.jpg",
+   "rough": "textures/slabs_rgh.jpg",
+   "source": "Poly Haven concrete_pavement (CC0)"
+  },
+  "plaster": {
+   "map": "textures/plaster_col.jpg",
+   "normal": "textures/plaster_nrm.jpg",
+   "rough": "textures/plaster_rgh.jpg",
+   "source": "Poly Haven white_plaster_02 (CC0)"
+  },
+  "brick": {
+   "map": "textures/brick_col.jpg",
+   "normal": "textures/brick_nrm.jpg",
+   "rough": "textures/brick_rgh.jpg",
+   "source": "Poly Haven brick_wall_006 (CC0)"
+  },
+  "rock": {
+   "map": "textures/rock_col.jpg",
+   "normal": "textures/rock_nrm.jpg",
+   "rough": "textures/rock_rgh.jpg",
+   "source": "Poly Haven rock_face_03 (CC0)"
+  },
+  "asphalt": {
+   "map": "textures/asphalt_col.jpg",
+   "normal": "textures/asphalt_nrm.jpg",
+   "rough": "textures/asphalt_rgh.jpg",
+   "source": "Poly Haven asphalt_01 (CC0)"
+  },
+  "roofTiles": {
+   "map": "textures/roofTiles_col.jpg",
+   "normal": "textures/roofTiles_nrm.jpg",
+   "rough": "textures/roofTiles_rgh.jpg",
+   "source": "Poly Haven clay_roof_tiles_02 (CC0)"
+  },
+  "deck": {
+   "map": "textures/deck_col.jpg",
+   "normal": "textures/deck_nrm.jpg",
+   "rough": "textures/deck_rgh.jpg",
+   "source": "Poly Haven wood_floor_deck (CC0)"
+  },
+  "parquet": {
+   "map": "textures/parquet_col.jpg",
+   "normal": "textures/parquet_nrm.jpg",
+   "source": "Poly Haven herringbone_parquet (CC0)"
+  },
+  "flagstone": {
+   "map": "textures/flagstone_col.jpg",
+   "normal": "textures/flagstone_nrm.jpg",
+   "rough": "textures/flagstone_rgh.jpg",
+   "source": "Poly Haven stone_tiles_02 (CC0)"
+  },
+  "stucco": {
+   "map": "textures/stucco_col.jpg",
+   "normal": "textures/stucco_nrm.jpg",
+   "rough": "textures/stucco_rgh.jpg",
+   "source": "Poly Haven white_stucco_02 (CC0)"
+  },
+  "bark": {
+   "map": "textures/bark_col.jpg",
+   "normal": "textures/bark_nrm.jpg",
+   "source": "Poly Haven bark_platanus (CC0)"
+  },
+  "palmBark": {
+   "map": "textures/palmBark_col.jpg",
+   "normal": "textures/palmBark_nrm.jpg",
+   "source": "Poly Haven palm_bark (CC0)"
+  },
+  "cobble": {
+   "map": "textures/cobble_col.jpg",
+   "normal": "textures/cobble_nrm.jpg",
+   "rough": "textures/cobble_rgh.jpg",
+   "source": "Poly Haven cobblestone_05 (CC0)"
+  },
+  "pirca": {
+   "map": "textures/pirca_col.jpg",
+   "normal": "textures/pirca_nrm.jpg",
+   "rough": "textures/pirca_rgh.jpg",
+   "source": "Poly Haven old_stone_wall (CC0)"
+  },
+  "stoneWall": {
+   "map": "textures/stoneWall_col.jpg",
+   "normal": "textures/stoneWall_nrm.jpg",
+   "rough": "textures/stoneWall_rgh.jpg",
+   "source": "Poly Haven yellow_stone_wall (CC0)"
+  },
+  "pebbles": {
+   "map": "textures/pebbles_col.jpg",
+   "normal": "textures/pebbles_nrm.jpg",
+   "source": "Poly Haven ganges_river_pebbles (CC0)"
+  },
+  "lawn": {
+   "map": "textures/lawn_col.jpg",
+   "normal": "textures/lawn_nrm.jpg",
+   "source": "Poly Haven leafy_grass (CC0)"
+  },
+  "dryGrass": {
+   "map": "textures/dryGrass_col.jpg",
+   "normal": "textures/dryGrass_nrm.jpg",
+   "source": "Poly Haven sparse_grass (CC0)"
+  },
+  "soil": {
+   "map": "textures/soil_col.jpg",
+   "normal": "textures/soil_nrm.jpg",
+   "rough": "textures/soil_rgh.jpg",
+   "source": "Poly Haven dry_ground_rocks (CC0)"
+  },
+  "calamina": {
+   "map": "textures/calamina_col.jpg",
+   "normal": "textures/calamina_nrm.jpg",
+   "rough": "textures/calamina_rgh.jpg",
+   "source": "Poly Haven worn_corrugated_iron (CC0)"
+  },
+  "wood": {
+   "map": "textures/wood_col.jpg",
+   "normal": "textures/wood_nrm.jpg",
+   "rough": "textures/wood_rgh.jpg",
+   "source": "Poly Haven weathered_planks (CC0)"
+  },
+  "laja": {
+   "map": "textures/laja_col.jpg",
+   "normal": "textures/laja_nrm.jpg",
+   "rough": "textures/laja_rgh.jpg",
+   "source": "Poly Haven slate_driveway (CC0)"
+  },
+  "plazaFlag": {
+   "map": "textures/plazaFlag_col.jpg",
+   "normal": "textures/plazaFlag_nrm.jpg",
+   "rough": "textures/plazaFlag_rgh.jpg",
+   "source": "Poly Haven slate_floor (CC0)"
+  },
+  "slateDark": {
+   "map": "textures/slateDark_col.jpg",
+   "normal": "textures/slateDark_nrm.jpg",
+   "rough": "textures/slateDark_rgh.jpg",
+   "source": "Poly Haven stacked_stone_wall (CC0)"
+  },
+  "paintPlaster": {
+   "map": "textures/paintPlaster_col.jpg",
+   "normal": "textures/paintPlaster_nrm.jpg",
+   "rough": "textures/paintPlaster_rgh.jpg",
+   "source": "Poly Haven painted_plaster_wall (CC0)"
+  },
+  "oldfronts": {
+   "map": "textures/oldfronts_col.jpg",
+   "source": "Release referencias_adicionales: pack de edificios de ladrillo (fachadas)"
+  },
+  "brick2": {
+   "map": "textures/brick2_col.jpg",
+   "normal": "textures/brick2_nrm.jpg",
+   "rough": "textures/brick2_rgh.jpg",
+   "source": "Poly Haven red_brick_03 (CC0)"
+  },
+  "brick3": {
+   "map": "textures/brick3_col.jpg",
+   "normal": "textures/brick3_nrm.jpg",
+   "rough": "textures/brick3_rgh.jpg",
+   "source": "Poly Haven red_bricks_04 (CC0)"
+  },
+  "plasterBrick": {
+   "map": "textures/plasterBrick_col.jpg",
+   "normal": "textures/plasterBrick_nrm.jpg",
+   "rough": "textures/plasterBrick_rgh.jpg",
+   "source": "Poly Haven red_brick_plaster_patch_02 (CC0)"
+  },
+  "paintedBrick": {
+   "map": "textures/paintedBrick_col.jpg",
+   "normal": "textures/paintedBrick_nrm.jpg",
+   "rough": "textures/paintedBrick_rgh.jpg",
+   "source": "Poly Haven painted_worn_brick (CC0)"
+  },
+  "blockWall": {
+   "map": "textures/blockWall_col.jpg",
+   "normal": "textures/blockWall_nrm.jpg",
+   "rough": "textures/blockWall_rgh.jpg",
+   "source": "Poly Haven concrete_block_wall (CC0)"
+  },
+  "paintWall": {
+   "map": "textures/paintWall_col.jpg",
+   "normal": "textures/paintWall_nrm.jpg",
+   "rough": "textures/paintWall_rgh.jpg",
+   "source": "Poly Haven blue_plaster_weathered (CC0)"
+  },
+  "roofSlab": {
+   "map": "textures/roofSlab_col.jpg",
+   "normal": "textures/roofSlab_nrm.jpg",
+   "rough": "textures/roofSlab_rgh.jpg",
+   "source": "Poly Haven dirty_concrete (CC0)"
+  },
+  "damagedPlaster": {
+   "map": "textures/damagedPlaster_col.jpg",
+   "normal": "textures/damagedPlaster_nrm.jpg",
+   "rough": "textures/damagedPlaster_rgh.jpg",
+   "source": "Poly Haven damaged_plaster (CC0)"
+  },
+  "brick4": {
+   "map": "textures/brick4_col.jpg",
+   "normal": "textures/brick4_nrm.jpg",
+   "rough": "textures/brick4_rgh.jpg",
+   "source": "Poly Haven wall_bricks_plaster (CC0)"
+  },
+  "casonaWall": {
+   "map": "textures/casonaWall_col.jpg",
+   "normal": "textures/casonaWall_nrm.jpg",
+   "rough": "textures/casonaWall_rgh.jpg",
+   "source": "Poly Haven plastered_wall_04 (CC0)"
+  },
+  "humidWall": {
+   "map": "textures/humidWall_col.jpg",
+   "normal": "textures/humidWall_nrm.jpg",
+   "rough": "textures/humidWall_rgh.jpg",
+   "source": "Poly Haven worn_mossy_plasterwall (CC0)"
+  },
+  "bridgePlanks": {
+   "map": "textures/bridgePlanks_col.jpg",
+   "normal": "textures/bridgePlanks_nrm.jpg",
+   "rough": "textures/bridgePlanks_rgh.jpg",
+   "source": "Poly Haven weathered_brown_planks (CC0)"
+  },
+  "paintedWood": {
+   "map": "textures/paintedWood_col.jpg",
+   "normal": "textures/paintedWood_nrm.jpg",
+   "rough": "textures/paintedWood_rgh.jpg",
+   "source": "Poly Haven wood_peeling_paint_weathered (CC0)"
+  },
+  "beamWood": {
+   "map": "textures/beamWood_col.jpg",
+   "normal": "textures/beamWood_nrm.jpg",
+   "rough": "textures/beamWood_rgh.jpg",
+   "source": "Poly Haven rough_wood (CC0)"
+  },
+  "plinthStone": {
+   "map": "textures/plinthStone_col.jpg",
+   "normal": "textures/plinthStone_nrm.jpg",
+   "rough": "textures/plinthStone_rgh.jpg",
+   "source": "Poly Haven plaster_stone_wall_01 (CC0)"
+  },
+  "terracotta": {
+   "map": "textures/terracotta_col.jpg",
+   "normal": "textures/terracotta_nrm.jpg",
+   "rough": "textures/terracotta_rgh.jpg",
+   "source": "Poly Haven terracotta_floor_tiles (CC0)"
+  },
+  "checker": {
+   "map": "textures/checker_col.jpg",
+   "normal": "textures/checker_nrm.jpg",
+   "rough": "textures/checker_rgh.jpg",
+   "source": "Poly Haven checkered_pavement_tiles (CC0)"
+  },
+  "mossCobble": {
+   "map": "textures/mossCobble_col.jpg",
+   "normal": "textures/mossCobble_nrm.jpg",
+   "rough": "textures/mossCobble_rgh.jpg",
+   "source": "Poly Haven cobblestone_floor_04 (CC0)"
+  }
+ },
+ "environment": {
+  "file": "hdri/beach_parking_1k.hdr",
+  "gain": 1.3,
+  "source": "Poly Haven beach_parking (CC0)"
+ },
+ "pets": {
+  "dog": "pets/dog.glb",
+  "cat": "pets/cat.glb"
+ },
+ "cars": "cars/cars.glb",
+ "vehicles": "cars/vehicles.glb",
+ "props": {
+  "menuBoard": {
+   "model": "props/menuBoard.glb",
+   "color": "props/menuBoard_col.jpg",
+   "normal": "props/menuBoard_nrm.jpg"
+  },
+  "stall": "props/stall.glb"
+ },
+ "models": {
+  "reiche": "models/reiche.glb",
+  "phonebooth": "models/phonebooth.glb",
+  "paulet": "models/paulet.glb",
+  "oxxo": "models/oxxo.glb",
+  "trashbags": "models/trashbags.glb",
+  "vigilante": "models/vigilante.glb",
+  "rubbish": "models/rubbish.glb",
+  "watertank": "models/watertank.glb",
+  "urbanhouse": "models/urbanhouse.glb",
+  "brickpack": "models/brickpack.glb",
+  "amor3": "models/amor3.glb",
+  "grass": "models/grass.glb",
+  "trafficlight": "models/trafficlight.glb",
+  "motoland": "models/motoland.glb",
+  "ledone": "models/ledone.glb",
+  "trashpile": "models/trashpile.glb"
+ },
+ "murals": {
+  "twofaces": {
+   "img": "murals/twofaces.png",
+   "aspect": 0.81
+  },
+  "zambo": {
+   "img": "murals/zambo.png",
+   "aspect": 1.47
+  },
+  "lostwall": {
+   "img": "murals/lostwall.png",
+   "aspect": 2.64
+  },
+  "graffiti12": {
+   "img": "murals/graffiti12.png",
+   "aspect": 1.0
+  },
+  "graffiti13": {
+   "img": "murals/graffiti13.png",
+   "aspect": 1.0
+  },
+  "graffiti15": {
+   "img": "murals/graffiti15.png",
+   "aspect": 1.0
+  },
+  "graffiti18": {
+   "img": "murals/graffiti18.png",
+   "aspect": 1.0
+  },
+  "graffiti19": {
+   "img": "murals/graffiti19.png",
+   "aspect": 1.0
+  },
+  "graffiti2": {
+   "img": "murals/graffiti2.png",
+   "aspect": 1.0
+  },
+  "graffiti3": {
+   "img": "murals/graffiti3.png",
+   "aspect": 1.0
+  },
+  "graffiti4": {
+   "img": "murals/graffiti4.png",
+   "aspect": 1.0
+  },
+  "graffiti5": {
+   "img": "murals/graffiti5.png",
+   "aspect": 1.0
+  },
+  "graffiti9": {
+   "img": "murals/graffiti9.png",
+   "aspect": 1.0
+  }
+ }
 }

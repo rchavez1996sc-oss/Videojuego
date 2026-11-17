@@ -63,7 +63,10 @@ export function bajadaDeBanos(b: Builder, hf: Heightfield, def: BarrancoDef, c: 
       if (i % 3 === s + 1) (i % 2 ? plants.trees : plants.palms).push(new THREE.Vector3(ravineCentre(r, z) + s * bank, hf.heightAt(ravineCentre(r, z) + s * bank, z), z));
       else if (bank > half + 3) {
         const bx = ravineCentre(r, z) + s * (half + 1.6 + (bank - half - 1.6) * ((i * 7) % 5) / 5), by = hf.heightAt(bx, z + 2);
-        b.geometry('hedge', new THREE.SphereGeometry(0.9 + (i % 3) * 0.3, 10, 7), new THREE.Matrix4().compose(new THREE.Vector3(bx, by + 0.3, z + 2), new THREE.Quaternion(), new THREE.Vector3(1.3, 0.75, 1.1)));
+        for (let k = 0; k < 6; k++) {
+          const r0 = 0.35 + ((i * 3 + k * 5) % 7) * 0.08, ox = Math.sin(k * 2.4 + i) * 0.9, oz = Math.cos(k * 1.7 + i) * 1.1;
+          b.geometry(k % 3 ? 'shrub' : 'hedge', new THREE.IcosahedronGeometry(r0, 1), new THREE.Matrix4().compose(new THREE.Vector3(bx + ox, hf.heightAt(bx + ox, z + 2 + oz) + r0 * 0.5, z + 2 + oz), new THREE.Quaternion().setFromEuler(new THREE.Euler(k, i, 0)), new THREE.Vector3(1.2, 0.8, 1.1)));
+        }
         if (i % 2) plants.trees.push(new THREE.Vector3(bx, by, z - 1));
       }
     }

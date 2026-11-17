@@ -2,6 +2,8 @@ import * as THREE from 'three';
 
 /** Street-lamp heads registered while the level is built (pole arms, globes, lanterns). */
 export const lampSpots: THREE.Vector3[] = [];
+/** Small lamps that only get a glow pool on the ground, never one of the real point lights. */
+export const glowSpots: THREE.Vector3[] = [];
 
 const POOL = 12, GLOWS = ['lampHead', 'globe', 'lanternGlass', 'lampBlue', 'lamp'];
 
@@ -44,10 +46,11 @@ export class NightLights {
       this.pool.push(l);
       scene.add(l);
     }
-    if (!lampSpots.length) return;
+    const spots = [...lampSpots, ...glowSpots];
+    if (!spots.length) return;
     const mat = new THREE.MeshBasicMaterial({ map: poolTexture(), transparent: true, opacity: Math.min(0.42, 0.38 * glow), blending: THREE.AdditiveBlending, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 });
-    const pools = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), mat, lampSpots.length), m = new THREE.Matrix4();
-    lampSpots.forEach((p, i) => {
+    const pools = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), mat, spots.length), m = new THREE.Matrix4();
+    spots.forEach((p, i) => {
       const y = ground(p.x, p.z), h = Math.max(3, p.y - y), r = Math.min(13, h * 1.45);
       pools.setMatrixAt(i, m.compose(new THREE.Vector3(p.x, Math.min(p.y - 2.5, y + 0.06), p.z), new THREE.Quaternion(), new THREE.Vector3(r, 1, r)));
     });

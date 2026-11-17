@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { Builder } from '../buildingKit';
 import type { Heightfield } from '../heightfield';
-import { lampSpots } from '../../render/nightLights';
+import { glowSpots, lampSpots } from '../../render/nightLights';
 import { DECK } from './layout';
 
 const UP = new THREE.Vector3(0, 1, 0), Q = new THREE.Quaternion();
@@ -50,7 +50,7 @@ export function suspiros(b: Builder, hf: Heightfield, span: { x0: number; x1: nu
         b.box('lampPole', [0.05, 0.5, 0.05], new THREE.Vector3(px, DECK + 1.45, zr), Q, false);
         b.geometry('globe', new THREE.SphereGeometry(0.13, 12, 8), new THREE.Matrix4().makeTranslation(px, DECK + 1.82, zr));
         b.box('lampPole', [0.2, 0.04, 0.2], new THREE.Vector3(px, DECK + 1.97, zr), Q, false);
-        if (s > 0) lampSpots.push(new THREE.Vector3(px, DECK + 1.85, z));
+        if (s > 0) glowSpots.push(new THREE.Vector3(px, DECK + 1.85, z));
       }
       if (i < posts) {
         const nx = x0 + ((i + 1) * len) / posts;

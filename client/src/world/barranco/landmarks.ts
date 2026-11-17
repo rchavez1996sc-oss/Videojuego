@@ -128,8 +128,8 @@ function park(b: Builder, hf: Heightfield, def: BarrancoDef, plants: Plants, ran
     const x0 = cx + (sx < 0 ? -hx + 2 : pw / 2), x1 = cx + (sx < 0 ? -pw / 2 : hx - 2), z0 = cz + (sz < 0 ? -hz + 2 : pw / 2), z1 = cz + (sz < 0 ? -pw / 2 : hz - 2);
     lawn(x0, x1, z0, z1);
     const mx = (x0 + x1) / 2, mz = (z0 + z1) / 2;
-    b.box('flowers', [4.5, 0.35, 2.2], new THREE.Vector3(mx, 0.3, mz), Q, false);
-    b.box('flowerRed', [2.2, 0.32, 4.5], new THREE.Vector3(mx + sx * 4.5, 0.29, mz + sz * 1.5), Q, false);
+    flowerBed(b, mx, mz, 4.5, 2.2, 'flowers', rand);
+    flowerBed(b, mx + sx * 4.5, mz + sz * 1.5, 2.2, 4.5, 'flowerRed', rand);
     for (const [ex, ez, w, d] of [[x0, mz, 0.35, z1 - z0], [x1, mz, 0.35, z1 - z0], [mx, z0, x1 - x0, 0.35], [mx, z1, x1 - x0, 0.35]]) b.box('hedge', [w, 0.45, d], new THREE.Vector3(ex, 0.3, ez), Q, true);
     plants.palms.push(new THREE.Vector3(x0 + 2.5, 0.1, z0 + 2.5));
     plants.trees.push(new THREE.Vector3(x1 - 3, 0.1, z1 - 3), new THREE.Vector3(mx - sx * 3, 0.1, mz + sz * 4));
@@ -151,6 +151,15 @@ function park(b: Builder, hf: Heightfield, def: BarrancoDef, plants: Plants, ran
   ribbon(b, hf, [new THREE.Vector2(cx + ring, cz), new THREE.Vector2(p.x1, cz)], pw, 'paverRed', 0.18);
   ribbon(b, hf, [new THREE.Vector2(cx, p.z0), new THREE.Vector2(cx, cz - ring)], pw, 'paverRed', 0.18);
   ribbon(b, hf, [new THREE.Vector2(cx, cz + ring), new THREE.Vector2(cx, p.z1)], pw, 'paverRed', 0.18);
+}
+
+/** Bed of flowers: dark soil with dozens of small leafy clumps, most in bloom. */
+function flowerBed(b: Builder, x: number, z: number, w: number, d: number, bloom: string, rand: () => number): void {
+  b.box('soilBed', [w, 0.22, d], new THREE.Vector3(x, 0.15, z), Q, false);
+  for (let k = 0; k < Math.round(w * d * 3); k++) {
+    const s = 0.12 + rand() * 0.14;
+    b.geometry(rand() < 0.7 ? bloom : 'hedge', new THREE.IcosahedronGeometry(s, 0), new THREE.Matrix4().compose(new THREE.Vector3(x + (rand() - 0.5) * (w - 0.3), 0.3 + s * 0.5, z + (rand() - 0.5) * (d - 0.3)), new THREE.Quaternion().setFromEuler(new THREE.Euler(rand() * 3, rand() * 3, 0)), new THREE.Vector3(1, 0.7, 1)));
+  }
 }
 
 /** Mirador over the sea beside the bajada: a wooden pergola on white columns, railing, benches, people looking out. */

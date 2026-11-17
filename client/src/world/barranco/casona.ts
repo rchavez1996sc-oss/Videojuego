@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { Builder, Opening } from '../buildingKit';
 import { CASONA_PAINTS, TRIMS } from './materials';
+import { lampSpots } from '../../render/nightLights';
 
 export interface CasonaLot { x: number; z: number; y: number; facing: number; w: number; d: number; floors?: number; paint?: string; style?: Style; open?: boolean }
 type Style = 'cajon' | 'gallery' | 'plain' | 'villa';
@@ -106,5 +107,34 @@ export function casona(b: Builder, lot: CasonaLot, rand: () => number): { door: 
     for (const s of [-1, 1]) b.geometry('creamCornice', new THREE.SphereGeometry(0.22, 10, 8), new THREE.Matrix4().compose(at(s * (w / 2 - 0.22), H + 1.25, 0), q, new THREE.Vector3(1, 1, 1)));
   }
   const doorX = -w / 2 + bay * (doorBay + 0.5);
+  facadeLife(b, at, q, w, H, doorX, trim, rand);
   return { door: at(doorX, PLINTH, 1.2), hall: [at(-w / 2 + 0.6, PLINTH, -0.8), at(w / 2 - 0.6, PLINTH, -d + 0.8)] };
+}
+
+/**
+ * Lived-in layers on the front: a downpipe at a corner, a lantern beside the door (lit at night), the electricity
+ * meter box, a brass number, and on some houses bougainvillea spilling over the parapet and down a corner.
+ */
+function facadeLife(b: Builder, at: At, q: THREE.Quaternion, w: number, H: number, doorX: number, trim: string, rand: () => number): void {
+  const side = rand() < 0.5 ? -1 : 1, px = side * (w / 2 - 0.12);
+  b.geometry('steelDark', new THREE.CylinderGeometry(0.055, 0.055, H + 0.6, 8), new THREE.Matrix4().compose(at(px, (H + 0.6) / 2 - 0.3, 0.14), q, new THREE.Vector3(1, 1, 1)));
+  b.box('steelDark', [0.16, 0.08, 0.3], at(px, H + 0.25, 0.05), q, false);
+  if (rand() < 0.7) {
+    const lx = doorX + (rand() < 0.5 ? -1 : 1) * 1.25, ly = PLINTH + 2.75;
+    b.box('lhBlack', [0.06, 0.06, 0.32], at(lx, ly - 0.05, 0.18), q, false);
+    b.box('lhBlack', [0.26, 0.04, 0.26], at(lx, ly + 0.42, 0.34), q, false);
+    b.geometry('globe', new THREE.CylinderGeometry(0.1, 0.13, 0.36, 6), new THREE.Matrix4().compose(at(lx, ly + 0.2, 0.34), q, new THREE.Vector3(1, 1, 1)));
+    lampSpots.push(at(lx, ly + 0.2, 0.6));
+  }
+  b.box('concrete', [0.42, 0.55, 0.16], at(doorX + 1.9 * -side, PLINTH + 1.2, 0.08), q, false);
+  b.box('brass', [0.28, 0.16, 0.02], at(doorX, PLINTH + 3.3, 0.06), q, false);
+  if (rand() < 0.35) {
+    const cx = (rand() < 0.5 ? -1 : 1) * (w / 2 - 0.9);
+    const drop = 1.5 + rand() * (H - 2);
+    for (let k = 0; k < 16; k++) {
+      const t = k / 15, y = H + 0.7 - t * drop + (rand() - 0.5) * 0.4, x = cx + (rand() - 0.5) * (2.8 - t * 1.8);
+      b.geometry(k % 4 ? 'bougainvillea' : 'hedge', new THREE.IcosahedronGeometry(0.28 + rand() * 0.3, 1), new THREE.Matrix4().compose(at(x, y, 0.18 + rand() * 0.12), q, new THREE.Vector3(1.4, 0.75, 0.5)));
+    }
+  }
+  if (rand() < 0.3) b.box(trim, [0.9, 0.05, 0.35], at(doorX, PLINTH + 3.2, 0.25), q, false);
 }

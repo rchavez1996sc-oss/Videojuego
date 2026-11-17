@@ -30,7 +30,7 @@ export const lampGlow = (): number => (TIMES as Record<TimeId, Preset>)[timeOfDa
 
 /** Rewrites the chapter's sky, sun, fog and exposure for the chosen time of day (in place); returns it. */
 export function applyTime(b: BiomeDef, force?: string): BiomeDef {
-  if (force && force in TIMES) timeOfDay = force as TimeId;
+  if (force && force in TIMES && !new URLSearchParams(location.search).get('t')) timeOfDay = force as TimeId;
   const p = (TIMES as Record<TimeId, Preset>)[timeOfDay];
   if (timeOfDay === 'day' || (b as { timeApplied?: boolean }).timeApplied) return b;
   Object.assign(b, {

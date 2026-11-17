@@ -8,12 +8,12 @@ from PIL import Image, ImageStat
 
 OUT = os.path.join(os.path.dirname(__file__), '..', 'public', 'assets', 'textures')
 URL = 'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/{2}/{0}/{0}_{1}_{2}.jpg'
-HI = {'laja', 'plazaFlag', 'asphalt', 'slabs', 'cobble', 'flagstone', 'plaster', 'concrete', 'brick', 'lawn', 'dryGrass', 'soil'}
+HI = {'casonaWall', 'humidWall', 'mossCobble', 'laja', 'plazaFlag', 'asphalt', 'slabs', 'cobble', 'flagstone', 'plaster', 'concrete', 'brick', 'lawn', 'dryGrass', 'soil'}
 # Roughness maps remapped to 0.8-1.0: they add breakup to the material's roughness but never make it glossier (no new glints).
-ROUGH = {'laja', 'plazaFlag', 'slateDark', 'paintPlaster', 'asphalt', 'slabs', 'cobble', 'flagstone', 'concrete', 'brick', 'plaster', 'stucco', 'rock', 'roofTiles', 'calamina', 'deck', 'wood', 'pirca', 'stoneWall', 'soil', 'brick2', 'brick3', 'plasterBrick', 'paintedBrick', 'blockWall', 'damagedPlaster', 'brick4', 'paintWall', 'roofSlab'}
+ROUGH = {'casonaWall', 'humidWall', 'bridgePlanks', 'paintedWood', 'beamWood', 'plinthStone', 'terracotta', 'checker', 'mossCobble', 'laja', 'plazaFlag', 'slateDark', 'paintPlaster', 'asphalt', 'slabs', 'cobble', 'flagstone', 'concrete', 'brick', 'plaster', 'stucco', 'rock', 'roofTiles', 'calamina', 'deck', 'wood', 'pirca', 'stoneWall', 'soil', 'brick2', 'brick3', 'plasterBrick', 'paintedBrick', 'blockWall', 'damagedPlaster', 'brick4', 'paintWall', 'roofSlab'}
 GREY = (128, 128, 128)
 # Faint photos (stains lost once tinted by vertex colour): (contrast gain, new mean) so the dirt reads like the graffiti walls.
-PUNCH = {'paintWall': (2.6, 208), 'paintPlaster': (2.2, 212)}
+PUNCH = {'casonaWall': (2.0, 210), 'paintWall': (2.6, 208), 'paintPlaster': (2.2, 212)}
 SETS = {
     'concrete': ('concrete_floor_worn_001', (134, 131, 125)),
     'slabs': ('concrete_pavement', (134, 131, 125)),
@@ -50,6 +50,15 @@ SETS = {
     'damagedPlaster': ('damaged_plaster', (231, 227, 219)),
     'paintWall': ('blue_plaster_weathered', (231, 227, 219)),
     'roofSlab': ('dirty_concrete', (150, 146, 138)),
+    'casonaWall': ('plastered_wall_04', (231, 227, 219)),
+    'humidWall': ('worn_mossy_plasterwall', (225, 220, 210)),
+    'bridgePlanks': ('weathered_brown_planks', (150, 120, 100)),
+    'paintedWood': ('wood_peeling_paint_weathered', (205, 205, 200)),
+    'beamWood': ('rough_wood', (120, 95, 75)),
+    'plinthStone': ('plaster_stone_wall_01', (170, 165, 155)),
+    'terracotta': ('terracotta_floor_tiles', None),
+    'checker': ('checkered_pavement_tiles', None),
+    'mossCobble': ('cobblestone_floor_04', None),
 }
 
 def fetch(asset, kind, res='1k'):
