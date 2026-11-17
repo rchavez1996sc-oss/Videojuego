@@ -65,7 +65,8 @@ export function blockedForBuilding(def: BarrancoDef, c: CoastDef, x: number, z: 
   if (z > edgeZ(c, x) - 8 - m) return true;
   if (overRavine(c, x, z, 3 + m)) return true;
   const br = bridgeSpan(c, def);
-  if (Math.abs(z - br.z) < 11 + m && (Math.abs(x - br.x0) < 15 + m || Math.abs(x - br.x1) < 15 + m)) return true;
+  if (Math.abs(z - br.z) < 25 + m && x > br.x0 - 18 - m && x < br.x0 + 1 + m) return true;
+  if (Math.abs(z - br.z) < 22 + m && x > br.x1 - 1 - m && x < br.x1 + 16 + m) return true;
   if (def.avenues.some((a) => Math.abs(z - a.z) < a.half + SIDEWALK + m && x > (a.x0 ?? -1e9) - m && x < (a.x1 ?? 1e9) + m)) return true;
   if (Math.abs(z - def.mural.z) < def.mural.half + SIDEWALK + m) return true;
   if (def.streets.some((s) => Math.abs(x - s.x) < s.half + SIDEWALK + m && z > s.z0 - m && z < s.z1 + m)) return true;

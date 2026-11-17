@@ -4,7 +4,7 @@ import type { Heightfield } from '../heightfield';
 import { glowSpots, lampSpots } from '../../render/nightLights';
 import { DECK } from './layout';
 
-const UP = new THREE.Vector3(0, 1, 0), Q = new THREE.Quaternion();
+const Q = new THREE.Quaternion();
 
 /** Green cast-iron lamp post of Barranco: fluted base, slim shaft and four white globes on curled arms (or one). */
 export function globeLamp(b: Builder, at: THREE.Vector3, four = true): void {
@@ -78,7 +78,8 @@ export function suspiros(b: Builder, hf: Heightfield, span: { x0: number; x1: nu
     }
     globeLamp(b, new THREE.Vector3(x + dir * 2.4, y, z + 2.6));
     globeLamp(b, new THREE.Vector3(x + dir * 2.4, y, z - 2.6));
-    b.box('bridgeDeck', [2.6, 0.16, W], new THREE.Vector3(x + dir * 1.0, Math.max(y, DECK) - 0.08, z), new THREE.Quaternion().setFromAxisAngle(UP, 0), true);
+    const rise = Math.max(0, DECK - y), slope = Math.atan2(rise, 3);
+    b.box('bridgeDeck', [3.1, 0.16, W], new THREE.Vector3(x + dir * 1.5, y + rise / 2 - 0.08, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -dir * slope), true);
     b.box('pavement', [14, 0.12, 16], new THREE.Vector3(x + dir * 9.3, 0.02, z), Q, false);
     b.box('kerbYellow', [14, 0.2, 0.25], new THREE.Vector3(x + dir * 9.3, 0.05, z - 8), Q, false);
     b.box('kerbYellow', [14, 0.2, 0.25], new THREE.Vector3(x + dir * 9.3, 0.05, z + 8), Q, false);

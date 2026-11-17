@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type RAPIER from '@dimforge/rapier3d-compat';
+import RAPIER from '@dimforge/rapier3d-compat';
 import type { Enemies } from './enemies';
 import { Vip } from './vip';
 import { truce } from './truce';
@@ -21,9 +21,9 @@ export interface HandoverDef {
   failed: string; complete: string; reward: string; loot?: string[];
 }
 
-type Phase = 'escort' | 'cross' | 'wait' | 'fight';
+type Phase = 'escort' | 'fight';
 
-export interface HandoverDeps { scene: THREE.Scene; world: RAPIER.World; lighting: Lighting; enemies: Enemies; sfx: Sfx; camera: THREE.Camera; floor: (x: number, z: number) => number }
+export interface HandoverDeps { scene: THREE.Scene; world: RAPIER.World; lighting: Lighting; enemies: Enemies; sfx: Sfx; camera: THREE.Camera; floor: (x: number, z: number) => number; nodes?: THREE.Vector3[] }
 
 /**
  * Chapter goal in three acts: walk the hostage (he follows the player's trail) to the middle of the bridge and hold E
@@ -41,7 +41,6 @@ export class Handover {
   private gait = '';
   private holdT = 0;
   private t = 0;
-  private waitT = 0;
   private pending: AmbushGroup[];
   private trucks: PoliceTruck[] = [];
   private bars: THREE.MeshStandardMaterial[];
@@ -90,8 +89,9 @@ export class Handover {
     this.stopSiren = siren(this.d.sfx);
     this.flash(this.def.betrayal, 9);
     for (const { e } of this.party) (e.engaged = true), (e.awareness = 1);
-    this.vip.rig.loop('terrified');
+    if (!this.crossing) this.vip.rig.loop('terrified');
   }
+  private crossing = false;
 
   update(dt: number, player: THREE.Vector3, input: Input, alive: boolean): void {
     if (this.done) return;
@@ -99,10 +99,9 @@ export class Handover {
     if (this.phase !== 'fight') {
       truce.until = performance.now() + 1500;
       if (this.party.some((p) => p.e.hp < p.hp)) this.betray();
+      else for (const { e } of this.party) Object.assign(e, { awareness: 0, engaged: false, state: 'patrol' });
     }
     if (this.phase === 'escort') this.escort(dt, player, input, alive);
-    else if (this.phase === 'cross') this.walk(dt, new THREE.Vector3(this.def.across[0], this.def.across[2], this.def.across[1]), 1.5) && ((this.phase = 'wait'), (this.waitT = 3.2), this.setGait('civ_idle'));
-    else if (this.phase === 'wait' && (this.waitT -= dt) <= 0) this.betray();
     else if (this.phase === 'fight') this.fight(dt);
     if (this.vip.alive) this.vip.update(dt, false);
     const blink = Math.floor(this.t * 3) % 2;
@@ -111,15 +110,24 @@ export class Handover {
     this.showMarker(player);
   }
 
-  /** The hostage trails the player; at the meeting point, holding E hands him over. */
+  /** The hostage walks at the player's side (right, else left; along the player's trail when far or boxed in); holding E at the meeting point hands him over. */
   private escort(dt: number, player: THREE.Vector3, input: Input, alive: boolean): void {
     const last = this.trail[this.trail.length - 1];
-    if (!last || last.distanceTo(player) > 0.7) this.trail.push(player.clone());
+    if (!last || last.distanceTo(player) > 0.7) {
+      if (last) this.heading.copy(player).sub(last).setY(0).normalize();
+      this.trail.push(player.clone());
+    }
     if (this.trail.length > 400) this.trail.shift();
     const v = this.vip.position;
     while (this.trail.length > 1 && v.distanceTo(this.trail[0]) < 0.6) this.trail.shift();
-    const gap = v.distanceTo(player), next = this.trail[0];
-    if (gap > 2.6 && next) this.walk(dt, next, gap > 15 ? 5.2 : gap > 6 ? 3.6 : 1.6);
+    const gap = v.distanceTo(player), slot = this.sideSlot(player);
+    if (slot && gap < 8) {
+      const d = v.distanceTo(slot);
+      if (d > 0.35) this.walk(dt, slot, Math.min(5.4, Math.max(1.3, d * 2.4)));
+      else (this.setGait('civ_idle'), (this.vip.rig.root.rotation.y = Math.atan2(this.heading.x, this.heading.z)));
+      this.trail.length = 0;
+      this.trail.push(player.clone());
+    } else if (gap > 2.4 && this.trail[0]) this.walk(dt, this.trail[0], gap > 15 ? 5.2 : gap > 6 ? 3.8 : 1.8);
     else this.setGait('civ_idle');
     const [mx, mz] = this.def.meet, near = Math.hypot(player.x - mx, player.z - mz) < 4 && v.distanceTo(player) < 6;
     let text = '';
@@ -127,10 +135,23 @@ export class Handover {
       this.holdT = input.down('KeyE') ? this.holdT + dt : 0;
       const pct = Math.min(100, Math.round((this.holdT / this.def.hold) * 100));
       text = this.holdT > 0 ? `${this.def.doing} <span>${pct}%</span><i class="bar"><b style="width:${pct}%"></b></i>` : `<kbd>E</kbd> ${this.def.action}`;
-      if (this.holdT >= this.def.hold) (this.phase = 'cross'), (this.prompt.style.opacity = '0'), this.flash('ENTREGADO · QUE CRUCE EL PUENTE', 4);
+      if (this.holdT >= this.def.hold) (this.prompt.style.opacity = '0'), (this.crossing = true), this.betray();
     }
     if (this.phase === 'escort') this.prompt.style.opacity = text ? '1' : '0';
     if (text && this.prompt.innerHTML !== text) this.prompt.innerHTML = text;
+  }
+
+  private heading = new THREE.Vector3(0, 0, 1);
+  /** A free spot 1.2 m to the player's right (or left), slightly behind, with a clear line from the player. */
+  private sideSlot(player: THREE.Vector3): THREE.Vector3 | null {
+    const right = new THREE.Vector3(-this.heading.z, 0, this.heading.x);
+    for (const s of [1, -1]) {
+      const p = player.clone().addScaledVector(right, s * 1.2).addScaledVector(this.heading, -0.3);
+      const from = player.clone().setY(player.y + 1), dir = p.clone().setY(player.y + 1).sub(from), len = dir.length();
+      const hit = this.d.world.castRay(new RAPIER.Ray(from, dir.normalize()), len + 0.35, true, undefined, undefined, undefined, undefined, (c) => !c.isSensor() && c.parent()?.isFixed() === true);
+      if (!hit) return p;
+    }
+    return null;
   }
 
   /** Steps the hostage toward `to` at `speed`, on the walkable floor; true on arrival. */
@@ -151,6 +172,10 @@ export class Handover {
   }
 
   private fight(dt: number): void {
+    if (this.crossing && this.vip.alive) {
+      const [ax, az, ay] = this.def.across;
+      if (this.walk(dt, new THREE.Vector3(ax, ay, az), 4.4)) (this.crossing = false), (this.gait = 'terrified'), this.vip.rig.loop('terrified');
+    }
     while (this.pending.length && this.pending[0].delay <= this.t - this.betrayedAt) this.arrive(this.pending.shift()!);
     for (const tr of this.trucks) tr.update(dt);
     if (!this.pending.length && this.trucks.every((t) => t.parked) && this.d.enemies.aliveCount === 0) {
@@ -163,8 +188,11 @@ export class Handover {
   private betrayedAt = 0;
 
   private squad(g: AmbushGroup, x: number, z: number): void {
+    const near = (this.d.nodes ?? []).filter((n) => Math.hypot(n.x - x, n.z - z) < 26).sort(() => Math.random() - 0.5);
     for (let i = 0; i < g.size; i++) {
-      const e = this.d.enemies.add({ type: g.type ?? 'soldier', x: x + (i ? (Math.random() - 0.5) * (3 + g.size) : 0), z: z + (i ? (Math.random() - 0.5) * (3 + g.size) : 0), ...(g.y !== undefined ? { y: g.y } : {}) });
+      const n = g.y === undefined ? near[i % Math.max(1, near.length)] : undefined, a = (i / g.size) * Math.PI * 2;
+      const px = n ? n.x + (Math.random() - 0.5) * 1.5 : x + Math.cos(a) * (i ? 2.5 : 0), pz = n ? n.z + (Math.random() - 0.5) * 1.5 : z + Math.sin(a) * (i ? 2.5 : 0);
+      const e = this.d.enemies.add({ type: g.type ?? 'soldier', x: px, z: pz, ...(g.y !== undefined ? { y: g.y } : {}) });
       e.engaged = true;
       e.awareness = 0.9;
       e.lastKnown.copy(this.vip.position);

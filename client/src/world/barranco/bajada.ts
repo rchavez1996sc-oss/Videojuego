@@ -69,10 +69,13 @@ export function bajadaDeBanos(b: Builder, hf: Heightfield, def: BarrancoDef, c: 
         }
         if (i % 2) plants.trees.push(new THREE.Vector3(bx, by, z - 1));
       }
+      const stairsHere = [[def.bridge.z - 9, 1], [def.bridge.z + 7, -1], [def.bridge.z + 26, 1], [def.bridge.z - 22, -1]].some(([sz, ss]) => ss === s && sz > z - 2.5 && sz < zn + 2.5);
+      if (!stairsHere && Math.abs(z - def.bridge.z) > 5) terrace(b, hf, c, r, z, zn, s, i);
     }
     if (z < def.bridge.z - 4 && i % 2 === 0) stall(b, new THREE.Vector3(ravineCentre(r, z) + (i % 4 ? 1 : -1) * (half - 1.2), f + 0.1, z), i % 4 ? -1 : 1, plants, i);
   }
   for (const [zs, s] of [[def.bridge.z - 9, 1], [def.bridge.z + 7, -1], [def.bridge.z + 26, 1], [def.bridge.z - 22, -1]] as const) stairs(b, hf, c, zs, s);
+  for (const t of treesOnBank.splice(0)) plants.trees.push(t.setY(hf.heightAt(t.x, t.z)));
   group.add(muralVault(b, def, c, lighting));
   return group;
 }
@@ -116,3 +119,21 @@ function muralVault(b: Builder, def: BarrancoDef, c: CoastDef, lighting: Lightin
   mesh.receiveShadow = true;
   return mesh;
 }
+
+/**
+ * Planted terraces on a bank (Street View: the bajada's banks are stepped gardens under big trees): at a third and
+ * two thirds of the bank's height an ochre retaining wall 0.6 m above the slope with a clipped hedge along its top,
+ * and a tree on most segments.
+ */
+function terrace(b: Builder, hf: Heightfield, c: CoastDef, r: ReturnType<typeof ravineOf>, z: number, zn: number, s: number, i: number): void {
+  const inner = (r.floorHalf ?? 4) + 1.2, outer = (zz: number) => ravineHalf(c, r, zz) - 2.2;
+  if (outer(z) - inner < 3) return;
+  for (const k of [0.35, 0.68]) {
+    const xa = ravineCentre(r, z) + s * (inner + (outer(z) - inner) * k), xb = ravineCentre(r, zn) + s * (inner + (outer(zn) - inner) * k);
+    const a = new THREE.Vector3(xa, hf.heightAt(xa, z), z), e = new THREE.Vector3(xb, hf.heightAt(xb, zn), zn);
+    run(b, 'ochreWall', a.clone().setY(a.y - 0.4), e.clone().setY(e.y - 0.4), 0.3, 1.2);
+    run(b, 'hedge', a.clone().setY(a.y + 0.45).add(new THREE.Vector3(-s * 0.45, 0, 0)), e.clone().setY(e.y + 0.45).add(new THREE.Vector3(-s * 0.45, 0, 0)), 0.6, 0.55, false);
+  }
+  if (i % 3 !== 1) treesOnBank.push(new THREE.Vector3(ravineCentre(r, z) + s * (inner + (outer(z) - inner) * 0.52), 0, z + 2));
+}
+export const treesOnBank: THREE.Vector3[] = [];

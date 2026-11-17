@@ -16,6 +16,7 @@ import type { Plants } from '../malecon/park';
 import { barrancoMaterials } from './materials';
 import { barrancoGraph, bridgeSpan, type BarrancoDef } from './layout';
 import { suspiros } from './bridge';
+import { bridgeEnds } from './bridgeEnds';
 import { bajadaDeBanos } from './bajada';
 import { buildLandmarks } from './landmarks';
 import { buildStreets } from './streets';
@@ -38,6 +39,7 @@ export function buildBarranco(hf: Heightfield, def: BarrancoDef, lighting: Light
   const plants: Plants = { palms: [], phoenix: [], trees: [], bent: [], pines: [], seats: [], standing: [], arch: [] };
   const group = new THREE.Group();
   suspiros(b, hf, bridgeSpan(c, def));
+  bridgeEnds(b, hf, def, c, plants, rand);
   group.add(bajadaDeBanos(t, hf, def, c, plants, lighting));
   buildLandmarks(b, hf, def, plants, rand);
   const { station, trees, fronts } = buildStreets(b, def, c, plants, rand);

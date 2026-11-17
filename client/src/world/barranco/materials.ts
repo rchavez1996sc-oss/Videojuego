@@ -41,6 +41,8 @@ export function barrancoMaterials(lighting: Lighting): Record<string, THREE.Mate
     hedge: std('hedge', { map: fo.map, normalMap: fo.normalMap, color: '#7d8f5a', roughness: 0.95 }),
     flowers: std('flowers', { map: fo.map, normalMap: fo.normalMap, color: '#ff8fb8', emissive: '#3a0a1e', emissiveIntensity: 0.4, roughness: 0.95 }),
     bougainvillea: std('bougainvillea', { map: fo.map, normalMap: fo.normalMap, color: '#d63a86', emissive: '#2a0418', emissiveIntensity: 0.25, roughness: 0.95, flatShading: true }),
+    lawnPatch: std('lawnPatch', { map: (photo('lawn') ?? fo).map, color: '#6f8a45', roughness: 0.95 }),
+    silverEdge: std('silverEdge', { map: fo.map, normalMap: fo.normalMap, color: '#b9c2b4', roughness: 0.9 }),
     shrub: std('shrub', { map: fo.map, normalMap: fo.normalMap, color: '#5d6b3a', roughness: 0.95 }),
     soilBed: std('soilBed', { map: (photo('soil') ?? rk).map, normalMap: (photo('soil') ?? rk).normalMap, color: '#6e5a48', roughness: 0.95 }),
     flowerRed: std('flowerRed', { map: fo.map, normalMap: fo.normalMap, color: '#ff6a5a', emissive: '#3a0606', roughness: 0.95 }),

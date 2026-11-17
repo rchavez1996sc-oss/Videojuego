@@ -48,5 +48,22 @@
   "cloudColor": "#3a4152",
   "cloudShade": "#151820",
   "glow": 1
+ },
+ "firstlight": {
+  "label": "ALBA",
+  "sunElevation": 5,
+  "skyElevation": -1.5,
+  "sunAzimuthShift": 180,
+  "sunColor": "#ffae86",
+  "sunIntensity": 0.42,
+  "ambient": 0.26,
+  "exposure": 1.2,
+  "fogColor": "#6d7079",
+  "fogMul": 2.2,
+  "turbidity": 6,
+  "rayleigh": 1.9,
+  "cloudColor": "#b9a6a6",
+  "cloudShade": "#4a4c58",
+  "glow": 0.7
  }
 }
