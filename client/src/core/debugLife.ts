@@ -210,7 +210,8 @@ export function lifeDebug(c: DebugContext) {
       const out = new Map<string, number>();
       c.scene?.traverse((o) => {
         const m = (o as THREE.Mesh).material as THREE.Material | undefined;
-        if (m && !Array.isArray(m) && new RegExp(re, 'i').test(m.name)) out.set(m.name + ((o as THREE.InstancedMesh).isInstancedMesh ? '*' : ''), (out.get(m.name) ?? 0) + 1);
+        const e = (m as THREE.MeshStandardMaterial | undefined)?.emissiveIntensity, tag = e ? `@${e.toFixed(2)}` : '';
+        if (m && !Array.isArray(m) && new RegExp(re, 'i').test(m.name)) out.set(m.name + tag + ((o as THREE.InstancedMesh).isInstancedMesh ? '*' : ''), (out.get(m.name + tag) ?? 0) + 1);
       });
       return [...out].map(([k, v]) => `${k}:${v}`).join(' ');
     },

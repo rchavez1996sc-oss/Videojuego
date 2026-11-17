@@ -38,6 +38,8 @@ export class NightLights {
       if (!m || Array.isArray(m) || !('emissive' in m)) return;
       if (GLOWS.includes(m.name)) [m.emissive.copy(warm), m.emissiveIntensity = 4 * glow];
       else if (m.name === 'shopLit') m.emissiveIntensity = 0.55 + 1.8 * glow;
+      else if (m.name === 'roomLit') m.emissiveIntensity = 2.4 * glow;
+      else if (m.name.startsWith('curtain')) m.emissiveIntensity = 2.2 * glow;
       else if (m.name === 'light' || m.name === 'veh-lamp') [m.emissive.set('#fff3d6'), m.emissiveIntensity = 3 * glow];
       else if (m.name === 'tail') [m.emissive.set('#ff1a0a'), m.emissiveIntensity = 1.5 * glow];
     });

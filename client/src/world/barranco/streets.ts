@@ -40,7 +40,9 @@ function backlot(b: Builder, x: number, z: number, w: number, d: number, h: numb
   b.box(paint, [w, 0.8, 0.2], new THREE.Vector3(x, h + 0.1, z - d / 2 + 0.1), Q, false);
 }
 
-export interface Streets { station: StationInfo | null; trees: THREE.Vector3[] }
+/** Front of a placed casona: centre of its street face, unit normal toward the street, width. */
+export interface Front { at: THREE.Vector3; out: THREE.Vector3; w: number }
+export interface Streets { station: StationInfo | null; trees: THREE.Vector3[]; fronts: Front[] }
 
 /**
  * Streets with yellow kerbs and slab pavements, rows of casonas along every frontage and along both lips of the
@@ -58,11 +60,13 @@ export function buildStreets(b: Builder, def: BarrancoDef, c: CoastDef, plants: 
     return true;
   };
   let station: StationInfo | null = null;
+  const fronts: Front[] = [];
   const place = (fx: number, fz: number, facing: number, w: number, d: number, extra: Partial<Parameters<typeof casona>[1]> = {}, force = false) => {
     const dx = Math.round(Math.sin(facing)), dz = Math.round(Math.cos(facing));
     const r: Rect = dx ? [Math.min(fx, fx - dx * d), Math.max(fx, fx - dx * d), fz - w / 2, fz + w / 2] : [fx - w / 2, fx + w / 2, Math.min(fz, fz - dz * d), Math.max(fz, fz - dz * d)];
     if (!force && !free(r)) return null;
     taken.push([r[0] - 0.2, r[1] + 0.2, r[2] - 0.2, r[3] + 0.2]);
+    fronts.push({ at: new THREE.Vector3(fx, 0, fz), out: new THREE.Vector3(Math.sin(facing), 0, Math.cos(facing)), w });
     return casona(b, { x: fx, z: fz, y: 0, facing, w, d, ...extra }, rand);
   };
   const r = ravineOf(c), p = def.prison, pc = ravineCentre(r, p.z), px = pc + p.side * (ravineHalf(c, r, p.z) + 4.5);
@@ -93,7 +97,7 @@ export function buildStreets(b: Builder, def: BarrancoDef, c: CoastDef, plants: 
     backlot(b, x, z, w, d, 4.2 + Math.floor(rand() * 2) * 3.9, CASONA_PAINTS[Math.floor(rand() * CASONA_PAINTS.length)][0]);
   }
   streetKit(b, def, c, plants, trees, rand);
-  return { station, trees };
+  return { station, trees, fronts };
 }
 
 /** The detention house: walk-in hall with barred cells along the back, a desk and the seized files (the cache). */

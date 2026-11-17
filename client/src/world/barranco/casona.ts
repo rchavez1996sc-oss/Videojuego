@@ -12,7 +12,9 @@ const pick = <T>(a: T[], r: () => number) => a[Math.floor(r() * a.length)];
 
 /** Tall window with a moulded frame, sill, two wooden shutter leaves folded back and glass; iron bars on the ground floor. */
 function tallWindow(b: Builder, at: At, q: THREE.Quaternion, x: number, y: number, w: number, h: number, trim: string, barred: boolean): void {
-  b.box('glass', [w, h, 0.05], at(x, y + h / 2, -0.12), q, false);
+  const p = at(x, y, 0), r = Math.abs(Math.sin(p.x * 12.9898 + p.y * 78.233 + p.z * 37.719) * 43758.5453) % 1;
+  b.box(r < 0.4 ? 'roomLit' : 'glass', [w, h, 0.05], at(x, y + h / 2, -0.12), q, false);
+  if (r < 0.22) b.box(r < 0.11 ? 'curtainCream' : 'curtainRed', [w * 0.55, h * 0.92, 0.03], at(x + (r < 0.06 || (r > 0.11 && r < 0.17) ? -1 : 1) * w * 0.22, y + h * 0.48, -0.08), q, false);
   b.box('trimWhite', [w + 0.3, 0.12, 0.12], at(x, y + h + 0.06, 0.04), q, false);
   b.box('creamCornice', [w + 0.4, 0.1, 0.22], at(x, y - 0.05, 0.08), q, false);
   for (const s of [-1, 1]) {
@@ -20,6 +22,8 @@ function tallWindow(b: Builder, at: At, q: THREE.Quaternion, x: number, y: numbe
     b.box(trim, [w / 2, h * 0.96, 0.05], at(x + s * (w * 0.75 + 0.13), y + h / 2, 0.06), q, false);
   }
   b.box(trim, [w, 0.05, 0.06], at(x, y + h * 0.5, -0.08), q, false);
+  for (const k of [0.25, 0.75]) b.box('trimWhite', [w, 0.035, 0.04], at(x, y + h * k, -0.09), q, false);
+  b.box('trimWhite', [0.04, h, 0.04], at(x, y + h / 2, -0.09), q, false);
   if (barred) for (let i = 1; i < Math.round(w / 0.13); i++) b.box('fenceIron', [0.025, h, 0.025], at(x - w / 2 + i * 0.13, y + h / 2, 0.1), q, false);
 }
 
@@ -131,9 +135,9 @@ function facadeLife(b: Builder, at: At, q: THREE.Quaternion, w: number, H: numbe
   if (rand() < 0.35) {
     const cx = (rand() < 0.5 ? -1 : 1) * (w / 2 - 0.9);
     const drop = 1.5 + rand() * (H - 2);
-    for (let k = 0; k < 16; k++) {
-      const t = k / 15, y = H + 0.7 - t * drop + (rand() - 0.5) * 0.4, x = cx + (rand() - 0.5) * (2.8 - t * 1.8);
-      b.geometry(k % 4 ? 'bougainvillea' : 'hedge', new THREE.IcosahedronGeometry(0.28 + rand() * 0.3, 1), new THREE.Matrix4().compose(at(x, y, 0.18 + rand() * 0.12), q, new THREE.Vector3(1.4, 0.75, 0.5)));
+    for (let k = 0; k < 44; k++) {
+      const t = Math.pow(rand(), 1.6), y = H + 0.8 - t * drop + (rand() - 0.5) * 0.3, x = cx + (rand() - 0.5) * (3.2 - t * 2.2), r = 0.1 + rand() * 0.16;
+      b.geometry(rand() < 0.62 ? 'bougainvillea' : 'shrub', new THREE.IcosahedronGeometry(r, 0), new THREE.Matrix4().compose(at(x, y, 0.1 + rand() * 0.25), new THREE.Quaternion().setFromEuler(new THREE.Euler(rand() * 3, rand() * 3, rand() * 3)), new THREE.Vector3(1.3, 0.8, 0.9)));
     }
   }
   if (rand() < 0.3) b.box(trim, [0.9, 0.05, 0.35], at(doorX, PLINTH + 3.2, 0.25), q, false);

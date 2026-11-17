@@ -19,6 +19,7 @@ import { suspiros } from './bridge';
 import { bajadaDeBanos } from './bajada';
 import { buildLandmarks } from './landmarks';
 import { buildStreets } from './streets';
+import { streetLayer } from './streetLayer';
 
 /**
  * Level 4: Barranco around the Puente de los Suspiros — republican casonas on a grid of kerbed streets, the
@@ -39,7 +40,8 @@ export function buildBarranco(hf: Heightfield, def: BarrancoDef, lighting: Light
   suspiros(b, hf, bridgeSpan(c, def));
   group.add(bajadaDeBanos(t, hf, def, c, plants, lighting));
   buildLandmarks(b, hf, def, plants, rand);
-  const { station, trees } = buildStreets(b, def, c, plants, rand);
+  const { station, trees, fronts } = buildStreets(b, def, c, plants, rand);
+  streetLayer(t, def, c, fronts, rand);
   group.add(buildVegetation(b, plants, trees, lighting));
   const bystanders = { onHurt: (_p: THREE.Vector3) => {} };
   group.add(crowd(plants.seats, plants.standing, lighting, world, bystanders));
