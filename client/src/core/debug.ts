@@ -58,9 +58,9 @@ export interface DebugContext {
 export function installDebug(c: DebugContext): void {
   const fmt = (v: THREE.Vector3) => `${v.x.toFixed(1)},${v.y.toFixed(1)},${v.z.toFixed(1)}`;
   (window as unknown as { __game: object }).__game = {
-    setView(i: number) {
+    setView(i: number | number[]) {
       c.setFreeCam(true);
-      const [x, dy, z, lx, ldy, lz] = c.views[i];
+      const [x, dy, z, lx, ldy, lz] = Array.isArray(i) ? i : c.views[i];
       c.tpc.place(new THREE.Vector3(x, c.hf.heightAt(x, z) + dy, z), new THREE.Vector3(lx, c.hf.heightAt(lx, lz) + ldy, lz));
       if (c.shotMode) c.frame(1 / 60);
     },

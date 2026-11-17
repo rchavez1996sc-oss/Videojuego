@@ -26,6 +26,7 @@ export async function placeModels(scene: THREE.Object3D, lighting: Lighting, wor
   const manifest = await fetch(`${base}manifest.json`, { cache: 'no-store' }).then((r) => r.json()).catch(() => null);
   const urls: Record<string, string> = manifest?.models ?? {};
   const loader = new GLTFLoader(), body = world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
+  if (location.search.includes('shot')) (window as unknown as { __models: ModelSpot[] }).__models = spots;
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), s3 = new THREE.Vector3();
   for (const key of new Set(spots.map((s) => s.key))) {
     if (!urls[key]) continue;
