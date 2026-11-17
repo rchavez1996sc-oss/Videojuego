@@ -346,73 +346,86 @@
  "murals": {
   "twofaces": {
    "img": "murals/twofaces.png",
-   "aspect": 0.81
+   "aspect": 0.81,
+   "baked": "murals/twofaces.w.png"
   },
   "zambo": {
    "img": "murals/zambo.png",
-   "aspect": 1.47
+   "aspect": 1.47,
+   "baked": "murals/zambo.w.png"
   },
   "lostwall": {
    "img": "murals/lostwall.png",
-   "aspect": 2.64
+   "aspect": 2.64,
+   "baked": "murals/lostwall.w.png"
   },
   "graffiti12": {
    "img": "murals/graffiti12.png",
-   "aspect": 1
+   "aspect": 1,
+   "baked": "murals/graffiti12.w.png"
   },
   "graffiti13": {
    "img": "murals/graffiti13.png",
-   "aspect": 1
+   "aspect": 1,
+   "baked": "murals/graffiti13.w.png"
   },
   "graffiti15": {
    "img": "murals/graffiti15.png",
-   "aspect": 1
+   "aspect": 1,
+   "baked": "murals/graffiti15.w.png"
   },
   "graffiti18": {
    "img": "murals/graffiti18.png",
-   "aspect": 1
+   "aspect": 1,
+   "baked": "murals/graffiti18.w.png"
   },
   "graffiti19": {
    "img": "murals/graffiti19.png",
-   "aspect": 1
+   "aspect": 1,
+   "baked": "murals/graffiti19.w.png"
   },
   "graffiti2": {
    "img": "murals/graffiti2.png",
-   "aspect": 1
+   "aspect": 1,
+   "baked": "murals/graffiti2.w.png"
   },
   "graffiti3": {
    "img": "murals/graffiti3.png",
-   "aspect": 1
+   "aspect": 1,
+   "baked": "murals/graffiti3.w.png"
   },
   "graffiti4": {
    "img": "murals/graffiti4.png",
-   "aspect": 1
+   "aspect": 1,
+   "baked": "murals/graffiti4.w.png"
   },
   "graffiti5": {
    "img": "murals/graffiti5.png",
-   "aspect": 1
+   "aspect": 1,
+   "baked": "murals/graffiti5.w.png"
   },
   "graffiti9": {
    "img": "murals/graffiti9.png",
-   "aspect": 1
+   "aspect": 1,
+   "baked": "murals/graffiti9.w.png"
   }
  },
  "minimaps": {
   "ch01": {
    "file": "minimap/ch01.png",
-   "sig": "264e7de39201"
+   "sig": "aeea2067b365"
   },
   "ch02": {
    "file": "minimap/ch02.png",
-   "sig": "5637732c58e2"
+   "sig": "9e31d4c7a814"
   },
   "ch03": {
    "file": "minimap/ch03.png",
-   "sig": "4644a3cce894"
+   "sig": "377f0aae15d9"
   },
   "ch04": {
    "file": "minimap/ch04.png",
-   "sig": "c8793a0a8167"
+   "sig": "fe5d6a3b1e58"
   }
  }
 }

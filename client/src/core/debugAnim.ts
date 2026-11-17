@@ -79,6 +79,23 @@ export function animDebug(c: DebugContext) {
       return `${v.state} dyn ${v.body.isDynamic()} @${v.x.toFixed(1)},${(v.y ?? 0).toFixed(2)},${v.z.toFixed(1)} ground ${c.hf.heightAt(v.x, v.z).toFixed(2)} vis ${v.group.visible} vel ${Math.hypot(l.x, l.y, l.z).toFixed(1)}`;
     },
     /** Simulates `seconds` without rendering (follow camera), then renders one frame. */
+    /** Runs `n` frames at 60 Hz with or without rendering; frame-time percentiles and the slowest frames. */
+    bench(n: number, render = true, keys: string[] = []) {
+      c.setFreeCam(false);
+      c.setSkipRender(!render);
+      for (const k of keys) dispatchEvent(new KeyboardEvent('keydown', { code: k }));
+      const ms: number[] = [];
+      for (let i = 0; i < n; i++) {
+        const t0 = performance.now();
+        c.frame(1 / 60);
+        ms.push(performance.now() - t0);
+      }
+      for (const k of keys) dispatchEvent(new KeyboardEvent('keyup', { code: k }));
+      c.setSkipRender(false);
+      const s = [...ms].sort((a, b) => a - b), q = (f: number) => s[Math.floor(f * (n - 1))].toFixed(1);
+      const worst = ms.map((v, i) => [i, v]).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([i, v]) => `#${i}:${v.toFixed(0)}`).join(' ');
+      return `p50 ${q(0.5)} p90 ${q(0.9)} p99 ${q(0.99)} max ${q(1)} | ${worst}`;
+    },
     advance(seconds: number) {
       c.setFreeCam(false);
       c.setSkipRender(true);

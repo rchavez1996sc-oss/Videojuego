@@ -21,7 +21,7 @@ export async function placeMurals(scene: THREE.Object3D, lighting: Lighting, wor
   if (!walls.length) return;
   const base = `${import.meta.env.BASE_URL}assets/`;
   const manifest = await fetch(`${base}manifest.json`, { cache: 'no-store' }).then((r) => r.json()).catch(() => null);
-  const murals = Object.entries((manifest?.murals ?? {}) as Record<string, { img: string; aspect: number }>);
+  const murals = Object.entries((manifest?.murals ?? {}) as Record<string, { img: string; aspect: number; baked?: string }>);
   if (!murals.length) return;
   const quads = new Map<string, number[][]>(murals.map(([k]) => [k, []]));
   let turn = 0;
@@ -37,10 +37,13 @@ export async function placeMurals(scene: THREE.Object3D, lighting: Lighting, wor
   }
   if (location.search.includes('shot')) (window as unknown as { __murals: unknown }).__murals = [...quads];
   const loader = new THREE.TextureLoader();
+  if (location.search.includes('shot')) (window as unknown as { __bakeMural: unknown }).__bakeMural = async (img: string) => (weathered((await loader.loadAsync(`${base}${img}`)).image as HTMLImageElement).image as HTMLCanvasElement).toDataURL('image/png');
   for (const [key, m] of murals) {
     const list = quads.get(key)!;
     if (!list.length) continue;
-    const tex = weathered((await loader.loadAsync(`${base}${m.img}?v=${ver(m.img)}`)).image as HTMLImageElement);
+    const tex = m.baked
+      ? Object.assign(await loader.loadAsync(`${base}${m.baked}?v=${ver(m.baked)}`), { colorSpace: THREE.SRGBColorSpace, anisotropy: 8 })
+      : weathered((await loader.loadAsync(`${base}${m.img}?v=${ver(m.img)}`)).image as HTMLImageElement);
     const pos: number[] = [], uv: number[] = [], nrm: number[] = [], idx: number[] = [];
     for (const [x, y, z, qx, qy, qz, qw, w, h] of list) {
       const q = new THREE.Quaternion(qx, qy, qz, qw), n = new THREE.Vector3(0, 0, 1).applyQuaternion(q), o = pos.length / 3;
