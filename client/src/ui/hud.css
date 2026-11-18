@@ -159,3 +159,7 @@ body.ended #overlay { display: none; }
 #objective .prog { display: flex; flex-direction: column; align-items: center; gap: 3px; margin-top: 4px; font: 700 11px 'Barlow', sans-serif; letter-spacing: 0.2em; color: #ffcf3f; }
 #objective .prog i { display: block; width: 240px; height: 7px; background: rgba(255, 255, 255, 0.15); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); }
 #objective .prog b { display: block; height: 100%; background: linear-gradient(90deg, #e08a1e, #ffcf3f); box-shadow: 0 0 8px rgba(255, 190, 60, 0.7); transition: width 0.3s; }
+/* Right column (ammo → enemy counter → kill feed) stacked in flow: nothing overlaps when a block grows (civilian line, long weapon name, slots). */
+#hud .rcol { position: absolute; top: 24px; right: 30px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; pointer-events: none; }
+#hud .rcol > .ammo, #hud .rcol > .counter, #hud .rcol > .rewards { position: static; }
+#hud .ammo .count { margin-top: 4px; }

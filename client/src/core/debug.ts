@@ -68,7 +68,9 @@ export function installDebug(c: DebugContext): void {
     views: () => c.views.length,
     rewardTest(n = 3, head = true, dist = 64) {
       for (let i = 0; i < n; i++) c.enemies.onEnemyHit(true, head && i % 2 === 0, c.player.position.clone().add(new THREE.Vector3(dist, 0, 0)));
+      c.setSkipRender(true);
       for (let i = 0; i < 12; i++) c.frame(1 / 30);
+      c.setSkipRender(false);
       return document.querySelector('#hud .rewards')?.textContent;
     },
     bot: (seconds: number) => playBot(c, seconds, c.status),

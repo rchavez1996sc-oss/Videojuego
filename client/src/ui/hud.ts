@@ -1,5 +1,6 @@
 import './hud.css';
 import { Rewards } from './rewards';
+import { stackPrompts } from './promptStack';
 
 export class Hud {
   private root = document.createElement('div');
@@ -47,6 +48,7 @@ export class Hud {
         <div class="slots"><div class="slot rifle on"><kbd>1</kbd><span>FUSIL</span></div><div class="slot side" style="display:none"><kbd>2</kbd><span>PISTOLA</span></div><div class="slot nade"><kbd>G</kbd>GRANADA<span class="nades"></span></div></div>
       </div>`;
     document.body.appendChild(this.root);
+    stackPrompts();
     const q = <T extends HTMLElement>(s: string) => this.root.querySelector(s) as T;
     this.cross = ['.t', '.b', '.l', '.r'].map((s) => q(`.crosshair ${s}`));
     this.hit = q('.hitmarker');
@@ -66,6 +68,9 @@ export class Hud {
     this.civ = q('.counter .civ');
     this.zoom = q('.zoom');
     this.rewards = new Rewards(this.root, (t) => this.showToast(t));
+    const col = Object.assign(document.createElement('div'), { className: 'rcol' });
+    col.append(q('.ammo'), q('.counter'), q('.rewards'));
+    this.root.appendChild(col);
   }
 
   private set(key: string, value: string, apply: () => void): void {
