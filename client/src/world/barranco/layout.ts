@@ -106,11 +106,18 @@ export function barrancoGraph(def: BarrancoDef, c: CoastDef, hf: Heightfield): S
     chain(row);
   }
   const r = ravineOf(c), mouth = edgeZ(c, r.x) + c.run, floor: number[] = [];
-  for (let z = r.head - 5; z < def.beachRoad.z - def.beachRoad.half - 1; z += 5) floor.push(add(ravineCentre(r, Math.min(z, mouth)), z));
+  for (let z = r.head - 5; z < def.beachRoad.z - def.beachRoad.half - 1; z += 5) {
+    const x = ravineCentre(r, Math.min(z, mouth)), under = z > r.head && z < mouth;
+    floor.push(under ? nodes.push(new THREE.Vector3(x, ravineFloor(c, r, z) + 0.06, z)) - 1 : add(x, z));
+  }
   chain(floor);
   for (const sd of [-1, 1]) {
     const lip: number[] = [];
-    for (let z = r.head + 3; z < def.mirador.z - 8; z += 6) lip.push(add(ravineCentre(r, z) + sd * (ravineHalf(c, r, z) + 2), z));
+    for (let z = r.head + 3; z < def.mirador.z - 8; z += 6) {
+      const x = ravineCentre(r, z) + sd * (ravineHalf(c, r, z) + 2), b = bridgeSpan(c, def);
+      if (Math.abs(z - b.z) < 3 && x > b.x0 - 2 && x < b.x1 + 2) [chain(lip), lip.length = 0];
+      else lip.push(add(x, z));
+    }
     chain(lip);
   }
   const b = bridgeSpan(c, def), deck: number[] = [];
@@ -126,7 +133,9 @@ export function barrancoGraph(def: BarrancoDef, c: CoastDef, hf: Heightfield): S
   for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
     const a = nodes[i], bb = nodes[j], d = Math.hypot(a.x - bb.x, a.z - bb.z);
     if (d > 9.5 || Math.abs(a.y - bb.y) > 1.2 || linked.has(`${i}:${j}`)) continue;
-    const mx = (a.x + bb.x) / 2, mz = (a.z + bb.z) / 2, deckHop = Math.abs(a.y - DECK) < 0.3 || Math.abs(bb.y - DECK) < 0.3;
+    const mx = (a.x + bb.x) / 2, mz = (a.z + bb.z) / 2, onDeck = (n: THREE.Vector3) => Math.abs(n.z - b.z) < 0.5 && n.x > b.x0 - 3.5 && n.x < b.x1 + 3.5;
+    const deckHop = onDeck(a) || onDeck(bb), endOf = (n: THREE.Vector3) => n.x < b.x0 + 1 || n.x > b.x1 - 1;
+    if (deckHop && !(onDeck(a) && onDeck(bb)) && !endOf(onDeck(a) ? a : bb)) continue;
     if (!deckHop && overRavine(c, mx, mz, 0.5) && Math.abs(ground(mx, mz) - a.y) > 1) continue;
     edges.push([i, j]);
     linked.add(`${i}:${j}`);

@@ -9,7 +9,7 @@ import type { Sfx } from '../audio/sfx';
 import { Particles } from '../fx/particles';
 import { Decals } from '../fx/decals';
 import { Tracers } from '../fx/tracers';
-import { MuzzleFlash } from '../fx/muzzleFlash';
+import { MuzzleFlash } from '../fx/muzzleFlash'; import { BarrelSmoke } from '../fx/barrelSmoke';
 import { Shells } from '../fx/shells';
 import { Blast } from '../fx/blast';
 import { MagSwap } from './magSwap';
@@ -42,7 +42,7 @@ export class Combat {
   private sparks = new Particles(400, true);
   private decals: Decals;
   private tracers = new Tracers();
-  private flash = new MuzzleFlash();
+  private flash = new MuzzleFlash(); private barrel = new BarrelSmoke();
   private shells: Shells;
   private blast: Blast;
   private mags: MagSwap[];
@@ -119,7 +119,7 @@ export class Combat {
     this.sparks.update(dt);
     this.blast.update(dt);
     this.tracers.update(dt);
-    this.flash.update(dt);
+    [this.flash.update(dt), this.barrel.update(dt, this.player.model.muzzle, this.dust)];
     this.shells.update(dt);
   }
 
@@ -180,7 +180,7 @@ export class Combat {
     const hit = this.ray(muzzle, toAim, dist + 0.5, through);
     const end = hit ? muzzle.clone().addScaledVector(toAim, hit.timeOfImpact) : aimPoint;
 
-    this.flash.fire(mz);
+    [this.flash.fire(mz), this.from || this.barrel.shot()];
     if (!this.from) this.player.model.fire();
     if (this.shots++ % def.tracerEvery === 0) this.tracers.fire(muzzle, end);
     this.shells.eject(this.from?.muzzle ?? this.player.model.ejector, right);

@@ -16,9 +16,10 @@ const front = (r: CampusDef['buildings'][number], ahead: number) => framer(r)(0,
 
 /** Footpaths over the lawns: from each building's door to the nearest road, and short desire lines between neighbouring doors. */
 export function studentWalks(b: Builder, hf: Heightfield, def: CampusDef, paths: Paths): [number, number][][] {
-  const walks: [number, number][][] = [], blocked = (x: number, z: number) => def.buildings.some((r) => inRect(r, x, z, 0.8)) || def.parkings.some((r) => inRect(r, x, z, 0.5)) || inRect(def.field, x, z, 3.5);
+  const fence = def.venezuela.z - def.venezuela.half - def.venezuela.sidewalk - 1.2;
+  const walks: [number, number][][] = [], blocked = (x: number, z: number) => z > fence || def.buildings.some((r) => inRect(r, x, z, 0.8)) || def.parkings.some((r) => inRect(r, x, z, 0.5)) || inRect(def.field, x, z, 3.5);
   const clear = (a: THREE.Vector3, c: THREE.Vector3, skipRoads: boolean) => {
-    for (let t = 0.04; t < 0.96; t += 0.02) {
+    for (let t = 0.04; t <= 1; t += 0.02) {
       const x = a.x + (c.x - a.x) * t, z = a.z + (c.z - a.z) * t;
       if (blocked(x, z) || (skipRoads && onCarriageway(def, x, z, 1.5))) return false;
     }

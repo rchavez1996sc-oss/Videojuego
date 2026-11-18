@@ -44,6 +44,7 @@ import { Grenades } from './weapons/grenades';
 import { detonate } from './weapons/explosion';
 import { Minimap } from './ui/minimap';
 import { cachedMinimap } from './ui/minimapCache';
+import { pruneGraph } from './ai/navPrune';
 import { setupWorldMap } from './ui/worldMap';
 import { loadPhotoTextures, photoEnvironment, photosLoaded } from './render/photoTextures';
 import { carModels } from './render/carModels';
@@ -140,6 +141,7 @@ async function boot(): Promise<void> {
 
   mark('minimap');
   physicsStep(world);
+  if (barrio) console.info('[nav]', pruneGraph(barrio.graph, world, !location.search.includes('rawnav')));
   const respawnPts = barrio ? streetPoints(barrio.graph) : undefined;
   const startGoal = ch.objective?.capture ?? barrio?.station?.entrance ?? barrio?.refuge?.[0];
   const start = respawnPts && startGoal && !shotMode ? startSpot(world, hf, respawnPts, startGoal, ch.enemies ?? [], barrio!.inside, ch.defense?.startDistance, ch.defense?.startMax) : null;

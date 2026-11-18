@@ -163,3 +163,9 @@ body.ended #overlay { display: none; }
 #hud .rcol { position: absolute; top: 24px; right: 30px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; pointer-events: none; }
 #hud .rcol > .ammo, #hud .rcol > .counter, #hud .rcol > .rewards { position: static; }
 #hud .ammo .count { margin-top: 4px; }
+/* Narrow windows: the centred objective panel ran into the right column (ammo, slots); it moves to the top-left, wrapping within the free width. */
+@media (max-width: 960px) {
+  #objective { left: 16px; transform: none; align-items: flex-start; text-align: left; max-width: calc(100vw - 330px); padding-left: 10px; }
+  #objective b { font-size: 17px; letter-spacing: 0.08em; }
+  #op-alert { max-width: calc(100vw - 340px); left: 16px; transform: none; }
+}

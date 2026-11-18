@@ -122,9 +122,11 @@ export function campusGraph(def: CampusDef, solid: (x: number, z: number) => boo
       prev = k;
     }
   }
+  const fence = side - 0.5, gaps = [def.gate1.x, ...(def.gate2 ? [def.gate2.x] : []), ...def.roads.flatMap((r) => r.pts.filter((p) => p[1] >= -1).map((p) => p[0]))];
+  const throughFence = (p: THREE.Vector3, q: THREE.Vector3) => (p.z - fence) * (q.z - fence) < 0 && !gaps.some((x) => Math.abs((p.x + q.x) / 2 - x) < 6);
   for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
     const d = nodes[i].distanceTo(nodes[j]);
-    if (d < 9 && !edges.some(([a, c]) => (a === i && c === j) || (a === j && c === i))) {
+    if (d < 9 && !throughFence(nodes[i], nodes[j]) && !edges.some(([a, c]) => (a === i && c === j) || (a === j && c === i))) {
       const mid = nodes[i].clone().lerp(nodes[j], 0.5);
       if (!solid(mid.x, mid.z)) edges.push([i, j]);
     }

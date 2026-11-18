@@ -484,6 +484,10 @@ export function installDebug(c: DebugContext): void {
       return `allyKills=${s.allyKills}/${dead} ` + s.list.map((a) => `${a.name}:${a.lost ? 'X' : a.unit.alive ? a.unit.state[0] : 'down'} hp=${a.unit.hp.toFixed(0)} d=${a.unit.position.distanceTo(c.player.position).toFixed(1)} @${a.unit.position.x.toFixed(0)},${a.unit.position.z.toFixed(0)}${a.unit.moveTarget ? ' mv' + a.unit.path.length + '>' + a.unit.moveTarget.x.toFixed(0) + ',' + a.unit.moveTarget.z.toFixed(0) : ''}${a.target ? ' →' + a.target.id : ''}`).join(' | ');
     },
     sections: (reset = true) => sections(reset),
+    graphAt(x: number, z: number, r = 8) {
+      const n = c.nav?.nodes ?? [], g = (c.nav as unknown as { g: { edges: [number, number][] } } | undefined)?.g, f = (v: THREE.Vector3) => `${v.x.toFixed(1)},${v.y.toFixed(2)},${v.z.toFixed(1)}`;
+      return n.map((v, i) => [v, i] as const).filter(([v]) => Math.hypot(v.x - x, v.z - z) < r).map(([v, i]) => `${i}@${f(v)} → ${(g?.edges ?? []).filter((e) => e.includes(i)).map((e) => f(n[e[0] === i ? e[1] : e[0]])).join(' ')}`).join('\n');
+    },
     crowding: (r = 5) => { const a = c.enemies.list.filter((e) => e.alive); return `max ${Math.max(0, ...a.map((e) => a.filter((o) => o.position.distanceTo(e.position) < r).length))} within ${r} m, engaged ${a.filter((e) => e.engaged).length}/${a.length}, near player 30 m ${a.filter((e) => e.position.distanceTo(c.player.position) < 30).length}`; },
     keys: (name: string) => (c.renderer.gl.info.programs ?? []).filter((p: { name: string }) => p.name === name).map((p: { cacheKey: string }) => p.cacheKey.split(',').map((v, i) => `${i}:${v}`).join(' ')).join('\n\n'),
     programs: () => Object.entries((c.renderer.gl.info.programs ?? []).reduce((m: Record<string, number>, p: { name: string }) => ((m[p.name] = (m[p.name] ?? 0) + 1), m), {})).sort((a, b) => b[1] - a[1]).slice(0, 25),
