@@ -23,6 +23,12 @@ export function pruneGraph(g: StreetGraph, world: RAPIER.World, apply = true): s
     const side = new THREE.Vector3(-d.z, 0, d.x).normalize();
     return [0.6, 1.2].every((h) => [-0.45, 0, 0.45].every((o) => !!world.castRay(new RAPIER.Ray({ x: a.x + side.x * o, y: a.y + h, z: a.z + side.z * o }, d), len, true, SOLID, undefined, undefined, undefined, notGround)));
   };
+  const why = (a: THREE.Vector3, b: THREE.Vector3) => {
+    const d = new THREE.Vector3().subVectors(b, a), len = d.length(), hit = world.castRay(new RAPIER.Ray({ x: a.x, y: a.y + 1.2, z: a.z }, d.divideScalar(len)), len, true, SOLID, undefined, undefined, undefined, notGround);
+    if (!hit) return '-';
+    const c = hit.collider, t = c.translation(), h = c.shape.type === RAPIER.ShapeType.Cuboid ? (c.shape as RAPIER.Cuboid).halfExtents : null;
+    return `${surfaceOf(c.handle)} ${h ? `${(h.x * 2).toFixed(1)}x${(h.y * 2).toFixed(1)}x${(h.z * 2).toFixed(1)}` : c.shape.type} @${t.x.toFixed(0)},${t.y.toFixed(1)},${t.z.toFixed(0)} at ${hit.timeOfImpact.toFixed(1)}m`;
+  };
   const pieces = (es: [number, number][], skip: boolean[]) => {
     const adj = g.nodes.map(() => [] as number[]), seen = new Uint8Array(g.nodes.length), sizes: number[] = [];
     for (const [a, b] of es) adj[a].push(b), adj[b].push(a);
@@ -47,7 +53,49 @@ export function pruneGraph(g: StreetGraph, world: RAPIER.World, apply = true): s
   const root = g.nodes.map((_, i) => i), find = (i: number): number => (root[i] === i ? i : (root[i] = find(root[i])));
   for (const [a, b] of edges) root[find(a)] = find(b);
   const links: string[] = [];
-  for (const [a, b] of blocked) if (find(a) !== find(b)) (root[find(a)] = find(b)), edges.push([a, b]), links.push(`${g.nodes[a].x.toFixed(0)},${g.nodes[a].z.toFixed(0)}→${g.nodes[b].x.toFixed(0)},${g.nodes[b].z.toFixed(0)}`);
+  const open = (a: THREE.Vector3, b: THREE.Vector3) => {
+    const d = new THREE.Vector3().subVectors(b, a), len = d.length();
+    return len < 0.3 || [0.6, 1.2].every((h) => !world.castRay(new RAPIER.Ray({ x: a.x, y: a.y + h, z: a.z }, d.clone().divideScalar(len)), len, true, SOLID, undefined, undefined, undefined, notGround));
+  };
+  const floor = (x: number, y: number, z: number, reach = 5) => {
+    const hit = world.castRay(new RAPIER.Ray({ x, y: y + 2.5, z }, { x: 0, y: -1, z: 0 }), reach, true, SOLID);
+    return hit ? y + 2.5 - hit.timeOfImpact : null;
+  };
+  const at = (A: THREE.Vector3, B: THREE.Vector3, t: number, o: number, side: THREE.Vector3) => {
+    const P = A.clone().lerp(B, t).addScaledVector(side, o), top = Math.max(A.y, B.y), y = floor(P.x, top, P.z, top - Math.min(A.y, B.y) + 4);
+    if (y === null || y < Math.min(A.y, B.y) - 0.5 || y > top + 0.5) return null;
+    P.y = y;
+    return inside(P) ? null : P;
+  };
+  const detour = (ia: number, ib: number): THREE.Vector3[] | null => {
+    const A = g.nodes[ia], B = g.nodes[ib], d = new THREE.Vector3().subVectors(B, A).setY(0), side = new THREE.Vector3(-d.z, 0, d.x).normalize();
+    for (const o of [0, 2, -2, 3.5, -3.5, 5, -5, 7, -7, 9, -9, 12, -12]) for (const t of [0.5, 0.3, 0.7]) {
+      const P = at(A, B, t, o, side);
+      if (P && open(A, P) && open(P, B)) return [P];
+    }
+    for (const o of [1.5, -1.5, 3, -3, 5, -5, 8, -8]) for (const [t1, t2] of [[0.1, 0.9], [0.25, 0.75], [0, 1]]) {
+      const P = at(A, B, t1, o, side), Q = P && at(A, B, t2, o, side);
+      if (P && Q && open(A, P) && open(P, Q) && open(Q, B)) return [P, Q];
+    }
+    return null;
+  };
+  let rerouted = 0;
+  const size = new Map<number, number>();
+  g.nodes.forEach((_, i) => !bad[i] && size.set(find(i), (size.get(find(i)) ?? 0) + 1));
+  for (const [a, b] of blocked) {
+    if (find(a) === find(b) || Math.min(size.get(find(a)) ?? 0, size.get(find(b)) ?? 0) <= 2) continue;
+    size.set(find(b), (size.get(find(a)) ?? 0) + (size.get(find(b)) ?? 0));
+    root[find(a)] = find(b);
+    const P = detour(a, b);
+    if (P) {
+      let prev = a;
+      for (const q of P) { const n = g.nodes.length; g.nodes.push(q), bad.push(false), root.push(n), edges.push([prev, n]), (prev = n); }
+      edges.push([prev, b]), rerouted++;
+      continue;
+    }
+    edges.push([a, b]), links.push(`${g.nodes[a].x.toFixed(0)},${g.nodes[a].y.toFixed(1)},${g.nodes[a].z.toFixed(0)}→${g.nodes[b].x.toFixed(0)},${g.nodes[b].y.toFixed(1)},${g.nodes[b].z.toFixed(0)}[${why(g.nodes[a], g.nodes[b])}]`);
+  }
+  if (rerouted) console.info('[nav] rerouted', rerouted);
   if (links.length) console.info("[nav] blocked but only link", links.join(' '));
   const deg = new Uint16Array(g.nodes.length);
   for (const [a, b] of edges) deg[a]++, deg[b]++;

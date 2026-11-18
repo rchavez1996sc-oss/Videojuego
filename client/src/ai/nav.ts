@@ -24,10 +24,10 @@ export class StreetNav {
     const near: [number, number][] = [];
     this.g.nodes.forEach((n, i) => {
       const d = (n.x - p.x) ** 2 + (n.z - p.z) ** 2;
-      if (near.length < 6 || d < near[near.length - 1][1]) {
+      if (near.length < 16 || d < near[near.length - 1][1]) {
         near.push([i, d]);
         near.sort((a, b) => a[1] - b[1]);
-        if (near.length > 6) near.pop();
+        if (near.length > 16) near.pop();
       }
     });
     if (!this.clear) return near[0][0];
