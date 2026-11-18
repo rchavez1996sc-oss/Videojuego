@@ -9,7 +9,7 @@ import { celebrate } from '../ui/objectiveDone';
 import type { Lighting } from '../render/lighting';
 import type { Input } from '../core/input';
 import type { Sfx } from '../audio/sfx';
-import { shotMode } from '../core/settings';
+import { shotMode, testMode } from '../core/settings';
 import { siren } from '../audio/siren';
 
 /** One group of the ambush: on foot at `at` (optionally on a roof at `y`), or driven in by pickup along `drive`. */
@@ -69,7 +69,7 @@ export class Handover {
     this.prompt.className = 'prompt';
     this.alert.id = 'op-alert';
     document.body.append(this.panel, this.marker, this.prompt, this.alert);
-    if (shotMode) Object.assign(window, { __handover: this });
+    if (shotMode || testMode) Object.assign(window, { __handover: this });
   }
 
   status(): string {

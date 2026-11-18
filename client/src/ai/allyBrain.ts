@@ -58,7 +58,7 @@ export function allyThink(a: Ally, ctx: AllyContext, dt: number): void {
   const d = Math.hypot(slot.x - u.position.x, slot.z - u.position.z);
   const engaged = u.state === 'combat';
   if (d > (engaged ? 14 : 3.5)) {
-    if (!u.moveTarget || u.moveTarget.distanceTo(slot) > 3) goTo(u, ctx, slot, d > 8 || engaged);
+    if (!u.moveTarget || u.moveTarget.distanceTo(slot) > 3) goTo(u, ctx, slot, d > 8 || engaged, false);
   } else if (engaged || d < 1.2) {
     u.moveTarget = null;
     u.path = [];

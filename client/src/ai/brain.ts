@@ -19,8 +19,27 @@ export interface AIContext {
   route(from: THREE.Vector3, to: THREE.Vector3, self: number): THREE.Vector3[];
 }
 
+/** Destinations already taken by someone, so a squad spreads out instead of piling onto the same few metres. */
+const claims = new Map<Enemy, { at: THREE.Vector3; until: number }>();
+const SPACING = 4.5;
+
+function unclaimed(e: Enemy, to: THREE.Vector3): THREE.Vector3 {
+  const now = performance.now() / 1000, taken = (p: THREE.Vector3) => [...claims].some(([o, c]) => o !== e && o.alive && c.until > now && c.at.distanceToSquared(p) < SPACING * SPACING);
+  let best = to;
+  if (taken(to)) {
+    const a0 = e.id * 2.39996;
+    search: for (const r of [5, 7.5, 10, 13]) for (let k = 0; k < 6; k++) {
+      const a = a0 + (k * Math.PI) / 3, p = to.clone().add(new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r));
+      if (!taken(p)) { best = p; break search; }
+    }
+  }
+  claims.set(e, { at: best, until: now + 12 });
+  return best;
+}
+
 /** Sets a destination, routing along the streets when buildings are in the way. */
-export function goTo(e: Enemy, ctx: Pick<AIContext, 'route'>, to: THREE.Vector3, run: boolean): void {
+export function goTo(e: Enemy, ctx: Pick<AIContext, 'route'>, to: THREE.Vector3, run: boolean, spread = true): void {
+  if (spread) to = unclaimed(e, to);
   const off = e.leash && to.clone().sub(e.leash.at).setY(0);
   if (e.leash && off && off.length() > e.leash.r) to = e.leash.at.clone().add(off.setLength(e.leash.r * 0.9)).setY(to.y);
   e.moveTarget = to;
@@ -188,7 +207,8 @@ export function think(e: Enemy, ctx: AIContext, dt: number): void {
       e.path = [];
     }
     if (!e.isStatic && !e.moveTarget && e.position.distanceTo(e.lastKnown) > 3) {
-      goTo(e, ctx, e.lastKnown.clone().add(new THREE.Vector3(rand(-4, 4), 0, rand(-4, 4))), e.engaged || e.awareness > 0.7);
+      const a = e.id * 2.39996 + rand(-0.4, 0.4), r = rand(6, 14);
+      goTo(e, ctx, e.lastKnown.clone().add(new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r)), e.engaged || e.awareness > 0.7);
     }
     if (!e.isStatic && !e.moveTarget && e.position.distanceTo(e.lastKnown) <= 3) {
       goTo(e, ctx, e.lastKnown.clone().add(new THREE.Vector3(rand(-12, 12), 0, rand(-12, 12))), false);

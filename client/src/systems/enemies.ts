@@ -1,4 +1,4 @@
-import { drivenCar } from './carEscape';
+import { holdReserve } from './hunters'; import { drivenCar } from './carEscape';
 import * as THREE from 'three'; import { idleGestures } from '../entities/gestures';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { Enemy, type EnemyDef } from '../entities/enemy';
@@ -8,15 +8,12 @@ import { onHit, pierceChance } from '../world/surfaces';
 import { shuffleRoamers } from './enemySpots';
 import { shotMode } from '../core/settings';
 import type { Heightfield } from '../world/heightfield';
-import type { Lighting } from '../render/lighting';
-import type { Player } from '../entities/player';
-import type { Combat } from '../weapons/combat';
-import type { Sfx } from '../audio/sfx';
+import type { Lighting } from '../render/lighting'; import type { Player } from '../entities/player';
+import type { Combat } from '../weapons/combat'; import type { Sfx } from '../audio/sfx';
 import { HealthBars } from '../ui/healthbars';
 import type { StreetNav } from '../ai/nav';
 import { difficulty } from '../core/difficulty';
-import { enemyFire } from './enemyFire';
-import { fleeGrenade } from './enemyFlee';
+import { enemyFire } from './enemyFire'; import { fleeGrenade } from './enemyFlee';
 import type { NearStart } from '../data/types';
 
 /** `leash`: a garrison post — the enemy fights and takes cover but never goes farther than this from its spawn. */
@@ -138,7 +135,9 @@ export class Enemies {
     if (!spotted && !periodic) return;
     const last = this.lastStand || this.alerted;
     if (periodic) this.intelT = last ? 5 : 8;
+    const reserve = holdReserve(this.list, this.player.position, last);
     for (const e of this.list) {
+      if (reserve.has(e)) continue;
       if (last && e.alive && periodic && !e.isStatic) {
         e.engaged = true;
         e.awareness = Math.max(e.awareness, 0.75);
