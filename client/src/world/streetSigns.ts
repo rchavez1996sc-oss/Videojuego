@@ -5,6 +5,7 @@ import type { StreetGraph } from './barrio';
 import { mulberry32 } from '../core/rng';
 import { surfaceTop } from './groundStrips';
 import { setSurface } from './surfaces';
+import { addBreakable } from './breakables';
 
 const C = 256, UP = new THREE.Vector3(0, 1, 0);
 
@@ -54,6 +55,7 @@ export function streetSigns(graph: StreetGraph, world: RAPIER.World, lighting: L
   const pole = lighting.setup(new THREE.MeshStandardMaterial({ color: '#9aa0a3', roughness: 0.45, metalness: 0.7 }), 'sign-pole');
   const body = world.createRigidBody(RAPIER.RigidBodyDesc.fixed()), degree = graph.nodes.map(() => 0);
   for (const [a, b] of graph.edges) (degree[a]++, degree[b]++);
+  const signs: { at: THREE.Vector3; pole: number; plates: number[][]; col: RAPIER.Collider | undefined }[] = [];
   const poles: THREE.Matrix4[] = [], plates: THREE.Matrix4[][] = Array.from({ length: cells }, () => []);
   graph.nodes.forEach((n, i) => {
     if (area && (n.x < area[0] || n.z < area[1] || n.x > area[2] || n.z > area[3])) return;
@@ -69,27 +71,35 @@ export function streetSigns(graph: StreetGraph, world: RAPIER.World, lighting: L
     const yaw = r() * 6.28, q = new THREE.Quaternion().setFromAxisAngle(UP, yaw);
     poles.push(new THREE.Matrix4().compose(p.clone().setY(p.y + 1.35), new THREE.Quaternion(), new THREE.Vector3(1, 1, 1)));
     const kind = r() < 0.45 ? 0 : r() < 0.5 ? 1 : 2, size = kind === 0 ? 0.72 : kind === 1 ? 0.8 : 0.6;
+    const sign = { at: p.clone(), pole: poles.length - 1, plates: [[kind, plates[kind].length]] as number[][], col: undefined as RAPIER.Collider | undefined };
+    signs.push(sign);
     plates[kind].push(new THREE.Matrix4().compose(p.clone().add(new THREE.Vector3(Math.sin(yaw) * 0.05, 2.0, Math.cos(yaw) * 0.05)), q, new THREE.Vector3(size, size, 1)));
     if (names.length && r() < 0.7) {
-      const q2 = new THREE.Quaternion().setFromAxisAngle(UP, yaw + Math.PI / 2);
-      plates[3 + Math.floor(r() * names.length)].push(new THREE.Matrix4().compose(p.clone().setY(p.y + 2.62), q2, new THREE.Vector3(1.1, 1.1, 1)));
+      const q2 = new THREE.Quaternion().setFromAxisAngle(UP, yaw + Math.PI / 2), k2 = 3 + Math.floor(r() * names.length);
+      sign.plates.push([k2, plates[k2].length]);
+      plates[k2].push(new THREE.Matrix4().compose(p.clone().setY(p.y + 2.62), q2, new THREE.Vector3(1.1, 1.1, 1)));
     }
-    setSurface(world.createCollider(RAPIER.ColliderDesc.cylinder(1.35, 0.045).setTranslation(p.x, p.y + 1.35, p.z), body).handle, 'metal');
+    sign.col = world.createCollider(RAPIER.ColliderDesc.cylinder(1.35, 0.045).setTranslation(p.x, p.y + 1.35, p.z), body);
+    setSurface(sign.col.handle, 'metal');
   });
   const add = (geo: THREE.BufferGeometry, mat: THREE.Material, list: THREE.Matrix4[], shadow: boolean) => {
-    if (!list.length) return;
+    if (!list.length) return undefined;
     const inst = new THREE.InstancedMesh(geo, mat, list.length);
     list.forEach((m, i) => inst.setMatrixAt(i, m));
     inst.castShadow = shadow;
     inst.receiveShadow = true;
     g.add(inst);
+    return inst;
   };
-  add(new THREE.CylinderGeometry(0.035, 0.04, 2.7, 8), pole, poles, true);
+  const poleMesh = add(new THREE.CylinderGeometry(0.035, 0.04, 2.7, 8), pole, poles, true), faces: (THREE.InstancedMesh | undefined)[][] = [];
   plates.forEach((list, k) => {
     const geo = new THREE.PlaneGeometry(1, 1), uv = geo.attributes.uv as THREE.BufferAttribute;
     for (let i = 0; i < uv.count; i++) uv.setX(i, (k + uv.getX(i)) / cells);
-    add(geo, front, list, true);
-    add(geo, back, list, false);
+    faces[k] = [add(geo, front, list, true), add(geo, back, list, false)];
   });
+  for (const s of signs) {
+    const parts = s.plates.flatMap(([k, i]) => faces[k].filter((m) => !!m).map((mesh) => ({ mesh: mesh!, index: i })));
+    if (poleMesh) addBreakable(s.col, s.at, 2.7, 'post', [{ mesh: poleMesh, index: s.pole }, ...parts]);
+  }
   return g;
 }

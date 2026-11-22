@@ -1,10 +1,11 @@
+import { existsSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { chromium } from 'playwright';
 const [ch, runs = '1', secs = '120', chunk = '60'] = process.argv.slice(2);
 const port = 4190 + Number(ch);
 const server = spawn('npx', ['vite', 'preview', '--port', String(port), '--strictPort'], { stdio: 'ignore' });
 await new Promise((r) => setTimeout(r, 2500));
-const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const browser = await chromium.launch({ executablePath: existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 try {
   for (let r = 0; r < Number(runs); r++) {
     const page = await browser.newPage({ viewport: { width: 640, height: 360 } });

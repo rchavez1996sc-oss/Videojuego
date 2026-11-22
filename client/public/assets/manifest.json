@@ -413,19 +413,19 @@
  "minimaps": {
   "ch01": {
    "file": "minimap/ch01.png",
-   "sig": "2dd53c91a342"
+   "sig": "4a75db095f56"
   },
   "ch02": {
    "file": "minimap/ch02.png",
-   "sig": "a73445dbbc50"
+   "sig": "bbdd0aeee772"
   },
   "ch03": {
    "file": "minimap/ch03.png",
-   "sig": "9aeb9701e221"
+   "sig": "f8405aea9155"
   },
   "ch04": {
    "file": "minimap/ch04.png",
-   "sig": "cffde29b5c48"
+   "sig": "7a18c23ade82"
   }
  }
 }

@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 // Pre-renders each chapter's minimap street plan (public/assets/minimap/<id>.png) and records its level signature in the manifest.
 import { spawn } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -8,7 +9,7 @@ const dir = new URL('..', import.meta.url).pathname, sigs = levelSigs(dir);
 const chapters = process.argv.slice(2).length ? process.argv.slice(2) : ['1', '2', '3', '4'];
 const server = spawn('npx', ['vite', 'preview', '--port', '4198', '--strictPort'], { stdio: 'ignore', cwd: dir });
 await new Promise((r) => setTimeout(r, 2500));
-const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const browser = await chromium.launch({ executablePath: existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 const path = `${dir}public/assets/manifest.json`, manifest = JSON.parse(readFileSync(path, 'utf8'));
 try {
   for (const n of chapters) {

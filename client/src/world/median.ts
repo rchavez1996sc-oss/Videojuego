@@ -6,6 +6,7 @@ import type { Lighting } from '../render/lighting';
 import { photo } from '../render/photoTextures';
 import { buildVegetation } from './malecon/vegetation';
 import { mulberry32 } from '../core/rng';
+import { addBreakable } from './breakables';
 
 const HALF = 1.2, KERB = 0.2, SEG = 2;
 
@@ -15,6 +16,7 @@ const HALF = 1.2, KERB = 0.2, SEG = 2;
  */
 export function avenueMedian(b: Builder, hf: Heightfield, lighting: Lighting, x0: number, x1: number, crossX: number[]): THREE.Group {
   const r = mulberry32(415), geo: Record<'yellow' | 'black' | 'lawn' | 'rail' | 'bush', THREE.BufferGeometry[]> = { yellow: [], black: [], lawn: [], rail: [], bush: [] };
+  const rails: { at: THREE.Vector3; col: ReturnType<Builder['box']> }[] = [];
   const q = new THREE.Quaternion(), trees: THREE.Vector3[] = [], palms: THREE.Vector3[] = [];
   const box = (k: keyof typeof geo, w: number, h: number, d: number, x: number, y: number, z: number) => geo[k].push(new THREE.BoxGeometry(w, h, d).translate(x, y, z));
   for (let x = x0; x < x1; x += SEG) {
@@ -27,9 +29,8 @@ export function avenueMedian(b: Builder, hf: Heightfield, lighting: Lighting, x0
     }
     box('lawn', SEG, KERB + 0.1, HALF * 2 - 0.32, cx, y + (KERB - 0.1) / 2, 0);
     b.box('none', [SEG, 0.04, HALF * 2 - 0.32], new THREE.Vector3(cx, y + KERB - 0.02, 0), q, true);
-    geo.rail.push(new THREE.CylinderGeometry(0.025, 0.025, 0.8, 6).translate(cx - SEG / 2, y + KERB + 0.4, HALF - 0.08));
-    for (const h of [0.45, 0.85]) geo.rail.push(new THREE.CylinderGeometry(0.022, 0.022, SEG, 6).rotateZ(Math.PI / 2).translate(cx, y + KERB + h, HALF - 0.08));
-    b.box('grate', [SEG, 0.9, 0.08], new THREE.Vector3(cx, y + KERB + 0.45, HALF - 0.08), q, true);
+    const foot = new THREE.Vector3(cx, y + KERB, HALF - 0.08);
+    rails.push({ at: foot, col: b.box('grate', [SEG, 0.9, 0.08], new THREE.Vector3(cx, y + KERB + 0.45, HALF - 0.08), q, true) });
     if (r() < 0.45) {
       const bx = cx + (r() - 0.5) * 1.2, bz = (r() - 0.5) * 0.9, s0 = 0.35 + r() * 0.3;
       for (let k = 0; k < 14; k++) {
@@ -57,6 +58,11 @@ export function avenueMedian(b: Builder, hf: Heightfield, lighting: Lighting, x0
     boxProjectUV(m, k === 'lawn' ? 0.35 : 0.5);
     g.add(Object.assign(new THREE.Mesh(m, mats[k]), { castShadow: k !== 'lawn', receiveShadow: true }));
   }
+  const railGeo = mergeGeometries([new THREE.CylinderGeometry(0.025, 0.025, 0.8, 6).translate(-SEG / 2, 0.4, 0), ...[0.45, 0.85].map((h) => new THREE.CylinderGeometry(0.022, 0.022, SEG, 6).rotateZ(Math.PI / 2).translate(0, h, 0))])!;
+  const rail = Object.assign(new THREE.InstancedMesh(railGeo, mats.rail, rails.length), { castShadow: true, receiveShadow: true });
+  rails.forEach((r, i) => (rail.setMatrixAt(i, new THREE.Matrix4().makeTranslation(r.at.x, r.at.y, r.at.z)), addBreakable(r.col, r.at, 0.9, 'rail', [{ mesh: rail, index: i }])));
+  rail.computeBoundingSphere();
+  g.add(rail);
   g.add(buildVegetation(b, { palms, phoenix: [], trees, bent: [], pines: [], seats: [], standing: [], arch: [] }, [], lighting));
   return g;
 }

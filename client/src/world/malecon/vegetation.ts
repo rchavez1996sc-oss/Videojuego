@@ -7,6 +7,8 @@ import type { Builder } from '../buildingKit';
 import { treeParts } from '../trees';
 import { palmBark } from '../../render/textures';
 import type { Plants } from './park';
+import type RAPIER from '@dimforge/rapier3d-compat';
+import { addBreakable, type Part } from '../breakables';
 
 function frondTexture(): THREE.CanvasTexture {
   const w = 128, h = 512, c = document.createElement('canvas');
@@ -77,6 +79,8 @@ function araucaria(): { trunk: THREE.BufferGeometry; crown: THREE.BufferGeometry
 }
 
 /** One InstancedMesh per 128 m tile, so frustum and shadow culling can skip distant groups of trees. */
+const placed = new WeakMap<THREE.Matrix4, Part[]>();
+
 function instanced(geo: THREE.BufferGeometry, mat: THREE.Material, mats: THREE.Matrix4[]): THREE.Group {
   const g = new THREE.Group(), tiles = new Map<string, THREE.Matrix4[]>(), p = new THREE.Vector3();
   for (const x of mats) {
@@ -86,7 +90,7 @@ function instanced(geo: THREE.BufferGeometry, mat: THREE.Material, mats: THREE.M
   }
   for (const list of tiles.values()) {
     const m = new THREE.InstancedMesh(geo, mat, list.length);
-    list.forEach((x, i) => m.setMatrixAt(i, x));
+    list.forEach((x, i) => (m.setMatrixAt(i, x), (placed.get(x) ?? placed.set(x, []).get(x)!).push({ mesh: m, index: i })));
     m.castShadow = m.receiveShadow = true;
     m.computeBoundingSphere();
     g.add(m);
@@ -100,9 +104,12 @@ export function buildVegetation(b: Builder, plants: Plants, streetTrees: THREE.V
   const barkMat = lighting.setup(new THREE.MeshStandardMaterial({ map: bark.map, normalMap: bark.normalMap, color: '#9a8b78', roughness: 0.95 }), 'palm-bark', windHook(0.0025));
   const frondMat = lighting.setup(new THREE.MeshStandardMaterial({ map: frondTexture(), alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.75, color: '#c9d3a0' }), 'frond', windHook(0.0025, 0.02));
   const pineMat = lighting.setup(new THREE.MeshStandardMaterial({ map: frondTexture(), alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.85, color: '#6f8a5a' }), 'pine', windHook(0.0015, 0.006));
+  const trunks = new Map<THREE.Matrix4, [RAPIER.Collider | undefined, THREE.Vector3, number]>();
   const at = (p: THREE.Vector3, s: number, lean = 0) => {
-    b.box('none', [0.5, 3, 0.5], p.clone().setY(p.y + 1.5), new THREE.Quaternion(), true);
-    return new THREE.Matrix4().compose(p, new THREE.Quaternion().setFromEuler(new THREE.Euler(lean, r() * Math.PI * 2, 0)), new THREE.Vector3(s, s * (0.9 + r() * 0.2), s));
+    const col = b.box('none', [0.5, 3, 0.5], p.clone().setY(p.y + 1.5), new THREE.Quaternion(), true);
+    const m = new THREE.Matrix4().compose(p, new THREE.Quaternion().setFromEuler(new THREE.Euler(lean, r() * Math.PI * 2, 0)), new THREE.Vector3(s, s * (0.9 + r() * 0.2), s));
+    trunks.set(m, [col, p.clone(), s]);
+    return m;
   };
   const kinds: [ReturnType<typeof palmParts>, THREE.Vector3[], THREE.Material][] = [
     [palmParts(13, 0.24, 16, 2.6, 3), plants.palms, frondMat],
@@ -125,5 +132,10 @@ export function buildVegetation(b: Builder, plants: Plants, streetTrees: THREE.V
     buckets[i % broad.length].push(new THREE.Matrix4().makeTranslation(pos.x, pos.y, pos.z).multiply(bend).multiply(new THREE.Matrix4().makeScale(size * 1.15, size, size * 1.15)).multiply(turn));
   });
   broad.forEach((t, i) => g.add(instanced(t.trunk, t.barkMat, buckets[i]), instanced(t.canopy, t.leafMat, buckets[i])));
+  // Only the slimmer young trees give way to a car; full-grown ones stop it.
+  for (const list of buckets) for (const m of list) {
+    const tr = trunks.get(m);
+    if (tr && tr[2] < 1.12) addBreakable(tr[0], tr[1], 6 * tr[2], 'tree', placed.get(m) ?? []);
+  }
   return g;
 }

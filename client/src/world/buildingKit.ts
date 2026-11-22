@@ -43,7 +43,7 @@ export class Builder {
     return !!this.world;
   }
 
-  box(mat: string, size: [number, number, number], pos: THREE.Vector3, quat: THREE.Quaternion, collide = true): void {
+  box(mat: string, size: [number, number, number], pos: THREE.Vector3, quat: THREE.Quaternion, collide = true): RAPIER.Collider | undefined {
     if (!collide && size[1] >= 0.3 && Math.min(size[0], size[2]) >= 0.3 && /^hedge/.test(mat)) collide = true;
     const g = new THREE.BoxGeometry(...size);
     this.tmp.position.copy(pos);
@@ -67,7 +67,9 @@ export class Builder {
       if (mat !== 'none' && mat !== 'grate' && mat !== 'glasswall') markSkin(col.handle);
       if (mat === 'grate' || mat === 'glasswall') setPorous(col.handle, mat === 'grate' ? 0.45 : 1);
       else if (mat !== 'roof' && mat !== 'glasswall') cover.addBox(pos, size, quat);
+      return col;
     }
+    return undefined;
   }
 
   /** Arbitrary geometry already shaped in local space, placed with `matrix`; optional box collider. */

@@ -29,7 +29,7 @@ import { rideBike } from '../entities/bikePose';
 import { SkidMarks, trackWheels } from '../fx/skidMarks';
 import { stripAt } from '../world/groundStrips';
 import { CarEscape, drivenCar, safeExit } from './carEscape';
-import { joinPhysics } from './carContacts';
+import { joinPhysics, smash } from './carContacts';
 import { safely } from '../core/guard';
 import type { Heightfield } from '../world/heightfield';
 import type { Rig } from '../entities/rig';
@@ -239,7 +239,7 @@ export class Driving {
     if (!this.marks.mesh.parent) v.group.parent?.add(this.marks.mesh);
     const lv = v.body.linvel(), earth = (p: THREE.Vector3) => (stripAt(p.x, p.y, p.z) ?? (this.d.hf.maskAt(p.x, p.z, 0) > 0.5 || this.d.hf.isPaved(p.z) ? 'hard' : 'dirt')) === 'dirt';
     trackWheels(this.marks, this.rig.contacts(), new THREE.Vector3(lv.x, lv.y, lv.z), v.yaw, !!u.brake && s.speed > 0, u.handbrake, earth, sp.small ? 0.12 : 0.2);
-    joinPhysics(this.d.world, this.d.traffic!, v, this.d.player.position);
+    [joinPhysics(world, this.d.traffic!, v, player.position), (v.hp -= smash(world, v.body, v.collider, this.rig.mass, dt, sfx.m, (k) => tpc.kick(0, 0, k)))];
     Object.assign(s, { x: v.x, y: v.y, z: v.z, yaw: v.yaw, tilt: v.tilt, speed: this.rig.speed });
     const hit = vehicleImpact(world, v, dt);
     if (hit) {

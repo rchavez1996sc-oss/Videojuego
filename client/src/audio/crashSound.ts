@@ -1,4 +1,5 @@
 import type { Mixer } from './mixer';
+import { crackle } from './breakSound';
 
 /** A noise burst through a filter (optionally sweeping), into `dest`. */
 function burst(m: Mixer, dest: AudioNode, t: number, type: BiquadFilterType, f0: number, f1: number, q: number, peak: number, attack: number, decay: number): void {
@@ -13,8 +14,8 @@ function burst(m: Mixer, dest: AudioNode, t: number, type: BiquadFilterType, f0:
 }
 
 /**
- * A car crash that sounds like one: the deep thump of the body taking the hit, sheet metal crumpling (several
- * resonant ringing bursts, each a panel buckling), the bang of plastic and the bumper, safety glass bursting into a
+ * A car crash that sounds like one: the deep thump of the body taking the hit, sheet metal crumpling (a dense crackle of
+ * micro-buckles, high and low, over a few low panel resonances), the bang of plastic and the bumper, safety glass bursting into a
  * hiss of pebbles, debris clattering down and a short scrape as the cars grind apart. `hard` 0..1 scales loudness,
  * length and how much breaks; louder close up, low-passed and later with distance, with a slap off the façades.
  */
@@ -23,24 +24,26 @@ export function crashSound(m: Mixer, distance: number, hard: number): void {
   if (ctx.state !== 'running') return;
   const h = Math.max(0.2, Math.min(1, hard)), t = ctx.currentTime + distance / 343 + 0.005, near = Math.max(0.08, 1 - distance / 150);
   const out = ctx.createGain(), dull = ctx.createBiquadFilter(), echo = ctx.createGain();
-  out.gain.value = (0.75 + h * 0.9) * near;
+  out.gain.value = (0.5 + h * 0.2) * near;
   dull.type = 'lowpass';
   dull.frequency.value = 18000 * Math.max(0.12, 1 - distance / 110);
   echo.gain.value = 0.35;
   out.connect(dull).connect(m.sfx);
   dull.connect(echo).connect(m.street);
-  const sub = ctx.createOscillator(), sg = m.env(t, 1.6 * h, 0.003, 0.32);
+  const sub = ctx.createOscillator(), sg = m.env(t, 0.95 * h, 0.003, 0.32);
   sub.frequency.setValueAtTime(85, t);
   sub.frequency.exponentialRampToValueAtTime(32, t + 0.3);
   sub.connect(sg).connect(out);
   sub.start(t);
   sub.stop(t + 0.45);
-  burst(m, out, t, 'lowpass', 900, 150, 0.7, 1.4, 0.002, 0.28);
+  burst(m, out, t, 'lowpass', 900, 150, 0.7, 0.85, 0.002, 0.28);
   burst(m, out, t + 0.004, 'bandpass', 2600, 900, 0.8, 0.9, 0.001, 0.12);
-  const panels = 3 + Math.round(h * 6);
+  crackle(m, out, t, 40 + h * 140, 0.12 + h * 0.4, 1100, 0.7, 0.7, 0.01);
+  crackle(m, out, t + 0.01, 20 + h * 60, 0.1 + h * 0.3, 380, 1.1, 0.8, 0.016);
+  const panels = 2 + Math.round(h * 4);
   for (let i = 0; i < panels; i++) {
-    const at = t + Math.random() * (0.08 + h * 0.18), f = 450 + Math.random() * 1900;
-    burst(m, out, at, 'bandpass', f, f * (0.7 + Math.random() * 0.2), 7 + Math.random() * 8, 0.55 + Math.random() * 0.4, 0.002, 0.18 + Math.random() * 0.35);
+    const at = t + Math.random() * (0.06 + h * 0.15), f = 260 + Math.random() * 900;
+    burst(m, out, at, 'bandpass', f, f * (0.6 + Math.random() * 0.2), 3 + Math.random() * 4, 0.35 + Math.random() * 0.3, 0.002, 0.12 + Math.random() * 0.25);
   }
   if (h > 0.45) {
     burst(m, out, t + 0.02, 'highpass', 4500, 3000, 0.7, 0.55 * h, 0.002, 0.35);

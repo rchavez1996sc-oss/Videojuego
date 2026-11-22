@@ -219,8 +219,10 @@ export function buildBarrio(hf: Heightfield, def: BarrioDef, lighting: Lighting,
     for (let col = 0; col < def.cols; col++) {
       const bx0 = def.x0 + col * pitch;
       for (let k = 0, n = Math.ceil(def.blockW / 4), sw = def.blockW / n; k < n; k++) {
-        const x0 = bx0 + k * sw, hs = [x0, x0 + sw].flatMap((x) => [8.2, 10.6].map((z) => hf.heightAt(x, s * z))), top = Math.max(...hs) + 0.15, base = Math.min(...hs) - 0.4;
-        b.box('sidewalk', [sw + 0.01, top - base, 2.4], new THREE.Vector3(x0 + sw / 2, (top + base) / 2, s * 9.4), new THREE.Quaternion());
+        const x0 = bx0 + k * sw, at = (z: number) => Math.max(hf.heightAt(x0, s * z), hf.heightAt(x0 + sw, s * z));
+        const front = at(8.0) + 0.17, back = THREE.MathUtils.clamp(at(10.6) + 0.04, front, front + 0.3), base = Math.min(hf.heightAt(x0, s * 8.2), hf.heightAt(x0 + sw, s * 8.2)) - 0.4;
+        const tilt = Math.atan2(back - front, 2.4), h = (front + back) / 2 - base;
+        b.box('sidewalk', [sw + 0.01, h, 2.4], new THREE.Vector3(x0 + sw / 2, (front + back) / 2 - h / 2, s * 9.4), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -s * tilt));
       }
     }
     const poles: THREE.Vector3[] = [];

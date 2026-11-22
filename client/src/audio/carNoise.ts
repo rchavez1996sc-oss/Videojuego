@@ -1,4 +1,5 @@
 import type { Mixer } from './mixer';
+import { crackle } from './breakSound';
 
 /**
  * Smaller car noises around the big crash: a knock (bumper tapping a post or a kerb, a door panel thumped — a dull
@@ -16,12 +17,7 @@ export function knock(m: Mixer, distance: number, k: number): void {
   bf.type = 'lowpass'; bf.frequency.value = 600;
   body.connect(bf).connect(m.env(t, g, 0.002, 0.16)).connect(m.sfx);
   body.start(t); body.stop(t + 0.25);
-  for (let i = 0; i < 3 + k * 5; i++) {
-    const src = m.noise(), f = ctx.createBiquadFilter(), at = t + 0.01 + Math.random() * 0.12;
-    f.type = 'bandpass'; f.frequency.value = 900 + Math.random() * 2400; f.Q.value = 6;
-    src.connect(f).connect(m.env(at, g * 0.35, 0.001, 0.04 + Math.random() * 0.05)).connect(m.sfx);
-    src.start(at); src.stop(at + 0.15);
-  }
+  crackle(m, m.sfx, t + 0.005, 6 + k * 18, 0.1 + k * 0.08, 1500, 1.2, g * 0.6, 0.006);
 }
 
 export class Scrape {
@@ -29,6 +25,7 @@ export class Scrape {
   private grit?: BiquadFilterNode;
   private squeal?: BiquadFilterNode;
   private gain?: GainNode;
+  private jit?: AudioBufferSourceNode;
 
   constructor(private m: Mixer) {}
 
@@ -41,10 +38,18 @@ export class Scrape {
       this.src = this.m.noise();
       this.src.loop = true;
       this.grit = ctx.createBiquadFilter(); this.grit.type = 'bandpass'; this.grit.Q.value = 1.2;
-      this.squeal = ctx.createBiquadFilter(); this.squeal.type = 'peaking'; this.squeal.Q.value = 12; this.squeal.gain.value = 14;
+      this.squeal = ctx.createBiquadFilter(); this.squeal.type = 'peaking'; this.squeal.Q.value = 8; this.squeal.gain.value = 9;
       this.gain = ctx.createGain(); this.gain.gain.value = 0;
-      this.src.connect(this.grit).connect(this.squeal).connect(this.gain).connect(this.m.sfx);
+      const am = ctx.createGain(), jit = this.m.noise(), slow = ctx.createBiquadFilter(), depth = ctx.createGain(), low = ctx.createBiquadFilter(), body = ctx.createGain();
+      slow.type = 'lowpass'; slow.frequency.value = 35; depth.gain.value = 3;
+      low.type = 'lowpass'; low.frequency.value = 240; body.gain.value = 1.6;
+      jit.connect(slow).connect(depth).connect(am.gain);
+      this.src.connect(this.grit).connect(this.squeal).connect(am);
+      this.src.connect(low).connect(body).connect(am);
+      am.connect(this.gain).connect(this.m.sfx);
       this.src.start();
+      jit.start();
+      this.jit = jit;
     }
     const t = ctx.currentTime, k = Math.min(1, Math.max(0, (slide - 1.5) / 14));
     this.gain!.gain.setTargetAtTime(k * 0.55, t, k > 0 ? 0.03 : 0.12);
@@ -55,6 +60,7 @@ export class Scrape {
 
   stop(): void {
     this.src?.stop();
-    this.src = undefined;
+    this.jit?.stop();
+    this.src = this.jit = undefined;
   }
 }

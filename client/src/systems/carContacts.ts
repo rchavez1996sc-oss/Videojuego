@@ -1,6 +1,7 @@
 import type RAPIER from '@dimforge/rapier3d-compat';
 import type * as THREE from 'three';
 import type { Traffic, Vehicle } from './traffic';
+export { smash } from '../world/breakables';
 import { parkedCars } from '../world/parkedCars';
 import { exchange } from './vehicleBody';
 
