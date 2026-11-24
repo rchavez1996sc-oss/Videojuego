@@ -4,6 +4,7 @@ import { photo } from '../../render/photoTextures';
 import { concrete, plaster } from '../../render/urbanTextures';
 import { deck, rock, wood } from '../../render/textures';
 import { foliage } from '../malecon/textures';
+import { paverTextures } from './pavers';
 
 /** Casona wall paints seen on the photos: oxblood, cobalt, ochre, rose, cream, sea green, terracotta, white. */
 export const CASONA_PAINTS: [string, string][] = [
@@ -20,7 +21,8 @@ export function barrancoMaterials(lighting: Lighting): Record<string, THREE.Mate
   const pw = photo('paintWall') ?? plaster(), pl = plaster(), co = concrete(), wd = wood(), dk = deck(), rk = rock(), fo = foliage();
   const ph = (k: string) => photo(k) ?? rk;
   const cw = photo('casonaWall') ?? pw, hw = photo('humidWall') ?? pl, pwd = photo('paintedWood') ?? wd, bm = photo('beamWood') ?? wd, bp = photo('bridgePlanks') ?? dk;
-  const ps = photo('plinthStone') ?? co, st = photo('stucco') ?? co;
+  const ps = photo('plinthStone') ?? co, st = photo('stucco') ?? co, pv = paverTextures();
+  for (const t of [pv.map, pv.normalMap]) t.repeat.set(3, 3);
   const pbr = (t: { map: THREE.Texture | null; normalMap: THREE.Texture | null; roughnessMap?: THREE.Texture | null }) => ({ map: t.map, normalMap: t.normalMap, roughnessMap: t.roughnessMap ?? null });
   const m: Record<string, THREE.Material> = {
     ochreWall: std('ochreWall', { ...pbr(hw), color: '#d6a54a', roughness: 0.9 }),
@@ -33,6 +35,10 @@ export function barrancoMaterials(lighting: Lighting): Record<string, THREE.Mate
     bridgeDeck: std('bridgeDeck', { ...pbr(bp), color: '#c98a6a', roughness: 0.6 }),
     bridgeWood: std('bridgeWood', { ...pbr(bm), color: '#7a5642', roughness: 0.62 }),
     cobble: std('cobble', { ...pbr(photo('mossCobble') ?? ph('cobble')), roughness: 0.85 }),
+    pavers: std('pavers', { map: pv.map, normalMap: pv.normalMap, normalScale: new THREE.Vector2(0.8, 0.8), color: '#ffffff', roughness: 0.88 }),
+    pirca: std('pircaB', { ...pbr(ph('pirca')), color: '#d9d2c4', roughness: 0.95 }),
+    laneYellow: std('laneYellow', { color: '#d9b43a', roughness: 0.75 }),
+    agave: std('agave', { map: fo.map, color: '#6f8a6a', roughness: 0.8, side: THREE.DoubleSide }),
     stairStone: std('stairStone', { ...pbr(ps), color: '#d8d2c6', roughness: 0.85 }),
     paverRed: std('paverRed', { ...pbr(ph('terracotta')), color: '#ffffff', roughness: 0.8 }),
     roofTile: std('roofTileClay', { map: ph('roofTiles').map, normalMap: ph('roofTiles').normalMap, color: '#c07a55', roughness: 0.8 }),

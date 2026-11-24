@@ -6,14 +6,9 @@ import { edgeZ, ravineCentre, ravineFloor, ravineHalf, type CoastDef } from '../
 import { bench, type Plants } from '../malecon/park';
 import { globeLamp } from './bridge';
 import { muralSpan, ravineOf, type BarrancoDef } from './layout';
+import { laneEdge, laneHouses, laneLine, run } from './bajadaLane';
 
 const UP = new THREE.Vector3(0, 1, 0);
-
-/** Box from a to c, `w` wide and `h` tall, aligned with the line between them. */
-function run(b: Builder, mat: string, a: THREE.Vector3, c: THREE.Vector3, w: number, h: number, collide = true): void {
-  const d = c.clone().sub(a), len = d.length();
-  b.box(mat, [w, h, len + 0.05], a.clone().lerp(c, 0.5), new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), d.normalize()), collide);
-}
 
 /** Street-art vault: a sun, faces in profile, birds and the lettering over the arch (canvas). */
 function muralTexture(): THREE.CanvasTexture {
@@ -42,30 +37,34 @@ function muralTexture(): THREE.CanvasTexture {
  * lamps, stone stairs up the planted banks, artisans' white stalls in the upper stretch, benches and trees, and the
  * street bridge whose vault is painted end to end. Returns the textured meshes (the vault mural).
  */
-export function bajadaDeBanos(b: Builder, hf: Heightfield, def: BarrancoDef, c: CoastDef, plants: Plants, lighting: Lighting): THREE.Object3D {
+export function bajadaDeBanos(b: Builder, hf: Heightfield, def: BarrancoDef, c: CoastDef, plants: Plants, lighting: Lighting, bb: Builder): THREE.Object3D {
   const r = ravineOf(c), mouth = edgeZ(c, r.x) + c.run, half = (r.floorHalf ?? 4) - 0.2, end = def.beachRoad.z - def.beachRoad.half;
   const centre: THREE.Vector2[] = [];
   for (let z = r.head - 8; z <= end; z += 1.5) centre.push(new THREE.Vector2(ravineCentre(r, Math.min(Math.max(z, r.head), mouth)), z));
   for (let k = 1; k < centre.length; k++) {
     const a = centre[k - 1], e = centre[k], fa = ravineFloor(c, r, Math.min(a.y, mouth)) + 0.06 - 0.25, fe = ravineFloor(c, r, Math.min(e.y, mouth)) + 0.06 - 0.25;
-    run(b, 'cobble', new THREE.Vector3(a.x, fa, a.y), new THREE.Vector3(e.x, fe, e.y), half * 2 + 0.9, 0.5);
+    run(b, 'pavers', new THREE.Vector3(a.x, fa, a.y), new THREE.Vector3(e.x, fe, e.y), half * 2 + 0.9, 0.5);
   }
-  for (const s of [-1, 1]) for (let k = 1; k < centre.length; k++) {
-    const a = centre[k - 1], e = centre[k], fa = ravineFloor(c, r, Math.min(a.y, mouth)) + 0.07, fe = ravineFloor(c, r, Math.min(e.y, mouth)) + 0.07;
-    run(b, 'stairStone', new THREE.Vector3(a.x + s * (half - 0.15), fa, a.y), new THREE.Vector3(e.x + s * (half - 0.15), fe, e.y), 0.3, 0.06, false);
-  }
-  const group = new THREE.Group(), m = muralSpan(c, def);
+  const group = new THREE.Group(), m = muralSpan(c, def), stairZ = [def.bridge.z - 9, def.bridge.z + 7, def.bridge.z + 26, def.bridge.z - 22], upper = def.bridge.z + 9;
+  const houses = laneHouses(bb, c, r, def, upper, (r.knee?.z ?? mouth - 30) - 4, [...stairZ, m.z, m.z + def.mural.half, m.z - def.mural.half]);
+  const housed = (z: number, zn: number, s: number) => houses.some((h) => h.s === s && h.z0 < zn && h.z1 > z);
   for (let z = r.head + 2, i = 0; z < mouth - 3; z += 4, i++) {
     const zn = z + 4, f = ravineFloor(c, r, z), fn = ravineFloor(c, r, zn);
     if (Math.abs(z - m.z) < def.mural.half + 3) continue;
     for (const s of [-1, 1]) {
-      const a = new THREE.Vector3(ravineCentre(r, z) + s * (half + 0.35), f + 0.9, z), e = new THREE.Vector3(ravineCentre(r, zn) + s * (half + 0.35), fn + 0.9, zn);
-      run(b, 'ochreWall', a.clone().setY(f + 0.4), e.clone().setY(fn + 0.4), 0.45, 2.4);
-      run(b, 'creamCornice', a.clone().setY(f + 1.65), e.clone().setY(fn + 1.65), 0.6, 0.1, false);
+      const a = new THREE.Vector3(ravineCentre(r, z) + s * (half + 0.35), f + 0.9, z), e = new THREE.Vector3(ravineCentre(r, zn) + s * (half + 0.35), fn + 0.9, zn), home = housed(z, zn, s);
+      const stairsHere = stairZ.map((sz, k) => [sz, k % 2 ? -1 : 1]).some(([sz, ss]) => ss === s && sz > z - 2.5 && sz < zn + 2.5);
+      if (stairsHere) laneLine(bb, c, r, z, zn, s, 0.12);
+      else if (z < upper) {
+        run(b, 'ochreWall', a.clone().setY(f + 0.4), e.clone().setY(fn + 0.4), 0.45, 2.4);
+        run(b, 'creamCornice', a.clone().setY(f + 1.65), e.clone().setY(fn + 1.65), 0.6, 0.1, false);
+      } else if (!home) laneEdge(bb, c, r, z, zn, s, i, plants);
+      if (!stairsHere) laneLine(bb, c, r, z, zn, s, z < upper || home ? 0.12 : 1.02);
       if (i % 3 === 1 && s === (i % 6 === 1 ? 1 : -1)) globeLamp(b, new THREE.Vector3(a.x - s * 0.7, f + 0.1, z));
       if (i % 7 === 4) bench(b, new THREE.Vector3(a.x - s * 0.9, f + 0.1, z + 1), s > 0 ? -Math.PI / 2 : Math.PI / 2);
       if (i % 7 === 4) plants.seats.push({ pos: new THREE.Vector3(a.x - s * 0.9, f + 0.55, z + 1), yaw: s > 0 ? -Math.PI / 2 : Math.PI / 2 });
       const bank = ravineHalf(c, r, z) - 2.5;
+      if (home) continue;
       if (i % 3 === s + 1) (i % 2 ? plants.trees : plants.palms).push(new THREE.Vector3(ravineCentre(r, z) + s * bank, hf.heightAt(ravineCentre(r, z) + s * bank, z), z));
       else if (bank > half + 3) {
         const bx = ravineCentre(r, z) + s * (half + 1.6 + (bank - half - 1.6) * ((i * 7) % 5) / 5), by = hf.heightAt(bx, z + 2);
@@ -75,8 +74,7 @@ export function bajadaDeBanos(b: Builder, hf: Heightfield, def: BarrancoDef, c: 
         }
         if (i % 2) plants.trees.push(new THREE.Vector3(bx, by, z - 1));
       }
-      const stairsHere = [[def.bridge.z - 9, 1], [def.bridge.z + 7, -1], [def.bridge.z + 26, 1], [def.bridge.z - 22, -1]].some(([sz, ss]) => ss === s && sz > z - 2.5 && sz < zn + 2.5);
-      if (!stairsHere && Math.abs(z - def.bridge.z) > 5) terrace(b, hf, c, r, z, zn, s, i);
+      if (!stairsHere && Math.abs(z - def.bridge.z) > 5) terrace(bb, hf, c, r, z, zn, s, i);
     }
     if (z < def.bridge.z - 4 && i % 2 === 0) stall(b, new THREE.Vector3(ravineCentre(r, z) + (i % 4 ? 1 : -1) * (half - 1.2), f + 0.1, z), i % 4 ? -1 : 1, plants, i);
   }
@@ -86,11 +84,20 @@ export function bajadaDeBanos(b: Builder, hf: Heightfield, def: BarrancoDef, c: 
   return group;
 }
 
-/** Artisan's stall: white canopy on four poles over a cloth-covered table, a vendor behind it. */
+/** Artisan's stall: white canopy on four poles over a table whose cloth hangs to the ground, crafts laid out on top, a vendor behind it. */
 function stall(b: Builder, at: THREE.Vector3, side: number, plants: Plants, i: number): void {
   for (const [x, z] of [[-0.9, -1.2], [0.9, -1.2], [-0.9, 1.2], [0.9, 1.2]]) b.box('alu', [0.05, 2.2, 0.05], at.clone().add(new THREE.Vector3(x, 1.1, z)), new THREE.Quaternion(), false);
   b.box('tentWhite', [2.0, 0.06, 2.6], at.clone().add(new THREE.Vector3(0, 2.25, 0)), new THREE.Quaternion(), false);
-  b.box(['awningRed', 'trimBlue', 'trimGreen'][i % 3], [1.6, 0.8, 2.2], at.clone().add(new THREE.Vector3(0, 0.4, 0)), new THREE.Quaternion());
+  const cloth = ['awningRed', 'trimBlue', 'trimGreen'][i % 3], q = new THREE.Quaternion();
+  b.box('trimBrown', [1.5, 0.05, 2.1], at.clone().add(new THREE.Vector3(0, 0.78, 0)), q);
+  b.box(cloth, [1.56, 0.02, 2.16], at.clone().add(new THREE.Vector3(0, 0.815, 0)), q, false);
+  for (const s of [-1, 1]) b.box(cloth, [0.02, 0.55, 2.16], at.clone().add(new THREE.Vector3(s * 0.78, 0.55, 0)), q, false);
+  for (const s of [-1, 1]) b.box(cloth, [1.56, 0.55, 0.02], at.clone().add(new THREE.Vector3(0, 0.55, s * 1.08)), q, false);
+  b.box('none', [1.5, 0.8, 2.1], at.clone().add(new THREE.Vector3(0, 0.4, 0)), q);
+  for (let k = 0; k < 9; k++) {
+    const w = 0.12 + ((k * 7 + i) % 5) * 0.04, h = 0.05 + ((k * 3 + i) % 4) * 0.05;
+    b.box(['trimWhite', 'awningRed', 'paint-ochre', 'trimBlue', 'paint-seagreen', 'flowers'][(k + i) % 6], [w, h, w * 1.2], at.clone().add(new THREE.Vector3(-0.5 + (k % 3) * 0.5, 0.83 + h / 2, -0.75 + Math.floor(k / 3) * 0.75)), new THREE.Quaternion().setFromAxisAngle(UP, k * 0.7), false);
+  }
   plants.standing.push({ pos: at.clone().add(new THREE.Vector3(side * -1.3, 0, 0)), yaw: side > 0 ? Math.PI / 2 : -Math.PI / 2, key: i % 3 ? 'civ_idle' : 'texting' });
 }
 
@@ -137,7 +144,7 @@ function terrace(b: Builder, hf: Heightfield, c: CoastDef, r: ReturnType<typeof 
   for (const k of [0.35, 0.68]) {
     const xa = ravineCentre(r, z) + s * (inner + (outer(z) - inner) * k), xb = ravineCentre(r, zn) + s * (inner + (outer(zn) - inner) * k);
     const a = new THREE.Vector3(xa, hf.heightAt(xa, z), z), e = new THREE.Vector3(xb, hf.heightAt(xb, zn), zn);
-    run(b, 'ochreWall', a.clone().setY(a.y - 0.4), e.clone().setY(e.y - 0.4), 0.3, 1.2);
+    run(b, 'pirca', a.clone().setY(a.y - 0.4), e.clone().setY(e.y - 0.4), 0.4, 1.3);
     run(b, 'hedge', a.clone().setY(a.y + 0.45).add(new THREE.Vector3(-s * 0.45, 0, 0)), e.clone().setY(e.y + 0.45).add(new THREE.Vector3(-s * 0.45, 0, 0)), 0.6, 0.55, false);
   }
   if (i % 3 !== 1) treesOnBank.push(new THREE.Vector3(ravineCentre(r, z) + s * (inner + (outer(z) - inner) * 0.52), 0, z + 2));

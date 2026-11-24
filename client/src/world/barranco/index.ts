@@ -40,7 +40,7 @@ export function buildBarranco(hf: Heightfield, def: BarrancoDef, lighting: Light
   const group = new THREE.Group();
   suspiros(b, hf, bridgeSpan(c, def));
   bridgeEnds(b, hf, def, c, plants, rand);
-  group.add(bajadaDeBanos(t, hf, def, c, plants, lighting));
+  group.add(bajadaDeBanos(t, hf, def, c, plants, lighting, b));
   buildLandmarks(b, hf, def, plants, rand);
   const { station, trees, fronts } = buildStreets(b, def, c, plants, rand);
   streetLayer(t, def, c, fronts, rand);

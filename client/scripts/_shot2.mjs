@@ -8,7 +8,7 @@ const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromi
 try {
   const page = await browser.newPage({ viewport: { width: 900, height: 520 } });
   page.on('pageerror', (e) => console.error('[page]', e.message));
-  await page.goto(`http://localhost:4212/?shot&q=medium&ch=${ch}`);
+  await page.goto(`http://localhost:4212/?shot&q=medium&ch=${ch}${process.env.URLX ?? ""}`);
   await page.waitForFunction(() => window.__game?.ready, null, { timeout: 600000 });
   console.log(String(await page.evaluate(pre)).slice(0, 1500));
   let i = 0;
